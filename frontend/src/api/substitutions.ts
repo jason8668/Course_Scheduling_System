@@ -1,4 +1,4 @@
-// 調代課處理:代課推薦、指派處置(M4-2)、可對調節次(v1.2.1)、通知單(v1.2.2/v1.2.5)。
+// 调代课处理:代课推荐、指派处置(M4-2)、可对调节次(v1.2.1)、通知单(v1.2.2/v1.2.5)。
 
 import { apiDelete, apiGet, apiPost, apiPut } from '@/api/client'
 
@@ -33,7 +33,7 @@ export interface Substitution {
   created_by_name: string
 }
 
-/** 乙的某一節課、在某一天,可改由請假的甲來補 */
+/** 乙的某一节课、在某一天,可改由请假的甲来补 */
 export interface SwapOption {
   entry_id: number
   date: string
@@ -42,15 +42,15 @@ export interface SwapOption {
   period_name: string
   class_names: string
   subject_name: string
-  same_class: boolean // 與請假那節同一班(同班互調)
-  in_block: boolean // 連堂中的一節(只換這一節)
+  same_class: boolean // 与请假那节同一班(同班互调)
+  in_block: boolean // 连堂中的一节(只换这一节)
 }
 
 export interface SwapPartner {
   teacher_id: number
   teacher_name: string
   teaches_same_class: boolean
-  blocked_reason: string // 非空 = 這位老師在請假那節就來不了
+  blocked_reason: string // 非空 = 这位老师在请假那节就来不了
   options: SwapOption[]
 }
 
@@ -68,7 +68,7 @@ export interface AssignBody {
   funding_source?: string
   swap_entry_id?: number | null
   swap_date?: string | null
-  swap_period_no?: number | null // 連堂格位換其中哪一節
+  swap_period_no?: number | null // 连堂格位换其中哪一节
 }
 
 export const listSubstitutionTypes = (): Promise<Record<string, string>> =>
@@ -80,12 +80,12 @@ export const getRecommendations = (affectedId: number): Promise<Recommendation> 
 export const assignSubstitution = (affectedId: number, body: AssignBody): Promise<Substitution> =>
   apiPut(`/affected-periods/${affectedId}/substitution`, body)
 
-/** 整批指派代課:一張假單(或其中一天)還沒處理的節次,全部派給同一位老師。 */
+/** 整批指派代课:一张假单(或其中一天)还没处理的节次,全部派给同一位老师。 */
 export interface BatchAssignBody {
   handler_teacher_id: number
   funding_source?: string
   counts_toward_hours?: boolean | null
-  date?: string | null // 空 = 整張假單
+  date?: string | null // 空 = 整张假单
 }
 export interface BatchSkip {
   affected_period_id: number
@@ -106,7 +106,7 @@ export const assignSubstitutionBatch = (
 export const clearSubstitution = (affectedId: number): Promise<{ status: string }> =>
   apiDelete(`/affected-periods/${affectedId}/substitution`)
 
-/** 未指定教師時,只找也教這個班的老師;weeks = 從請假那週起找幾週(1–4) */
+/** 未指定教师时,只找也教这个班的老师;weeks = 从请假那周起找几周(1–4) */
 export const getSwapOptions = (
   affectedId: number, teacherId?: number | null, weeks = 2,
 ): Promise<SwapOptions> => {
@@ -115,13 +115,13 @@ export const getSwapOptions = (
   return apiGet(`/affected-periods/${affectedId}/swap-options?${q}`)
 }
 
-// ── 通知單(調課單 v1.2.2、代課單 v1.2.5;兩者版面相同,表頭與格子內容不同)──
+// ── 通知单(调课单 v1.2.2、代课单 v1.2.5;两者版面相同,表头与格子内容不同)──
 
 export interface SlipRow {
-  ordinal: number // 第幾節(只數一般課)
+  ordinal: number // 第几节(只数一般课)
   start_time: string | null
   end_time: string | null
-  afternoon_starts: boolean // 下午第一節:紙本在這裡畫粗線
+  afternoon_starts: boolean // 下午第一节:纸本在这里画粗线
 }
 
 export interface SlipCell {
@@ -129,9 +129,9 @@ export interface SlipCell {
   weekday: number
   ordinal: number
   subject_name: string
-  actor: string // 第三行:調課單寫上課老師;代課單寫「班級[代]」或「老師[代]」
-  code: string // 「調09-15_25」:與 9/15 星期二第 5 節對調;代課單沒有
-  time_note?: string // 跨節次表的格子:實際上課時間(與格線那一列不同時才有)
+  actor: string // 第三行:调课单写上课老师;代课单写「班级[代]」或「老师[代]」
+  code: string // 「调09-15_25」:与 9/15 星期二第 5 节对调;代课单没有
+  time_note?: string // 跨节次表的格子:实际上课时间(与格线那一列不同时才有)
 }
 
 export interface SlipWeek {
@@ -146,9 +146,9 @@ export interface Slip {
   class_names: string
   date_from: string
   date_to: string
-  absent_teacher_name: string // 代課單:請假教師
-  leave_type_name: string // 代課單:假別
-  funding_label: string // 代課單:計費方式
+  absent_teacher_name: string // 代课单:请假教师
+  leave_type_name: string // 代课单:假别
+  funding_label: string // 代课单:计费方式
   rows: SlipRow[]
   weeks: SlipWeek[]
 }
@@ -174,7 +174,7 @@ export const getSubstituteSlips = (semesterId: number, affectedIds: number[]): P
 export const listFundingSources = (): Promise<string[]> =>
   apiGet('/substitution-funding-sources')
 
-/** 在新分頁開啟通知單(列印頁不套側邊欄);kind 決定印調課單還是代課單 */
+/** 在新分页开启通知单(打印页不套侧边栏);kind 决定印调课单还是代课单 */
 export function openSlips(
   kind: 'swap' | 'substitute', semesterId: number, affectedIds: number[],
 ): void {

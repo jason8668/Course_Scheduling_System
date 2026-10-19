@@ -1,8 +1,8 @@
-// 跨節次表的格子要補上實際時間。
+// 跨节次表的格子要补上实际时间。
 //
-// 教師/場地課表只能照一套節次表(學期預設表)畫格線。國中小、完全中學的跨部教師,
-// 另一部的課會排在「同節次號」那一列,但實際時間不一樣(國小 40 分、國中 45 分)。
-// 不標出來,課表上的時間就是錯的。
+// 教师/场地课表只能照一套节次表(学期默认表)画格线。初中小、完全中学的跨部教师,
+// 另一部的课会排在「同节次号」那一列,但实际时间不一样(小学 40 分、初中 45 分)。
+// 不标出来,课表上的时间就是错的。
 
 interface PeriodLike {
   weekday: number
@@ -27,7 +27,7 @@ interface EntryLike {
 
 const hhmm = (t: string) => t.slice(0, 5)
 
-/** 這一格所屬的節次表:班級指定的那套,沒指定就是學期預設表。 */
+/** 这一格所属的节次表:班级指定的那套,没指定就是学期默认表。 */
 function ownTable<P extends PeriodLike>(
   entry: EntryLike, classes: ClassLike[], tables: TableLike<P>[],
 ): TableLike<P> | undefined {
@@ -37,10 +37,10 @@ function ownTable<P extends PeriodLike>(
 }
 
 /**
- * 畫面那套節次表沒有、但這些格位用得到的節次列(取自格位自己的節次表)。
+ * 界面那套节次表没有、但这些格位用得到的节次列(取自格位自己的节次表)。
  *
- * 國中七節、高中八節的完全中學,跨部老師在高中第八節有課;教師課表照國中那套畫只有七列,
- * 不補這一列,那堂課會整個從課表上消失。只補用得到的,沒跨部的老師不會多出空列。
+ * 初中七节、高中八节的完全中学,跨部老师在高中第八节有课;教师课表照初中那套画只有七列,
+ * 不补这一列,那堂课会整个从课表上消失。只补用得到的,没跨部的老师不会多出空列。
  */
 export function extraRows<P extends PeriodLike>(
   entries: (EntryLike & { span?: number })[], classes: ClassLike[],
@@ -61,7 +61,7 @@ export function extraRows<P extends PeriodLike>(
   return out
 }
 
-/** 這一格的實際上課時間;與畫面那套節次表同一列的時間相同(或就是同一套)時回 undefined。 */
+/** 这一格的实际上课时间;与界面那套节次表同一列的时间相同(或就是同一套)时回 undefined。 */
 export function crossTableNote(
   entry: EntryLike, classes: ClassLike[], tables: TableLike[], shown: TableLike | null,
 ): string | undefined {

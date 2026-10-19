@@ -1,4 +1,4 @@
-"""教師、科目、場地、班級、教師時段規則
+"""教师、科目、场地、班级、教师时段规则
 
 Revision ID: 0003_basedata
 Revises: 0002_semester_period

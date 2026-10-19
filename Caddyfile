@@ -1,25 +1,25 @@
-# 正式部署反向代理設定。
-# 站台位址由環境變數 SITE_ADDRESS 決定(於 .env 設定,由 web 容器帶入):
-#   未設定(預設):`:80` — 內網 IP 走 HTTP。
-#   設為網域名(例 school.example.edu.tw):Caddy 自動申請並續期 HTTPS 憑證。
+# 正式部署反向代理设置。
+# 站台位址由环境变数 SITE_ADDRESS 决定(于 .env 设置,由 web 容器带入):
+#   未设置(默认):`:80` — 内网 IP 走 HTTP。
+#   设为网域名(例 school.example.edu.tw):Caddy 自动申请并续期 HTTPS 凭证。
 {
 	admin off
 }
 
 {$SITE_ADDRESS::80} {
-	# 請求體上限,防止(內部誤操作或被盜帳號的)超大上傳打爆單校主機記憶體。
-	# 200MB 容得下真實資料庫還原的 .dump 與 Excel 匯入;超大資料庫還原改用 volume 複製法
-	# (見 docs/deploy/backup.md),不走網頁上傳。
+	# 请求体上限,防止(内部误操作或被盗帐号的)超大上传打爆单校主机记忆体。
+	# 200MB 容得下真实资料库还原的 .dump 与 Excel 导入;超大资料库还原改用 volume 复制法
+	# (见 docs/deploy/backup.md),不走网页上传。
 	request_body {
 		max_size 200MB
 	}
 
-	# API 交給後端
+	# API 交给后端
 	handle /api/* {
 		reverse_proxy api:8000
 	}
 
-	# 其餘走前端 SPA,找不到檔案回退 index.html(支援 vue-router history 模式)
+	# 其余走前端 SPA,找不到档案回退 index.html(支援 vue-router history 模式)
 	handle {
 		root * /srv
 		try_files {path} /index.html

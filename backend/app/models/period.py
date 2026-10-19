@@ -1,8 +1,8 @@
-"""節次表與節次 model。
+"""节次表与节次 model。
 
-一個學期可有多套節次表(完全中學:高中部/國中部各一套)。
-節次表是 weekday × period_no 的格狀結構,每格(Period)有類型;
-只有 `regular`(一般課)類型的格位參與排課(見 architecture.md H5)。
+一个学期可有多套节次表(完全中学:高中部/初中部各一套)。
+节次表是 weekday × period_no 的格状结构,每格(Period)有类型;
+只有 `regular`(一般课)类型的格位参与排课(见 architecture.md H5)。
 """
 
 import enum
@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 
 
 class PeriodType(enum.StrEnum):
-    regular = "regular"      # 一般課(唯一參與排課者)
-    morning = "morning"      # 早自習
+    regular = "regular"      # 一般课(唯一参与排课者)
+    morning = "morning"      # 早自习
     lunch = "lunch"          # 午休
-    homeroom = "homeroom"    # 導師時間
-    reserved = "reserved"    # 固定用途(週會/社團/彈性學習,不排課)
+    homeroom = "homeroom"    # 导师时间
+    reserved = "reserved"    # 固定用途(周会/社团/弹性学习,不排课)
 
 
 class PeriodTable(Base):
@@ -41,7 +41,7 @@ class PeriodTable(Base):
         ForeignKey("semesters.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(64))
-    num_weekdays: Mapped[int] = mapped_column(Integer, default=5)  # 一週上課天數(5 或 6)
+    num_weekdays: Mapped[int] = mapped_column(Integer, default=5)  # 一周上课天数(5 或 6)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
 
     semester: Mapped["Semester"] = relationship(back_populates="period_tables")
@@ -60,10 +60,10 @@ class Period(Base):
     period_table_id: Mapped[int] = mapped_column(
         ForeignKey("period_tables.id", ondelete="CASCADE"), index=True
     )
-    weekday: Mapped[int] = mapped_column(Integer)   # 1=週一 … 5/6
-    period_no: Mapped[int] = mapped_column(Integer)  # 當日節次順序(含休息時段),1..N
-    name: Mapped[str] = mapped_column(String(32))    # 顯示名稱,如「第一節」「午休」
-    # 領域時間(學校牆鐘時間),無時區(見 architecture.md D6)
+    weekday: Mapped[int] = mapped_column(Integer)   # 1=周一 … 5/6
+    period_no: Mapped[int] = mapped_column(Integer)  # 当日节次顺序(含休息时段),1..N
+    name: Mapped[str] = mapped_column(String(32))    # 显示名称,如「第一节」「午休」
+    # 领域时间(学校墙钟时间),无时区(见 architecture.md D6)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     type: Mapped[str] = mapped_column(String(20), default=PeriodType.regular.value)

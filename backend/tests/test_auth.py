@@ -1,4 +1,4 @@
-"""認證與 RBAC 流程測試。對應 M0-2 驗收標準。"""
+"""认证与 RBAC 流程测试。对应 M0-2 验收标准。"""
 
 from app.models.user import Role
 from tests.conftest import make_user
@@ -38,12 +38,12 @@ def test_lockout_after_5_failures(env):
         resp = client.post("/api/auth/login", json={"username": "u", "password": password})
         return resp.status_code
 
-    # 前 4 次錯誤 → 401
+    # 前 4 次错误 → 401
     for _ in range(4):
         assert attempt("x") == 401
-    # 第 5 次 → 觸發鎖定 423
+    # 第 5 次 → 触发锁定 423
     assert attempt("x") == 423
-    # 鎖定期間即使密碼正確也被拒 423
+    # 锁定期间即使密码正确也被拒 423
     assert attempt(PW) == 423
 
 
@@ -83,7 +83,7 @@ def test_must_change_password_blocks_then_allows(env):
     assert login.json()["must_change_password"] is True
     # 尚未改密 → 功能性 API 403
     assert client.get("/api/_protected").status_code == 403
-    # 改密後 → 可用
+    # 改密后 → 可用
     chg = client.post(
         "/api/auth/change-password",
         json={"old_password": PW, "new_password": "brandnew456"},
@@ -100,7 +100,7 @@ def test_change_password_revokes_old_sessions(env):
     old_cookie = client.cookies.get("session")
     assert old_cookie is not None
 
-    # 改密碼(回應會重新簽發新 cookie)
+    # 改密码(回应会重新签发新 cookie)
     chg = client.post(
         "/api/auth/change-password",
         json={"old_password": PW, "new_password": "brandnew456"},
@@ -108,7 +108,7 @@ def test_change_password_revokes_old_sessions(env):
     assert chg.status_code == 200
     # 新 session 可用
     assert client.get("/api/auth/me").status_code == 200
-    # 舊 session(改密前的 cookie)已失效
+    # 旧 session(改密前的 cookie)已失效
     client.cookies.set("session", old_cookie)
     assert client.get("/api/auth/me").status_code == 401
 
@@ -152,5 +152,5 @@ def test_rbac_admin_bypasses_role_check(env):
     client, db = env
     make_user(db, "admin", PW, roles=[Role.admin])
     client.post("/api/auth/login", json={"username": "admin", "password": PW})
-    # admin 未持有 scheduler 角色,但為超級使用者 → 允許
+    # admin 未持有 scheduler 角色,但为超级用户 → 允许
     assert client.get("/api/_scheduler").status_code == 200

@@ -1,4 +1,4 @@
-"""健康檢查端點。供 Docker healthcheck 與部署驗證使用。"""
+"""健康检查端点。供 Docker healthcheck 与部署验证使用。"""
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -10,13 +10,13 @@ router = APIRouter(tags=["system"])
 
 @router.get("/health")
 def health() -> dict:
-    """存活檢查:程序有回應即為 ok。"""
+    """存活检查:程序有回应即为 ok。"""
     return {"status": "ok"}
 
 
 @router.get("/health/ready")
 def readiness() -> dict:
-    """就緒檢查:確認資料庫可連線。"""
+    """就绪检查:确认资料库可连线。"""
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))

@@ -1,12 +1,12 @@
-// 簡易 API client。所有請求帶 cookie(credentials: include)以維持 session。
+// 简易 API client。所有请求带 cookie(credentials: include)以维持 session。
 
 export interface ApiError extends Error {
   status: number
   detail?: string
 }
 
-// 全域 401 處理器(由 main.ts 註冊):session 過期/被撤銷時清除登入狀態並導回登入頁。
-// 認證管理端點(/auth/*)的 401 由呼叫端自行處理,不觸發全域導向,避免重導迴圈。
+// 全域 401 处理器(由 main.ts 注册):session 过期/被撤销时清除登录状态并导回登录页。
+// 认证管理端点(/auth/*)的 401 由呼叫端自行处理,不触发全域导向,避免重导回圈。
 let unauthorizedHandler: (() => void) | null = null
 export function setUnauthorizedHandler(fn: () => void): void {
   unauthorizedHandler = fn
@@ -29,7 +29,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
     if (resp.status === 401 && !path.startsWith('/auth/')) {
       unauthorizedHandler?.()
     }
-    const err = new Error(detail || `API 錯誤 ${resp.status}`) as ApiError
+    const err = new Error(detail || `API 错误 ${resp.status}`) as ApiError
     err.status = resp.status
     err.detail = detail
     throw err

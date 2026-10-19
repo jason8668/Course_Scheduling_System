@@ -1,7 +1,7 @@
-"""課表 PDF / PNG 渲染任務(worker;WeasyPrint + poppler,M5-1)。
+"""课表 PDF / PNG 渲染任务(worker;WeasyPrint + poppler,M5-1)。
 
-api 沒有 WeasyPrint 的系統依賴與中文字型,故 PDF/PNG 一律在 worker 產生。
-api 端以 `render_export`(阻塞式)派工並取回 bytes。
+api 没有 WeasyPrint 的系统依赖与中文字型,故 PDF/PNG 一律在 worker 产生。
+api 端以 `render_export`(阻塞式)派工并取回 bytes。
 """
 
 import os
@@ -16,7 +16,7 @@ def render_timetable_pdf(html: str) -> bytes:
 
 
 def render_timetable_png(html: str) -> bytes:
-    """先渲成 PDF,再以 poppler 的 pdftoppm 轉單頁 PNG。"""
+    """先渲成 PDF,再以 poppler 的 pdftoppm 转单页 PNG。"""
     pdf = render_pdf(html)
     with tempfile.TemporaryDirectory() as d:
         pdf_path = os.path.join(d, "in.pdf")

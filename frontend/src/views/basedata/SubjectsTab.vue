@@ -52,7 +52,7 @@ function openEdit(s: Subject) {
 
 async function save() {
   if (!form.value.name) {
-    message.warning('請輸入科目名稱')
+    message.warning('请输入科目名称')
     return
   }
   const body = {
@@ -66,20 +66,20 @@ async function save() {
     if (editingId.value) await updateSubject(editingId.value, body)
     else await createSubject(props.semesterId, body)
     show.value = false
-    message.success('已儲存')
+    message.success('已储存')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   }
 }
 
 async function remove(s: Subject) {
   try {
     await deleteSubject(s.id)
-    message.success('已刪除')
+    message.success('已删除')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '刪除失敗')
+    message.error((e as ApiError).detail || '删除失败')
   }
 }
 </script>
@@ -87,52 +87,52 @@ async function remove(s: Subject) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜尋科目名稱" clearable style="width: 200px" @input="reload" />
+      <n-input v-model:value="search" placeholder="搜寻科目名称" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" @click="openCreate">新增科目</n-button>
     </n-space>
 
     <table class="data-table">
       <thead>
-        <tr><th>名稱</th><th>領域/群別</th><th>需要場地</th><th>預設連堂</th><th>主科</th><th>操作</th></tr>
+        <tr><th>名称</th><th>领域/群别</th><th>需要场地</th><th>默认连堂</th><th>主科</th><th>操作</th></tr>
       </thead>
       <tbody>
         <tr v-for="s in items" :key="s.id">
           <td>{{ s.name }}</td>
           <td>{{ s.domain || '—' }}</td>
           <td>{{ s.required_room_type ? ROOM_TYPE_LABELS[s.required_room_type] : '不限' }}</td>
-          <td>{{ s.default_block_size > 1 ? `${s.default_block_size} 連堂` : '一般' }}</td>
+          <td>{{ s.default_block_size > 1 ? `${s.default_block_size} 连堂` : '一般' }}</td>
           <td>
             <n-tag v-if="s.is_major" size="small" type="info" :data-testid="`sub-major-${s.name}`">主科</n-tag>
             <span v-else>—</span>
           </td>
           <td>
             <n-space>
-              <n-button size="tiny" @click="openEdit(s)">編輯</n-button>
+              <n-button size="tiny" @click="openEdit(s)">编辑</n-button>
               <n-popconfirm @positive-click="remove(s)">
-                <template #trigger><n-button size="tiny" type="error" ghost>刪除</n-button></template>
-                確定刪除此科目?
+                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
+                确定删除此科目?
               </n-popconfirm>
             </n-space>
           </td>
         </tr>
-        <tr v-if="items.length === 0"><td colspan="6"><n-text depth="3">尚無科目</n-text></td></tr>
+        <tr v-if="items.length === 0"><td colspan="6"><n-text depth="3">尚无科目</n-text></td></tr>
       </tbody>
     </table>
 
-    <n-modal v-model:show="show" preset="card" :title="editingId ? '編輯科目' : '新增科目'" style="max-width: 420px">
+    <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑科目' : '新增科目'" style="max-width: 420px">
       <n-space vertical>
-        <n-text>名稱</n-text>
-        <n-input v-model:value="form.name" data-testid="sub-name" placeholder="如:數學" />
-        <n-text>領域/群別(選填)</n-text>
-        <n-input v-model:value="form.domain" placeholder="如:數學領域" />
-        <n-text>需要場地類型(選填)</n-text>
+        <n-text>名称</n-text>
+        <n-input v-model:value="form.name" data-testid="sub-name" placeholder="如:数学" />
+        <n-text>领域/群别(选填)</n-text>
+        <n-input v-model:value="form.domain" placeholder="如:数学领域" />
+        <n-text>需要场地类型(选填)</n-text>
         <n-select v-model:value="form.required_room_type" :options="roomTypeOptions" clearable placeholder="不限" />
-        <n-text>預設連堂長度</n-text>
+        <n-text>默认连堂长度</n-text>
         <n-input-number v-model:value="form.default_block_size" :min="1" :max="8" />
         <n-checkbox v-model:checked="form.is_major" data-testid="sub-is-major">
-          主科(自動排課會盡量排在上午)
+          主科(自动排课会尽量排在上午)
         </n-checkbox>
-        <n-button type="primary" data-testid="sub-save" @click="save">儲存</n-button>
+        <n-button type="primary" data-testid="sub-save" @click="save">储存</n-button>
       </n-space>
     </n-modal>
   </n-space>

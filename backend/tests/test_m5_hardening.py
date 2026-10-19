@@ -1,7 +1,7 @@
-"""M5 里程碑複審(Fable 5,2026-07-11)修正的回歸測試。
+"""M5 里程碑复审(Fable 5,2026-07-11)修正的回归测试。
 
-涵蓋條件 A(逾時取消 + 排課中禁止還原)、B(排程自我續期/自癒)、
-E(pg_restore stderr 白名單分類)、F(強制登出後盡力落盤)。
+涵盖条件 A(逾时取消 + 排课中禁止还原)、B(排程自我续期/自愈)、
+E(pg_restore stderr 白名单分类)、F(强制登出后尽力落盘)。
 """
 
 import pytest
@@ -14,7 +14,7 @@ from tests.test_backups import PGDMP, backup_dir  # noqa: F401 - 沿用 backup_d
 PW = "password123"
 
 
-# ── E:pg_restore stderr 白名單分類 ──────────────────────────
+# ── E:pg_restore stderr 白名单分类 ──────────────────────────
 def test_classify_restore_stderr_tolerates_cross_version_guc():
     stderr = (
         "pg_restore: while PROCESSING TOC:\n"
@@ -23,7 +23,7 @@ def test_classify_restore_stderr_tolerates_cross_version_guc():
         "pg_restore: warning: errors ignored on restore: 1\n"
     )
     warnings = bk._classify_restore_stderr(stderr)
-    assert len(warnings) == 2  # GUC 錯誤(可忽略)+ 摘要行,皆收為警告、不擲例外
+    assert len(warnings) == 2  # GUC 错误(可忽略)+ 摘要行,皆收为警告、不掷例外
 
 
 def test_classify_restore_stderr_raises_on_real_data_error():
@@ -32,7 +32,7 @@ def test_classify_restore_stderr_raises_on_real_data_error():
         'duplicate key value violates unique constraint "users_pkey"\n'
         "pg_restore: warning: errors ignored on restore: 1\n"
     )
-    with pytest.raises(bk.BackupError, match="非預期錯誤"):
+    with pytest.raises(bk.BackupError, match="非预期错误"):
         bk._classify_restore_stderr(stderr)
 
 
@@ -40,7 +40,7 @@ def test_classify_restore_stderr_empty_is_clean():
     assert bk._classify_restore_stderr("") == []
 
 
-# ── F:force_logout_all 設 key 後盡力 bgsave ─────────────────
+# ── F:force_logout_all 设 key 后尽力 bgsave ─────────────────
 def test_force_logout_triggers_bgsave(monkeypatch):
     from app.core import session_epoch as se
 
@@ -66,13 +66,13 @@ def test_force_logout_bgsave_failure_swallowed(monkeypatch):
             pass
 
         def bgsave(self):
-            raise RuntimeError("bgsave 失敗")
+            raise RuntimeError("bgsave 失败")
 
     monkeypatch.setattr(se, "_redis", FakeRedis())
-    se.force_logout_all()  # 不應拋出
+    se.force_logout_all()  # 不应抛出
 
 
-# ── B:每日備份鏈一次失敗仍續期 ─────────────────────────────
+# ── B:每日备份链一次失败仍续期 ─────────────────────────────
 def test_daily_backup_reschedules_even_on_failure(monkeypatch):
     from app.workers import backup_job as bj
     from app.workers import scheduler as sched
@@ -81,12 +81,12 @@ def test_daily_backup_reschedules_even_on_failure(monkeypatch):
     monkeypatch.setattr(sched, "schedule_daily_backup", lambda: scheduled.append(1))
 
     def boom(reason):
-        raise RuntimeError("磁碟已滿")
+        raise RuntimeError("磁碟已满")
 
     monkeypatch.setattr(bj.backup_service, "create_backup", boom)
     with pytest.raises(RuntimeError):
         bj.daily_backup_job()
-    assert scheduled == [1]  # 即使備份失敗,下一次仍被排入(鏈不斷)
+    assert scheduled == [1]  # 即使备份失败,下一次仍被排入(链不断)
 
 
 def test_heartbeat_schedules_next_and_selfheals(monkeypatch):
@@ -108,7 +108,7 @@ def test_ensure_daily_backup_reschedules_when_missing(monkeypatch):
             pass
 
         def get_job_ids(self):
-            return []  # daily-backup 不在排程中 → 應補排
+            return []  # daily-backup 不在排程中 → 应补排
 
     scheduled: list[int] = []
     monkeypatch.setattr(sched, "ScheduledJobRegistry", FakeReg)
@@ -131,16 +131,16 @@ def test_ensure_daily_backup_noop_when_present(monkeypatch):
     monkeypatch.setattr(sched, "ScheduledJobRegistry", FakeReg)
     monkeypatch.setattr(sched, "schedule_daily_backup", lambda: scheduled.append(1))
     sched._ensure_daily_backup_scheduled()
-    assert scheduled == []  # 已在排程中 → 不重複排
+    assert scheduled == []  # 已在排程中 → 不重复排
 
 
-# ── A:阻塞式派工逾時取消 + 排課中禁止還原 ──────────────────
+# ── A:阻塞式派工逾时取消 + 排课中禁止还原 ──────────────────
 class _FakeJob:
     def __init__(self):
         self.cancelled = False
 
     def latest_result(self):
-        return None  # 模擬逾時(worker 被排課佔住)
+        return None  # 模拟逾时(worker 被排课占住)
 
     def cancel(self):
         self.cancelled = True
@@ -150,11 +150,11 @@ def test_run_blocking_cancels_job_on_timeout(monkeypatch):
     from app.workers import queue as q
 
     job = _FakeJob()
-    # 備份/還原/匯出自 M6-2 起走 ops 佇列
+    # 备份/还原/导出自 M6-2 起走 ops 伫列
     monkeypatch.setattr(q.ops_queue, "enqueue", lambda *a, **k: job)
     with pytest.raises(q.BackupJobError):
         q._run_blocking(lambda: None, timeout=1)
-    assert job.cancelled is True  # 逾時的任務被取消,不會晚點才偷跑
+    assert job.cancelled is True  # 逾时的任务被取消,不会晚点才偷跑
 
 
 def test_render_export_cancels_job_on_timeout(monkeypatch):
@@ -168,7 +168,7 @@ def test_render_export_cancels_job_on_timeout(monkeypatch):
 
 
 class _OkResult:
-    """最小可用的 RQ Result 替身(render_export 只碰 type 與 return_value)。"""
+    """最小可用的 RQ Result 替身(render_export 只碰 type 与 return_value)。"""
 
     class Type:
         SUCCESSFUL = 1
@@ -178,8 +178,8 @@ class _OkResult:
 
 
 class _SlowJob:
-    """第二次輪詢才有結果:模擬 worker 仍在渲染(redis-py 8 之後 XREAD 阻塞讀
-    等不到結果寫入,_wait_result 必須靠輪詢在逾時前拿到;CI 首跑抓到的實蟲)。"""
+    """第二次轮询才有结果:模拟 worker 仍在渲染(redis-py 8 之后 XREAD 阻塞读
+    等不到结果写入,_wait_result 必须靠轮询在逾时前拿到;CI 首跑抓到的实虫)。"""
 
     def __init__(self):
         self.cancelled = False
@@ -200,8 +200,8 @@ def test_render_export_returns_result_arriving_mid_wait(monkeypatch):
     monkeypatch.setattr(q, "RESULT_POLL_INTERVAL", 0.01)
     monkeypatch.setattr(q.ops_queue, "enqueue", lambda *a, **k: job)
     assert q.render_export("<html></html>", "png", timeout=5) == b"PNG-BYTES"
-    assert job.cancelled is False  # 拿到結果就不取消
-    assert job._polls >= 2  # 確認走的是輪詢路徑
+    assert job.cancelled is False  # 拿到结果就不取消
+    assert job._polls >= 2  # 确认走的是轮询路径
 
 
 def test_restore_rejected_while_solver_busy(env, backup_dir, monkeypatch):  # noqa: F811
@@ -215,4 +215,4 @@ def test_restore_rejected_while_solver_busy(env, backup_dir, monkeypatch):  # no
     monkeypatch.setattr(job_queue, "solver_busy", lambda: True)
     r = client.post("/api/backups/backup_20260101_010101_manual.dump/restore")
     assert r.status_code == 409
-    assert "排課進行中" in r.json()["detail"]
+    assert "排课进行中" in r.json()["detail"]

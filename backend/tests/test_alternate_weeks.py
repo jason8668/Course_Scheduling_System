@@ -1,10 +1,10 @@
-"""單雙週課程(v1.3.0)。
+"""单双周课程(v1.3.0)。
 
-使用者定案的典型情境:兩位老師各上一科、兩班交叉對開——
-701 週一兩節連堂:單週生科(甲師)、雙週資科(乙師);702 同一時段反過來。
-甲師單週在 701、雙週在 702,每週都上,但從不衝堂。
+用户定案的典型情境:两位老师各上一科、两班交叉对开——
+701 周一两节连堂:单周生科(甲师)、双周资科(乙师);702 同一时段反过来。
+甲师单周在 701、双周在 702,每周都上,但从不冲堂。
 
-規則:學期第一週是單週,之後固定輪流;隔週的課鐘點算一半。
+规则:学期第一周是单周,之后固定轮流;隔周的课课时算一半。
 """
 
 import pytest
@@ -28,17 +28,17 @@ from tests.test_timetables import (
 )
 
 
-# ── 單週/雙週的判定 ────────────────────
+# ── 单周/双周的判定 ────────────────────
 def test_first_week_of_the_semester_is_odd_and_weeks_alternate():
     from datetime import date
 
-    start = date(2026, 9, 2)  # 週三開學:那一週(8/31 起)仍是第 1 週
+    start = date(2026, 9, 2)  # 周三开学:那一周(8/31 起)仍是第 1 周
     assert week_parity(start, date(2026, 8, 31)) == "odd"
     assert week_parity(start, date(2026, 9, 6)) == "odd"
     assert week_parity(start, date(2026, 9, 7)) == "even"
     assert week_parity(start, date(2026, 9, 14)) == "odd"
-    assert week_parity(start, date(2026, 12, 28)) == "even"  # 第 18 週
-    assert week_parity(start, date(2027, 1, 4)) == "odd"     # 第 19 週
+    assert week_parity(start, date(2026, 12, 28)) == "even"  # 第 18 周
+    assert week_parity(start, date(2027, 1, 4)) == "odd"     # 第 19 周
     assert week_parity(None, date(2026, 9, 7)) is None
 
 
@@ -49,7 +49,7 @@ def test_parity_helpers():
     assert fmt_periods(2.0) == "2" and fmt_periods(1.5) == "1.5"
 
 
-# ── 建立單雙週組與配課 ──────────────────
+# ── 建立单双周组与配课 ──────────────────
 def _alt(client, sid, class_id, name=None):
     body = {"class_id": class_id} | ({"name": name} if name else {})
     r = client.post(f"/api/alternate-units?semester_id={sid}", json=body)
@@ -69,12 +69,12 @@ def _alt_assign(client, sid, unit_id, subject_id, teacher_id, week, periods=2, b
 
 @pytest.fixture
 def crossed(env2):  # noqa: F811
-    """701/702 交叉對開:甲師教生科、乙師教資科,各 2 節連堂。"""
+    """701/702 交叉对开:甲师教生科、乙师教资科,各 2 节连堂。"""
     client, sid, tid, _ = env2
     c1 = _class(client, sid, 1, "701")["id"]
     c2 = _class(client, sid, 1, "702")["id"]
-    tech, info = _subject(client, sid, "生科")["id"], _subject(client, sid, "資科")["id"]
-    jia, yi = _teacher(client, sid, "甲師")["id"], _teacher(client, sid, "乙師")["id"]
+    tech, info = _subject(client, sid, "生科")["id"], _subject(client, sid, "资科")["id"]
+    jia, yi = _teacher(client, sid, "甲师")["id"], _teacher(client, sid, "乙师")["id"]
     u1, u2 = _alt(client, sid, c1), _alt(client, sid, c2)
     a = {
         ("701", "odd"): _alt_assign(client, sid, u1["id"], tech, jia, "odd").json(),
@@ -88,12 +88,12 @@ def crossed(env2):  # noqa: F811
 
 def test_alternate_unit_defaults_its_name_and_lists_separately(crossed):
     client, sid = crossed["client"], crossed["sid"]
-    assert crossed["u1"]["name"] == "701 單雙週" and crossed["u1"]["unit_type"] == "alternate"
+    assert crossed["u1"]["name"] == "701 单双周" and crossed["u1"]["unit_type"] == "alternate"
     again = _alt(client, sid, crossed["c1"])
-    assert again["name"] == "701 單雙週 2"  # 同一班可以有好幾組
+    assert again["name"] == "701 单双周 2"  # 同一班可以有好几组
     names = [u["name"] for u in client.get(f"/api/alternate-units?semester_id={sid}").json()]
-    assert names == ["701 單雙週", "701 單雙週 2", "702 單雙週"]
-    # 跑班群組清單不會混進單雙週組
+    assert names == ["701 单双周", "701 单双周 2", "702 单双周"]
+    # 跑班群组清单不会混进单双周组
     assert client.get(f"/api/scheduling-units?semester_id={sid}").json() == []
     assert client.delete(f"/api/scheduling-units/{again['id']}").status_code == 204
 
@@ -102,18 +102,18 @@ def test_week_parity_rules_on_assignments(crossed):
     client, sid = crossed["client"], crossed["sid"]
     a = crossed["a"][("701", "odd")]
     assert a["week_parity"] == "odd"
-    # 同一組已經有單週的課
+    # 同一组已经有单周的课
     r = _alt_assign(client, sid, crossed["u1"]["id"], crossed["info"], crossed["yi"], "odd")
-    assert r.status_code == 409 and "已經有單週的課" in r.json()["detail"]
-    # 單雙週組的配課一定要選週別
+    assert r.status_code == 409 and "已经有单周的课" in r.json()["detail"]
+    # 单双周组的配课一定要选周别
     r = _alt_assign(client, sid, crossed["u1"]["id"], crossed["info"], crossed["yi"], None)
-    assert r.status_code == 400 and "單週或雙週" in r.json()["detail"]
-    # 一般配課不可以設週別
+    assert r.status_code == 400 and "单周或双周" in r.json()["detail"]
+    # 一般配课不可以设周别
     r = client.post(f"/api/assignments?semester_id={sid}", json={
         "class_id": crossed["c1"], "subject_id": crossed["tech"], "periods_per_week": 1,
         "teachers": [{"teacher_id": crossed["jia"]}], "block_rules": [], "week_parity": "odd"})
-    assert r.status_code == 400 and "只有單雙週組" in r.json()["detail"]
-    # 修改自己(週別不變)不算重複
+    assert r.status_code == 400 and "只有单双周组" in r.json()["detail"]
+    # 修改自己(周别不变)不算重复
     r = client.patch(f"/api/assignments/{a['id']}", json={
         "scheduling_unit_id": crossed["u1"]["id"], "subject_id": crossed["tech"],
         "periods_per_week": 2, "teachers": [{"teacher_id": crossed["jia"], "is_lead": True}],
@@ -122,22 +122,22 @@ def test_week_parity_rules_on_assignments(crossed):
 
 
 def test_teacher_load_counts_alternate_lessons_as_half(crossed):
-    """甲師單週 701、雙週 702 各 2 節 → 每週都上 2 節;只有單週那筆的老師算 1 節。"""
+    """甲师单周 701、双周 702 各 2 节 → 每周都上 2 节;只有单周那笔的老师算 1 节。"""
     client, sid = crossed["client"], crossed["sid"]
     c3 = _class(client, sid, 1, "703")["id"]
-    bing = _teacher(client, sid, "丙師")["id"]
+    bing = _teacher(client, sid, "丙师")["id"]
     u3 = _alt(client, sid, c3)
     _alt_assign(client, sid, u3["id"], crossed["tech"], bing, "odd")
     loads = {x["name"]: x["assigned"]
              for x in client.get(f"/api/assignments/teacher-load?semester_id={sid}").json()}
-    assert loads["甲師"] == 2 and loads["乙師"] == 2 and loads["丙師"] == 1
-    # 班級每週只被占 2 節(單週、雙週同一格)
+    assert loads["甲师"] == 2 and loads["乙师"] == 2 and loads["丙师"] == 1
+    # 班级每周只被占 2 节(单周、双周同一格)
     cl = {x["name"]: x["assigned"]
           for x in client.get(f"/api/assignments/class-load?semester_id={sid}").json()}
     assert cl["701"] == 2
 
 
-# ── 手動排課 ──────────────────────────
+# ── 手动排课 ──────────────────────────
 def test_placing_a_pair_puts_both_weeks_in_the_same_block(crossed):
     client, tid = crossed["client"], crossed["tid"]
     a = crossed["a"]
@@ -150,7 +150,7 @@ def test_placing_a_pair_puts_both_weeks_in_the_same_block(crossed):
 
 
 def test_crossed_pairs_share_a_slot_without_clashing(crossed):
-    """甲師單週在 701、雙週在 702:同一節不算衝堂。"""
+    """甲师单周在 701、双周在 702:同一节不算冲堂。"""
     client, tid, a = crossed["client"], crossed["tid"], crossed["a"]
     assert _place(client, tid, a[("701", "odd")]["id"], 1, 1, span=2).status_code == 201
     r = _place(client, tid, a[("702", "odd")]["id"], 1, 1, span=2)
@@ -159,23 +159,23 @@ def test_crossed_pairs_share_a_slot_without_clashing(crossed):
 
 
 def test_same_week_clash_is_still_caught(crossed):
-    """703 單週也排甲師同一節 → 甲師單週同時在 701 和 703,要擋。"""
+    """703 单周也排甲师同一节 → 甲师单周同时在 701 和 703,要挡。"""
     client, sid, tid, a = crossed["client"], crossed["sid"], crossed["tid"], crossed["a"]
     c3 = _class(client, sid, 1, "703")["id"]
     u3 = _alt(client, sid, c3)
     odd3 = _alt_assign(client, sid, u3["id"], crossed["tech"], crossed["jia"], "odd").json()
-    ding = _teacher(client, sid, "丁師")["id"]
+    ding = _teacher(client, sid, "丁师")["id"]
     _alt_assign(client, sid, u3["id"], crossed["info"], ding, "even")
     assert _place(client, tid, a[("701", "odd")]["id"], 1, 1, span=2).status_code == 201
 
     codes = _codes(_check(client, tid, odd3["id"], 1, 1, span=2))
     assert "H2" in codes
     r = _place(client, tid, odd3["id"], 1, 1, span=2)
-    assert r.status_code == 409 and "甲師" in r.text and "單週" in r.text
+    assert r.status_code == 409 and "甲师" in r.text and "单周" in r.text
 
 
 def test_every_week_lesson_clashes_with_both_weeks(crossed):
-    """甲師每週都有的課,不能排在他單週有課的那一節。"""
+    """甲师每周都有的课,不能排在他单周有课的那一节。"""
     client, sid, tid, a = crossed["client"], crossed["sid"], crossed["tid"], crossed["a"]
     assert _place(client, tid, a[("701", "odd")]["id"], 1, 1, span=2).status_code == 201
     c4 = _class(client, sid, 1, "704")["id"]
@@ -185,11 +185,11 @@ def test_every_week_lesson_clashes_with_both_weeks(crossed):
 
 
 def test_class_slot_is_full_in_both_weeks(crossed):
-    """單雙週組占滿那一格:同班的其他課不能再放進來。"""
+    """单双周组占满那一格:同班的其他课不能再放进来。"""
     client, sid, tid, a = crossed["client"], crossed["sid"], crossed["tid"], crossed["a"]
     assert _place(client, tid, a[("701", "odd")]["id"], 1, 1, span=2).status_code == 201
-    chinese = _subject(client, sid, "國文")["id"]
-    wu = _teacher(client, sid, "戊師")["id"]
+    chinese = _subject(client, sid, "国文")["id"]
+    wu = _teacher(client, sid, "戊师")["id"]
     other = _assign(client, sid, class_id=crossed["c1"], subject_id=chinese,
                     teacher_ids=[wu], periods=1)
     assert "H1" in _codes(_check(client, tid, other["id"], 1, 1))
@@ -207,20 +207,20 @@ def test_moving_and_deleting_the_pair_moves_both(crossed):
     assert _entries(client, tid) == []
 
 
-# ── 自動排課與檢查 ────────────────────
+# ── 自动排课与检查 ────────────────────
 def test_preflight_requires_both_weeks(env2):  # noqa: F811
     client, sid, _tid, _ = env2
     c1 = _class(client, sid, 1, "701")["id"]
     u = _alt(client, sid, c1)
     _alt_assign(client, sid, u["id"], _subject(client, sid, "生科")["id"],
-                _teacher(client, sid, "甲師")["id"], "odd")
+                _teacher(client, sid, "甲师")["id"], "odd")
     r = client.get(f"/api/solver/preflight?semester_id={sid}").json()
     issue = next(i for i in r["issues"] if i["code"] == "alternate_incomplete")
-    assert "701 單雙週" in issue["message"] and "還缺雙週的課" in issue["message"]
+    assert "701 单双周" in issue["message"] and "还缺双周的课" in issue["message"]
 
 
 def test_solver_places_crossed_pairs_and_validator_accepts(crossed, env):
-    """自動排課:兩組各自同格,甲師、乙師同一週不衝堂;檢查器零違規。"""
+    """自动排课:两组各自同格,甲师、乙师同一周不冲堂;检查器零违规。"""
     problem = load_problem(env[1], crossed["sid"])
     assert preflight.run(problem).ok, [i.message for i in preflight.run(problem).errors]
     result = solve(problem, SolveOptions(max_seconds=30.0, workers=4, random_seed=1),
@@ -236,11 +236,11 @@ def test_solver_places_crossed_pairs_and_validator_accepts(crossed, env):
 
 
 def test_solver_keeps_same_week_teacher_apart(env2, env):  # noqa: F811
-    """甲師單週在 701 與 703 都有課:自動排課不能把兩組排在同一節。"""
+    """甲师单周在 701 与 703 都有课:自动排课不能把两组排在同一节。"""
     client, sid, _tid, _ = env2
-    tech, info = _subject(client, sid, "生科")["id"], _subject(client, sid, "資科")["id"]
-    jia = _teacher(client, sid, "甲師")["id"]
-    others = [_teacher(client, sid, n)["id"] for n in ("乙師", "丙師")]
+    tech, info = _subject(client, sid, "生科")["id"], _subject(client, sid, "资科")["id"]
+    jia = _teacher(client, sid, "甲师")["id"]
+    others = [_teacher(client, sid, n)["id"] for n in ("乙师", "丙师")]
     for i, name in enumerate(("701", "703")):
         u = _alt(client, sid, _class(client, sid, 1, name)["id"])
         _alt_assign(client, sid, u["id"], tech, jia, "odd", periods=1, blocks=[])
@@ -263,13 +263,13 @@ def test_timetable_check_accepts_a_crossed_timetable(crossed):
     assert r["issues"] == [] and r["completeness"]["complete"] is True
 
 
-# ── 跟日期有關的部分:請假、代課、調課、巡堂表、匯出 ─────────────
+# ── 跟日期有关的部分:请假、代课、调课、巡堂表、导出 ─────────────
 class _Term:
-    """有起訖日期的學期(請假要用),課表已發布:
+    """有起讫日期的学期(请假要用),课表已发布:
 
-    週三第一節 701/702 交叉對開——甲師單週 701 生科、雙週 702 生科;
-    乙師單週 702 資科、雙週 701 資科。
-    週三第二節 703(年級奇數班落單)——丁師單週生科、戊師雙週美術。丙師整天空堂。
+    周三第一节 701/702 交叉对开——甲师单周 701 生科、双周 702 生科;
+    乙师单周 702 资科、双周 701 资科。
+    周三第二节 703(年级奇数班落单)——丁师单周生科、戊师双周美术。丙师整天空堂。
     """
 
     def __init__(self, client, db):
@@ -291,9 +291,9 @@ class _Term:
             assert r.status_code == 201, r.text
             return r.json()["id"]
 
-        tech, info, art = (post(f"/api/subjects{q}", {"name": n}) for n in ("生科", "資科", "美術"))
+        tech, info, art = (post(f"/api/subjects{q}", {"name": n}) for n in ("生科", "资科", "美术"))
         self.t = {n: post(f"/api/teachers{q}", {"name": n})
-                  for n in ("甲師", "乙師", "丙師", "丁師", "戊師")}
+                  for n in ("甲师", "乙师", "丙师", "丁师", "戊师")}
         self.c = {n: post(f"/api/class-units{q}", {"grade": 7, "name": n, "track": "junior_high"})
                   for n in ("701", "702", "703")}
         self.tt = post(f"/api/timetables{q}", {"name": "草稿A"})
@@ -302,9 +302,9 @@ class _Term:
         self.first, self.second = wed[0], wed[1]
 
         plan = {
-            "701": (("odd", tech, "甲師"), ("even", info, "乙師"), self.first),
-            "702": (("odd", info, "乙師"), ("even", tech, "甲師"), self.first),
-            "703": (("odd", tech, "丁師"), ("even", art, "戊師"), self.second),
+            "701": (("odd", tech, "甲师"), ("even", info, "乙师"), self.first),
+            "702": (("odd", info, "乙师"), ("even", tech, "甲师"), self.first),
+            "703": (("odd", tech, "丁师"), ("even", art, "戊师"), self.second),
         }
         self.a: dict[tuple[str, str], int] = {}
         for cls, (odd, even, period) in plan.items():
@@ -322,7 +322,7 @@ class _Term:
         return week_parity(self.sem_start, day)
 
     def days(self):
-        """(單週的週三, 雙週的週三)。"""
+        """(单周的周三, 双周的周三)。"""
         from tests.dates import WED, WED2
 
         return (WED, WED2) if self.week(WED) == "odd" else (WED2, WED)
@@ -341,41 +341,41 @@ def term(env):
 
 
 def test_leave_only_lists_the_lessons_of_that_week(term):
-    """甲師請週三:單週那天缺的是 701,雙週那天缺的是 702——不會兩班都列。"""
+    """甲师请周三:单周那天缺的是 701,双周那天缺的是 702——不会两班都列。"""
     odd_day, even_day = term.days()
-    assert [(p["class_names"], p["subject_name"]) for p in term.leave("甲師", odd_day)] == [
+    assert [(p["class_names"], p["subject_name"]) for p in term.leave("甲师", odd_day)] == [
         ("701", "生科")]
-    assert [(p["class_names"], p["subject_name"]) for p in term.leave("甲師", even_day)] == [
+    assert [(p["class_names"], p["subject_name"]) for p in term.leave("甲师", even_day)] == [
         ("702", "生科")]
-    # 丁師只有單週的課:雙週那天請假,沒有任何一節受影響
-    assert term.leave("丁師", even_day) == []
+    # 丁师只有单周的课:双周那天请假,没有任何一节受影响
+    assert term.leave("丁师", even_day) == []
 
 
 def test_teacher_with_only_one_week_is_free_in_the_other(term):
-    """丁師只有 703 單週那一節:雙週同一時段他有空;戊師正好相反。"""
+    """丁师只有 703 单周那一节:双周同一时段他有空;戊师正好相反。"""
     from app.services.availability import Availability, Interval
 
     odd_day, even_day = term.days()
     av = Availability(term.db, term.sid)
     slot = Interval(3, term.second["period_no"], None, None)
-    assert av.conflict_for(term.t["丁師"], odd_day, slot) is not None
-    assert av.conflict_for(term.t["丁師"], even_day, slot) is None
-    assert av.conflict_for(term.t["戊師"], odd_day, slot) is None
-    assert av.conflict_for(term.t["戊師"], even_day, slot) is not None
+    assert av.conflict_for(term.t["丁师"], odd_day, slot) is not None
+    assert av.conflict_for(term.t["丁师"], even_day, slot) is None
+    assert av.conflict_for(term.t["戊师"], odd_day, slot) is None
+    assert av.conflict_for(term.t["戊师"], even_day, slot) is not None
 
 
 def test_substitute_recommendation_respects_the_week(term):
-    """乙師請假(第一節):甲師同一節兩週都在上課,不會被推薦;丙師空堂會。"""
+    """乙师请假(第一节):甲师同一节两周都在上课,不会被推荐;丙师空堂会。"""
     odd_day, _even_day = term.days()
-    ap = term.leave("乙師", odd_day)[0]
+    ap = term.leave("乙师", odd_day)[0]
     rec = term.client.get(f"/api/affected-periods/{ap['id']}/recommendations").json()
     names = {c["teacher_name"] for c in rec["candidates"]}
-    assert "甲師" not in names and "丙師" in names
+    assert "甲师" not in names and "丙师" in names
 
 
 def test_patrol_sheet_shows_the_lesson_of_that_week(term):
     odd_day, even_day = term.days()
-    expected = {odd_day: ("生科", "甲師"), even_day: ("資科", "乙師")}
+    expected = {odd_day: ("生科", "甲师"), even_day: ("资科", "乙师")}
     for day, want in expected.items():
         sheets = term.client.get(f"/api/patrol-sheets{term.q}&date_from={day.isoformat()}").json()
         page = sheets["pages"][0]
@@ -390,38 +390,38 @@ def test_exported_timetables_show_both_weeks(term):
 
     pub = _Published(term.db, term.sid)
     grid = class_grid(pub, term.db.get(ClassUnit, term.c["701"]))
-    assert ("單 生科 甲師", "雙 資科 乙師") in [c.lines for r in grid.rows for c in r.cells]
-    # 甲師的課表:同一格單週 701、雙週 702
-    tg = teacher_grid(pub, term.db.get(Teacher, term.t["甲師"]))
-    assert ("單 生科 701", "雙 生科 702") in [c.lines for r in tg.rows for c in r.cells]
+    assert ("单 生科 甲师", "双 资科 乙师") in [c.lines for r in grid.rows for c in r.cells]
+    # 甲师的课表:同一格单周 701、双周 702
+    tg = teacher_grid(pub, term.db.get(Teacher, term.t["甲师"]))
+    assert ("单 生科 701", "双 生科 702") in [c.lines for r in tg.rows for c in r.cells]
 
 
 def test_swap_needs_the_partner_lesson_to_run_that_week(term):
-    """調課:對方那堂課要在補課那一週真的有上,否則擋下並說明。"""
+    """调课:对方那堂课要在补课那一周真的有上,否则挡下并说明。"""
     odd_day, even_day = term.days()
-    ap = term.leave("甲師", odd_day)[0]
+    ap = term.leave("甲师", odd_day)[0]
     entries = term.client.get(f"/api/timetables/{term.tt}").json()["entries"]
-    ding = next(e for e in entries if "丁師" in e["teachers"])  # 丁師只有單週那堂
+    ding = next(e for e in entries if "丁师" in e["teachers"])  # 丁师只有单周那堂
     r = term.client.put(f"/api/affected-periods/{ap['id']}/substitution", json={
-        "type": "swap", "handler_teacher_id": term.t["丁師"],
+        "type": "swap", "handler_teacher_id": term.t["丁师"],
         "swap_entry_id": ding["id"], "swap_date": even_day.isoformat()})
-    assert r.status_code == 409 and "那一週沒有這堂課" in r.json()["detail"]
-    # 可對調清單也不會列出雙週那天
+    assert r.status_code == 409 and "那一周没有这堂课" in r.json()["detail"]
+    # 可对调清单也不会列出双周那天
     opts = term.client.get(
-        f"/api/affected-periods/{ap['id']}/swap-options?teacher_id={term.t['丁師']}&weeks=3").json()
+        f"/api/affected-periods/{ap['id']}/swap-options?teacher_id={term.t['丁师']}&weeks=3").json()
     dates = {o["date"] for p in opts["partners"] for o in p["options"]}
     assert even_day.isoformat() not in dates
 
 
 def test_locked_pair_stays_put_in_auto_schedule(crossed, env):
-    """鎖定的單雙週組(例如課後輔導那類先鎖再排的做法)自動排課不會移動。"""
+    """锁定的单双周组(例如课后辅导那类先锁再排的做法)自动排课不会移动。"""
     from app.models.timetable import Timetable
 
     client, tid, a = crossed["client"], crossed["tid"], crossed["a"]
     assert _place(client, tid, a[("701", "odd")]["id"], 2, 2, span=2).status_code == 201
     one = _entries(client, tid)[0]
     assert client.post(f"/api/timetables/{tid}/entries/{one['id']}/lock").status_code == 200
-    assert all(e["locked"] for e in _entries(client, tid))  # 兩堂一起鎖
+    assert all(e["locked"] for e in _entries(client, tid))  # 两堂一起锁
 
     db = env[1]
     problem = load_problem(db, crossed["sid"], db.get(Timetable, tid))

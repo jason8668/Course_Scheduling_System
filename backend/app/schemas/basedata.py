@@ -1,4 +1,4 @@
-"""基礎資料(教師/科目/場地/班級)schema。"""
+"""基础资料(教师/科目/场地/班级)schema。"""
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -7,14 +7,14 @@ from app.models.basedata import ClassTrack, RoomType, TeacherRuleType
 
 
 def _normalize_optional_email(value: str | None) -> str | None:
-    """空字串轉 None;非空則驗證 Email 格式。"""
+    """空字串转 None;非空则验证 Email 格式。"""
     if value is None:
         return None
     value = value.strip()
     if not value:
         return None
     if not is_valid_email(value):
-        raise ValueError("Email 格式不正確")
+        raise ValueError("Email 格式不正确")
     return value
 
 
@@ -30,7 +30,7 @@ class SubjectIn(BaseModel):
     domain: str | None = Field(default=None, max_length=64)
     required_room_type: RoomType | None = None
     default_block_size: int = Field(default=1, ge=1, le=8)
-    is_major: bool = False  # 主科(排課引擎 S5:盡量排上午)
+    is_major: bool = False  # 主科(排课引擎 S5:尽量排上午)
 
 
 class SubjectOut(SubjectIn):
@@ -39,7 +39,7 @@ class SubjectOut(SubjectIn):
     semester_id: int
 
 
-# ── 教師 ──────────────────────────────
+# ── 教师 ──────────────────────────────
 class TeacherIn(BaseModel):
     name: str = Field(min_length=1, max_length=32)
     id_last4: str | None = Field(default=None, max_length=4)
@@ -52,7 +52,7 @@ class TeacherIn(BaseModel):
     email: str | None = Field(default=None, max_length=128)
     phone: str | None = Field(default=None, max_length=32)
     line_id: str | None = Field(default=None, max_length=64)
-    user_id: int | None = None  # 綁定的登入帳號(空=不綁定)
+    user_id: int | None = None  # 绑定的登录帐号(空=不绑定)
 
     @field_validator("email")
     @classmethod
@@ -79,7 +79,7 @@ class TeacherOut(BaseModel):
 
 
 class BindableAccount(BaseModel):
-    """可供教師綁定的帳號(teacher 角色、於本學期尚未被綁定者)。"""
+    """可供教师绑定的帐号(teacher 角色、于本学期尚未被绑定者)。"""
 
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -88,25 +88,25 @@ class BindableAccount(BaseModel):
 
 
 class TeacherAccountIn(BaseModel):
-    """為既有教師補開登入帳號(匯入時沒勾、或後來才需要用系統的老師)。"""
+    """为既有教师补开登录帐号(导入时没勾、或后来才需要用系统的老师)。"""
 
     username: str = Field(min_length=3, max_length=64)
-    password: str = Field(default="", max_length=128)  # 空=用部署設定的預設密碼
+    password: str = Field(default="", max_length=128)  # 空=用部署设置的默认密码
 
 
 class ResetPasswordIn(BaseModel):
-    password: str = Field(default="", max_length=128)  # 空=用部署設定的預設密碼
+    password: str = Field(default="", max_length=128)  # 空=用部署设置的默认密码
 
 
 class TeacherAccountOut(BaseModel):
-    """教師的登入帳號狀態(給畫面顯示;不含密碼)。"""
+    """教师的登录帐号状态(给界面显示;不含密码)。"""
 
     model_config = ConfigDict(from_attributes=True)
     id: int
     username: str
     display_name: str
     must_change_password: bool
-    is_active: bool = True  # 停用後無法登入,帳號與歷史資料仍保留
+    is_active: bool = True  # 停用后无法登录,帐号与历史资料仍保留
 
 
 class AccountActiveIn(BaseModel):
@@ -114,15 +114,15 @@ class AccountActiveIn(BaseModel):
 
 
 class TeacherDeleteImpact(BaseModel):
-    """刪除教師會連帶消失的東西(刪除前先讓使用者看清楚)。"""
+    """删除教师会连带消失的东西(删除前先让用户看清楚)。"""
 
     teacher_id: int
     teacher_name: str
-    leave_requests: int        # 請假單數
-    substitutions: int         # 調代課處置數(含代課、調課、併班…)
-    assignments: int           # 會失去這位教師的配課數
-    homeroom_classes: int      # 擔任導師的班級數(有的話根本不能刪)
-    account_username: str = ""  # 綁定的登入帳號(刪除教師時會一併停用)
+    leave_requests: int        # 请假单数
+    substitutions: int         # 调代课处置数(含代课、调课、并班…)
+    assignments: int           # 会失去这位教师的配课数
+    homeroom_classes: int      # 担任导师的班级数(有的话根本不能删)
+    account_username: str = ""  # 绑定的登录帐号(删除教师时会一并停用)
 
 
 class TeacherTimeRuleIn(BaseModel):
@@ -136,7 +136,7 @@ class TeacherTimeRuleOut(TeacherTimeRuleIn):
     id: int
 
 
-# ── 場地 ──────────────────────────────
+# ── 场地 ──────────────────────────────
 class RoomIn(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     room_type: RoomType = RoomType.normal
@@ -154,7 +154,7 @@ class RoomOut(BaseModel):
     subjects: list[SubjectBrief] = []
 
 
-# ── 班級 ──────────────────────────────
+# ── 班级 ──────────────────────────────
 class ClassUnitIn(BaseModel):
     grade: int = Field(ge=1, le=12)
     name: str = Field(min_length=1, max_length=32)
@@ -162,7 +162,7 @@ class ClassUnitIn(BaseModel):
     department: str | None = Field(default=None, max_length=32)
     student_count: int | None = Field(default=None, ge=0)
     homeroom_teacher_id: int | None = None
-    period_table_id: int | None = None  # 空=用學期預設節次表
+    period_table_id: int | None = None  # 空=用学期默认节次表
 
 
 class ClassUnitOut(BaseModel):
@@ -175,5 +175,5 @@ class ClassUnitOut(BaseModel):
     department: str | None
     student_count: int | None
     homeroom_teacher_id: int | None
-    homeroom_teacher: SubjectBrief | None = None  # 借用 {id,name} 結構顯示導師
+    homeroom_teacher: SubjectBrief | None = None  # 借用 {id,name} 结构显示导师
     period_table_id: int | None = None

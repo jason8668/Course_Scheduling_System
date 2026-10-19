@@ -1,4 +1,4 @@
-// 今日調代課看板與調代課日誌(M4-4)。
+// 今日调代课看板与调代课日志(M4-4)。
 
 import { apiGet, apiPut } from '@/api/client'
 import { download } from '@/api/exports'
@@ -31,8 +31,8 @@ export interface LogEntry {
   swap_class_names: string
   swap_subject_name: string
   note: string
-  // leave:請假的那一節。swap_makeup:調課補課日被換來的那一節——原任教師是對調的老師、
-  // 接手是回來補課的請假教師,swap_* 反過來指回請假那一節
+  // leave:请假的那一节。swap_makeup:调课补课日被换来的那一节——原任教师是对调的老师、
+  // 接手是回来补课的请假教师,swap_* 反过来指回请假那一节
   row_kind: 'leave' | 'swap_makeup'
 }
 
@@ -70,11 +70,11 @@ export interface PatrolCell {
   subject: string
   teacher: string
   room: string
-  note: string // 代課/調課/併班/自習/停課/請假待處理;大型群組為「見分組巡堂單」
+  note: string // 代课/调课/并班/自习/停课/请假待处理;大型群组为「见分组巡堂单」
 }
 export interface PatrolPage {
   date: string
-  table_name: string // 全校只有一套節次表時為空
+  table_name: string // 全校只有一套节次表时为空
   first_ordinal: number
   last_ordinal: number
   classes: string[]
@@ -96,12 +96,12 @@ export interface PatrolSheets {
 export const getPatrolSheets = (semesterId: number, from: string, to: string): Promise<PatrolSheets> =>
   apiGet(`/patrol-sheets?semester_id=${semesterId}&date_from=${from}&date_to=${to}`)
 
-/** 在新分頁開啟巡堂表列印頁(不套側邊欄) */
+/** 在新分页开启巡堂表打印页(不套侧边栏) */
 export function openPatrolSheets(semesterId: number, from: string, to: string = from) {
   window.open(`/patrol-sheets/print?semester_id=${semesterId}&from=${from}&to=${to}`, '_blank')
 }
 
-/** 巡堂表 Excel:內容與列印頁相同,下載後可自行增減欄位、填巡堂人員 */
+/** 巡堂表 Excel:内容与打印页相同,下载后可自行增减栏位、填巡堂人员 */
 export const exportPatrolSheets = (semesterId: number, from: string, to: string = from): Promise<void> =>
   download(`/patrol-sheets.xlsx?semester_id=${semesterId}&date_from=${from}&date_to=${to}`, '巡堂表.xlsx')
 

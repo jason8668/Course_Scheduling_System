@@ -1,11 +1,11 @@
-"""M5-4 效能驗收(60 班規模):check-conflict 單格檢查 p95 < 100ms。
+"""M5-4 效能验收(60 班规模):check-conflict 单格检查 p95 < 100ms。
 
-以 build_large_school(60) 建 60 班國中(660 配課、約 55 位教師),在課表塞入
-接近整週滿排的格位量,量測衝突檢查的 p95。這是驗收②裡最硬性的一條數字。
+以 build_large_school(60) 建 60 班初中(660 配课、约 55 位教师),在课表塞入
+接近整周满排的格位量,量测冲突检查的 p95。这是验收②里最硬性的一条数字。
 
-「頁面載入 p95 < 2s」為前端量測(見 frontend/e2e 的 page-load 量測);「自動排課
-< 10 分鐘」由 M3 的 junior_high < 60s 建模測試與 docker 實測共同保證(60 班求解耗時
-於實機記錄,不放進 CI 單元測試以免每次跑十分鐘)。
+「页面载入 p95 < 2s」为前端量测(见 frontend/e2e 的 page-load 量测);「自动排课
+< 10 分钟」由 M3 的 junior_high < 60s 建模测试与 docker 实测共同保证(60 班求解耗时
+于实机记录,不放进 CI 单元测试以免每次跑十分钟)。
 """
 
 import time as _time
@@ -37,9 +37,9 @@ def test_check_conflict_p95_under_100ms_at_60_classes(db):
     db.add(tt)
     db.flush()
 
-    # 以合法節次格位輪替塞滿:量測的是佔用索引的建立與比對速度,不要求教學合理。
+    # 以合法节次格位轮替塞满:量测的是占用索引的建立与比对速度,不要求教学合理。
     slots = _regular_slots(db, fx.table.id)
-    assert slots, "節次表應有一般課格位"
+    assert slots, "节次表应有一般课格位"
     placed = 0
     for i, a in enumerate(fx.assignments):
         for k in range(a.periods_per_week):
@@ -51,7 +51,7 @@ def test_check_conflict_p95_under_100ms_at_60_classes(db):
             ))
             placed += 1
     db.flush()
-    assert placed > 1500, f"應塞入具規模的格位(實際 {placed})"
+    assert placed > 1500, f"应塞入具规模的格位(实际 {placed})"
 
     probe = fx.assignments[0]
     slot = slots[len(slots) // 2]
@@ -66,5 +66,5 @@ def test_check_conflict_p95_under_100ms_at_60_classes(db):
     median = samples[len(samples) // 2]
     assert p95 < 100, (
         f"60 班 {placed} 格下 check-conflict p95 {p95:.1f}ms"
-        f"(中位數 {median:.1f}ms、最慢 {samples[-1]:.1f}ms),超過 100ms 目標"
+        f"(中位数 {median:.1f}ms、最慢 {samples[-1]:.1f}ms),超过 100ms 目标"
     )

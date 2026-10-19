@@ -1,7 +1,7 @@
-"""課表匯出:班級/教師/場地 Excel/PDF/PNG、全校總表、批次 zip(M5-1)。
+"""课表导出:班级/教师/场地 Excel/PDF/PNG、全校总表、批次 zip(M5-1)。
 
-Excel 在 api 同步產生(openpyxl 輕量);PDF/PNG 派到 worker(WeasyPrint + 中文字型)
-再取回。單一對象匯出開放給所有登入者(課表本就全校可查);全校總表/批次限教學組長以上。
+Excel 在 api 同步产生(openpyxl 轻量);PDF/PNG 派到 worker(WeasyPrint + 中文字型)
+再取回。单一对象导出开放给所有登录者(课表本就全校可查);全校总表/批次限教学组长以上。
 """
 
 from urllib.parse import quote
@@ -28,7 +28,7 @@ _MIME = {
 
 
 def _download(data: bytes, filename: str, ext: str) -> Response:
-    # 中文檔名以 RFC 5987 filename* 表達;filename 提供 ASCII 後備
+    # 中文档名以 RFC 5987 filename* 表达;filename 提供 ASCII 后备
     quoted = quote(filename)
     disposition = f"attachment; filename=\"export.{ext}\"; filename*=UTF-8''{quoted}.{ext}"
     return Response(
@@ -46,7 +46,7 @@ def export_timetable(
     db: Session = Depends(get_db),
     _: User = Depends(get_active_user),
 ):
-    """單一班級/教師/場地的課表,格式 xlsx/pdf/png。"""
+    """单一班级/教师/场地的课表,格式 xlsx/pdf/png。"""
     try:
         grid, meta = tex.build_grid(db, semester_id, view, target_id)
     except tex.ExportError as e:
@@ -67,17 +67,17 @@ def export_timetable(
 @router.get("/export/school.xlsx")
 def export_school(
     semester_id: int = Query(...),
-    # 教師版是後來補的(使用者回報 #22);預設 class 讓舊的呼叫方式照常運作
+    # 教师版是后来补的(用户回报 #22);默认 class 让旧的呼叫方式照常运作
     view: str = Query("class", pattern="^(class|teacher)$"),
     db: Session = Depends(get_db),
     _: User = Depends(manager),
 ):
-    """全校總表:一個 Excel,每班(或每位教師)一個分頁。"""
+    """全校总表:一个 Excel,每班(或每位教师)一个分页。"""
     try:
         data = tex.school_workbook(db, semester_id, view)
     except tex.ExportError as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e)) from e
-    name = "全校教師課表總表" if view == "teacher" else "全校課表總表"
+    name = "全校教师课表总表" if view == "teacher" else "全校课表总表"
     return _download(data, f"{name}_{semester_id}", "xlsx")
 
 
@@ -88,10 +88,10 @@ def export_batch(
     db: Session = Depends(get_db),
     _: User = Depends(manager),
 ):
-    """批次匯出:全部班級(或全部教師)各一個 Excel,打包成 zip。"""
+    """批次导出:全部班级(或全部教师)各一个 Excel,打包成 zip。"""
     try:
         data = tex.batch_zip(db, semester_id, view)
     except tex.ExportError as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e)) from e
-    name = "全校教師課表" if view == "teacher" else "全校班級課表"
+    name = "全校教师课表" if view == "teacher" else "全校班级课表"
     return _download(data, f"{name}_{semester_id}", "zip")

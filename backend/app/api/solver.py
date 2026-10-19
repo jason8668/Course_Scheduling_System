@@ -1,4 +1,4 @@
-"""排課引擎 API:pre-flight 檢查、軟約束設定、自動排課任務與進度。"""
+"""排课引擎 API:pre-flight 检查、软约束设置、自动排课任务与进度。"""
 
 import time
 import uuid
@@ -42,7 +42,7 @@ editor = require_roles(Role.scheduler)
 
 
 def get_progress_store() -> ProgressStore:
-    """自動排課的進度儲存。測試以 dependency_overrides 換成記憶體版。"""
+    """自动排课的进度储存。测试以 dependency_overrides 换成记忆体版。"""
     return RedisProgressStore(job_queue.redis_conn)
 
 
@@ -52,9 +52,9 @@ def solver_preflight(
     db: Session = Depends(get_db),
     _: object = Depends(viewer),
 ):
-    """排課前置檢查:必要條件不成立時直接指出是誰、差幾節,不必等 solver 跑完才知道無解。"""
+    """排课前置检查:必要条件不成立时直接指出是谁、差几节,不必等 solver 跑完才知道无解。"""
     if db.get(Semester, semester_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     problem = load_problem(db, semester_id)
     report = preflight.run(problem)
     return PreflightOut(
@@ -94,9 +94,9 @@ def get_constraint_config(
     db: Session = Depends(get_db),
     _: object = Depends(viewer),
 ):
-    """軟約束權重與可調參數;未設定過的學期回傳預設值。"""
+    """软约束权重与可调参数;未设置过的学期回传默认值。"""
     if db.get(Semester, semester_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     return _config_out(semester_id, load_config(db, semester_id))
 
 
@@ -108,19 +108,19 @@ def put_constraint_config(
     _: object = Depends(editor),
 ):
     if db.get(Semester, semester_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     unknown = set(body.weights) - set(DEFAULT_WEIGHTS)
     if unknown:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, f"未知的軟約束代碼:{'、'.join(sorted(unknown))}"
+            status.HTTP_400_BAD_REQUEST, f"未知的软约束代码:{'、'.join(sorted(unknown))}"
         )
     if any(w < 0 for w in body.weights.values()):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "權重不可為負數(0 = 關閉該項)")
-    # 上限是部分排課的正確性前提,不是美觀限制(見 solver/problem.py MAX_WEIGHT)
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "权重不可为负数(0 = 关闭该项)")
+    # 上限是部分排课的正确性前提,不是美观限制(见 solver/problem.py MAX_WEIGHT)
     if any(w > MAX_WEIGHT for w in body.weights.values()):
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"權重上限為 {MAX_WEIGHT};再高會讓部分排課寧可丟課也要滿足軟約束",
+            f"权重上限为 {MAX_WEIGHT};再高会让部分排课宁可丢课也要满足软约束",
         )
 
     weights = dict(DEFAULT_WEIGHTS) | body.weights
@@ -135,7 +135,7 @@ def put_constraint_config(
     return _config_out(semester_id, config)
 
 
-# ── 自動排課任務(M3-4)────────────────
+# ── 自动排课任务(M3-4)────────────────
 def _job_out(state: JobState) -> SolveJobOut:
     return SolveJobOut(**{k: v for k, v in state.__dict__.items()})
 
@@ -143,7 +143,7 @@ def _job_out(state: JobState) -> SolveJobOut:
 def _get_job(store: ProgressStore, job_id: str) -> JobState:
     state = store.get(job_id)
     if state is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到排課任務(可能已過期)")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到排课任务(可能已过期)")
     return state
 
 
@@ -159,28 +159,28 @@ def start_auto_schedule(
     user: User = Depends(editor),
     store: ProgressStore = Depends(get_progress_store),
 ):
-    """以來源草稿啟動自動排課;結果寫成新草稿,來源不動。
+    """以来源草稿启动自动排课;结果写成新草稿,来源不动。
 
-    pre-flight 有錯誤時直接擋下——沒必要讓教學組長等十分鐘才知道資料有問題。
-    部分排課模式只擋結構性錯誤:「總量不足」正是它要處理的事(少排幾節,列成清單)。
+    pre-flight 有错误时直接挡下——没必要让教学组长等十分钟才知道资料有问题。
+    部分排课模式只挡结构性错误:「总量不足」正是它要处理的事(少排几节,列成清单)。
     """
     tt = db.get(Timetable, timetable_id)
     if tt is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到課表")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到课表")
     if tt.status != TimetableStatus.draft.value:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "只能以草稿為來源自動排課;請先複製為新草稿"
+            status.HTTP_409_CONFLICT, "只能以草稿为来源自动排课;请先复制为新草稿"
         )
 
     unknown = set(body.relax) - set(RELAXABLE_CODES)
     if unknown:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"這些硬約束不可放寬:{'、'.join(sorted(unknown))}",
+            f"这些硬约束不可放宽:{'、'.join(sorted(unknown))}",
         )
     if body.relax and not body.allow_partial:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "放寬硬約束只在部分排課模式下有效"
+            status.HTTP_400_BAD_REQUEST, "放宽硬约束只在部分排课模式下有效"
         )
 
     problem = load_problem(db, tt.semester_id)
@@ -190,7 +190,7 @@ def start_auto_schedule(
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail={
-                "message": "資料未通過排課前置檢查,請先修正",
+                "message": "资料未通过排课前置检查,请先修正",
                 "issues": [
                     {"level": i.level, "code": i.code, "message": i.message}
                     for i in blocking
@@ -214,7 +214,7 @@ def start_auto_schedule(
 
 @router.get("/solver/relaxable", response_model=list[RelaxableOption])
 def list_relaxable(_: object = Depends(viewer)):
-    """部分排課可勾選放寬的硬約束。H1/H2/H3 不在此列:那是物理,不是政策。"""
+    """部分排课可勾选放宽的硬约束。H1/H2/H3 不在此列:那是物理,不是政策。"""
     return [RelaxableOption(code=c, name=RELAXABLE_NAMES[c]) for c in RELAXABLE_CODES]
 
 
@@ -224,11 +224,11 @@ def get_solve_job(
     _: object = Depends(viewer),
     store: ProgressStore = Depends(get_progress_store),
 ):
-    """輪詢進度。worker 失聯時回報明確錯誤,而不是讓前端永遠轉圈。"""
+    """轮询进度。worker 失联时回报明确错误,而不是让前端永远转圈。"""
     state = _get_job(store, job_id)
     if is_stale(state):
         state.status = JobStatus.failed.value
-        state.error = "排課工作程序中斷(worker 可能已重啟),請重新啟動排課"
+        state.error = "排课工作程序中断(worker 可能已重启),请重新启动排课"
         store.update(job_id, status=state.status, error=state.error)
     return _job_out(state)
 
@@ -239,7 +239,7 @@ def stop_solve_job(
     _: object = Depends(editor),
     store: ProgressStore = Depends(get_progress_store),
 ):
-    """提前結束:停止搜尋但保留當下最佳解,仍會寫出結果草稿。"""
+    """提前结束:停止搜寻但保留当下最佳解,仍会写出结果草稿。"""
     state = _get_job(store, job_id)
     if not state.done:
         store.request(job_id, ControlAction.stop)
@@ -252,7 +252,7 @@ def cancel_solve_job(
     _: object = Depends(editor),
     store: ProgressStore = Depends(get_progress_store),
 ):
-    """取消:停止搜尋並丟棄結果,不產生新草稿。"""
+    """取消:停止搜寻并丢弃结果,不产生新草稿。"""
     state = _get_job(store, job_id)
     if not state.done:
         store.request(job_id, ControlAction.cancel)

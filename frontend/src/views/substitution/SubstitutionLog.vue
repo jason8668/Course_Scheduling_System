@@ -8,7 +8,7 @@ import { getSubstitutionLog } from '@/api/substitutionLog'
 import type { LogEntry } from '@/api/substitutionLog'
 import { openSlips } from '@/api/substitutions'
 
-const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
 function toISODate(ts: number): string {
   const d = new Date(ts)
@@ -32,8 +32,8 @@ const leaveType = ref<string | null>(null)
 const entries = ref<LogEntry[]>([])
 const loading = ref(false)
 
-// 後端的保護性上限(substitution_log.MAX_ROWS)。取到剛好這麼多筆,幾乎必然是被截斷了——
-// 不講的話,組長會以為「這學期就只有這些紀錄」,而看不見的那些正是他要找的舊資料。
+// 后端的保护性上限(substitution_log.MAX_ROWS)。取到刚好这么多笔,几乎必然是被截断了——
+// 不讲的话,组长会以为「这学期就只有这些纪录」,而看不见的那些正是他要找的旧资料。
 const MAX_ROWS = 1000
 const truncated = computed(() => entries.value.length >= MAX_ROWS)
 
@@ -74,7 +74,7 @@ onMounted(async () => {
   if (semesters.value.length) await onSemesterChange(semesters.value[0].id)
 })
 
-// 篩選結果中還有效的調課/代課:依日期區間篩出本週(或某位老師)的處置,一次印齊
+// 筛选结果中还有效的调课/代课:依日期区间筛出本周(或某位老师)的处置,一次印齐
 const swapIds = computed(() => entries.value
   .filter((e) => e.sub_type === 'swap' && e.status !== 'cancelled')
   .map((e) => e.affected_period_id))
@@ -104,16 +104,16 @@ function statusType(e: LogEntry): string {
 
 <template>
   <n-space vertical size="large">
-    <h2 style="margin: 0">調代課紀錄</h2>
+    <h2 style="margin: 0">调代课纪录</h2>
 
     <n-space align="center" :wrap="true">
       <n-select
         :value="sid" :options="semesterOptions" style="width: 200px"
-        placeholder="選擇學期" @update:value="onSemesterChange"
+        placeholder="选择学期" @update:value="onSemesterChange"
       />
       <n-select
         v-model:value="teacherId" :options="teacherOptions" clearable filterable
-        placeholder="教師(缺課或代課)" style="width: 200px"
+        placeholder="教师(缺课或代课)" style="width: 200px"
         data-testid="log-teacher" @update:value="reload"
       />
       <n-date-picker
@@ -122,41 +122,41 @@ function statusType(e: LogEntry): string {
       />
       <n-select
         v-model:value="leaveType" :options="leaveTypeOptions" clearable
-        placeholder="假別" style="width: 130px"
+        placeholder="假别" style="width: 130px"
         data-testid="log-leavetype" @update:value="reload"
       />
       <n-button quaternary data-testid="log-reset" @click="resetFilters">清除</n-button>
     </n-space>
 
     <n-space align="center">
-      <n-text depth="3" data-testid="log-count">共 {{ entries.length }} 筆</n-text>
+      <n-text depth="3" data-testid="log-count">共 {{ entries.length }} 笔</n-text>
       <n-button
         v-if="swapIds.length" size="small" data-testid="log-print-slips"
         @click="printSlips('swap')"
       >
-        列印這些紀錄中的調課單({{ swapIds.length }} 節)
+        打印这些纪录中的调课单({{ swapIds.length }} 节)
       </n-button>
       <n-button
         v-if="substituteIds.length" size="small" data-testid="log-print-sub-slips"
         @click="printSlips('substitute')"
       >
-        列印這些紀錄中的代課單({{ substituteIds.length }} 節)
+        打印这些纪录中的代课单({{ substituteIds.length }} 节)
       </n-button>
     </n-space>
 
     <n-alert v-if="truncated" type="warning" :bordered="false" data-testid="log-truncated">
-      只顯示最新的 {{ MAX_ROWS }} 筆,更早的紀錄未列出。請縮小日期區間,或加上教師、假別篩選。
+      只显示最新的 {{ MAX_ROWS }} 笔,更早的纪录未列出。请缩小日期区间,或加上教师、假别筛选。
     </n-alert>
 
     <n-empty
-      v-if="!entries.length && !loading" description="沒有符合條件的紀錄"
+      v-if="!entries.length && !loading" description="没有符合条件的纪录"
       data-testid="log-empty"
     />
     <table v-else-if="entries.length" class="data-table" data-testid="log-table">
       <thead>
         <tr>
-          <th>日期</th><th>節次</th><th>班級</th><th>科目</th>
-          <th>原任教師</th><th>假別</th><th>處置</th><th>狀態</th>
+          <th>日期</th><th>节次</th><th>班级</th><th>科目</th>
+          <th>原任教师</th><th>假别</th><th>处置</th><th>状态</th>
         </tr>
       </thead>
       <tbody>

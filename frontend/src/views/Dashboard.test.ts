@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import Dashboard from './Dashboard.vue'
 
-// 無學期時 listSemesters 回空陣列 → 顯示空狀態
+// 无学期时 listSemesters 回空阵列 → 显示空状态
 vi.stubGlobal('fetch', vi.fn(() =>
   Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) }),
 ))
@@ -21,12 +21,12 @@ function makeRouter() {
 }
 
 describe('Dashboard', () => {
-  it('無學期時顯示空狀態與前往精靈', async () => {
+  it('无学期时显示空状态与前往精灵', async () => {
     const wrapper = mount(Dashboard, {
       global: { plugins: [createPinia(), makeRouter()] },
     })
     await flushPromises()
-    expect(wrapper.text()).toContain('儀表板')
-    expect(wrapper.text()).toContain('尚未建立任何學期資料')
+    expect(wrapper.text()).toContain('仪表板')
+    expect(wrapper.text()).toContain('尚未建立任何学期资料')
   })
 })

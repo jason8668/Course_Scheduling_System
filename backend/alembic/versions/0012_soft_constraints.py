@@ -1,4 +1,4 @@
-"""軟約束:subjects.is_major(S5 主科優先排上午)+ constraint_configs(權重與可調參數)
+"""软约束:subjects.is_major(S5 主科优先排上午)+ constraint_configs(权重与可调参数)
 
 Revision ID: 0012_soft_constraints
 Revises: 0011_schedule_entry_room

@@ -1,4 +1,4 @@
-"""排課引擎相關 schema(pre-flight 報告、軟約束設定與達成度)。"""
+"""排课引擎相关 schema(pre-flight 报告、软约束设置与达成度)。"""
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ class PreflightIssue(BaseModel):
 
 
 class PreflightOut(BaseModel):
-    """排課前置檢查報告。ok=False 時 errors 必然非空,自動排課應被擋下。"""
+    """排课前置检查报告。ok=False 时 errors 必然非空,自动排课应被挡下。"""
 
     semester_id: int
     semester_label: str
@@ -21,16 +21,16 @@ class PreflightOut(BaseModel):
     error_count: int
     warning_count: int
     issues: list[PreflightIssue] = []
-    # 供 UI 顯示規模
+    # 供 UI 显示规模
     class_count: int
     teacher_count: int
     assignment_count: int
     total_periods: int
 
 
-# ── 軟約束設定與達成度(M3-3)────────────
+# ── 软约束设置与达成度(M3-3)────────────
 class ConstraintConfigIn(BaseModel):
-    """權重 0 = 關閉該項軟約束。設定 UI 於 v2 才做,先以 API 調整。"""
+    """权重 0 = 关闭该项软约束。设置 UI 于 v2 才做,先以 API 调整。"""
 
     daily_subject_cap: int = Field(default=2, ge=1, le=8)
     teacher_daily_max: int = Field(default=6, ge=1, le=12)
@@ -40,14 +40,14 @@ class ConstraintConfigIn(BaseModel):
 
 class ConstraintConfigOut(ConstraintConfigIn):
     semester_id: int
-    weight_names: dict[str, str] = {}  # S1 → 「教師偏好時段」
+    weight_names: dict[str, str] = {}  # S1 → 「教师偏好时段」
 
 
 class SoftScoreOut(BaseModel):
     code: str
     name: str
     weight: int
-    opportunities: int  # 滿分
+    opportunities: int  # 满分
     satisfied: int      # 得分
     violations: int
     penalty: int
@@ -60,13 +60,13 @@ class SoftReportOut(BaseModel):
     items: list[SoftScoreOut] = []
 
 
-# ── 衝突定位與部分排課(M3-5)──────────
+# ── 冲突定位与部分排课(M3-5)──────────
 class ConflictCauseOut(BaseModel):
-    code: str  # H3 / H4 / H9 / H10 / structural,或 pre-flight 檢查代碼
+    code: str  # H3 / H4 / H9 / H10 / structural,或 pre-flight 检查代码
     scope_type: str
     scope_id: int
     scope_name: str
-    message: str  # 人話 + 具體數字
+    message: str  # 人话 + 具体数字
     suggestion: str
     relaxable: bool = False
     detail: dict = {}
@@ -88,21 +88,21 @@ class RelaxableOption(BaseModel):
 
 
 class UnscheduledCourseOut(BaseModel):
-    # 一筆 = 一個排課單位(跑班群組含多筆成員配課;未排節數只算一次,見 M6-3)
+    # 一笔 = 一个排课单位(跑班群组含多笔成员配课;未排节数只算一次,见 M6-3)
     assignment_ids: list[int] = []
     subject_name: str
     class_names: list[str] = []
     periods: int
-    reason: str = ""  # 完全排不下的原因;solver 自行取捨掉的則為空
+    reason: str = ""  # 完全排不下的原因;solver 自行取舍掉的则为空
 
 
-# ── 自動排課任務(M3-4)────────────────
+# ── 自动排课任务(M3-4)────────────────
 class AutoScheduleRequest(BaseModel):
-    """timeout 預設 10 分鐘(architecture.md §3.3),可設定。"""
+    """timeout 默认 10 分钟(architecture.md §3.3),可设置。"""
 
     max_seconds: int = Field(default=600, ge=10, le=3600)
     seed: int = Field(default=0, ge=0)
-    # 部分排課:允許少數課務未排入,並可勾選放寬的硬約束(M3-5)
+    # 部分排课:允许少数课务未排入,并可勾选放宽的硬约束(M3-5)
     allow_partial: bool = False
     relax: list[str] = []
 

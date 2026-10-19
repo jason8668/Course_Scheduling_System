@@ -1,4 +1,4 @@
-"""通知:教師端(鈴鐺、確認收到)與組長看板(確認狀態、再次提醒)(M4-3)。"""
+"""通知:教师端(铃铛、确认收到)与组长看板(确认状态、再次提醒)(M4-3)。"""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -22,14 +22,14 @@ router = APIRouter(tags=["notifications"])
 registrar = require_roles(Role.scheduler, Role.director)
 
 
-# ── 教師端 ────────────────────────────────
+# ── 教师端 ────────────────────────────────
 @router.get("/notifications/mine", response_model=NotificationListOut)
 def my_notifications(
     semester_id: int = Query(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """本人的通知(最新在前)與未讀數。未綁定教師主檔者回空清單。"""
+    """本人的通知(最新在前)与未读数。未绑定教师主档者回空清单。"""
     me = current_teacher(db, user, semester_id)
     if me is None:
         return NotificationListOut(items=[], unread=0)
@@ -46,7 +46,7 @@ def my_unread_count(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """鈴鐺的未讀數(輪詢用,刻意輕量)。"""
+    """铃铛的未读数(轮询用,刻意轻量)。"""
     me = current_teacher(db, user, semester_id)
     if me is None:
         return UnreadCountOut(unread=0)
@@ -77,14 +77,14 @@ def mark_read(
 def acknowledge(
     notification_id: int, db: Session = Depends(get_db), user: User = Depends(get_active_user)
 ):
-    """「確認收到」——通知層的已讀確認,不影響課務狀態(指派即生效)。"""
+    """「确认收到」——通知层的已读确认,不影响课务状态(指派即生效)。"""
     n = _get_own_notification(db, notification_id, user)
     notif_service.acknowledge(n)
     db.commit()
     return NotificationOut.model_validate(n)
 
 
-# ── 組長看板 ──────────────────────────────
+# ── 组长看板 ──────────────────────────────
 @router.get("/notifications", response_model=list[TeacherNotificationStatus])
 def board(
     semester_id: int = Query(...),
@@ -93,7 +93,7 @@ def board(
     db: Session = Depends(get_db),
     _: User = Depends(registrar),
 ):
-    """全校通知的確認狀態;可篩教師、可只看未確認者。"""
+    """全校通知的确认状态;可筛教师、可只看未确认者。"""
     stmt = select(Notification).where(Notification.semester_id == semester_id)
     if teacher_id is not None:
         stmt = stmt.where(Notification.teacher_id == teacher_id)
@@ -114,12 +114,12 @@ def board(
 def remind(
     notification_id: int, db: Session = Depends(get_db), _: User = Depends(registrar)
 ):
-    """再次提醒:對未確認的通知重發一則(站內 + Email 依設定)。"""
+    """再次提醒:对未确认的通知重发一则(站内 + Email 依设置)。"""
     original = db.get(Notification, notification_id)
     if original is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到通知")
     if original.acknowledged_at is not None:
-        raise HTTPException(status.HTTP_409_CONFLICT, "此通知已被確認,無需再提醒")
+        raise HTTPException(status.HTTP_409_CONFLICT, "此通知已被确认,无需再提醒")
 
     from app.models.notification import NotificationType
 

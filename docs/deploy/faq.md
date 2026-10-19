@@ -1,117 +1,117 @@
-# 常見問題 FAQ
+# 常见问题 FAQ
 
-## 安裝與啟動
+## 安装与启动
 
-**Q:`docker compose up -d` 後開網頁看到「502」或「無法連線」。**
-容器可能還在啟動(尤其首次要跑資料庫遷移)。等 20–30 秒再試,並看狀態:
+**Q:`docker compose up -d` 后开网页看到「502」或「无法连线」。**
+容器可能还在启动(尤其首次要跑资料库迁移)。等 20–30 秒再试,并看状态:
 
 ```bash
 docker compose ps          # 看是否都 healthy
-docker compose logs api    # 看 api 是否卡在遷移或報錯
+docker compose logs api    # 看 api 是否卡在迁移或报错
 ```
 
 **Q:`docker compose ps` 有容器一直 restarting。**
-看該容器 log 找原因:
+看该容器 log 找原因:
 
 ```bash
-docker compose logs --tail=50 <服務名>   # 例如 api / worker / postgres
+docker compose logs --tail=50 <服务名>   # 例如 api / worker / postgres
 ```
 
-常見:`.env` 的 `DATABASE_URL` 與 `POSTGRES_*` 帳密不一致;`SECRET_KEY` 未設。
+常见:`.env` 的 `DATABASE_URL` 与 `POSTGRES_*` 帐密不一致;`SECRET_KEY` 未设。
 
-**Q:80 埠被占用,啟動失敗(port is already allocated)。**
-改 `.env` 的 `HTTP_PORT`(例如 `8080`)再 `docker compose up -d`,改用 `http://<主機IP>:8080`。
+**Q:80 埠被占用,启动失败(port is already allocated)。**
+改 `.env` 的 `HTTP_PORT`(例如 `8080`)再 `docker compose up -d`,改用 `http://<主机IP>:8080`。
 
-**Q:校內其他電腦連不到。**
-確認用的是主機的**區網 IP**(非 `localhost`),且主機防火牆放行該埠。手機/平板需與主機同一網段(同一 Wi-Fi)。
-
----
-
-## 帳號與登入
-
-**Q:忘記管理員密碼怎麼辦?**
-若你還記得 `.env` 的初始 `ADMIN_PASSWORD`,那是**首次登入**用的;登入後改過的密碼存在資料庫。若連改過的都忘了,目前需由具資料庫存取權者重設。最務實的做法是**還原一份記得密碼的舊備份**(見[備份指南](backup.md)),或聯繫維護者。請妥善保管管理員密碼。
-
-**Q:還原備份後大家被登出了。**
-這是預期行為。還原會替換整個資料庫(含帳號),為安全起見系統會強制所有人以還原時點的帳密重新登入。
-
-**Q:老師收不到調代課 Email。**
-Email 為**選配**;未在「系統管理」設定 SMTP 時,只有站內通知(鈴鐺),系統一切正常。要寄 Email 需填學校的 SMTP 主機資訊,並可按「寄測試信」當場驗證。
+**Q:校内其他电脑连不到。**
+确认用的是主机的**区网 IP**(非 `localhost`),且主机防火墙放行该埠。手机/平板需与主机同一网段(同一 Wi-Fi)。
 
 ---
 
-## 資料與備份
+## 帐号与登录
 
-**Q:我的資料存在哪?會不會不見?**
-存在 Docker volume `pgdata`。只要不刪這個 volume,`docker compose down` / 重啟 / 升級都不會動到資料。**但主機硬碟壞掉 volume 會一起沒**,所以務必做[異地備援](backup.md)。
+**Q:忘记管理员密码怎么办?**
+若你还记得 `.env` 的初始 `ADMIN_PASSWORD`,那是**首次登录**用的;登录后改过的密码存在资料库。若连改过的都忘了,目前需由具资料库存取权者重设。最务实的做法是**还原一份记得密码的旧备份**(见[备份指南](backup.md)),或联系维护者。请妥善保管管理员密码。
 
-**Q:`docker compose down` 會刪資料嗎?**
-不會。`down` 只停止並移除容器,volume 保留。**只有 `docker compose down -v` 的 `-v` 會刪 volume(含你的資料)**,請勿誤用。
+**Q:还原备份后大家被登出了。**
+这是预期行为。还原会替换整个资料库(含帐号),为安全起见系统会强制所有人以还原时点的帐密重新登录。
 
-**Q:怎麼把系統搬到新主機?**
-新主機裝好空系統 → 舊主機下載一份備份 `.dump` → 新主機「系統管理 → 上傳還原」。詳見[備份指南](backup.md)。
+**Q:老师收不到调代课 Email。**
+Email 为**选配**;未在「系统管理」设置 SMTP 时,只有站内通知(铃铛),系统一切正常。要寄 Email 需填学校的 SMTP 主机信息,并可按「寄测试信」当场验证。
 
 ---
 
-## 效能與規模
+## 资料与备份
 
-**Q:自動排課很慢或跑不出來。**
-排課是計算密集工作,受班級數、約束複雜度影響。建議主機 ≥ 4 核 8GB。無解時系統會給「衝突定位」報告,依提示放寬條件或補資源。可設定求解逾時(預設 10 分鐘),逾時取當前最佳解。
+**Q:我的资料存在哪?会不会不见?**
+存在 Docker volume `pgdata`。只要不删这个 volume,`docker compose down` / 重启 / 升级都不会动到资料。**但主机硬碟坏掉 volume 会一起没**,所以务必做[异地备援](backup.md)。
 
-**Q:頁面偶爾轉圈久。**
-自動排課/大量匯出時 worker 較忙,但與 api 分離,一般操作不受影響。自 v1.1 起排課(`worker`)與匯出/備份(`worker-ops`)分屬兩個容器,**排課進行中按匯出仍是秒回**。若持續緩慢,查主機資源(`docker stats`)是否吃緊。
+**Q:`docker compose down` 会删资料吗?**
+不会。`down` 只停止并移除容器,volume 保留。**只有 `docker compose down -v` 的 `-v` 会删 volume(含你的资料)**,请勿误用。
 
-**Q:匯出/備份時出現「維運背景服務(worker-ops)沒有在執行」。**
+**Q:怎么把系统搬到新主机?**
+新主机装好空系统 → 旧主机下载一份备份 `.dump` → 新主机「系统管理 → 上传还原」。详见[备份指南](backup.md)。
 
-你的 `docker-compose.yml` 少了 `worker-ops` 這個容器(多半是用了舊版的 compose 檔)。它負責匯出、備份、還原、寄信與每日自動備份——沒有它,這些功能全都沒人處理,而且**每日自動備份是無聲停擺的**。
+---
 
-取得最新的 compose 檔再重啟即可,資料不受影響:
+## 效能与规模
+
+**Q:自动排课很慢或跑不出来。**
+排课是计算密集工作,受班级数、约束复杂度影响。建议主机 ≥ 4 核 8GB。无解时系统会给「冲突定位」报告,依提示放宽条件或补资源。可设置求解逾时(默认 10 分钟),逾时取当前最佳解。
+
+**Q:页面偶尔转圈久。**
+自动排课/大量导出时 worker 较忙,但与 api 分离,一般操作不受影响。自 v1.1 起排课(`worker`)与导出/备份(`worker-ops`)分属两个容器,**排课进行中按导出仍是秒回**。若持续缓慢,查主机资源(`docker stats`)是否吃紧。
+
+**Q:导出/备份时出现「维运背景服务(worker-ops)没有在执行」。**
+
+你的 `docker-compose.yml` 少了 `worker-ops` 这个容器(多半是用了旧版的 compose 档)。它负责导出、备份、还原、寄信与每日自动备份——没有它,这些功能全都没人处理,而且**每日自动备份是无声停摆的**。
+
+取得最新的 compose 档再重启即可,资料不受影响:
 
 ```bash
 curl -fLO https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/docker-compose.yml
 docker compose up -d
-docker compose ps          # 應看到六個容器,含 worker 與 worker-ops
+docker compose ps          # 应看到六个容器,含 worker 与 worker-ops
 ```
 
-**Q:匯出課表 / 備份失敗,說「背景忙碌或逾時」。**
+**Q:导出课表 / 备份失败,说「背景忙碌或逾时」。**
 
-`worker-ops` 有在跑但沒做完。查它的 log:
+`worker-ops` 有在跑但没做完。查它的 log:
 
 ```bash
 docker compose ps worker-ops
 docker compose logs --tail=50 worker-ops
 ```
 
-PDF/PNG 匯出在低階機器上偶爾會超過 90 秒;主機吃緊(`docker stats`)時先讓自動排課跑完再試。
+PDF/PNG 导出在低阶机器上偶尔会超过 90 秒;主机吃紧(`docker stats`)时先让自动排课跑完再试。
 
 ---
 
-## 升級與版本
+## 升级与版本
 
-**Q:怎麼知道有沒有新版、這版改了什麼?**
-v1.2.3 起,系統管理員登入後:有新版時右上角會出現「有新版本 vX.Y.Z」,「系統管理 → 系統版本」可看到目前版本、最新正式版,並連到更新內容與[升級指南](upgrade.md)。系統**只提醒、不會自動升級**。也可以直接看專案 [CHANGELOG.md](../../CHANGELOG.md) 與 GitHub Releases。
+**Q:怎么知道有没有新版、这版改了什么?**
+v1.2.3 起,系统管理员登录后:有新版时右上角会出现「有新版本 vX.Y.Z」,「系统管理 → 系统版本」可看到目前版本、最新正式版,并连到更新内容与[升级指南](upgrade.md)。系统**只提醒、不会自动升级**。也可以直接看专案 [CHANGELOG.md](../../CHANGELOG.md) 与 GitHub Releases。
 
-**Q:新版本提醒會把學校資料傳出去嗎?可以關掉嗎?**
-不會。系統每天最多一次向 GitHub 讀取本專案**公開的**最新版本資訊(一個 GET 請求),不送出任何學校資料。學校主機不能連外時,只會在系統版本卡片顯示「無法連線」,不影響任何功能。若不希望主機連外,在 `.env` 加上 `UPDATE_CHECK_ENABLED=false` 後執行 `docker compose up -d` 即可關閉。
+**Q:新版本提醒会把学校资料传出去吗?可以关掉吗?**
+不会。系统每天最多一次向 GitHub 读取本专案**公开的**最新版本信息(一个 GET 请求),不送出任何学校资料。学校主机不能连外时,只会在系统版本卡片显示「无法连线」,不影响任何功能。若不希望主机连外,在 `.env` 加上 `UPDATE_CHECK_ENABLED=false` 后执行 `docker compose up -d` 即可关闭。
 
-**Q:怎麼看目前是哪一版?**
-左側選單最下方會顯示版本號(v1.2.3 起)。回報問題時附上版本號,會比較容易查。
+**Q:怎么看目前是哪一版?**
+左侧选单最下方会显示版本号(v1.2.3 起)。回报问题时附上版本号,会比较容易查。
 
-**Q:升級會不會弄壞資料?**
-資料表結構變更由 `api` 啟動時自動、向前相容地遷移,資料保留。仍建議升級前先「立即備份」。破壞性變更(若有)會在 CHANGELOG 該版本以 ⚠️ 標註。
+**Q:升级会不会弄坏资料?**
+资料表结构变更由 `api` 启动时自动、向前相容地迁移,资料保留。仍建议升级前先「立即备份」。破坏性变更(若有)会在 CHANGELOG 该版本以 ⚠️ 标注。
 
 ---
 
 ## 其他
 
-**Q:可以多所學校共用一套嗎?**
-本系統設計為**單校自架**,一所學校一套部署,資料彼此隔離、最單純也最安全。多校請各自部署。
+**Q:可以多所学校共用一套吗?**
+本系统设计为**单校自架**,一所学校一套部署,资料彼此隔离、最单纯也最安全。多校请各自部署。
 
 **Q:如何完全移除?**
 
 ```bash
-docker compose down -v     # ⚠️ 連同資料 volume 一起刪除,不可復原,請先備份!
+docker compose down -v     # ⚠️ 连同资料 volume 一起删除,不可复原,请先备份!
 ```
 
-**Q:找不到答案 / 想回報問題?**
-到專案 GitHub 開 Issue(見 [CONTRIBUTING.md](../../CONTRIBUTING.md))。回報時附上 `docker compose logs` 相關片段會更快解決。
+**Q:找不到答案 / 想回报问题?**
+到专案 GitHub 开 Issue(见 [CONTRIBUTING.md](../../CONTRIBUTING.md))。回报时附上 `docker compose logs` 相关片段会更快解决。

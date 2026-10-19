@@ -12,7 +12,7 @@ export interface CurrentUser {
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<CurrentUser | null>(null)
-  // 是否已向後端確認過登入狀態(避免每次路由都重打 /me)
+  // 是否已向后端确认过登录状态(避免每次路由都重打 /me)
   const loaded = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.roles.includes(role) ?? false
   }
 
-  // 由全域 401 處理器呼叫:清除本地登入狀態(不打後端,session 已失效)
+  // 由全域 401 处理器呼叫:清除本地登录状态(不打后端,session 已失效)
   function reset(): void {
     user.value = null
     loaded.value = true

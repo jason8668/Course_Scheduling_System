@@ -1,8 +1,8 @@
-"""DB → 排課引擎問題描述的轉換層。
+"""DB → 排课引擎问题描述的转换层。
 
-刻意放在 `app.services` 而非 `app.solver`:loader 必須 import models 與 SQLAlchemy,
-而 solver 套件的架構規則是「不碰 ORM」(見 app/solver/__init__.py)。
-這裡是兩者唯一的交界。
+刻意放在 `app.services` 而非 `app.solver`:loader 必须 import models 与 SQLAlchemy,
+而 solver 套件的架构规则是「不碰 ORM」(见 app/solver/__init__.py)。
+这里是两者唯一的交界。
 """
 
 from datetime import time
@@ -44,12 +44,12 @@ def _minutes(value: time | None) -> int | None:
     return value.hour * 60 + value.minute if value is not None else None
 
 
-# ── 約束設定 ───────────────────────────────────────────────
+# ── 约束设置 ───────────────────────────────────────────────
 _PARAM_KEYS = ("daily_subject_cap", "teacher_daily_max", "teacher_consecutive_max")
 
 
 def load_config(db: Session, semester_id: int) -> SolverConfig:
-    """讀取該學期的約束設定;未設定的 key 回退預設值。"""
+    """读取该学期的约束设置;未设置的 key 回退默认值。"""
     stored = {
         row.key: row.value
         for row in db.scalars(
@@ -60,8 +60,8 @@ def load_config(db: Session, semester_id: int) -> SolverConfig:
     weights = dict(DEFAULT_WEIGHTS)
     for code in DEFAULT_WEIGHTS:
         if code in stored:
-            # 夾到上限:API 現在擋得住,但舊資料可能存過更大的值,而超過上限會讓
-            # 部分排課寧可丟掉一節課也要滿足軟約束(見 solver/problem.py MAX_WEIGHT)
+            # 夹到上限:API 现在挡得住,但旧资料可能存过更大的值,而超过上限会让
+            # 部分排课宁可丢掉一节课也要满足软约束(见 solver/problem.py MAX_WEIGHT)
             weights[code] = max(0, min(stored[code], MAX_WEIGHT))
     return SolverConfig(
         daily_subject_cap=stored.get("daily_subject_cap", defaults.daily_subject_cap),
@@ -74,7 +74,7 @@ def load_config(db: Session, semester_id: int) -> SolverConfig:
 
 
 def save_config(db: Session, semester_id: int, config: SolverConfig) -> None:
-    """整份覆寫該學期的約束設定。呼叫端負責 commit。"""
+    """整份覆写该学期的约束设置。呼叫端负责 commit。"""
     values = {k: getattr(config, k) for k in _PARAM_KEYS}
     values.update({code: config.weight(code) for code in DEFAULT_WEIGHTS})
 
@@ -102,7 +102,7 @@ def _load_tables(db: Session, semester_id: int) -> dict[int, PeriodTableSpec]:
             select(Period)
             .where(
                 Period.period_table_id == t.id,
-                Period.type == PeriodType.regular.value,  # 只有一般課參與排課(H5)
+                Period.type == PeriodType.regular.value,  # 只有一般课参与排课(H5)
             )
             .order_by(Period.weekday, Period.period_no)
         ).all()
@@ -127,14 +127,14 @@ def _load_tables(db: Session, semester_id: int) -> dict[int, PeriodTableSpec]:
 def load_problem(
     db: Session, semester_id: int, timetable: Timetable | None = None
 ) -> Problem:
-    """把一個學期的排課資料讀成純 dataclass 的問題描述。
+    """把一个学期的排课资料读成纯 dataclass 的问题描述。
 
-    timetable 給定時,其格位一併帶入 fixed_entries:locked 者為 H9 硬約束,
-    其餘供求解器作為起點提示(M3-4)。
+    timetable 给定时,其格位一并带入 fixed_entries:locked 者为 H9 硬约束,
+    其余供求解器作为起点提示(M3-4)。
     """
     semester = db.get(Semester, semester_id)
     if semester is None:
-        raise ValueError(f"找不到學期 {semester_id}")
+        raise ValueError(f"找不到学期 {semester_id}")
 
     tables = _load_tables(db, semester_id)
     default_table = pt_service.semester_default_table(db, semester_id)
@@ -144,7 +144,7 @@ def load_problem(
     for c in db.scalars(
         select(ClassUnit).where(ClassUnit.semester_id == semester_id).order_by(ClassUnit.id)
     ):
-        # 在此一次解析節次表(指定表 → 學期預設表),solver 不需再回退
+        # 在此一次解析节次表(指定表 → 学期默认表),solver 不需再回退
         table_id = c.period_table_id if c.period_table_id in tables else default_table_id
         if table_id is None:
             continue
@@ -154,8 +154,8 @@ def load_problem(
             homeroom_teacher_id=c.homeroom_teacher_id,
         )
 
-    # 直接查規則表而非走 Teacher.time_rules 關聯:同一個 session 內若規則是稍早才寫入的,
-    # 關聯集合可能仍是載入時的舊值,教師的不可排時段就會憑空消失(H4 靜默失效)。
+    # 直接查规则表而非走 Teacher.time_rules 关联:同一个 session 内若规则是稍早才写入的,
+    # 关联集合可能仍是载入时的旧值,教师的不可排时段就会凭空消失(H4 静默失效)。
     rules_by_teacher: dict[int, dict[str, set[tuple[int, int]]]] = {}
     for teacher_id, weekday, period_no, rule_type in db.execute(
         select(

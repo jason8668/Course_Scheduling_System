@@ -1,4 +1,4 @@
-// 基礎資料(教師/科目/場地/班級)API 型別與呼叫封裝。
+// 基础资料(教师/科目/场地/班级)API 型别与呼叫封装。
 
 import { apiGet, apiPost, request } from '@/api/client'
 
@@ -17,7 +17,7 @@ export interface Subject {
   domain: string | null
   required_room_type: RoomType | null
   default_block_size: number
-  /** 主科(國英數等):自動排課會盡量把主科排在上午 */
+  /** 主科(国英数等):自动排课会尽量把主科排在上午 */
   is_major: boolean
 }
 export interface Teacher {
@@ -69,20 +69,20 @@ export interface ClassUnit {
 
 export const ROOM_TYPE_LABELS: Record<RoomType, string> = {
   normal: '普通教室',
-  special: '專科教室',
-  workshop: '實習工場',
-  outdoor: '戶外',
+  special: '专科教室',
+  workshop: '实习工场',
+  outdoor: '户外',
 }
 export const TRACK_LABELS: Record<ClassTrack, string> = {
-  elementary: '國小',
-  junior_high: '國中',
+  elementary: '小学',
+  junior_high: '初中',
   senior_high: '普通型高中',
-  comprehensive: '綜合型高中',
-  vocational: '技術型高中',
+  comprehensive: '综合型高中',
+  vocational: '技术型高中',
 }
 export const RULE_TYPE_LABELS: Record<TeacherRuleType, string> = {
   unavailable: '不可排',
-  avoid: '盡量避開',
+  avoid: '尽量避开',
   prefer: '偏好',
 }
 
@@ -95,7 +95,7 @@ export const updateSubject = (id: number, body: Partial<Subject>) =>
   request<Subject>('PATCH', `/subjects/${id}`, body)
 export const deleteSubject = (id: number) => request<void>('DELETE', `/subjects/${id}`)
 
-// ── 教師 ──
+// ── 教师 ──
 export const listTeachers = (semesterId: number, q?: string) =>
   apiGet<Teacher[]>(`/teachers?semester_id=${semesterId}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
 export const createTeacher = (semesterId: number, body: Record<string, unknown>) =>
@@ -108,16 +108,16 @@ export const listBindableAccounts = (semesterId: number, currentTeacherId?: numb
     `/teachers/bindable-accounts?semester_id=${semesterId}` +
       (currentTeacherId ? `&current_teacher_id=${currentTeacherId}` : ''),
   )
-/** 教師的登入帳號(事後補開、重設密碼;建好即綁定該教師) */
+/** 教师的登录帐号(事后补开、重设密码;建好即绑定该教师) */
 export interface TeacherAccount {
   id: number
   username: string
   display_name: string
   must_change_password: boolean
-  is_active: boolean // 停用後無法登入,帳號與歷史資料仍保留
+  is_active: boolean // 停用后无法登录,帐号与历史资料仍保留
 }
 
-/** 刪除教師會連帶失去的東西(刪除前先讓使用者看清楚) */
+/** 删除教师会连带失去的东西(删除前先让用户看清楚) */
 export interface TeacherDeleteImpact {
   teacher_id: number
   teacher_name: string
@@ -142,19 +142,19 @@ export const getTimeRules = (id: number) => apiGet<TeacherTimeRule[]>(`/teachers
 export const replaceTimeRules = (id: number, rules: TeacherTimeRule[]) =>
   request<TeacherTimeRule[]>('PUT', `/teachers/${id}/time-rules`, rules)
 
-/** 這位教師在草稿/已發布課表中,落在「不可排」時段的一節課。 */
+/** 这位教师在草稿/已发布课表中,落在「不可排」时段的一节课。 */
 export interface TimeRuleConflict {
   timetable_id: number
   timetable_name: string
   timetable_status: string
   weekday: number
   period_no: number
-  text: string // 「週三第二節 701 國文」
+  text: string // 「周三第二节 701 国文」
 }
 export const getTimeRuleConflicts = (id: number) =>
   apiGet<TimeRuleConflict[]>(`/teachers/${id}/time-rules/conflicts`)
 
-// ── 場地 ──
+// ── 场地 ──
 export const listRooms = (semesterId: number, q?: string) =>
   apiGet<Room[]>(`/rooms?semester_id=${semesterId}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
 export const createRoom = (semesterId: number, body: Record<string, unknown>) =>
@@ -163,7 +163,7 @@ export const updateRoom = (id: number, body: Record<string, unknown>) =>
   request<Room>('PATCH', `/rooms/${id}`, body)
 export const deleteRoom = (id: number) => request<void>('DELETE', `/rooms/${id}`)
 
-// ── 班級 ──
+// ── 班级 ──
 export const listClassUnits = (semesterId: number, q?: string) =>
   apiGet<ClassUnit[]>(
     `/class-units?semester_id=${semesterId}${q ? `&q=${encodeURIComponent(q)}` : ''}`,

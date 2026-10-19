@@ -1,11 +1,11 @@
-"""配課領域 model:排課單位、配課、配課教師、連堂規則。
+"""配课领域 model:排课单位、配课、配课教师、连堂规则。
 
-排課單位(scheduling_unit)是支撐五學制的核心抽象(architecture.md D1):
-- `single`:單一班級的課(國小包班=導師在自己班的大量 single 配課)
-- `group`:跑班群組(多班聯排,群組內配課由求解器強制排在同一時段)
-- `alternate`:單雙週組(v1.3.0;一個班,單週一筆、雙週一筆,同一格隔週輪流上)
+排课单位(scheduling_unit)是支撑五学制的核心抽象(architecture.md D1):
+- `single`:单一班级的课(小学包班=导师在自己班的大量 single 配课)
+- `group`:跑班群组(多班联排,群组内配课由求解器强制排在同一时段)
+- `alternate`:单双周组(v1.3.0;一个班,单周一笔、双周一笔,同一格隔周轮流上)
 
-配課(course_assignment)掛在排課單位上,而非直接掛班級,故單班與跑班共用一套 schema。
+配课(course_assignment)挂在排课单位上,而非直接挂班级,故单班与跑班共用一套 schema。
 """
 
 import enum
@@ -24,12 +24,12 @@ from app.models.basedata import ClassUnit, Room, Subject, Teacher
 
 
 class SchedulingUnitType(enum.StrEnum):
-    single = "single"  # 單一班級
-    group = "group"    # 跑班群組(多班聯排)
-    alternate = "alternate"  # 單雙週組(同一格單週、雙週輪流上不同的課)
+    single = "single"  # 单一班级
+    group = "group"    # 跑班群组(多班联排)
+    alternate = "alternate"  # 单双周组(同一格单周、双周轮流上不同的课)
 
 
-# 「同一格一起排」的單位:跑班群組與單雙週組的配課都要排在同一個時段
+# 「同一格一起排」的单位:跑班群组与单双周组的配课都要排在同一个时段
 BUNDLE_UNIT_TYPES = frozenset({SchedulingUnitType.group.value, SchedulingUnitType.alternate.value})
 
 
@@ -41,7 +41,7 @@ class SchedulingUnit(Base):
         ForeignKey("semesters.id", ondelete="CASCADE"), index=True
     )
     unit_type: Mapped[str] = mapped_column(String(10), default=SchedulingUnitType.single.value)
-    name: Mapped[str] = mapped_column(String(64))  # single=班名;group=群組名(如「高二多元選修」)
+    name: Mapped[str] = mapped_column(String(64))  # single=班名;group=群组名(如「高二多元选修」)
 
     members: Mapped[list["SchedulingUnitMember"]] = relationship(
         back_populates="scheduling_unit", cascade="all, delete-orphan", lazy="selectin"
@@ -75,7 +75,7 @@ class CourseAssignment(Base):
     __tablename__ = "course_assignments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # semester_id 為去正規化欄位,方便以學期為範圍查詢(隨排課單位同屬一學期)
+    # semester_id 为去正规化栏位,方便以学期为范围查询(随排课单位同属一学期)
     semester_id: Mapped[int] = mapped_column(
         ForeignKey("semesters.id", ondelete="CASCADE"), index=True
     )
@@ -85,14 +85,14 @@ class CourseAssignment(Base):
     subject_id: Mapped[int] = mapped_column(
         ForeignKey("subjects.id", ondelete="CASCADE"), index=True
     )
-    periods_per_week: Mapped[int] = mapped_column(Integer)  # 每週節數
-    # 場地需求:類型(普通/專科/實習工場/戶外)或指定場地;lock_room 表是否綁死該場地
+    periods_per_week: Mapped[int] = mapped_column(Integer)  # 每周节数
+    # 场地需求:类型(普通/专科/实习工场/户外)或指定场地;lock_room 表是否绑死该场地
     required_room_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     room_id: Mapped[int | None] = mapped_column(
         ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True, index=True
     )
     lock_room: Mapped[bool] = mapped_column(Boolean, default=False)
-    # 單雙週(v1.3.0):None = 每週都上;"odd" / "even" = 只上單週 / 雙週(只出現在單雙週組)
+    # 单双周(v1.3.0):None = 每周都上;"odd" / "even" = 只上单周 / 双周(只出现在单双周组)
     week_parity: Mapped[str | None] = mapped_column(String(4), nullable=True, default=None)
 
     scheduling_unit: Mapped[SchedulingUnit] = relationship(back_populates="assignments")
@@ -121,7 +121,7 @@ class AssignmentTeacher(Base):
     teacher_id: Mapped[int] = mapped_column(
         ForeignKey("teachers.id", ondelete="CASCADE"), index=True
     )
-    is_lead: Mapped[bool] = mapped_column(Boolean, default=True)  # 主教(False=協同)
+    is_lead: Mapped[bool] = mapped_column(Boolean, default=True)  # 主教(False=协同)
 
     assignment: Mapped[CourseAssignment] = relationship(back_populates="teachers")
     teacher: Mapped[Teacher] = relationship(lazy="selectin")
@@ -134,7 +134,7 @@ class BlockRule(Base):
     course_assignment_id: Mapped[int] = mapped_column(
         ForeignKey("course_assignments.id", ondelete="CASCADE"), index=True
     )
-    block_size: Mapped[int] = mapped_column(Integer)      # 連堂長度(2-4)
-    count_per_week: Mapped[int] = mapped_column(Integer)  # 每週次數
+    block_size: Mapped[int] = mapped_column(Integer)      # 连堂长度(2-4)
+    count_per_week: Mapped[int] = mapped_column(Integer)  # 每周次数
 
     assignment: Mapped[CourseAssignment] = relationship(back_populates="block_rules")

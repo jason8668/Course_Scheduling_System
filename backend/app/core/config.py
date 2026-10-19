@@ -1,4 +1,4 @@
-"""應用程式設定。所有設定值由環境變數提供(見專案根目錄 .env)。"""
+"""应用程序设置。所有设置值由环境变数提供(见专案根目录 .env)。"""
 
 import logging
 import secrets
@@ -9,8 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
-# 已知不安全的 SECRET_KEY 值(程式碼預設 + .env.example 範例)。啟動時若仍是這些,
-# 代表部署者沒設定——用隨機金鑰取代並警告,避免以公開金鑰簽署 session。
+# 已知不安全的 SECRET_KEY 值(程序码默认 + .env.example 范例)。启动时若仍是这些,
+# 代表部署者没设置——用随机金钥取代并警告,避免以公开金钥签署 session。
 _INSECURE_SECRETS = {
     "dev-insecure-change-me",
     "please-change-this-to-a-random-secret",
@@ -19,7 +19,7 @@ _INSECURE_SECRETS = {
 
 
 def _is_real_domain(site_address: str) -> bool:
-    """SITE_ADDRESS 是否為真實網域(而非內網 HTTP 的預設 :80/空)。"""
+    """SITE_ADDRESS 是否为真实网域(而非内网 HTTP 的默认 :80/空)。"""
     s = site_address.strip()
     return bool(s) and s != ":80" and not s.startswith(":")
 
@@ -28,54 +28,54 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # 基本
-    app_name: str = "排課與調代課系統"
-    school_name: str = "示範學校"
+    app_name: str = "排课与调代课系统"
+    school_name: str = "示范学校"
     debug: bool = False
-    # 學校所在時區,用於「今日/本週」等領域判定(見 architecture.md D6)
+    # 学校所在时区,用于「今日/本周」等领域判定(见 architecture.md D6)
     tz: str = "Asia/Taipei"
-    # 排程器心跳間隔(秒);週期任務骨架用,M5-2 每日備份亦掛此排程器
+    # 排程器心跳间隔(秒);周期任务骨架用,M5-2 每日备份亦挂此排程器
     scheduler_heartbeat_seconds: int = 3600
-    # 備份(M5-2):存放目錄(api 與 worker 共掛的 volume)、保留份數、每日自動備份時刻
+    # 备份(M5-2):存放目录(api 与 worker 共挂的 volume)、保留份数、每日自动备份时刻
     backup_dir: str = "/backups"
     backup_keep: int = 30
-    backup_hour: int = 2  # 每日自動備份的小時(學校時區)
+    backup_hour: int = 2  # 每日自动备份的小时(学校时区)
 
-    # 資料庫與佇列
+    # 资料库与伫列
     database_url: str = "postgresql+psycopg://scheduler:scheduler@postgres:5432/scheduler"
     redis_url: str = "redis://redis:6379/0"
 
-    # 首次啟動建立的管理員
+    # 首次启动建立的管理员
     admin_username: str = "admin"
     admin_password: str = "changeme"
 
-    # 認證與 session
-    # 用於簽署 session cookie;正式部署務必於 .env 設定隨機值
+    # 认证与 session
+    # 用于签署 session cookie;正式部署务必于 .env 设置随机值
     secret_key: str = "dev-insecure-change-me"
-    session_max_age_seconds: int = 60 * 60 * 8  # 登入有效時間,預設 8 小時
-    # 站台位址(與 Caddy 共用同一 .env 變數):設為網域即代表走 HTTPS
+    session_max_age_seconds: int = 60 * 60 * 8  # 登录有效时间,默认 8 小时
+    # 站台位址(与 Caddy 共用同一 .env 变数):设为网域即代表走 HTTPS
     site_address: str = ""
-    # cookie Secure 旗標。預設 False(內網 HTTP);SITE_ADDRESS 為網域時自動 True(見 _harden)
+    # cookie Secure 旗标。默认 False(内网 HTTP);SITE_ADDRESS 为网域时自动 True(见 _harden)
     cookie_secure: bool = False
-    # 登入失敗鎖定
+    # 登录失败锁定
     max_failed_logins: int = 5
     lockout_minutes: int = 15
-    # 新密碼最短長度
+    # 新密码最短长度
     min_password_length: int = 8
-    # 匯入教師並建立帳號時的預設密碼(首次登入強制更改)
+    # 导入教师并建立帐号时的默认密码(首次登录强制更改)
     default_import_password: str = "changeme"
 
-    # CORS(開發模式前端 dev server 來源)
+    # CORS(开发模式前端 dev server 来源)
     cors_origins: list[str] = ["http://localhost", "http://localhost:5173"]
 
-    # 互動式 API 文件(/api/docs 與 openapi.json)。預設關閉:端點本身都有權限守著,
-    # 公開它不是漏洞,但會把整套內部 API 攤在網路上給人看——尤其 VPS + 公開網域部署。
-    # 開發用 compose 會顯式打開(M6-5)。
+    # 互动式 API 文件(/api/docs 与 openapi.json)。默认关闭:端点本身都有权限守著,
+    # 公开它不是漏洞,但会把整套内部 API 摊在网路上给人看——尤其 VPS + 公开网域部署。
+    # 开发用 compose 会显式打开(M6-5)。
     api_docs_enabled: bool = False
 
-    # 系統版本:建置映像時由 CI 以 build-arg 注入(如 v1.2.3);自行從原始碼建置未帶時為 dev
+    # 系统版本:建置映像时由 CI 以 build-arg 注入(如 v1.2.3);自行从原始码建置未带时为 dev
     app_version: str = "dev"
-    # 新版本提醒:管理員在「系統管理」看到有新版時的提示。最多一天向 GitHub 查一次公開的
-    # Release 資訊,不送出任何學校資料;不想讓主機連外可設 false(v1.2.3)。
+    # 新版本提醒:管理员在「系统管理」看到有新版时的提示。最多一天向 GitHub 查一次公开的
+    # Release 信息,不送出任何学校资料;不想让主机连外可设 false(v1.2.3)。
     update_check_enabled: bool = True
     update_check_url: str = (
         "https://api.github.com/repos/begin0808/Course_Scheduling_System/releases/latest"
@@ -83,14 +83,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _harden(self) -> "Settings":
-        # A:SECRET_KEY 仍為預設/範例值 → 換隨機金鑰,避免以公開金鑰簽署 session
+        # A:SECRET_KEY 仍为默认/范例值 → 换随机金钥,避免以公开金钥签署 session
         if self.secret_key in _INSECURE_SECRETS:
             self.secret_key = secrets.token_hex(32)
             logger.warning(
-                "未設定 SECRET_KEY,已改用隨機金鑰(重啟會使所有登入失效);"
-                "請於 .env 設定固定的 SECRET_KEY(例:openssl rand -hex 32)。"
+                "未设置 SECRET_KEY,已改用随机金钥(重启会使所有登录失效);"
+                "请于 .env 设置固定的 SECRET_KEY(例:openssl rand -hex 32)。"
             )
-        # B:設了網域(走 HTTPS)但未顯式指定 COOKIE_SECURE → 自動開啟 Secure 旗標
+        # B:设了网域(走 HTTPS)但未显式指定 COOKIE_SECURE → 自动开启 Secure 旗标
         if "cookie_secure" not in self.model_fields_set and _is_real_domain(self.site_address):
             self.cookie_secure = True
         return self

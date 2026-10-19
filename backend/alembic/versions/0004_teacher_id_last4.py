@@ -1,4 +1,4 @@
-"""teachers 增加 id_last4 欄位
+"""teachers 增加 id_last4 栏位
 
 Revision ID: 0004_teacher_id_last4
 Revises: 0003_basedata

@@ -1,4 +1,4 @@
-"""teachers 增加帳號綁定(user_id)與聯絡資訊(email/phone/line_id)
+"""teachers 增加帐号绑定(user_id)与联络信息(email/phone/line_id)
 
 Revision ID: 0007_teacher_account_contact
 Revises: 0006_class_period_table

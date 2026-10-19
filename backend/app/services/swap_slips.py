@@ -1,19 +1,19 @@
-"""調課通知單(教師調課單、班級調課單)的資料組裝(v1.2.2)。
+"""调课通知单(教师调课单、班级调课单)的资料组装(v1.2.2)。
 
-版面照使用學校現行的紙本:一張週課表,只在「有異動的格子」寫上
-「日期 / 科目 / 實際上課的老師 / [調MM-DD_星期節次]」,中括號指向對調的另一節。
-格線與跨週分頁等共用部分見 `slip_layout`。
+版面照使用学校现行的纸本:一张周课表,只在「有异动的格子」写上
+「日期 / 科目 / 实际上课的老师 / [调MM-DD_星期节次]」,中括号指向对调的另一节。
+格线与跨周分页等共用部分见 `slip_layout`。
 
-**一筆調課 = 兩個異動格。** 甲請假那節改由乙上;乙原本那節改由甲上。
+**一笔调课 = 两个异动格。** 甲请假那节改由乙上;乙原本那节改由甲上。
 
-- 教師調課單:每位老師一張,只列他「要去上」的那一格(空出來的那一格不列——
-  他那節不用去,紙本上也沒有)。
-- 班級調課單:每個班一張,列該班所有異動格。
+- 教师调课单:每位老师一张,只列他「要去上」的那一格(空出来的那一格不列——
+  他那节不用去,纸本上也没有)。
+- 班级调课单:每个班一张,列该班所有异动格。
 
-**科目怎麼寫。** 同班互調時,科目跟著老師走(學生只是兩科前後對換):乙在甲那節上乙自己的科目。
-跨班對調時乙去的是甲的班、上的是甲那一節的課,科目沿用該節原本的科目。
+**科目怎么写。** 同班互调时,科目跟著老师走(学生只是两科前后对换):乙在甲那节上乙自己的科目。
+跨班对调时乙去的是甲的班、上的是甲那一节的课,科目沿用该节原本的科目。
 
-本模組只讀,不寫資料庫;資料全部來自已成立調課的快照欄位與節次表。
+本模组只读,不写资料库;资料全部来自已成立调课的快照栏位与节次表。
 """
 
 from sqlalchemy import select
@@ -29,7 +29,7 @@ def _moves(db: Session, tables: Tables, ap: AffectedPeriod, sub: Substitution) -
     absent = ap.leave_request.teacher
     partner = sub.handler
     if partner is None or sub.swap_date is None or sub.swap_period_no is None:
-        raise SlipError("這筆調課資料不完整(對調教師或補課節次已被刪除),無法列印")
+        raise SlipError("这笔调课资料不完整(对调教师或补课节次已被删除),无法打印")
     same_class = ap.class_names == sub.swap_class_names
     leave_table = tables.of_assignment(ap.course_assignment_id)
     entry = db.get(ScheduleEntry, sub.swap_entry_id) if sub.swap_entry_id else None
@@ -38,25 +38,25 @@ def _moves(db: Session, tables: Tables, ap: AffectedPeriod, sub: Substitution) -
     swap_ord = tables.ordinal(swap_table, swap_wd, sub.swap_period_no)
     leave_ord = tables.ordinal(leave_table, leave_wd, ap.period_no)
     return [
-        Move(  # 請假那節:改由乙上
+        Move(  # 请假那节:改由乙上
             date=ap.date, period_no=ap.period_no, class_names=ap.class_names,
             subject_name=sub.swap_subject_name if same_class else ap.subject_name,
             teacher_id=partner.id, teacher_name=partner.name, table_id=leave_table,
-            code=f"調{sub.swap_date:%m-%d}_{swap_wd}{swap_ord}",
+            code=f"调{sub.swap_date:%m-%d}_{swap_wd}{swap_ord}",
         ),
-        Move(  # 乙原本那節:改由甲上
+        Move(  # 乙原本那节:改由甲上
             date=sub.swap_date, period_no=sub.swap_period_no, class_names=sub.swap_class_names,
             subject_name=ap.subject_name if same_class else sub.swap_subject_name,
             teacher_id=absent.id, teacher_name=absent.name, table_id=swap_table,
-            code=f"調{ap.date:%m-%d}_{leave_wd}{leave_ord}",
+            code=f"调{ap.date:%m-%d}_{leave_wd}{leave_ord}",
         ),
     ]
 
 
 def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
-    """把指定的調課組成通知單:先每位老師一張(依出場順序),再每個班一張。
+    """把指定的调课组成通知单:先每位老师一张(依出场顺序),再每个班一张。
 
-    非調課、已撤回或已銷假的節次略過;一筆有效的調課都沒有時拋 `SlipError`。
+    非调课、已撤回或已销假的节次略过;一笔有效的调课都没有时抛 `SlipError`。
     """
     rows = db.execute(
         select(AffectedPeriod, Substitution)
@@ -72,7 +72,7 @@ def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
         .order_by(AffectedPeriod.date, AffectedPeriod.period_no)
     ).all()
     if not rows:
-        raise SlipError("選取的節次中沒有已成立的調課")
+        raise SlipError("选取的节次中没有已成立的调课")
 
     tables = Tables(db)
     moves: list[Move] = []
@@ -94,5 +94,5 @@ def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
 
 
 def _actor(m: Move) -> str:
-    """調課單的第三行:實際上課的老師(教師單與班級單相同)。"""
+    """调课单的第三行:实际上课的老师(教师单与班级单相同)。"""
     return m.teacher_name

@@ -1,4 +1,4 @@
-// 配課(排課單位 / 配課 / 鐘點統計)API 型別與呼叫封裝。
+// 配课(排课单位 / 配课 / 课时统计)API 型别与呼叫封装。
 
 import { apiGet, apiPost, apiPut, request } from '@/api/client'
 import type { RoomType } from '@/api/basedata'
@@ -15,9 +15,9 @@ export interface SchedulingUnit {
   name: string
   classes: ClassBrief[]
 }
-/** 單雙週(v1.3.0):odd = 只上單週、even = 只上雙週;null = 每週都上 */
+/** 单双周(v1.3.0):odd = 只上单周、even = 只上双周;null = 每周都上 */
 export type WeekParity = 'odd' | 'even'
-export const WEEK_LABELS: Record<WeekParity, string> = { odd: '單週', even: '雙週' }
+export const WEEK_LABELS: Record<WeekParity, string> = { odd: '单周', even: '双周' }
 export interface AssignmentTeacher {
   teacher_id: number
   is_lead: boolean
@@ -49,8 +49,8 @@ export interface TeacherLoad {
   target: number
   assigned: number
   delta: number
-  max_overtime: number // 超鐘點上限(節);0 = 學校未設限
-  over_limit: boolean  // delta 已超過上限
+  max_overtime: number // 超课时上限(节);0 = 学校未设限
+  over_limit: boolean  // delta 已超过上限
 }
 export interface ClassLoad {
   class_id: number
@@ -74,20 +74,20 @@ export interface AssignmentPayload {
   week_parity?: WeekParity | null
 }
 
-// ── 跑班群組 ──
+// ── 跑班群组 ──
 export const listGroups = (semesterId: number) =>
   apiGet<SchedulingUnit[]>(`/scheduling-units?semester_id=${semesterId}`)
 export const createGroup = (semesterId: number, body: { name: string; class_ids: number[] }) =>
   apiPost<SchedulingUnit>(`/scheduling-units?semester_id=${semesterId}`, body)
 export const deleteGroup = (id: number) => request<void>('DELETE', `/scheduling-units/${id}`)
 
-// ── 單雙週組(v1.3.0):一個班,單週一筆、雙週一筆,同一格隔週輪流 ──
+// ── 单双周组(v1.3.0):一个班,单周一笔、双周一笔,同一格隔周轮流 ──
 export const listAlternates = (semesterId: number) =>
   apiGet<SchedulingUnit[]>(`/alternate-units?semester_id=${semesterId}`)
 export const createAlternate = (semesterId: number, body: { class_id: number; name?: string }) =>
   apiPost<SchedulingUnit>(`/alternate-units?semester_id=${semesterId}`, body)
 
-// ── 配課 ──
+// ── 配课 ──
 export const listAssignments = (semesterId: number) =>
   apiGet<Assignment[]>(`/assignments?semester_id=${semesterId}`)
 export const createAssignment = (semesterId: number, body: AssignmentPayload) =>
@@ -96,15 +96,15 @@ export const updateAssignment = (id: number, body: AssignmentPayload) =>
   request<Assignment>('PATCH', `/assignments/${id}`, body)
 export const deleteAssignment = (id: number) => request<void>('DELETE', `/assignments/${id}`)
 
-// ── 統計 ──
+// ── 统计 ──
 export const teacherLoad = (semesterId: number) =>
   apiGet<TeacherLoad[]>(`/assignments/teacher-load?semester_id=${semesterId}`)
 export const classLoad = (semesterId: number) =>
   apiGet<ClassLoad[]>(`/assignments/class-load?semester_id=${semesterId}`)
 
-// ── 排課相關的校務設定(管理員)──
+// ── 排课相关的校务设置(管理员)──
 export interface SchedulingSettings {
-  /** 超鐘點上限(節):教師配課最多可超出應授節數幾節。0 = 不限制 */
+  /** 超课时上限(节):教师配课最多可超出应授节数几节。0 = 不限制 */
   max_overtime: number
 }
 export const getSchedulingSettings = () =>
@@ -112,7 +112,7 @@ export const getSchedulingSettings = () =>
 export const saveSchedulingSettings = (body: SchedulingSettings) =>
   apiPut<SchedulingSettings>('/settings/scheduling', body)
 
-// ── 示範資料(管理員,僅限全新系統)──
+// ── 示范资料(管理员,仅限全新系统)──
 export interface DemoDataStatus {
   available: boolean
   reason: string
@@ -133,9 +133,9 @@ export interface DemoDataResult {
 export const demoDataStatus = () => apiGet<DemoDataStatus>('/demo-data')
 export const loadDemoData = () => apiPost<DemoDataResult>('/demo-data')
 
-// ── 學校資訊(管理員)──
+// ── 学校信息(管理员)──
 export interface SchoolSettings {
-  /** 校名。顯示於介面、匯出課表、通知信與 A4 公告單 */
+  /** 校名。显示于介面、导出课表、通知信与 A4 公告单 */
   school_name: string
 }
 export const getSchoolSettings = () => apiGet<SchoolSettings>('/settings/school')

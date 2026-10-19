@@ -1,8 +1,8 @@
-"""M6-3:部分排課的未排清單隨草稿持久化。
+"""M6-3:部分排课的未排清单随草稿持久化。
 
-先前未排清單只活在 Redis(24h TTL):部分排課草稿被 force 發布之後,solver 說「這幾門
-課排不下、原因是什麼」的紀錄就消失了。哪些配課還缺節數可由 completeness 從 DB 重算,
-但**原因**只有 solver 知道,不存就永遠遺失。
+先前未排清单只活在 Redis(24h TTL):部分排课草稿被 force 发布之后,solver 说「这几门
+课排不下、原因是什么」的纪录就消失了。哪些配课还缺节数可由 completeness 从 DB 重算,
+但**原因**只有 solver 知道,不存就永远遗失。
 
 Revision ID: 0016_timetable_unscheduled
 Revises: 0015_app_settings

@@ -1,1 +1,1 @@
-"""排課引擎測試(architecture.md §3)。"""
+"""排课引擎测试(architecture.md §3)。"""

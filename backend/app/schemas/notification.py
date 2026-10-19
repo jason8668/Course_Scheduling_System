@@ -1,4 +1,4 @@
-"""通知與 SMTP 設定 schema(M4-3)。"""
+"""通知与 SMTP 设置 schema(M4-3)。"""
 
 from datetime import datetime
 
@@ -27,7 +27,7 @@ class UnreadCountOut(BaseModel):
     unread: int
 
 
-# 組長看板:某位教師某類通知的確認狀態
+# 组长看板:某位教师某类通知的确认状态
 class TeacherNotificationStatus(BaseModel):
     id: int
     type: str
@@ -39,12 +39,12 @@ class TeacherNotificationStatus(BaseModel):
     acknowledged_at: datetime | None = None
 
 
-# ── SMTP 設定 ────────────────────────────
+# ── SMTP 设置 ────────────────────────────
 class SmtpSettingsIn(BaseModel):
     host: str = Field(default="", max_length=200)
     port: int = Field(default=25, ge=1, le=65535)
     user: str = Field(default="", max_length=200)
-    password: str = Field(default="", max_length=200)  # 空=不變更
+    password: str = Field(default="", max_length=200)  # 空=不变更
     sender: str = Field(default="", max_length=200)
     use_tls: bool = False
 
@@ -56,4 +56,4 @@ class SmtpSettingsOut(BaseModel):
     sender: str
     use_tls: bool
     configured: bool
-    has_password: bool  # 是否已存過密碼(不回傳明文)
+    has_password: bool  # 是否已存过密码(不回传明文)

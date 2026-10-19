@@ -1,4 +1,4 @@
-"""全域系統設定的讀寫(M4-3)。"""
+"""全域系统设置的读写(M4-3)。"""
 
 from dataclasses import dataclass
 
@@ -7,31 +7,31 @@ from sqlalchemy.orm import Session
 
 from app.models.app_setting import AppSetting
 
-# 校名。顯示於介面、匯出的課表(Excel/PDF/PNG)、代課通知信與 A4 公告單。
+# 校名。显示于介面、导出的课表(Excel/PDF/PNG)、代课通知信与 A4 公告单。
 #
-# 先前只能在安裝時以 .env 的 SCHOOL_NAME 指定,要改就得編輯檔案並重啟容器——
-# 對只會用網頁的教學組長來說形同改不了。現在存在資料庫,可隨時於系統管理修改;
-# 未設定時沿用 .env 的值,既有部署升級後行為不變。
+# 先前只能在安装时以 .env 的 SCHOOL_NAME 指定,要改就得编辑档案并重启容器——
+# 对只会用网页的教学组长来说形同改不了。现在存在资料库,可随时于系统管理修改;
+# 未设置时沿用 .env 的值,既有部署升级后行为不变。
 SCHOOL_NAME = "school_name"
 
-# 超鐘點上限:一位教師每週配課節數,最多可超出其「應授節數」幾節。
-# 依各縣市/各校規定自訂(臺南市實務約 8 節)。0 = 不限制。
+# 超课时上限:一位教师每周配课节数,最多可超出其「应授节数」几节。
+# 依各县市/各校规定自订(台南市实务约 8 节)。0 = 不限制。
 #
-# 為什麼是「應授 + N」而不是固定值:應授本身就因身分而異——以臺南市為例,
-# 國文科專任 16 節、兼任導師 11 節、兼任主任 6 節,固定上限對誰都不合適。
+# 为什么是「应授 + N」而不是固定值:应授本身就因身分而异——以台南市为例,
+# 国文科专任 16 节、兼任导师 11 节、兼任主任 6 节,固定上限对谁都不合适。
 MAX_OVERTIME = "max_overtime_periods"
 DEFAULT_MAX_OVERTIME = 8
 
-# 巡堂表下方的「記錄說明」。授課情形/學生學習的代碼各校不同(有的是 1~3,有的是優良可),
-# 寫死就只有一所學校能用;預設值取自使用學校的紙本,可在系統管理修改。
+# 巡堂表下方的「记录说明」。授课情形/学生学习的代码各校不同(有的是 1~3,有的是优良可),
+# 写死就只有一所学校能用;默认值取自使用学校的纸本,可在系统管理修改。
 PATROL_LEGEND = "patrol_legend"
 DEFAULT_PATROL_LEGEND = (
-    "一、授課情形(填寫代碼):1. 融入媒體教學 2. 雙語教學 3. 正常教學\n"
-    "二、學生學習狀況(填寫代碼):1. 態度積極 2. 秩序良好 3. 未能專心\n"
-    "三、註記事項部分請記錄巡堂時臨時狀況"
+    "一、授课情形(填写代码):1. 融入媒体教学 2. 双语教学 3. 正常教学\n"
+    "二、学生学习状况(填写代码):1. 态度积极 2. 秩序良好 3. 未能专心\n"
+    "三、注记事项部分请记录巡堂时临时状况"
 )
 
-# SMTP 設定的 key
+# SMTP 设置的 key
 SMTP_HOST = "smtp_host"
 SMTP_PORT = "smtp_port"
 SMTP_USER = "smtp_user"
@@ -51,7 +51,7 @@ class SmtpConfig:
 
     @property
     def configured(self) -> bool:
-        """只要有主機與寄件人即視為已設定;帳密可空(內網轉發常見)。"""
+        """只要有主机与寄件人即视为已设置;帐密可空(内网转发常见)。"""
         return bool(self.host and self.sender)
 
 
@@ -73,7 +73,7 @@ def all_settings(db: Session) -> dict[str, str]:
 
 
 def school_name(db: Session) -> str:
-    """校名。系統設定優先,未設定時沿用安裝時 .env 的 SCHOOL_NAME。"""
+    """校名。系统设置优先,未设置时沿用安装时 .env 的 SCHOOL_NAME。"""
     from app.core.config import settings as env_settings
 
     return get(db, SCHOOL_NAME).strip() or env_settings.school_name
@@ -84,7 +84,7 @@ def save_school_name(db: Session, value: str) -> None:
 
 
 def patrol_legend(db: Session) -> str:
-    """巡堂表的記錄說明;未設定時用預設值。"""
+    """巡堂表的记录说明;未设置时用默认值。"""
     return get(db, PATROL_LEGEND).strip() or DEFAULT_PATROL_LEGEND
 
 
@@ -93,7 +93,7 @@ def save_patrol_legend(db: Session, value: str) -> None:
 
 
 def max_overtime(db: Session) -> int:
-    """超鐘點上限(節)。未設定或值毀損時回預設值,不讓設定問題擋住配課作業。"""
+    """超课时上限(节)。未设置或值毁损时回默认值,不让设置问题挡住配课作业。"""
     raw = get(db, MAX_OVERTIME)
     if not raw:
         return DEFAULT_MAX_OVERTIME
@@ -125,7 +125,7 @@ def save_smtp(
     set_value(db, SMTP_HOST, host.strip())
     set_value(db, SMTP_PORT, str(port))
     set_value(db, SMTP_USER, user.strip())
-    # 空密碼視為「不變更」,避免每次存設定都要重打密碼
+    # 空密码视为「不变更」,避免每次存设置都要重打密码
     if password:
         set_value(db, SMTP_PASSWORD, password)
     set_value(db, SMTP_FROM, sender.strip())

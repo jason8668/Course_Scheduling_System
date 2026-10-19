@@ -1,4 +1,4 @@
-"""health 端點煙霧測試(不需資料庫)。"""
+"""health 端点烟雾测试(不需资料库)。"""
 
 from fastapi.testclient import TestClient
 

@@ -1,4 +1,4 @@
-"""M5-0:60 班效能資料集的煙霧測試——產得出、基本查詢正常。"""
+"""M5-0:60 班效能资料集的烟雾测试——产得出、基本查询正常。"""
 
 from sqlalchemy import func, select
 
@@ -15,20 +15,20 @@ def test_large_school_builds_60_classes(db):
         select(func.count()).select_from(ClassUnit).where(ClassUnit.semester_id == sid))
     assert classes == 60
 
-    # 每班 11 門課 → 660 筆配課
+    # 每班 11 门课 → 660 笔配课
     assignments = db.scalar(
         select(func.count()).select_from(CourseAssignment)
         .where(CourseAssignment.semester_id == sid))
     assert assignments == 60 * 11
 
-    # 教師負載大致均衡:無人超過 base_periods(以貪婪最少負載指派)
+    # 教师负载大致均衡:无人超过 base_periods(以贪婪最少负载指派)
     teachers = list(db.scalars(select(Teacher).where(Teacher.semester_id == sid)))
     assert teachers
     loads = {t.id: 0 for t in teachers}
     for a in db.scalars(select(CourseAssignment).where(CourseAssignment.semester_id == sid)):
         for at in a.teachers:
             loads[at.teacher_id] += a.periods_per_week
-    assert max(loads.values()) <= 20, "貪婪指派不應讓任何教師超過 base_periods"
+    assert max(loads.values()) <= 20, "贪婪指派不应让任何教师超过 base_periods"
 
 
 def test_large_school_custom_size(db):

@@ -1,7 +1,7 @@
-"""v1.2.3:系統版本與新版本提醒。
+"""v1.2.3:系统版本与新版本提醒。
 
-一律不真的連外:以 monkeypatch 取代 `_fetch_latest`,並計算被呼叫幾次——
-「最多一天查一次」「連不上也不會每次開頁面都重試」是這個功能對學校主機的承諾。
+一律不真的连外:以 monkeypatch 取代 `_fetch_latest`,并计算被呼叫几次——
+「最多一天查一次」「连不上也不会每次开页面都重试」是这个功能对学校主机的承诺。
 """
 
 from datetime import timedelta
@@ -51,7 +51,7 @@ def gh(monkeypatch):
 
 
 def _age_cache(db, delta):
-    """把快取的查詢時間往前推,模擬時間經過。"""
+    """把快取的查询时间往前推,模拟时间经过。"""
     import json
 
     from app.services import settings as app_settings
@@ -69,7 +69,7 @@ def test_newer_release_is_reported_and_cached_for_a_day(db, gh):
     assert st.latest_url.endswith("v1.2.3") and st.checked_at and st.error == ""
 
     update_check.status(db)
-    update_check.status(db, refresh=True)  # 一分鐘內的「立即檢查」也不連外
+    update_check.status(db, refresh=True)  # 一分钟内的「立即检查」也不连外
     assert gh.calls == 1
 
     _age_cache(db, timedelta(hours=25))
@@ -103,10 +103,10 @@ def test_offline_school_keeps_last_known_version_and_does_not_retry(db, gh):
     gh.fail = True
     _age_cache(db, timedelta(hours=25))
     st = update_check.status(db)
-    assert "無法連線" in st.error
+    assert "无法连线" in st.error
     assert st.latest == "v1.2.3" and st.update_available is True  # 沿用上次查到的
     update_check.status(db)
-    assert gh.calls == 2                         # 失敗也快取,不會每次開頁面都重試
+    assert gh.calls == 2                         # 失败也快取,不会每次开页面都重试
 
 
 def test_disabled_never_connects(db, gh, monkeypatch):

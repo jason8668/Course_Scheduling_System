@@ -1,6 +1,6 @@
-"""學期 model。
+"""学期 model。
 
-同校可並存多學期(準備中/進行中/已封存),所有資料以 semester_id 為範圍(見 D3/D5)。
+同校可并存多学期(准备中/进行中/已封存),所有资料以 semester_id 为范围(见 D3/D5)。
 """
 
 import enum
@@ -17,9 +17,9 @@ if TYPE_CHECKING:
 
 
 class SemesterStatus(enum.StrEnum):
-    preparing = "preparing"  # 準備中(建置資料、排課)
-    active = "active"        # 進行中(課表已發布、日常調代課)
-    archived = "archived"    # 已封存(歷史保存)
+    preparing = "preparing"  # 准备中(建置资料、排课)
+    active = "active"        # 进行中(课表已发布、日常调代课)
+    archived = "archived"    # 已封存(历史保存)
 
 
 class Semester(Base):
@@ -29,9 +29,9 @@ class Semester(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    academic_year: Mapped[int] = mapped_column(Integer)  # 學年度,如 115
-    term: Mapped[int] = mapped_column(Integer)           # 學期,1 或 2
-    # 領域日期,無時區(見 architecture.md D6)
+    academic_year: Mapped[int] = mapped_column(Integer)  # 学年度,如 115
+    term: Mapped[int] = mapped_column(Integer)           # 学期,1 或 2
+    # 领域日期,无时区(见 architecture.md D6)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default=SemesterStatus.preparing.value)
@@ -47,4 +47,4 @@ class Semester(Base):
 
     @property
     def label(self) -> str:
-        return f"{self.academic_year} 學年度第 {self.term} 學期"
+        return f"{self.academic_year} 学年度第 {self.term} 学期"

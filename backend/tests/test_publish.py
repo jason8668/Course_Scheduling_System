@@ -1,4 +1,4 @@
-"""版本管理與發布(M2-5)測試。對應驗收標準①②③。"""
+"""版本管理与发布(M2-5)测试。对应验收标准①②③。"""
 
 import pytest
 
@@ -20,7 +20,7 @@ PW = "password123"
 
 @pytest.fixture
 def env3(env):
-    """教學組長 + 學期 + 主節次表 + 一份草稿A。回傳 (client, sid, ttA_id, db)。"""
+    """教学组长 + 学期 + 主节次表 + 一份草稿A。回传 (client, sid, ttA_id, db)。"""
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
@@ -33,8 +33,8 @@ def env3(env):
     return client, sid, tt["id"], db
 
 
-def _one_period_course(client, sid, cname="301", sname="國文", tname="王師"):
-    """建立一筆「每週 1 節」的配課,方便排滿。"""
+def _one_period_course(client, sid, cname="301", sname="国文", tname="王师"):
+    """建立一笔「每周 1 节」的配课,方便排满。"""
     c = _class(client, sid, 3, cname)
     s = _subject(client, sid, sname)
     t = _teacher(client, sid, tname)
@@ -42,14 +42,14 @@ def _one_period_course(client, sid, cname="301", sname="國文", tname="王師")
                    teacher_ids=[t["id"]], periods=1)
 
 
-# ── 完整性檢查 ────────────────────────
+# ── 完整性检查 ────────────────────────
 def test_completeness_reports_unplaced(env3):
     client, sid, tid, _ = env3
-    a = _one_period_course(client, sid)  # 需 1 節
-    # 再加一筆需 3 節的配課,完全未排
+    a = _one_period_course(client, sid)  # 需 1 节
+    # 再加一笔需 3 节的配课,完全未排
     c2 = _class(client, sid, 3, "302")
-    s2 = _subject(client, sid, "數學")
-    t2 = _teacher(client, sid, "李師")
+    s2 = _subject(client, sid, "数学")
+    t2 = _teacher(client, sid, "李师")
     _assign(client, sid, class_id=c2["id"], subject_id=s2["id"],
             teacher_ids=[t2["id"]], periods=3)
 
@@ -61,7 +61,7 @@ def test_completeness_reports_unplaced(env3):
     _place(client, tid, a["id"], 1, 1)
     r = client.get(f"/api/timetables/{tid}/completeness").json()
     assert r["placed"] == 1
-    assert [u["subject"] for u in r["unplaced"]] == ["數學"]
+    assert [u["subject"] for u in r["unplaced"]] == ["数学"]
     assert r["unplaced"][0]["remaining"] == 3
 
 
@@ -73,16 +73,16 @@ def test_completeness_complete_when_all_placed(env3):
     assert r["complete"] is True and r["remaining"] == 0 and r["unplaced"] == []
 
 
-# ── 驗收②:未排完 → 警告;強制可發布 ──
+# ── 验收②:未排完 → 警告;强制可发布 ──
 def test_publish_blocked_when_incomplete_then_forced(env3):
     client, sid, tid, _ = env3
     c = _class(client, sid, 3, "301")
-    s = _subject(client, sid, "國文")
-    t = _teacher(client, sid, "王師")
+    s = _subject(client, sid, "国文")
+    t = _teacher(client, sid, "王师")
     a = _assign(client, sid, class_id=c["id"], subject_id=s["id"],
                 teacher_ids=[t["id"]], periods=5)
     for wd in (1, 2):
-        _place(client, tid, a["id"], wd, 1)  # 只排 2 節,尚缺 3 節
+        _place(client, tid, a["id"], wd, 1)  # 只排 2 节,尚缺 3 节
 
     r = client.post(f"/api/timetables/{tid}/publish")
     assert r.status_code == 409
@@ -90,7 +90,7 @@ def test_publish_blocked_when_incomplete_then_forced(env3):
     assert detail["completeness"]["remaining"] == 3
     assert detail["completeness"]["unplaced"][0]["remaining"] == 3
 
-    # 確認後強制發布
+    # 确认后强制发布
     r = client.post(f"/api/timetables/{tid}/publish?force=true")
     assert r.status_code == 200
     assert r.json()["status"] == "published"
@@ -104,7 +104,7 @@ def test_publish_complete_without_force(env3):
     assert r.status_code == 200 and r.json()["status"] == "published"
 
 
-# ── 驗收①:雙草稿並存 / 發布 B 後 A 仍可編輯 ──
+# ── 验收①:双草稿并存 / 发布 B 后 A 仍可编辑 ──
 def test_duplicate_creates_independent_draft(env3):
     client, sid, tidA, _ = env3
     a = _one_period_course(client, sid)
@@ -112,22 +112,22 @@ def test_duplicate_creates_independent_draft(env3):
 
     tidB = client.post(f"/api/timetables/{tidA}/duplicate", json={"name": "草稿B"}).json()["id"]
     assert tidB != tidA
-    assert len(_entries(client, tidB)) == 1  # 格位一併複製
+    assert len(_entries(client, tidB)) == 1  # 格位一并复制
 
-    # 改 B 不影響 A
+    # 改 B 不影响 A
     eB = _entries(client, tidB)[0]
     client.patch(f"/api/timetables/{tidB}/entries/{eB['id']}", json={"weekday": 2, "period_no": 2})
     assert _entries(client, tidA)[0]["weekday"] == 1
     assert _entries(client, tidB)[0]["weekday"] == 2
 
-    # 刪 B 的格位不影響 A
+    # 删 B 的格位不影响 A
     client.delete(f"/api/timetables/{tidB}/entries/{eB['id']}")
     assert len(_entries(client, tidA)) == 1
     assert len(_entries(client, tidB)) == 0
 
 
 def test_publish_b_leaves_a_editable(env3):
-    """驗收①:發布 B 後,查詢頁顯示 B,A 仍為草稿可編輯。"""
+    """验收①:发布 B 后,查询页显示 B,A 仍为草稿可编辑。"""
     client, sid, tidA, _ = env3
     a = _one_period_course(client, sid)
     _place(client, tidA, a["id"], 1, 1)
@@ -139,13 +139,13 @@ def test_publish_b_leaves_a_editable(env3):
     assert lst[tidB] == "published"
     assert lst[tidA] == "draft"
 
-    # A 仍可編輯
+    # A 仍可编辑
     eA = _entries(client, tidA)[0]
     r = client.patch(f"/api/timetables/{tidA}/entries/{eA['id']}",
                      json={"weekday": 3, "period_no": 2})
     assert r.status_code == 200
 
-    # 查詢頁顯示 B
+    # 查询页显示 B
     pubtt = client.get(f"/api/published/timetable?semester_id={sid}").json()
     assert pubtt["id"] == tidB and pubtt["name"] == "草稿B"
 
@@ -160,11 +160,11 @@ def test_publishing_new_archives_previous(env3):
     client.post(f"/api/timetables/{tidB}/publish")
     lst = {t["id"]: t["status"] for t in client.get(f"/api/timetables?semester_id={sid}").json()}
     assert lst[tidA] == "archived" and lst[tidB] == "published"
-    # 同學期至多一份 published
+    # 同学期至多一份 published
     assert sum(1 for v in lst.values() if v == "published") == 1
 
 
-# ── 已發布為快照,不可編輯 ─────────────
+# ── 已发布为快照,不可编辑 ─────────────
 def test_published_timetable_is_read_only(env3):
     client, sid, tid, _ = env3
     a = _one_period_course(client, sid)
@@ -177,7 +177,7 @@ def test_published_timetable_is_read_only(env3):
                         json={"weekday": 2, "period_no": 2}).status_code == 409
     assert client.delete(f"/api/timetables/{tid}/entries/{eid}").status_code == 409
     assert client.post(f"/api/timetables/{tid}/entries/{eid}/lock?locked=true").status_code == 409
-    # 再次發布也不行(已非草稿)
+    # 再次发布也不行(已非草稿)
     assert client.post(f"/api/timetables/{tid}/publish").status_code == 409
 
 
@@ -187,22 +187,22 @@ def test_rename_timetable(env3):
     assert r.status_code == 200 and r.json()["name"] == "重新命名"
 
 
-# ── 全員查詢 API 與教師權限(驗收③後端面)──
+# ── 全员查询 API 与教师权限(验收③后端面)──
 def test_published_endpoints_readable_by_teacher(env3):
     client, sid, tid, db = env3
     a = _one_period_course(client, sid)
     _place(client, tid, a["id"], 1, 1)
     client.post(f"/api/timetables/{tid}/publish")
 
-    # 綁定教師帳號:王師 ↔ e2e teacher user
+    # 绑定教师帐号:王师 ↔ e2e teacher user
     teacher = client.get(f"/api/teachers?semester_id={sid}").json()[0]
     tuser = make_user(db, "t", PW, roles=[Role.teacher])
-    client.patch(f"/api/teachers/{teacher['id']}", json={"name": "王師", "user_id": tuser.id})
+    client.patch(f"/api/teachers/{teacher['id']}", json={"name": "王师", "user_id": tuser.id})
 
     client.post("/api/auth/logout")
     client.post("/api/auth/login", json={"username": "t", "password": PW})
 
-    # 教師可讀已發布課表與學期
+    # 教师可读已发布课表与学期
     sems = client.get("/api/published/semesters").json()
     assert [s["id"] for s in sems] == [sid]
     pubtt = client.get(f"/api/published/timetable?semester_id={sid}").json()
@@ -211,9 +211,9 @@ def test_published_endpoints_readable_by_teacher(env3):
 
     # my-teacher 解析出本人
     me = client.get(f"/api/published/my-teacher?semester_id={sid}").json()
-    assert me["id"] == teacher["id"] and me["name"] == "王師"
+    assert me["id"] == teacher["id"] and me["name"] == "王师"
 
-    # 但不得動用教學組長 API
+    # 但不得动用教学组长 API
     assert client.get(f"/api/timetables?semester_id={sid}").status_code == 403
     assert client.post(f"/api/timetables/{tid}/publish").status_code == 403
 
@@ -250,8 +250,8 @@ def test_publish_writes_audit_log(env3):
 def test_forced_publish_marked_in_audit(env3):
     client, sid, tid, db = env3
     c = _class(client, sid, 3, "301")
-    s = _subject(client, sid, "國文")
-    t = _teacher(client, sid, "王師")
+    s = _subject(client, sid, "国文")
+    t = _teacher(client, sid, "王师")
     _assign(client, sid, class_id=c["id"], subject_id=s["id"], teacher_ids=[t["id"]], periods=5)
     client.post(f"/api/timetables/{tid}/publish?force=true")
 
@@ -259,9 +259,9 @@ def test_forced_publish_marked_in_audit(env3):
     client.post("/api/auth/logout")
     client.post("/api/auth/login", json={"username": "admin1", "password": PW})
     logs = client.get("/api/audit-logs").json()
-    assert "強制發布" in logs[0]["detail"]
+    assert "强制发布" in logs[0]["detail"]
 
 
 def test_audit_logs_admin_only(env3):
-    client, _sid, _tid, _ = env3  # 目前登入者為 scheduler
+    client, _sid, _tid, _ = env3  # 目前登录者为 scheduler
     assert client.get("/api/audit-logs").status_code == 403

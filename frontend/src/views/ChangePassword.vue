@@ -15,7 +15,7 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
 
-// 首次登入是被導過來的(不能離開);其餘是使用者自己從右上角進來改,可以取消
+// 首次登录是被导过来的(不能离开);其余是用户自己从右上角进来改,可以取消
 const forced = computed(() => auth.mustChangePassword)
 
 function onCancel() {
@@ -23,24 +23,24 @@ function onCancel() {
 }
 
 async function onSubmit() {
-  // 送出中就不再受理:避免連點兩下送出兩次改密請求——第二次必然因為密碼已被改掉而
-  // 回「原密碼錯誤」,使用者會同時看到成功與失敗兩則訊息。
+  // 送出中就不再受理:避免连点两下送出两次改密请求——第二次必然因为密码已被改掉而
+  // 回「原密码错误」,用户会同时看到成功与失败两则讯息。
   if (loading.value) return
   if (newPassword.value.length < MIN_LEN) {
-    message.warning(`新密碼至少需 ${MIN_LEN} 個字元`)
+    message.warning(`新密码至少需 ${MIN_LEN} 个字元`)
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    message.warning('兩次輸入的新密碼不一致')
+    message.warning('两次输入的新密码不一致')
     return
   }
   loading.value = true
   try {
     await auth.changePassword(oldPassword.value, newPassword.value)
-    message.success('密碼已更新')
+    message.success('密码已更新')
     router.push({ name: 'dashboard' })
   } catch (e) {
-    message.error((e as ApiError).detail || '變更密碼失敗')
+    message.error((e as ApiError).detail || '变更密码失败')
   } finally {
     loading.value = false
   }
@@ -49,24 +49,24 @@ async function onSubmit() {
 
 <template>
   <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px">
-    <n-card title="變更密碼" style="max-width: 420px">
+    <n-card title="变更密码" style="max-width: 420px">
       <n-text v-if="forced" depth="3" style="display: block; margin-bottom: 12px" data-testid="cp-forced">
-        這是您的首次登入,請設定新密碼後繼續使用系統。
+        这是您的首次登录,请设置新密码后继续使用系统。
       </n-text>
       <n-form @submit.prevent="onSubmit">
-        <n-form-item label="原密碼">
+        <n-form-item label="原密码">
           <n-input
             v-model:value="oldPassword" type="password" show-password-on="click"
             data-testid="cp-old"
           />
         </n-form-item>
-        <n-form-item :label="`新密碼(至少 ${MIN_LEN} 字元)`">
+        <n-form-item :label="`新密码(至少 ${MIN_LEN} 字元)`">
           <n-input
             v-model:value="newPassword" type="password" show-password-on="click"
             data-testid="cp-new"
           />
         </n-form-item>
-        <n-form-item label="確認新密碼">
+        <n-form-item label="确认新密码">
           <n-input
             v-model:value="confirmPassword"
             type="password"
@@ -74,11 +74,11 @@ async function onSubmit() {
             data-testid="cp-confirm"
           />
         </n-form-item>
-        <!-- 送出只走表單的 submit 這一條路(按鈕是 type=submit,輸入框按 Enter 也會觸發它)。
-             先前按鈕另外掛了 @click、確認欄另外掛了 @keyup.enter,於是每次送出都跑兩遍。 -->
+        <!-- 送出只走表单的 submit 这一条路(按钮是 type=submit,输入框按 Enter 也会触发它)。
+             先前按钮另外挂了 @click、确认栏另外挂了 @keyup.enter,于是每次送出都跑两遍。 -->
         <n-space vertical size="small">
           <n-button type="primary" block :loading="loading" attr-type="submit" data-testid="cp-submit">
-            更新密碼
+            更新密码
           </n-button>
           <n-button v-if="!forced" block quaternary data-testid="cp-cancel" @click="onCancel">
             取消

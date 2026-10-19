@@ -1,4 +1,4 @@
-"""資料庫連線與 SQLAlchemy 基礎設定(SQLAlchemy 2.0 風格)。"""
+"""资料库连线与 SQLAlchemy 基础设置(SQLAlchemy 2.0 风格)。"""
 
 import logging
 from collections.abc import Generator
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-# 統一約束/索引命名慣例,確保跨資料庫(PostgreSQL/SQLite)遷移可靠、可預測
+# 统一约束/索引命名惯例,确保跨资料库(PostgreSQL/SQLite)迁移可靠、可预测
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -24,18 +24,18 @@ NAMING_CONVENTION = {
 
 
 class Base(DeclarativeBase):
-    """所有 ORM model 的基底。各 model 定義於 app/models/。"""
+    """所有 ORM model 的基底。各 model 定义于 app/models/。"""
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
 def get_db() -> Generator:
-    """FastAPI 依賴注入用的資料庫 session。
+    """FastAPI 依赖注入用的资料库 session。
 
-    收尾的 `close()` 刻意吞掉例外:yield 依賴是在**回應送出後**才收尾,此時再擲出例外
-    只會變成一段沒有請求可歸屬的 ASGI traceback,而使用者早已拿到(正確的)回應。
-    唯一會走到這裡的情境是連線在請求期間被中止——資料庫剛被還原(pg_restore --clean
-    會砍掉所有連線)、或 DBA 手動踢人。真正的失敗會在查詢當下就報錯,不會被這裡蓋掉。
+    收尾的 `close()` 刻意吞掉例外:yield 依赖是在**回应送出后**才收尾,此时再掷出例外
+    只会变成一段没有请求可归属的 ASGI traceback,而用户早已拿到(正确的)回应。
+    唯一会走到这里的情境是连线在请求期间被中止——资料库刚被还原(pg_restore --clean
+    会砍掉所有连线)、或 DBA 手动踢人。真正的失败会在查询当下就报错,不会被这里盖掉。
     """
     db = SessionLocal()
     try:
@@ -44,4 +44,4 @@ def get_db() -> Generator:
         try:
             db.close()
         except Exception:  # noqa: BLE001
-            logger.warning("關閉資料庫 session 時連線已中止(多半是剛還原過資料庫)")
+            logger.warning("关闭资料库 session 时连线已中止(多半是刚还原过资料库)")

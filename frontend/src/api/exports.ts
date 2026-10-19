@@ -1,4 +1,4 @@
-// 課表匯出下載(M5-1)。以 fetch 取回 blob,好處理載入狀態、錯誤與中文檔名。
+// 课表导出下载(M5-1)。以 fetch 取回 blob,好处理载入状态、错误与中文档名。
 
 export type ExportFmt = 'xlsx' | 'pdf' | 'png'
 export type ExportView = 'class' | 'teacher' | 'room'
@@ -13,7 +13,7 @@ export async function download(path: string, fallback: string): Promise<void> {
   if (!resp.ok) {
     let detail: string | undefined
     try { detail = (await resp.json())?.detail } catch { detail = undefined }
-    throw new Error(detail || `匯出失敗(${resp.status})`)
+    throw new Error(detail || `导出失败(${resp.status})`)
   }
   const blob = await resp.blob()
   const name = filenameFrom(resp.headers.get('Content-Disposition'), fallback)
@@ -32,22 +32,22 @@ export const exportTimetable = (
 ): Promise<void> =>
   download(
     `/export/timetable?semester_id=${semesterId}&view=${view}&target_id=${targetId}&fmt=${fmt}`,
-    `課表.${fmt}`)
+    `课表.${fmt}`)
 
-/** 全校總表:view=class 每班一個分頁;view=teacher 每位教師一個分頁 */
+/** 全校总表:view=class 每班一个分页;view=teacher 每位教师一个分页 */
 export const exportSchoolWorkbook = (
   semesterId: number, view: 'class' | 'teacher' = 'class',
 ): Promise<void> =>
   download(
     `/export/school.xlsx?semester_id=${semesterId}&view=${view}`,
-    view === 'teacher' ? '全校教師課表總表.xlsx' : '全校課表總表.xlsx',
+    view === 'teacher' ? '全校教师课表总表.xlsx' : '全校课表总表.xlsx',
   )
 
-/** 批次 zip:view=class 每班一個檔;view=teacher 每位教師一個檔 */
+/** 批次 zip:view=class 每班一个档;view=teacher 每位教师一个档 */
 export const exportBatchZip = (
   semesterId: number, view: 'class' | 'teacher' = 'class',
 ): Promise<void> =>
   download(
     `/export/batch.zip?semester_id=${semesterId}&view=${view}`,
-    view === 'teacher' ? '全校教師課表.zip' : '全校班級課表.zip',
+    view === 'teacher' ? '全校教师课表.zip' : '全校班级课表.zip',
   )

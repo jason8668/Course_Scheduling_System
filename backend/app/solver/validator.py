@@ -1,10 +1,10 @@
-"""課表硬約束驗證器(architecture.md §3.2 H1–H10)。
+"""课表硬约束验证器(architecture.md §3.2 H1–H10)。
 
-**刻意與 `model_builder` 完全不共用程式碼。** 測試策略總則第 2 點:排課引擎的解一律以
-本驗證器逐項檢查,絕不以 solver 自身回報的狀態為準——建模寫錯時 solver 會很有信心地
-交出一個違反硬約束的「可行解」。
+**刻意与 `model_builder` 完全不共用程序码。** 测试策略总则第 2 点:排课引擎的解一律以
+本验证器逐项检查,绝不以 solver 自身回报的状态为准——建模写错时 solver 会很有信心地
+交出一个违反硬约束的「可行解」。
 
-同一支驗證器日後也用於「匯入外部課表 → 檢查衝突」。
+同一支验证器日后也用于「导入外部课表 → 检查冲突」。
 """
 
 from collections.abc import Sequence
@@ -19,7 +19,7 @@ from app.solver.problem import (
 )
 from app.solver.week_parity import PARITIES, overlaps
 
-DEFAULT_DAILY_SUBJECT_CAP = 2  # H10 同班同科目每日單節上限(連堂不計)
+DEFAULT_DAILY_SUBJECT_CAP = 2  # H10 同班同科目每日单节上限(连堂不计)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +31,7 @@ class Violation:
 
 @dataclass(frozen=True, slots=True)
 class _Occurrence:
-    """一筆格位在某一節次上的佔用。"""
+    """一笔格位在某一节次上的占用。"""
 
     entry: SolvedEntry
     assignment: AssignmentSpec
@@ -40,12 +40,12 @@ class _Occurrence:
 
 
 def _wd(weekday: int) -> str:
-    names = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"]
+    names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     return names[weekday - 1] if 1 <= weekday <= 7 else f"星期{weekday}"
 
 
 def _lesson(problem: Problem, a: AssignmentSpec) -> str:
-    """「701 國文」:只寫科目的話,同一位老師教好幾班同一科時看不出是哪兩堂。"""
+    """「701 国文」:只写科目的话,同一位老师教好几班同一科时看不出是哪两堂。"""
     classes = "、".join(c.name for c in problem.classes_of(a))
     return f"「{classes} {a.subject_name}」" if classes else f"「{a.subject_name}」"
 
@@ -60,13 +60,13 @@ def validate(
     *,
     daily_subject_cap: int = DEFAULT_DAILY_SUBJECT_CAP,
 ) -> tuple[Violation, ...]:
-    """回傳所有硬約束違反;空 tuple 表示這份課表完全合法。"""
+    """回传所有硬约束违反;空 tuple 表示这份课表完全合法。"""
     v: list[Violation] = []
     by_id = {a.id: a for a in problem.assignments}
 
     unknown = [e for e in entries if e.assignment_id not in by_id]
     if unknown:
-        return (Violation("input", f"有 {len(unknown)} 筆格位指向不存在的配課"),)
+        return (Violation("input", f"有 {len(unknown)} 笔格位指向不存在的配课"),)
 
     occurrences = _expand(problem, entries, by_id, v)
     _h1_class(problem, occurrences, v)
@@ -87,22 +87,22 @@ def _expand(
     by_id: dict[int, AssignmentSpec],
     v: list[Violation],
 ) -> list[_Occurrence]:
-    """展開每筆格位涵蓋的節次,順帶驗 H5(節次有效)與 H6(連堂連續不跨午休)。"""
+    """展开每笔格位涵盖的节次,顺带验 H5(节次有效)与 H6(连堂连续不跨午休)。"""
     out: list[_Occurrence] = []
     for e in entries:
         a = by_id[e.assignment_id]
         table = problem.table_of(a)
         if table is None:
-            v.append(Violation("H5", f"配課「{a.subject_name}」無節次表", {"assignment_id": a.id}))
+            v.append(Violation("H5", f"配课「{a.subject_name}」无节次表", {"assignment_id": a.id}))
             continue
         for k in range(e.span):
             slot = table.slot(e.weekday, e.period_no + k)
             if slot is None:
                 code = "H6" if e.span > 1 else "H5"
                 reason = (
-                    f"{e.span} 連堂涵蓋的第 {k + 1} 節不是連續的一般課(跨越午休或不存在)"
+                    f"{e.span} 连堂涵盖的第 {k + 1} 节不是连续的一般课(跨越午休或不存在)"
                     if e.span > 1
-                    else "不是一般上課節次"
+                    else "不是一般上课节次"
                 )
                 v.append(Violation(
                     code,
@@ -115,7 +115,7 @@ def _expand(
 
 
 def _h1_class(problem: Problem, occ: list[_Occurrence], v: list[Violation]) -> None:
-    """班級同時段至多一門課。跑班群組同進同出,整組只佔班級一格。"""
+    """班级同时段至多一门课。跑班群组同进同出,整组只占班级一格。"""
     seen: dict[tuple[int, int, int], set[tuple[str, int]]] = {}
     for o in occ:
         key_course = problem.course_key(o.assignment)
@@ -126,7 +126,7 @@ def _h1_class(problem: Problem, occ: list[_Occurrence], v: list[Violation]) -> N
             if len(courses) > 1:
                 v.append(Violation(
                     "H1",
-                    f"班級 {cls.name} {_wd(o.slot.weekday)}{o.slot.name} 同時有多門課",
+                    f"班级 {cls.name} {_wd(o.slot.weekday)}{o.slot.name} 同时有多门课",
                     {"class_id": cls.id, "weekday": o.slot.weekday,
                      "period_no": o.slot.period_no},
                 ))
@@ -141,7 +141,7 @@ def _pairwise_resource_clash(
     name_of,
     v: list[Violation],
 ) -> None:
-    """教師/場地是跨班級共用的資源:同一資源的兩筆佔用在牆鐘上重疊即衝突(D7)。"""
+    """教师/场地是跨班级共用的资源:同一资源的两笔占用在墙钟上重叠即冲突(D7)。"""
     buckets: dict[int, list[_Occurrence]] = {}
     for o in occ:
         for rid in resource_of(o):
@@ -154,13 +154,13 @@ def _pairwise_resource_clash(
                 if a.entry is b.entry:
                     continue
                 if not overlaps(a.assignment.week_parity, b.assignment.week_parity):
-                    continue  # 單週的課和雙週的課不會碰在一起(v1.3.0)
+                    continue  # 单周的课和双周的课不会碰在一起(v1.3.0)
                 if not slots_overlap(a.slot, b.slot, same_table=a.table_id == b.table_id):
                     continue
                 v.append(Violation(
                     code,
-                    f"{label} {name_of(rid)} {_wd(a.slot.weekday)}{a.slot.name} 同時有"
-                    f"{_lesson(problem, a.assignment)}與{_lesson(problem, b.assignment)}",
+                    f"{label} {name_of(rid)} {_wd(a.slot.weekday)}{a.slot.name} 同时有"
+                    f"{_lesson(problem, a.assignment)}与{_lesson(problem, b.assignment)}",
                     {"resource_id": rid, "weekday": a.slot.weekday},
                 ))
 
@@ -169,7 +169,7 @@ def _h2_teacher(problem: Problem, occ: list[_Occurrence], v: list[Violation]) ->
     _pairwise_resource_clash(
         problem, occ,
         resource_of=lambda o: o.assignment.teacher_ids,
-        label="教師", code="H2",
+        label="教师", code="H2",
         name_of=lambda tid: problem.teachers[tid].name,
         v=v,
     )
@@ -182,7 +182,7 @@ def _h3_room(problem: Problem, occ: list[_Occurrence], v: list[Violation]) -> No
 
     _pairwise_resource_clash(
         problem, occ,
-        resource_of=rooms, label="場地", code="H3",
+        resource_of=rooms, label="场地", code="H3",
         name_of=lambda rid: problem.rooms[rid].name if rid in problem.rooms else str(rid),
         v=v,
     )
@@ -195,8 +195,8 @@ def _h4_unavailable(problem: Problem, occ: list[_Occurrence], v: list[Violation]
             if teacher and o.slot.key in teacher.unavailable:
                 v.append(Violation(
                     "H4",
-                    f"教師{teacher.name} {_wd(o.slot.weekday)}{o.slot.name} 為不可排時段,"
-                    f"卻排了{_lesson(problem, o.assignment)}",
+                    f"教师{teacher.name} {_wd(o.slot.weekday)}{o.slot.name} 为不可排时段,"
+                    f"却排了{_lesson(problem, o.assignment)}",
                     {"teacher_id": tid, "weekday": o.slot.weekday,
                      "period_no": o.slot.period_no},
                 ))
@@ -208,7 +208,7 @@ def _h7_group_sync(
     by_id: dict[int, AssignmentSpec],
     v: list[Violation],
 ) -> None:
-    """跑班群組、單雙週組內的所有配課必須排在完全相同的時段。"""
+    """跑班群组、单双周组内的所有配课必须排在完全相同的时段。"""
     by_assignment: dict[int, set[tuple[int, int, int]]] = {}
     for e in entries:
         by_assignment.setdefault(e.assignment_id, set()).add((e.weekday, e.period_no, e.span))
@@ -219,10 +219,10 @@ def _h7_group_sync(
         members = [a for a in problem.assignments if a.unit_id == unit.id]
         slots = {frozenset(by_assignment.get(a.id, set())) for a in members}
         if len(slots) > 1:
-            kind = "單雙週組" if unit.is_alternate else "跑班群組"
+            kind = "单双周组" if unit.is_alternate else "跑班群组"
             v.append(Violation(
                 "H7",
-                f"{kind}「{unit.name}」的各門課未排在相同時段",
+                f"{kind}「{unit.name}」的各门课未排在相同时段",
                 {"unit_id": unit.id},
             ))
 
@@ -233,7 +233,7 @@ def _h8_weekly_periods(
     by_id: dict[int, AssignmentSpec],
     v: list[Violation],
 ) -> None:
-    """每筆配課排入的節數 = 設定的每週節數,且連堂結構符合 block_rule。"""
+    """每笔配课排入的节数 = 设置的每周节数,且连堂结构符合 block_rule。"""
     spans: dict[int, list[int]] = {}
     for e in entries:
         spans.setdefault(e.assignment_id, []).append(e.span)
@@ -248,8 +248,8 @@ def _h8_weekly_periods(
         if got != expected:
             v.append(Violation(
                 "H8",
-                f"「{a.subject_name}」排入 {sum(got)} 節(節長 {got or '無'}),"
-                f"應為 {a.periods_per_week} 節(節長 {expected})",
+                f"「{a.subject_name}」排入 {sum(got)} 节(节长 {got or '无'}),"
+                f"应为 {a.periods_per_week} 节(节长 {expected})",
                 {"assignment_id": a.id, "placed": got, "expected": expected},
             ))
 
@@ -262,7 +262,7 @@ def _h9_locked(problem: Problem, entries: Sequence[SolvedEntry], v: list[Violati
         if (f.assignment_id, f.weekday, f.period_no, f.span) not in placed:
             v.append(Violation(
                 "H9",
-                f"鎖定的格位(配課 {f.assignment_id} {_wd(f.weekday)}第 {f.period_no} 格)被移動了",
+                f"锁定的格位(配课 {f.assignment_id} {_wd(f.weekday)}第 {f.period_no} 格)被移动了",
                 {"assignment_id": f.assignment_id, "weekday": f.weekday,
                  "period_no": f.period_no},
             ))
@@ -275,12 +275,12 @@ def _h10_daily_cap(
     cap: int,
     v: list[Violation],
 ) -> None:
-    """同班同科目每日至多 N 節。連堂本來就是一次上完,不計入。
+    """同班同科目每日至多 N 节。连堂本来就是一次上完,不计入。
 
-    以格位計:跑班群組同一格的多筆同科目配課(英語分組等)對學生是一節課,只算一次
-    ——與 model_builder 把整個群組當成一門課的算法一致。
+    以格位计:跑班群组同一格的多笔同科目配课(英语分组等)对学生是一节课,只算一次
+    ——与 model_builder 把整个群组当成一门课的算法一致。
     """
-    # 單雙週的課只在其中一週出現:單週、雙週各算一次,取較多的那週(v1.3.0)
+    # 单双周的课只在其中一周出现:单周、双周各算一次,取较多的那周(v1.3.0)
     slots: set[tuple[int, int, int, int, str]] = set()
     for e in entries:
         if e.span != 1:
@@ -305,8 +305,8 @@ def _h10_daily_cap(
             cls = problem.classes[class_id]
             v.append(Violation(
                 "H10",
-                f"班級 {cls.name} {_wd(weekday)}「{subject_names.get(subject_id, '')}」"
-                f"排了 {n} 節,超過每日上限 {cap} 節",
+                f"班级 {cls.name} {_wd(weekday)}「{subject_names.get(subject_id, '')}」"
+                f"排了 {n} 节,超过每日上限 {cap} 节",
                 {"class_id": class_id, "weekday": weekday, "count": n},
             ))
 
@@ -325,13 +325,13 @@ def _room_type(
         room = problem.rooms.get(rid) if rid is not None else None
         if room is None:
             v.append(Violation(
-                "room_type", f"「{a.subject_name}」需要場地,卻未指派",
+                "room_type", f"「{a.subject_name}」需要场地,却未指派",
                 {"assignment_id": a.id},
             ))
         elif room.room_type != a.required_room_type:
             v.append(Violation(
                 "room_type",
-                f"「{a.subject_name}」需要 {a.required_room_type} 類型場地,"
-                f"卻排在 {room.name}({room.room_type})",
+                f"「{a.subject_name}」需要 {a.required_room_type} 类型场地,"
+                f"却排在 {room.name}({room.room_type})",
                 {"assignment_id": a.id, "room_id": room.id},
             ))

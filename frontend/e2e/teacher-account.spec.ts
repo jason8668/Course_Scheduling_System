@@ -1,45 +1,45 @@
 import { expect, test } from '@playwright/test'
 import { deleteSemesterByYearTerm, login } from './helpers'
 
-const YEAR = 124 // 專用測試學年度
+const YEAR = 124 // 专用测试学年度
 const SHOTS = 'e2e/screenshots'
 
-// M2-0:教師表單新增聯絡資訊(Email/手機/LINE)與帳號綁定欄位。
-test('教師聯絡資訊:新增教師填入 Email/手機/LINE 並保存', async ({ page }) => {
+// M2-0:教师表单新增联络信息(Email/手机/LINE)与帐号绑定栏位。
+test('教师联络信息:新增教师填入 Email/手机/LINE 并保存', async ({ page }) => {
   await login(page)
   await page.request.patch('/api/wizard/state', { data: { completed: true } })
 
-  // 前置(API):建立乾淨的測試學期
+  // 前置(API):建立干净的测试学期
   await deleteSemesterByYearTerm(page, YEAR, 1)
   await page.request.post('/api/semesters', {
     data: { academic_year: YEAR, term: 1, template_key: 'junior_high' },
   })
 
-  // 進入基礎資料 → 選該學期 → 教師分頁
+  // 进入基础资料 → 选该学期 → 教师分页
   await page.goto('/basedata')
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${YEAR} 學年度第 1 學期` }).click()
-  await page.locator('.n-tabs-tab', { hasText: '教師' }).click()
+  await page.locator('.n-base-select-option', { hasText: `${YEAR} 学年度第 1 学期` }).click()
+  await page.locator('.n-tabs-tab', { hasText: '教师' }).click()
 
-  // 新增教師,填入姓名與聯絡資訊
+  // 新增教师,填入姓名与联络信息
   await page.getByTestId('teacher-add').click()
-  await page.getByTestId('teacher-name').locator('input').fill('陳老師')
+  await page.getByTestId('teacher-name').locator('input').fill('陈老师')
   await page.getByTestId('teacher-email').locator('input').fill('chen@example.edu.tw')
-  // 帳號綁定下拉存在(本學期尚無教師帳號時為空清單,欄位仍應可見)
+  // 帐号绑定下拉存在(本学期尚无教师帐号时为空清单,栏位仍应可见)
   await expect(page.getByTestId('teacher-account')).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/teacher-1-form.png` })
   await page.getByTestId('teacher-save').click()
 
-  // 列表出現該教師
-  await expect(page.getByRole('cell', { name: '陳老師' })).toBeVisible()
+  // 列表出现该教师
+  await expect(page.getByRole('cell', { name: '陈老师' })).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/teacher-2-list.png` })
 
-  // 驗證 Email 已保存(經 API 確認)
+  // 验证 Email 已保存(经 API 确认)
   const list = await (await page.request.get('/api/semesters')).json()
   const sem = list.find((s: { academic_year: number; term: number }) =>
     s.academic_year === YEAR && s.term === 1)
   const teachers = await (await page.request.get(`/api/teachers?semester_id=${sem.id}`)).json()
-  const chen = teachers.find((t: { name: string }) => t.name === '陳老師')
+  const chen = teachers.find((t: { name: string }) => t.name === '陈老师')
   expect(chen.email).toBe('chen@example.edu.tw')
 
   // 清理
@@ -47,11 +47,11 @@ test('教師聯絡資訊:新增教師填入 Email/手機/LINE 並保存', async 
 })
 
 /**
- * #9:匯入時沒建帳號的老師,事後要能直接補一個。
- * 先前帳號只能在 Excel 匯入時勾選建立,重新匯入同一位老師又會被重複檢查擋下,
- * 於是那位老師永遠拿不到帳號。順便驗 #10 回覆裡答應的「重設密碼」。
+ * #9:导入时没建帐号的老师,事后要能直接补一个。
+ * 先前帐号只能在 Excel 导入时勾选建立,重新导入同一位老师又会被重复检查挡下,
+ * 于是那位老师永远拿不到帐号。顺便验 #10 回复里答应的「重设密码」。
  */
-test('教師帳號:事後補開登入帳號,可登入;重設密碼後舊密碼失效', async ({ page }) => {
+test('教师帐号:事后补开登录帐号,可登录;重设密码后旧密码失效', async ({ page }) => {
   test.setTimeout(120_000)
   const PW = 'teacherpw1234'
   const NEW_PW = 'teacherpw5678'
@@ -66,60 +66,60 @@ test('教師帳號:事後補開登入帳號,可登入;重設密碼後舊密碼�
 
   await page.goto('/basedata')
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${YEAR} 學年度第 1 學期` }).click()
-  await page.locator('.n-tabs-tab', { hasText: '教師' }).click()
+  await page.locator('.n-base-select-option', { hasText: `${YEAR} 学年度第 1 学期` }).click()
+  await page.locator('.n-tabs-tab', { hasText: '教师' }).click()
 
-  // 先建一位沒有帳號的老師(模擬匯入時沒勾「建立帳號」)
+  // 先建一位没有帐号的老师(模拟导入时没勾「建立帐号」)
   await page.getByTestId('teacher-add').click()
-  await page.getByTestId('teacher-name').locator('input').fill('林老師')
+  await page.getByTestId('teacher-name').locator('input').fill('林老师')
   await page.getByTestId('teacher-save').click()
-  await expect(page.getByRole('cell', { name: '林老師' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '林老师' })).toBeVisible()
 
-  // 編輯 → 補開帳號
-  await page.getByRole('row', { name: /林老師/ }).getByTestId('teacher-edit').click()
+  // 编辑 → 补开帐号
+  await page.getByRole('row', { name: /林老师/ }).getByTestId('teacher-edit').click()
   await page.getByTestId('teacher-new-username').locator('input').fill(username)
   await page.getByTestId('teacher-new-password').locator('input').fill(PW)
   await page.getByTestId('teacher-create-account').click()
-  await expect(page.getByText(/已建立帳號/)).toBeVisible()
-  // 建好即綁定,畫面改成顯示帳號與重設密碼
+  await expect(page.getByText(/已建立帐号/)).toBeVisible()
+  // 建好即绑定,界面改成显示帐号与重设密码
   await expect(page.getByTestId('teacher-reset-submit')).toBeVisible()
 
   const teachers = await (await page.request.get(`/api/teachers?semester_id=${sem.id}`)).json()
-  const lin = teachers.find((t: { name: string }) => t.name === '林老師')
-  expect(lin.user_id, '補開的帳號要自動綁定這位老師').toBeTruthy()
+  const lin = teachers.find((t: { name: string }) => t.name === '林老师')
+  expect(lin.user_id, '补开的帐号要自动绑定这位老师').toBeTruthy()
 
-  // 重設密碼 → 舊密碼失效、新密碼可用
+  // 重设密码 → 旧密码失效、新密码可用
   await page.getByTestId('teacher-reset-password').locator('input').fill(NEW_PW)
   await page.getByTestId('teacher-reset-submit').click()
-  await page.getByRole('button', { name: '確定' }).click()
-  await expect(page.getByText(/密碼已重設/)).toBeVisible()
+  await page.getByRole('button', { name: '确定' }).click()
+  await expect(page.getByText(/密码已重设/)).toBeVisible()
 
-  // 以下改用 API 驗證登入(會換掉目前的登入身分,所以放在 UI 操作之後)
+  // 以下改用 API 验证登录(会换掉目前的登录身分,所以放在 UI 操作之后)
   await page.request.post('/api/auth/logout')
   const bad = await page.request.post('/api/auth/login', {
     data: { username, password: PW }, failOnStatusCode: false,
   })
-  expect(bad.status(), '重設後舊密碼應該失效').toBe(401)
+  expect(bad.status(), '重设后旧密码应该失效').toBe(401)
   const good = await page.request.post('/api/auth/login', {
     data: { username, password: NEW_PW },
   })
-  expect(good.ok(), '新密碼應該可以登入').toBeTruthy()
-  expect((await good.json()).must_change_password, '重設後對方下次登入須自行改密碼').toBe(true)
+  expect(good.ok(), '新密码应该可以登录').toBeTruthy()
+  expect((await good.json()).must_change_password, '重设后对方下次登录须自行改密码').toBe(true)
 
-  // 清理(換回組長身分)
+  // 清理(换回组长身分)
   await page.request.post('/api/auth/logout')
   await login(page)
   await deleteSemesterByYearTerm(page, YEAR, 1)
 })
 
 /**
- * #19:離職教師的處理。先前刪除教師會連帶刪掉請假紀錄,卻不會停用其登入帳號
- * (`users.is_active` 有欄位、登入會檢查,但沒有任何地方設定得了)。
+ * #19:离职教师的处理。先前删除教师会连带删掉请假纪录,却不会停用其登录帐号
+ * (`users.is_active` 有栏位、登录会检查,但没有任何地方设置得了)。
  */
-test('教師帳號:可停用與重新啟用;刪除教師時帳號一併停用', async ({ page }) => {
+test('教师帐号:可停用与重新启用;删除教师时帐号一并停用', async ({ page }) => {
   test.setTimeout(120_000)
   const PW = 'disablepw1234'
-const YEAR_DISABLE = 155  // 專用學年度:避免與其他 spec 互刪學期
+const YEAR_DISABLE = 155  // 专用学年度:避免与其他 spec 互删学期
   await login(page)
   await page.request.patch('/api/wizard/state', { data: { completed: true } })
 
@@ -131,56 +131,56 @@ const YEAR_DISABLE = 155  // 專用學年度:避免與其他 spec 互刪學期
 
   await page.goto('/basedata')
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${YEAR_DISABLE} 學年度第 1 學期` }).click()
-  await page.locator('.n-tabs-tab', { hasText: '教師' }).click()
+  await page.locator('.n-base-select-option', { hasText: `${YEAR_DISABLE} 学年度第 1 学期` }).click()
+  await page.locator('.n-tabs-tab', { hasText: '教师' }).click()
 
   await page.getByTestId('teacher-add').click()
-  await page.getByTestId('teacher-name').locator('input').fill('張老師')
+  await page.getByTestId('teacher-name').locator('input').fill('张老师')
   await page.getByTestId('teacher-save').click()
-  await expect(page.getByRole('cell', { name: '張老師' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '张老师' })).toBeVisible()
 
-  const row = page.getByRole('row', { name: /張老師/ })
+  const row = page.getByRole('row', { name: /张老师/ })
   await row.getByTestId('teacher-edit').click()
   await page.getByTestId('teacher-new-username').locator('input').fill(username)
   await page.getByTestId('teacher-new-password').locator('input').fill(PW)
   await page.getByTestId('teacher-create-account').click()
-  await expect(page.getByTestId('teacher-account-state')).toContainText('可登入')
+  await expect(page.getByTestId('teacher-account-state')).toContainText('可登录')
 
-  // 停用 → 立刻登不進來
+  // 停用 → 立刻登不进来
   await page.getByTestId('teacher-account-toggle').click()
   await expect(page.getByTestId('teacher-account-state')).toContainText('已停用')
   const blocked = await page.request.post('/api/auth/login', {
     data: { username, password: PW }, failOnStatusCode: false,
   })
-  expect(blocked.status(), '停用後應該登不進來').toBe(403)
+  expect(blocked.status(), '停用后应该登不进来').toBe(403)
 
-  // 重新啟用 → 又可以登入
+  // 重新启用 → 又可以登录
   await page.getByTestId('teacher-account-toggle').click()
-  await expect(page.getByTestId('teacher-account-state')).toContainText('可登入')
+  await expect(page.getByTestId('teacher-account-state')).toContainText('可登录')
   const ok = await page.request.post('/api/auth/login', {
     data: { username, password: PW }, failOnStatusCode: false,
   })
-  expect(ok.status(), '重新啟用後應該可以登入').toBe(200)
+  expect(ok.status(), '重新启用后应该可以登录').toBe(200)
   await page.request.post('/api/auth/logout')
   await login(page)
 
-  // 刪除教師:確認框要先講後果,刪除後帳號一併停用
+  // 删除教师:确认框要先讲后果,删除后帐号一并停用
   await page.goto('/basedata')
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${YEAR_DISABLE} 學年度第 1 學期` }).click()
-  await page.locator('.n-tabs-tab', { hasText: '教師' }).click()
-  await page.getByRole('row', { name: /張老師/ }).getByTestId('teacher-delete').click()
+  await page.locator('.n-base-select-option', { hasText: `${YEAR_DISABLE} 学年度第 1 学期` }).click()
+  await page.locator('.n-tabs-tab', { hasText: '教师' }).click()
+  await page.getByRole('row', { name: /张老师/ }).getByTestId('teacher-delete').click()
   const confirm = page.getByTestId('teacher-delete-confirm')
   await expect(confirm).toContainText('停用')
-  await expect(confirm).toContainText('離職')
-  await page.getByRole('button', { name: '確定' }).click()
-  await expect(page.getByText('已刪除')).toBeVisible()
+  await expect(confirm).toContainText('离职')
+  await page.getByRole('button', { name: '确定' }).click()
+  await expect(page.getByText('已删除')).toBeVisible()
 
   const afterDelete = await page.request.post('/api/auth/login', {
     data: { username, password: PW }, failOnStatusCode: false,
   })
-  expect(afterDelete.status(), '教師刪除後帳號不該還能登入').toBe(403)
+  expect(afterDelete.status(), '教师删除后帐号不该还能登录').toBe(403)
 
-  // 這裡仍是組長的登入狀態(上面失敗的登入不會換掉 session),直接清掉測試學期
+  // 这里仍是组长的登录状态(上面失败的登录不会换掉 session),直接清掉测试学期
   await deleteSemesterByYearTerm(page, YEAR_DISABLE, 1)
 })

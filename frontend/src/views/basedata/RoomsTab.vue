@@ -51,27 +51,27 @@ function openEdit(r: Room) {
 
 async function save() {
   if (!form.value.name) {
-    message.warning('請輸入場地名稱')
+    message.warning('请输入场地名称')
     return
   }
   try {
     if (editingId.value) await updateRoom(editingId.value, form.value)
     else await createRoom(props.semesterId, form.value)
     show.value = false
-    message.success('已儲存')
+    message.success('已储存')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   }
 }
 
 async function remove(r: Room) {
   try {
     await deleteRoom(r.id)
-    message.success('已刪除')
+    message.success('已删除')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '刪除失敗')
+    message.error((e as ApiError).detail || '删除失败')
   }
 }
 </script>
@@ -79,13 +79,13 @@ async function remove(r: Room) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜尋場地名稱" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" @click="openCreate">新增場地</n-button>
+      <n-input v-model:value="search" placeholder="搜寻场地名称" clearable style="width: 200px" @input="reload" />
+      <n-button type="primary" @click="openCreate">新增场地</n-button>
     </n-space>
 
     <table class="data-table">
       <thead>
-        <tr><th>名稱</th><th>類型</th><th>容量</th><th>適用科目</th><th>操作</th></tr>
+        <tr><th>名称</th><th>类型</th><th>容量</th><th>适用科目</th><th>操作</th></tr>
       </thead>
       <tbody>
         <tr v-for="r in items" :key="r.id">
@@ -100,29 +100,29 @@ async function remove(r: Room) {
           </td>
           <td>
             <n-space>
-              <n-button size="tiny" @click="openEdit(r)">編輯</n-button>
+              <n-button size="tiny" @click="openEdit(r)">编辑</n-button>
               <n-popconfirm @positive-click="remove(r)">
-                <template #trigger><n-button size="tiny" type="error" ghost>刪除</n-button></template>
-                確定刪除此場地?
+                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
+                确定删除此场地?
               </n-popconfirm>
             </n-space>
           </td>
         </tr>
-        <tr v-if="items.length === 0"><td colspan="5"><n-text depth="3">尚無場地</n-text></td></tr>
+        <tr v-if="items.length === 0"><td colspan="5"><n-text depth="3">尚无场地</n-text></td></tr>
       </tbody>
     </table>
 
-    <n-modal v-model:show="show" preset="card" :title="editingId ? '編輯場地' : '新增場地'" style="max-width: 440px">
+    <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑场地' : '新增场地'" style="max-width: 440px">
       <n-space vertical>
-        <n-text>名稱</n-text>
-        <n-input v-model:value="form.name" placeholder="如:機械實習工場" />
-        <n-text>類型</n-text>
+        <n-text>名称</n-text>
+        <n-input v-model:value="form.name" placeholder="如:机械实习工场" />
+        <n-text>类型</n-text>
         <n-select v-model:value="form.room_type" :options="roomTypeOptions" />
-        <n-text>容量(選填)</n-text>
+        <n-text>容量(选填)</n-text>
         <n-input-number v-model:value="form.capacity" :min="0" />
-        <n-text>適用科目(選填)</n-text>
-        <n-select v-model:value="form.subject_ids" multiple :options="subjectOptions" placeholder="可多選" />
-        <n-button type="primary" @click="save">儲存</n-button>
+        <n-text>适用科目(选填)</n-text>
+        <n-select v-model:value="form.subject_ids" multiple :options="subjectOptions" placeholder="可多选" />
+        <n-button type="primary" @click="save">储存</n-button>
       </n-space>
     </n-modal>
   </n-space>

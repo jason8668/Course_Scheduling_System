@@ -1,6 +1,6 @@
-"""學期與節次表 API。
+"""学期与节次表 API。
 
-權限:讀取 = 教學組長/教務主任;寫入 = 教學組長(admin 一律通過)。
+权限:读取 = 教学组长/教务主任;写入 = 教学组长(admin 一律通过)。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -37,18 +37,18 @@ viewer = require_roles(Role.scheduler, Role.director)
 editor = require_roles(Role.scheduler)
 
 
-# ── 內部工具 ──────────────────────────
+# ── 内部工具 ──────────────────────────
 def _get_semester(db: Session, semester_id: int) -> Semester:
     semester = db.get(Semester, semester_id)
     if semester is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     return semester
 
 
 def _get_period_table(db: Session, table_id: int) -> PeriodTable:
     table = db.get(PeriodTable, table_id)
     if table is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到節次表")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到节次表")
     return table
 
 
@@ -63,7 +63,7 @@ def _unset_other_defaults(db: Session, semester_id: int, keep_id: int | None) ->
             t.is_default = False
 
 
-# ── 學制範本 ──────────────────────────
+# ── 学制范本 ──────────────────────────
 @router.get("/school-templates", response_model=list[TemplateOut])
 def list_templates(_: object = Depends(viewer)) -> list[TemplateOut]:
     return [
@@ -77,7 +77,7 @@ def list_templates(_: object = Depends(viewer)) -> list[TemplateOut]:
     ]
 
 
-# ── 學期 ──────────────────────────────
+# ── 学期 ──────────────────────────────
 @router.get("/semesters", response_model=list[SemesterListItem])
 def list_semesters(db: Session = Depends(get_db), _: object = Depends(viewer)):
     return db.scalars(
@@ -95,11 +95,11 @@ def create_semester(
         )
     )
     if exists:
-        raise HTTPException(status.HTTP_409_CONFLICT, "該學年度學期已存在")
+        raise HTTPException(status.HTTP_409_CONFLICT, "该学年度学期已存在")
 
     if body.template_key:
         if tpl.get_template(body.template_key) is None:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "未知的學制範本")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "未知的学制范本")
         semester = tpl.create_semester_from_template(
             db,
             academic_year=body.academic_year,
@@ -137,7 +137,7 @@ def copy_to_new_semester(
         )
     )
     if exists:
-        raise HTTPException(status.HTTP_409_CONFLICT, "目標學年度學期已存在")
+        raise HTTPException(status.HTTP_409_CONFLICT, "目标学年度学期已存在")
     opts = CopyOptions(
         period_tables=body.period_tables,
         subjects=body.subjects,
@@ -209,7 +209,7 @@ def delete_semester(
     db.commit()
 
 
-# ── 節次表 ────────────────────────────
+# ── 节次表 ────────────────────────────
 @router.post(
     "/semesters/{semester_id}/period-tables",
     response_model=PeriodTableOut,
@@ -226,7 +226,7 @@ def create_period_table(
     if body.template_key:
         template = tpl.get_template(body.template_key)
         if template is None:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "未知的學制範本")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "未知的学制范本")
         table = tpl.build_period_table_from_template(
             template, name=body.name, is_default=body.is_default
         )
@@ -282,7 +282,7 @@ def delete_period_table(
     if ref_count:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"此節次表已被 {ref_count} 個班級指定使用,請先改用其他節次表再刪除",
+            f"此节次表已被 {ref_count} 个班级指定使用,请先改用其他节次表再删除",
         )
     db.delete(table)
     db.commit()
@@ -295,7 +295,7 @@ def replace_periods(
     db: Session = Depends(get_db),
     _: object = Depends(editor),
 ) -> PeriodTable:
-    """整批取代節次表的所有格位(視覺化編輯器儲存用)。"""
+    """整批取代节次表的所有格位(视觉化编辑器储存用)。"""
     table = _get_period_table(db, table_id)
 
     seen: set[tuple[int, int]] = set()
@@ -304,7 +304,7 @@ def replace_periods(
         if key in seen:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"重複的格位:星期 {p.weekday} 第 {p.period_no} 節",
+                f"重复的格位:星期 {p.weekday} 第 {p.period_no} 节",
             )
         seen.add(key)
 
@@ -343,6 +343,6 @@ def _slots_out(rows: list[Period]) -> list[AvailableSlot]:
 def available_slots(
     table_id: int, db: Session = Depends(get_db), _: object = Depends(viewer)
 ) -> list[AvailableSlot]:
-    """回傳可排課時段(type=regular),供排課時段檢查使用。"""
+    """回传可排课时段(type=regular),供排课时段检查使用。"""
     _get_period_table(db, table_id)
     return _slots_out(pt_service.regular_slots(db, table_id))

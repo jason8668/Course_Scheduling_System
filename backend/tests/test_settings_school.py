@@ -1,7 +1,7 @@
-"""校名設定測試。
+"""校名设置测试。
 
-校名先前只能在安裝時以 .env 的 SCHOOL_NAME 指定,要改就得編輯檔案並重啟容器——
-對只會用網頁的教學組長來說形同改不了。現在存進資料庫、隨時可改。
+校名先前只能在安装时以 .env 的 SCHOOL_NAME 指定,要改就得编辑档案并重启容器——
+对只会用网页的教学组长来说形同改不了。现在存进资料库、随时可改。
 """
 
 from app.core.config import settings as env_settings
@@ -19,7 +19,7 @@ def _admin(client, db):
 
 
 def test_falls_back_to_env_when_unset(env):
-    """既有部署升級後行為不變:沒設定過就沿用 .env 的值。"""
+    """既有部署升级后行为不变:没设置过就沿用 .env 的值。"""
     client, db = env
     assert app_settings.school_name(db) == env_settings.school_name
     assert _admin(client, db).get("/api/settings/school").json()["school_name"] == (
@@ -30,19 +30,19 @@ def test_falls_back_to_env_when_unset(env):
 def test_can_be_changed_without_restart(env):
     client, db = env
     _admin(client, db)
-    r = client.put("/api/settings/school", json={"school_name": "臺南市市立敦品國中"})
+    r = client.put("/api/settings/school", json={"school_name": "台南市市立敦品初中"})
     assert r.status_code == 200
-    assert r.json()["school_name"] == "臺南市市立敦品國中"
-    assert app_settings.school_name(db) == "臺南市市立敦品國中"
+    assert r.json()["school_name"] == "台南市市立敦品初中"
+    assert app_settings.school_name(db) == "台南市市立敦品初中"
 
 
 def test_blank_name_is_rejected(env):
-    """空校名會讓匯出課表的表頭變成一片空白,擋在這裡。"""
+    """空校名会让导出课表的表头变成一片空白,挡在这里。"""
     client, db = env
     _admin(client, db)
     assert client.put("/api/settings/school", json={"school_name": ""}).status_code == 422
     assert client.put("/api/settings/school", json={"school_name": "   "}).status_code == 200
-    # 全空白會被 strip 成空字串,取值時退回 .env
+    # 全空白会被 strip 成空字串,取值时退回 .env
     assert app_settings.school_name(db) == env_settings.school_name
 
 
@@ -54,8 +54,8 @@ def test_non_admin_cannot_change_it(env):
 
 
 def test_demo_data_sets_the_school_name(env):
-    """載入示範資料時校名一併設好,不必再叫使用者去改 .env。"""
+    """载入示范资料时校名一并设好,不必再叫用户去改 .env。"""
     client, db = env
     _admin(client, db)
     client.post("/api/demo-data")
-    assert app_settings.school_name(db) == "臺南市市立敦品國中"
+    assert app_settings.school_name(db) == "台南市市立敦品初中"

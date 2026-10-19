@@ -20,25 +20,25 @@ const routes = [
     component: () => import('@/views/wizard/Wizard.vue'),
   },
   {
-    // 獨立 A4 通知單列印頁,不套用側邊欄版面(乾淨一頁供列印)
+    // 独立 A4 通知单打印页,不套用侧边栏版面(干净一页供打印)
     path: '/daily-board/print',
     name: 'daily-board-print',
     component: () => import('@/views/substitution/DailyBoardPrint.vue'),
   },
   {
-    // 調課通知單(教師/班級)列印頁,同樣不套側邊欄
+    // 调课通知单(教师/班级)打印页,同样不套侧边栏
     path: '/swap-slips/print',
     name: 'swap-slips-print',
     component: () => import('@/views/substitution/SlipsPrint.vue'),
   },
   {
-    // 代課通知單(教師/班級)列印頁:與調課單同一個元件,版面相同、表頭不同
+    // 代课通知单(教师/班级)打印页:与调课单同一个元件,版面相同、表头不同
     path: '/substitute-slips/print',
     name: 'substitute-slips-print',
     component: () => import('@/views/substitution/SlipsPrint.vue'),
   },
   {
-    // 巡堂表列印頁(A4 橫式),不套側邊欄
+    // 巡堂表打印页(A4 横式),不套侧边栏
     path: '/patrol-sheets/print',
     name: 'patrol-sheets-print',
     component: () => import('@/views/substitution/PatrolPrint.vue'),
@@ -143,8 +143,8 @@ export const router = createRouter({
 
 const AUTH_PAGES = new Set(['login', 'change-password'])
 
-// 全域守衛:管控登入、強制改密、首次登入引導至設定精靈
-// 純教師帳號可進入的頁面(請假是教師自己要做的事)
+// 全域守卫:管控登录、强制改密、首次登录引导至设置精灵
+// 纯教师帐号可进入的页面(请假是教师自己要做的事)
 const TEACHER_PAGES = new Set(['timetable-query', 'leaves', 'substitution-stats'])
 
 router.beforeEach(async (to) => {
@@ -167,9 +167,9 @@ router.beforeEach(async (to) => {
     return { name: 'change-password' }
   }
 
-  // 純教師帳號:只開放課表查詢與請假登記(其餘頁面的後端 API 皆需教學組長以上權限)。
-  // 改密碼頁必須排除:否則首次登入的教師會被「導去改密碼 → 不在教師可進清單 → 導回課表查詢
-  // → 又要求改密碼」互踢,畫面卡在 /login 動不了(#10)。
+  // 纯教师帐号:只开放课表查询与请假登记(其余页面的后端 API 皆需教学组长以上权限)。
+  // 改密码页必须排除:否则首次登录的教师会被「导去改密码 → 不在教师可进清单 → 导回课表查询
+  // → 又要求改密码」互踢,界面卡在 /login 动不了(#10)。
   const canManage = auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director')
   if (
     !canManage && auth.hasRole('teacher')
@@ -178,7 +178,7 @@ router.beforeEach(async (to) => {
     return { name: 'timetable-query' }
   }
 
-  // 首次登入引導:教學組長/管理員在尚未完成初始設定時,自動進入精靈(精靈內可略過)
+  // 首次登录引导:教学组长/管理员在尚未完成初始设置时,自动进入精灵(精灵内可略过)
   const canSetup = auth.hasRole('scheduler') || auth.hasRole('admin')
   if (canSetup && to.name !== 'wizard' && !AUTH_PAGES.has(to.name as string)) {
     const wizard = useWizardStore()

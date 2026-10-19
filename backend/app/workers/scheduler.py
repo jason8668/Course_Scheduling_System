@@ -1,11 +1,11 @@
-"""定時任務排程骨架(M5-0;M6-2 起改掛 ops 佇列)。
+"""定时任务排程骨架(M5-0;M6-2 起改挂 ops 伫列)。
 
-RQ worker 以 `with_scheduler=True` 啟動,內建排程器會在到期時把排定的任務丟回佇列。
-週期任務用「執行時把下一次排進去」的自我續期模式表達——不必額外的 rq-scheduler 套件或
-獨立容器。定時任務(每日備份、心跳)都是維運任務,故一律排進 **ops** 佇列,由 ops worker
-兼任排程器;排課那條佇列被佔住數分鐘時,備份照跑。
+RQ worker 以 `with_scheduler=True` 启动,内建排程器会在到期时把排定的任务丢回伫列。
+周期任务用「执行时把下一次排进去」的自我续期模式表达——不必额外的 rq-scheduler 套件或
+独立容器。定时任务(每日备份、心跳)都是维运任务,故一律排进 **ops** 伫列,由 ops worker
+兼任排程器;排课那条伫列被占住数分钟时,备份照跑。
 
-心跳任務只證明排程器存活(寫一行 log 並排下一次)。以固定 job_id 續期,重啟不會堆疊。
+心跳任务只证明排程器存活(写一行 log 并排下一次)。以固定 job_id 续期,重启不会堆叠。
 """
 
 import logging
@@ -28,21 +28,21 @@ def _interval() -> timedelta:
 
 
 def _schedule_next() -> None:
-    # 固定 job_id:同時只會有一筆待執行的心跳,重複排入會覆蓋而非堆疊
+    # 固定 job_id:同时只会有一笔待执行的心跳,重复排入会覆盖而非堆叠
     ops_queue.enqueue_in(_interval(), heartbeat, job_id=HEARTBEAT_JOB_ID)
 
 
 def heartbeat() -> None:
-    """排程器存活心跳;執行時把下一次排進去(自我續期)。
+    """排程器存活心跳;执行时把下一次排进去(自我续期)。
 
-    順帶自癒每日備份鏈:若 daily-backup 因某次失敗而未再排入(見 backup_job),
-    這裡補排回去——備份系統最忌諱的是靜默斷裂,心跳每小時兜底一次。
+    顺带自愈每日备份链:若 daily-backup 因某次失败而未再排入(见 backup_job),
+    这里补排回去——备份系统最忌讳的是静默断裂,心跳每小时兜底一次。
     """
     try:
-        logger.info("排程器心跳 OK,下次 %s 後", _interval())
+        logger.info("排程器心跳 OK,下次 %s 后", _interval())
         _ensure_daily_backup_scheduled()
     finally:
-        _schedule_next()  # 無論本次是否出錯,下一次心跳一定排入
+        _schedule_next()  # 无论本次是否出错,下一次心跳一定排入
 
 
 def _ensure_daily_backup_scheduled() -> None:
@@ -50,30 +50,30 @@ def _ensure_daily_backup_scheduled() -> None:
         registry = ScheduledJobRegistry(queue=ops_queue)
         if DAILY_BACKUP_JOB_ID not in set(registry.get_job_ids()):
             schedule_daily_backup()
-            logger.warning("偵測到每日備份未排入,已補排,下次 %s", _next_backup_time())
-    except Exception:  # noqa: BLE001 - 自癒失敗不該讓心跳掛掉
-        logger.warning("檢查/補排每日備份失敗(Redis 不可用?)")
+            logger.warning("侦测到每日备份未排入,已补排,下次 %s", _next_backup_time())
+    except Exception:  # noqa: BLE001 - 自愈失败不该让心跳挂掉
+        logger.warning("检查/补排每日备份失败(Redis 不可用?)")
 
 
 def _drop_legacy_default_schedules() -> None:
-    """清掉舊版排在 **default** 佇列上的定時任務(M6-2 之前的版本)。
+    """清掉旧版排在 **default** 伫列上的定时任务(M6-2 之前的版本)。
 
-    升級後排程器改看 ops 佇列。若不清,舊的 daily-backup / heartbeat 會永遠留在
-    default 的 ScheduledJobRegistry 裡——排課 worker 不跑排程器,沒人會把它們撈出來,
-    每日備份就此靜默斷裂(備份系統最不能忍的失敗模式)。以固定 job_id 精準移除。
+    升级后排程器改看 ops 伫列。若不清,旧的 daily-backup / heartbeat 会永远留在
+    default 的 ScheduledJobRegistry 里——排课 worker 不跑排程器,没人会把它们捞出来,
+    每日备份就此静默断裂(备份系统最不能忍的失败模式)。以固定 job_id 精准移除。
     """
     try:
         registry = ScheduledJobRegistry(queue=default_queue)
         for job_id in (HEARTBEAT_JOB_ID, DAILY_BACKUP_JOB_ID):
             if job_id in set(registry.get_job_ids()):
                 registry.remove(job_id, delete_job=True)
-                logger.info("已移除舊版排在 default 佇列的定時任務:%s", job_id)
-    except Exception:  # noqa: BLE001 - 清理失敗不該讓 worker 起不來
-        logger.warning("清理舊版 default 佇列定時任務失敗(Redis 不可用?)")
+                logger.info("已移除旧版排在 default 伫列的定时任务:%s", job_id)
+    except Exception:  # noqa: BLE001 - 清理失败不该让 worker 起不来
+        logger.warning("清理旧版 default 伫列定时任务失败(Redis 不可用?)")
 
 
 def _next_backup_time() -> datetime:
-    """學校時區的下一個 backup_hour 時刻(unaware,供 enqueue_at)。"""
+    """学校时区的下一个 backup_hour 时刻(unaware,供 enqueue_at)。"""
     now = clock.school_now().replace(tzinfo=None)
     target = now.replace(hour=settings.backup_hour, minute=0, second=0, microsecond=0)
     if target <= now:
@@ -87,16 +87,16 @@ def schedule_daily_backup() -> None:
 
 
 def ensure_scheduled() -> None:
-    """ops worker 啟動時呼叫:確保心跳與每日備份已排入(已存在則略過,重啟不重複)。"""
+    """ops worker 启动时呼叫:确保心跳与每日备份已排入(已存在则略过,重启不重复)。"""
     _drop_legacy_default_schedules()
     try:
         registry = ScheduledJobRegistry(queue=ops_queue)
         pending = set(registry.get_job_ids())
         if HEARTBEAT_JOB_ID not in pending:
             _schedule_next()
-            logger.info("已排入排程器心跳,間隔 %s", _interval())
+            logger.info("已排入排程器心跳,间隔 %s", _interval())
         if DAILY_BACKUP_JOB_ID not in pending:
             schedule_daily_backup()
-            logger.info("已排入每日自動備份,下次 %s", _next_backup_time())
-    except Exception:  # noqa: BLE001 - Redis 不可用不該讓 worker 起不來
-        logger.warning("排入定時任務失敗(Redis 不可用?);背景任務仍可運作")
+            logger.info("已排入每日自动备份,下次 %s", _next_backup_time())
+    except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
+        logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")

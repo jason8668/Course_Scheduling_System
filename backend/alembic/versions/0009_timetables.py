@@ -1,4 +1,4 @@
-"""課表版本與格位:timetables / schedule_entries
+"""课表版本与格位:timetables / schedule_entries
 
 Revision ID: 0009_timetables
 Revises: 0008_assignments

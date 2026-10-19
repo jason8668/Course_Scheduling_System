@@ -8,8 +8,8 @@ import { themeOverrides } from '@/theme'
 <template>
   <n-config-provider :locale="zhTW" :date-locale="dateZhTW" :theme-overrides="themeOverrides">
     <n-global-style />
-    <!-- dialog provider 不可少:useDialog() 找不到它會在 setup 直接擲錯,整頁渲染不出來
-         (系統管理頁就是這樣整片空白的)。 -->
+    <!-- dialog provider 不可少:useDialog() 找不到它会在 setup 直接掷错,整页渲染不出来
+         (系统管理页就是这样整片空白的)。 -->
     <n-message-provider>
       <n-dialog-provider>
         <router-view />

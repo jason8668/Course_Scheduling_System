@@ -1,4 +1,4 @@
-// 設定精靈 API。
+// 设置精灵 API。
 
 import { apiGet, request } from '@/api/client'
 

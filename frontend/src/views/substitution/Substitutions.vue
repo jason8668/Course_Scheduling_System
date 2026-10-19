@@ -23,35 +23,35 @@ const semesters = ref<{ id: number; label: string }[]>([])
 const sid = ref<number | null>(null)
 const leaves = ref<LeaveRequest[]>([])
 const types = ref<Record<string, string>>({})
-const openId = ref<number | null>(null) // 展開中的受影響節次
+const openId = ref<number | null>(null) // 展开中的受影响节次
 const rec = ref<Recommendation | null>(null)
 const loadingRec = ref(false)
 const countsHours = ref(true)
-// 代課鐘點由誰支付:印在代課通知單上。預設依假別(事假自費、其餘公費),組長可改或自行輸入
+// 代课课时由谁支付:印在代课通知单上。默认依假别(事假自费、其余公费),组长可改或自行输入
 const fundingOptions = ref<{ label: string; value: string }[]>([])
 const funding = ref('')
 const teachers = ref<Teacher[]>([])
-// 調課:展開中節次的可對調清單。swapTeacherId 為空 = 只看也教這個班的老師
+// 调课:展开中节次的可对调清单。swapTeacherId 为空 = 只看也教这个班的老师
 const swapOpen = ref(false)
 const swap = ref<SwapOptions | null>(null)
 const loadingSwap = ref(false)
 const swapTeacherId = ref<number | null>(null)
-// 找幾週:換節次、換假單都沿用組長上次選的(常和隔三週調的學校,每次都要重選很煩)
+// 找几周:换节次、换假单都沿用组长上次选的(常和隔三周调的学校,每次都要重选很烦)
 const swapWeeks = ref(2)
 const SWAP_WEEK_OPTIONS = [
-  { label: '本週與下週', value: 2 },
-  { label: '往後共 3 週', value: 3 },
-  { label: '往後共 4 週', value: 4 },
+  { label: '本周与下周', value: 2 },
+  { label: '往后共 3 周', value: 3 },
+  { label: '往后共 4 周', value: 4 },
 ]
-// 一位老師兩週內可換的節次常有二、三十個;先只列同班的,其他班收起來(展開過的老師記在這裡)
+// 一位老师两周内可换的节次常有二、三十个;先只列同班的,其他班收起来(展开过的老师记在这里)
 const swapExpanded = ref<Set<number>>(new Set())
 
-const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 function withWeekday(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${iso}(${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`
 }
-// 清單裡一次列十幾個日期,年份不必每個都重複
+// 清单里一次列十几个日期,年份不必每个都重复
 function shortDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${m}/${d}(${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`
@@ -59,7 +59,7 @@ function shortDate(iso: string): string {
 
 const semesterOptions = computed(() => semesters.value.map((s) => ({ label: s.label, value: s.id })))
 
-// 只顯示還有待處理節次的假單(已全部處理或已銷假的收起來)
+// 只显示还有待处理节次的假单(已全部处理或已销假的收起来)
 const activeLeaves = computed(() =>
   leaves.value.filter((l) => l.status === 'registered' && l.affected_count > 0))
 
@@ -75,7 +75,7 @@ function resetSwap() {
   swapExpanded.value = new Set()
 }
 
-/** 這位老師目前要顯示的節次:有同班的就先只列同班,其他班等組長展開 */
+/** 这位老师目前要显示的节次:有同班的就先只列同班,其他班等组长展开 */
 function visibleOptions(partner: SwapPartner): SwapOption[] {
   const same = partner.options.filter((o) => o.same_class)
   if (!same.length || swapExpanded.value.has(partner.teacher_id)) return partner.options
@@ -124,10 +124,10 @@ async function openPeriod(p: AffectedPeriod) {
   }
 }
 
-// 事假請人代課由請假教師自付,其餘由學校經費支應(與後端預設一致;學校規定不一,可改)
+// 事假请人代课由请假教师自付,其余由学校经费支应(与后端默认一致;学校规定不一,可改)
 function defaultFunding(l: LeaveRequest | undefined): string {
   if (!l) return ''
-  return l.leave_type === 'personal' ? '自費代課' : '公費代課'
+  return l.leave_type === 'personal' ? '自费代课' : '公费代课'
 }
 
 function leaveOf(p: AffectedPeriod): LeaveRequest | undefined {
@@ -144,22 +144,22 @@ async function assign(p: AffectedPeriod, type: string, candidate?: Candidate) {
     })
     message.success(candidate
       ? `已指派 ${candidate.teacher_name} ${types.value[type]}`
-      : `已設為${types.value[type]}`)
+      : `已设为${types.value[type]}`)
     openId.value = null
     await reload()
   } catch (e) {
-    message.error((e as ApiError).message || '指派失敗')
+    message.error((e as ApiError).message || '指派失败')
   }
 }
 
-// 已處置的節次寫出「怎麼處置」:只寫「→ 陳師」分不出是代課還是調課,
-// 調課還得知道請假的老師哪天要回來補課
+// 已处置的节次写出「怎么处置」:只写「→ 陈师」分不出是代课还是调课,
+// 调课还得知道请假的老师哪天要回来补课
 function dispositionText(l: LeaveRequest, p: AffectedPeriod): string {
   if (!p.sub_type) return p.handler_name ? `→ ${p.handler_name}` : ''
   const label = types.value[p.sub_type] ?? p.sub_type
   const who = p.handler_name ? ` → ${p.handler_name}` : ''
   if (p.sub_type === 'swap' && p.swap_date) {
-    return `${label}${who}(${l.teacher_name} ${shortDate(p.swap_date)} ${p.swap_period_name}補課)`
+    return `${label}${who}(${l.teacher_name} ${shortDate(p.swap_date)} ${p.swap_period_name}补课)`
   }
   return `${label}${who}`
 }
@@ -170,7 +170,7 @@ function swapIds(l: LeaveRequest): number[] {
     .map((p) => p.id)
 }
 
-// 代課單同時涵蓋併班(紙本格子標[併])
+// 代课单同时涵盖并班(纸本格子标[并])
 function substituteIds(l: LeaveRequest): number[] {
   return l.affected_periods
     .filter((p) => (p.sub_type === 'substitute' || p.sub_type === 'merge')
@@ -224,23 +224,23 @@ async function assignSwap(
       swap_period_no: opt.period_no,
     })
     message.success(
-      `已和 ${partner.teacher_name} 調課:${l.teacher_name} 於 ${withWeekday(opt.date)} `
-      + `${opt.period_name}補 ${opt.class_names} ${opt.subject_name}`)
+      `已和 ${partner.teacher_name} 调课:${l.teacher_name} 于 ${withWeekday(opt.date)} `
+      + `${opt.period_name}补 ${opt.class_names} ${opt.subject_name}`)
     openId.value = null
     resetSwap()
     await reload()
   } catch (e) {
-    message.error((e as ApiError).message || '調課失敗')
+    message.error((e as ApiError).message || '调课失败')
   }
 }
 
-// 整批指派代課:導師請整天或好幾天假,同一位代課老師接下所有節次(日薪代課常見)。
-// 逐節點要點幾十次;這裡一次派完,派不成的節次(代課老師那節有課)列出來另外找人。
+// 整批指派代课:导师请整天或好几天假,同一位代课老师接下所有节次(日薪代课常见)。
+// 逐节点要点几十次;这里一次派完,派不成的节次(代课老师那节有课)列出来另外找人。
 const batchShow = ref(false)
 const batchLeave = ref<LeaveRequest | null>(null)
 const batchTeacher = ref<number | null>(null)
 const batchFunding = ref('')
-const batchDate = ref('') // 空字串 = 整張假單
+const batchDate = ref('') // 空字串 = 整张假单
 const batchBusy = ref(false)
 const batchSkipped = ref<BatchSkip[]>([])
 const batchDone = ref<number | null>(null)
@@ -257,9 +257,9 @@ const batchDateOptions = computed(() => {
   if (!l) return []
   const days = [...new Set(pendingOf(l).map((p) => p.date))].sort()
   return [
-    { label: `整張假單(待處理 ${pendingOf(l).length} 節)`, value: '' },
+    { label: `整张假单(待处理 ${pendingOf(l).length} 节)`, value: '' },
     ...days.map((d) => ({
-      label: `只派 ${withWeekday(d)}(${pendingOf(l).filter((p) => p.date === d).length} 節)`,
+      label: `只派 ${withWeekday(d)}(${pendingOf(l).filter((p) => p.date === d).length} 节)`,
       value: d,
     })),
   ]
@@ -286,15 +286,15 @@ async function runBatch() {
     batchSkipped.value = r.skipped
     openId.value = null
     await reload()
-    // 視窗還開著(列出沒派成的節次)時,範圍選單上的「待處理 N 節」要跟著更新
+    // 视窗还开著(列出没派成的节次)时,范围选单上的「待处理 N 节」要跟著更新
     const id = batchLeave.value.id
     batchLeave.value = leaves.value.find((l) => l.id === id) ?? batchLeave.value
     if (r.skipped.length === 0) {
-      message.success(`已指派 ${r.assigned} 節代課`)
+      message.success(`已指派 ${r.assigned} 节代课`)
       batchShow.value = false
     }
   } catch (e) {
-    message.error((e as ApiError).message || '指派失敗')
+    message.error((e as ApiError).message || '指派失败')
   } finally {
     batchBusy.value = false
   }
@@ -302,13 +302,13 @@ async function runBatch() {
 
 async function undo(p: AffectedPeriod) {
   await clearSubstitution(p.id)
-  message.info('已撤回處置,退回待處理')
+  message.info('已撤回处置,退回待处理')
   await reload()
 }
 
 const STATUS: Record<AffectedPeriod['status'], { type: string; label: string }> = {
-  pending: { type: 'warning', label: '待處理' },
-  resolved: { type: 'success', label: '已確認' },
+  pending: { type: 'warning', label: '待处理' },
+  resolved: { type: 'success', label: '已确认' },
   completed: { type: 'info', label: '已完成' },
   cancelled: { type: 'default', label: '已取消' },
 }
@@ -321,25 +321,25 @@ function candidateTagType(c: Candidate): string {
 </script>
 
 <template>
-  <!-- 視窗要放在 n-space 外面:n-space 會把每個子節點包一層沒有 key 的 div,假單卡片數量一變,
-       視窗就跟著換位置重掛,正式建置下會關不掉(v1.2.14 在「學期與節次表」踩過)。 -->
+  <!-- 视窗要放在 n-space 外面:n-space 会把每个子节点包一层没有 key 的 div,假单卡片数量一变,
+       视窗就跟著换位置重挂,正式建置下会关不掉(v1.2.14 在「学期与节次表」踩过)。 -->
   <div>
     <n-space vertical size="large">
       <n-space align="center">
-        <h2 style="margin: 0">調代課處理</h2>
+        <h2 style="margin: 0">调代课处理</h2>
         <n-select
           :value="sid" :options="semesterOptions" style="width: 220px"
-          placeholder="選擇學期" @update:value="onSemesterChange"
+          placeholder="选择学期" @update:value="onSemesterChange"
         />
       </n-space>
 
-      <n-empty v-if="!sid" description="請先建立學期" />
-      <n-empty v-else-if="!activeLeaves.length" description="目前沒有待處理的請假" />
+      <n-empty v-if="!sid" description="请先建立学期" />
+      <n-empty v-else-if="!activeLeaves.length" description="目前没有待处理的请假" />
 
       <template v-else>
         <n-card
           v-for="l in activeLeaves" :key="l.id" size="small" data-testid="sub-leave"
-          :title="`${l.teacher_name} · ${l.leave_type_label} · 待處理 ${l.pending_count} 節`"
+          :title="`${l.teacher_name} · ${l.leave_type_label} · 待处理 ${l.pending_count} 节`"
         >
           <template
             v-if="pendingOf(l).length > 1 || swapIds(l).length || substituteIds(l).length"
@@ -350,19 +350,19 @@ function candidateTagType(c: Candidate): string {
                 v-if="pendingOf(l).length > 1" size="small" type="primary" ghost
                 data-testid="sub-batch-open" @click="openBatch(l)"
               >
-                整批指派代課
+                整批指派代课
               </n-button>
               <n-button
                 v-if="swapIds(l).length" size="small" data-testid="sub-print-leave"
                 @click="printSlips('swap', swapIds(l))"
               >
-                列印調課單({{ swapIds(l).length }} 節)
+                打印调课单({{ swapIds(l).length }} 节)
               </n-button>
               <n-button
                 v-if="substituteIds(l).length" size="small" data-testid="sub-print-leave-sub"
                 @click="printSlips('substitute', substituteIds(l))"
               >
-                列印代課單({{ substituteIds(l).length }} 節)
+                打印代课单({{ substituteIds(l).length }} 节)
               </n-button>
             </n-space>
           </template>
@@ -386,7 +386,7 @@ function candidateTagType(c: Candidate): string {
                   v-if="p.status === 'pending'" size="small" type="primary"
                   data-testid="sub-handle" @click="openPeriod(p)"
                 >
-                  {{ openId === p.id ? '收合' : '處理' }}
+                  {{ openId === p.id ? '收合' : '处理' }}
                 </n-button>
                 <n-button
                   v-else-if="p.status === 'resolved'" size="small" tertiary
@@ -398,7 +398,7 @@ function candidateTagType(c: Candidate): string {
                   v-if="p.sub_type === 'swap' && p.status !== 'cancelled'" size="small" tertiary
                   data-testid="sub-print-slip" @click="printSlips('swap', [p.id])"
                 >
-                  列印調課單
+                  打印调课单
                 </n-button>
                 <n-button
                   v-if="(p.sub_type === 'substitute' || p.sub_type === 'merge')
@@ -406,17 +406,17 @@ function candidateTagType(c: Candidate): string {
                   size="small" tertiary
                   data-testid="sub-print-slip-sub" @click="printSlips('substitute', [p.id])"
                 >
-                  列印代課單
+                  打印代课单
                 </n-button>
               </n-space>
 
-              <!-- 展開:代課推薦 + 其他處置 -->
+              <!-- 展开:代课推荐 + 其他处置 -->
               <n-card
                 v-if="openId === p.id" size="small" embedded style="margin: 8px 0 8px 40px"
                 data-testid="sub-panel"
               >
                 <n-space vertical size="small">
-                  <n-text v-if="loadingRec" depth="3">計算可代教師中…</n-text>
+                  <n-text v-if="loadingRec" depth="3">计算可代教师中…</n-text>
 
                   <template v-else-if="rec">
                     <n-alert
@@ -428,10 +428,10 @@ function candidateTagType(c: Candidate): string {
 
                     <template v-else>
                       <n-space align="center">
-                        <n-text depth="3">代課鐘點</n-text>
+                        <n-text depth="3">代课课时</n-text>
                         <n-switch v-model:value="countsHours" size="small" />
-                        <n-text depth="3">{{ countsHours ? '計入' : '不計' }}</n-text>
-                        <n-text depth="3">計費方式</n-text>
+                        <n-text depth="3">{{ countsHours ? '计入' : '不计' }}</n-text>
+                        <n-text depth="3">计费方式</n-text>
                         <n-select
                           v-model:value="funding" size="small" style="width: 150px"
                           filterable tag :options="fundingOptions"
@@ -458,44 +458,44 @@ function candidateTagType(c: Candidate): string {
                   </template>
 
                   <n-space size="small" style="margin-top: 8px">
-                    <n-text depth="3">或改採:</n-text>
+                    <n-text depth="3">或改采:</n-text>
                     <n-button
                       size="tiny" :type="swapOpen ? 'primary' : 'default'"
                       data-testid="sub-swap" @click="toggleSwap(p)"
                     >
-                      調課
+                      调课
                     </n-button>
                     <n-button size="tiny" data-testid="sub-merge" @click="assign(p, 'merge')">
-                      併班
+                      并班
                     </n-button>
                     <n-button
                       size="tiny" data-testid="sub-selfstudy" @click="assign(p, 'self_study')"
                     >
-                      自習
+                      自习
                     </n-button>
                     <n-button size="tiny" data-testid="sub-cancel" @click="assign(p, 'cancel')">
-                      不處理
+                      不处理
                     </n-button>
                   </n-space>
 
-                  <!-- 調課:乙來上這一節,甲在往後幾週內補回乙的一節 -->
+                  <!-- 调课:乙来上这一节,甲在往后几周内补回乙的一节 -->
                   <div v-if="swapOpen" class="swap" data-testid="sub-swap-panel">
                     <n-text depth="3" class="swap-intro">
-                      調課 = 請另一位老師來上這一節,{{ l.teacher_name }}再找一天補回對方的一節(不計代課鐘點)。
+                      调课 = 请另一位老师来上这一节,{{ l.teacher_name }}再找一天补回对方的一节(不计代课课时)。
                       <template v-if="swap">
                         以下是 {{ shortDate(swap.date_from) }} 到 {{ shortDate(swap.date_to) }}
-                        之間,雙方都有空的節次,點一下就成立。
+                        之间,双方都有空的节次,点一下就成立。
                       </template>
                     </n-text>
                     <n-space align="center" size="small" style="margin-bottom: 6px">
                       <n-select
                         :value="swapTeacherId" :options="swapTeacherOptions(l)" filterable clearable
-                        size="small" style="width: 200px" placeholder="只看也教這班的老師"
+                        size="small" style="width: 200px" placeholder="只看也教这班的老师"
                         data-testid="sub-swap-teacher"
                         @update:value="(v: number | null) => onSwapTeacherChange(p, v)"
                       />
-                      <n-text depth="3">也可以指定其他老師</n-text>
-                      <n-text depth="3" style="margin-left: 12px">範圍</n-text>
+                      <n-text depth="3">也可以指定其他老师</n-text>
+                      <n-text depth="3" style="margin-left: 12px">范围</n-text>
                       <n-select
                         :value="swapWeeks" :options="SWAP_WEEK_OPTIONS" size="small"
                         style="width: 140px" data-testid="sub-swap-weeks"
@@ -503,15 +503,15 @@ function candidateTagType(c: Candidate): string {
                       />
                     </n-space>
 
-                    <n-text v-if="loadingSwap" depth="3">尋找可對調的節次…</n-text>
+                    <n-text v-if="loadingSwap" depth="3">寻找可对调的节次…</n-text>
                     <template v-else-if="swap">
                       <n-alert
                         v-if="!swap.partners.length" type="info" :bordered="false"
                         data-testid="sub-swap-empty"
                       >
                         {{ swapTeacherId
-                          ? '這位老師目前無法對調(可能已停用)。'
-                          : '沒有其他老師也教這個班,可以從上方指定一位老師看看。' }}
+                          ? '这位老师目前无法对调(可能已停用)。'
+                          : '没有其他老师也教这个班,可以从上方指定一位老师看看。' }}
                       </n-alert>
                       <div
                         v-for="partner in swap.partners" :key="partner.teacher_id"
@@ -520,14 +520,14 @@ function candidateTagType(c: Candidate): string {
                         <n-space align="center" size="small">
                           <b>{{ partner.teacher_name }}</b>
                           <n-tag v-if="partner.teaches_same_class" size="small" type="success">
-                            也教這班
+                            也教这班
                           </n-tag>
                         </n-space>
                         <n-text v-if="partner.blocked_reason" depth="3" class="swap-note">
-                          無法對調:{{ partner.blocked_reason }}
+                          无法对调:{{ partner.blocked_reason }}
                         </n-text>
                         <n-text v-else-if="!partner.options.length" depth="3" class="swap-note">
-                          這段期間找不到雙方都有空的節次,可試著放寬週數
+                          这段期间找不到双方都有空的节次,可试著放宽周数
                         </n-text>
                         <n-space v-else size="small" class="swap-note">
                           <n-button
@@ -538,13 +538,13 @@ function candidateTagType(c: Candidate): string {
                           >
                             {{ shortDate(opt.date) }} {{ opt.period_name }} ·
                             {{ opt.class_names }} {{ opt.subject_name }}
-                            <span v-if="opt.in_block" class="swap-block">(連堂之一)</span>
+                            <span v-if="opt.in_block" class="swap-block">(连堂之一)</span>
                           </n-button>
                           <n-button
                             v-if="hiddenCount(partner)" size="small" text type="primary"
                             data-testid="sub-swap-more" @click="expandPartner(partner)"
                           >
-                            顯示其他班級的 {{ hiddenCount(partner) }} 個節次
+                            显示其他班级的 {{ hiddenCount(partner) }} 个节次
                           </n-button>
                         </n-space>
                       </div>
@@ -560,29 +560,29 @@ function candidateTagType(c: Candidate): string {
 
     <n-modal
       v-model:show="batchShow" preset="card" style="max-width: 560px"
-      :title="`整批指派代課:${batchLeave?.teacher_name ?? ''}`" data-testid="sub-batch"
+      :title="`整批指派代课:${batchLeave?.teacher_name ?? ''}`" data-testid="sub-batch"
     >
       <n-space vertical>
         <n-text depth="3">
-          把這張假單還沒處理的節次,一次指派給同一位代課老師。已經處理過的節次不會更動;
-          代課老師自己有課的節次會跳過,並列出來讓你另外找人。
+          把这张假单还没处理的节次,一次指派给同一位代课老师。已经处理过的节次不会更动;
+          代课老师自己有课的节次会跳过,并列出来让你另外找人。
         </n-text>
         <n-space align="center">
-          <n-text style="min-width: 70px">代課老師</n-text>
+          <n-text style="min-width: 70px">代课老师</n-text>
           <n-select
             v-model:value="batchTeacher" :options="batchTeacherOptions" filterable
-            placeholder="選擇教師" style="width: 240px" data-testid="sub-batch-teacher"
+            placeholder="选择教师" style="width: 240px" data-testid="sub-batch-teacher"
           />
         </n-space>
         <n-space align="center">
-          <n-text style="min-width: 70px">計費方式</n-text>
+          <n-text style="min-width: 70px">计费方式</n-text>
           <n-select
             v-model:value="batchFunding" :options="fundingOptions" filterable tag
             style="width: 240px" data-testid="sub-batch-funding"
           />
         </n-space>
         <n-space align="center">
-          <n-text style="min-width: 70px">範圍</n-text>
+          <n-text style="min-width: 70px">范围</n-text>
           <n-select
             v-model:value="batchDate" :options="batchDateOptions"
             style="width: 320px" data-testid="sub-batch-date"
@@ -591,7 +591,7 @@ function candidateTagType(c: Candidate): string {
 
         <n-alert
           v-if="batchSkipped.length" type="warning" :show-icon="true"
-          :title="`已指派 ${batchDone} 節;有 ${batchSkipped.length} 節沒有派成`"
+          :title="`已指派 ${batchDone} 节;有 ${batchSkipped.length} 节没有派成`"
           data-testid="sub-batch-skipped"
         >
           <ul class="batch-skips">
@@ -600,12 +600,12 @@ function candidateTagType(c: Candidate): string {
               ——{{ s.reason }}
             </li>
           </ul>
-          這幾節仍是「待處理」,請關閉視窗後個別處理。
+          这几节仍是「待处理」,请关闭视窗后个别处理。
         </n-alert>
 
         <n-space justify="end">
           <n-button data-testid="sub-batch-close" @click="batchShow = false">
-            {{ batchSkipped.length ? '關閉' : '取消' }}
+            {{ batchSkipped.length ? '关闭' : '取消' }}
           </n-button>
           <n-button
             v-if="!batchSkipped.length" type="primary" :loading="batchBusy"

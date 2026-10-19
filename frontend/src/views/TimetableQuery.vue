@@ -42,17 +42,17 @@ async function onExport(fmt: ExportFmt) {
   try {
     await exportTimetable(sid.value, view.value, targetId.value, fmt)
   } catch (e) {
-    message.error((e as Error).message || '匯出失敗')
+    message.error((e as Error).message || '导出失败')
   } finally {
     exporting.value = false
   }
 }
 
-// 全校匯出跟著目前的檢視走:班級視角出班級版,教師視角出教師版(使用者回報 #22)。
-// 場地沒有這個需求,切到場地時不顯示這兩個按鈕。
+// 全校导出跟著目前的查看走:班级视角出班级版,教师视角出教师版(用户回报 #22)。
+// 场地没有这个需求,切到场地时不显示这两个按钮。
 const batchView = computed<'class' | 'teacher' | null>(() =>
   view.value === 'class' || view.value === 'teacher' ? view.value : null)
-const batchLabel = computed(() => (batchView.value === 'teacher' ? '全校教師' : '全校班級'))
+const batchLabel = computed(() => (batchView.value === 'teacher' ? '全校教师' : '全校班级'))
 
 async function onExportAll(kind: 'school' | 'batch') {
   if (sid.value === null || batchView.value === null) return
@@ -62,7 +62,7 @@ async function onExportAll(kind: 'school' | 'batch') {
       ? exportSchoolWorkbook(sid.value, batchView.value)
       : exportBatchZip(sid.value, batchView.value))
   } catch (e) {
-    message.error((e as Error).message || '匯出失敗')
+    message.error((e as Error).message || '导出失败')
   } finally {
     exporting.value = false
   }
@@ -83,7 +83,7 @@ async function load(id: number) {
   if (!d) return
   classId.value = d.classes[0]?.id ?? null
   roomId.value = d.rooms[0]?.id ?? null
-  // 教師登入且已綁定 → 預設顯示本人課表
+  // 教师登录且已绑定 → 默认显示本人课表
   if (me.value) {
     view.value = 'teacher'
     teacherId.value = me.value.id
@@ -105,7 +105,7 @@ const defaultTable = computed(() => {
   const ts = data.value?.period_tables ?? []
   return ts.find((t) => t.is_default) ?? ts[0] ?? null
 })
-/** 班級視角用該班所屬節次表;教師/場地視角用學期預設表。 */
+/** 班级视角用该班所属节次表;教师/场地视角用学期默认表。 */
 const activeTable = computed(() => {
   if (view.value === 'class' && classId.value) {
     const c = data.value?.classes.find((x) => x.id === classId.value)
@@ -123,7 +123,7 @@ const shownEntries = computed(() => {
   if (view.value === 'teacher') return teacherId.value ? all.filter((e) => e.teacher_ids.includes(teacherId.value!)) : []
   return roomId.value ? all.filter((e) => e.room_id === roomId.value) : []
 })
-/** 教師/場地視角:預設表沒有、但這位老師(這間場地)用得到的節次列要補上(如高中部的第八節)。 */
+/** 教师/场地视角:默认表没有、但这位老师(这间场地)用得到的节次列要补上(如高中部的第八节)。 */
 const periods = computed<PeriodCell[]>(() => {
   const base = (activeTable.value?.periods ?? []) as PeriodCell[]
   if (view.value === 'class') return base
@@ -138,11 +138,11 @@ const entries = computed<GridEntry[]>(() => {
     subject: e.subject,
     teacher: view.value === 'class' ? e.teachers.join('、') : e.classes.join('、'),
     room: e.room ?? undefined,
-    // 教師/場地視角照預設節次表畫格線;另一套節次表的課要標出實際時間
+    // 教师/场地视角照默认节次表画格线;另一套节次表的课要标出实际时间
     note: view.value === 'class' ? undefined : crossTableNote(
       e, data.value?.classes ?? [], data.value?.period_tables ?? [], activeTable.value),
-    // 單雙週(v1.3.0):同一格單週、雙週兩堂上下並列
-    week: e.week_parity === 'odd' ? '單' as const : e.week_parity === 'even' ? '雙' as const : undefined,
+    // 单双周(v1.3.0):同一格单周、双周两堂上下并列
+    week: e.week_parity === 'odd' ? '单' as const : e.week_parity === 'even' ? '双' as const : undefined,
   }))
 })
 </script>
@@ -150,26 +150,26 @@ const entries = computed<GridEntry[]>(() => {
 <template>
   <n-space vertical size="large">
     <n-space align="center" :wrap="true">
-      <h1 style="margin: 0">課表查詢</h1>
+      <h1 style="margin: 0">课表查询</h1>
       <n-select
         v-if="semesters.length > 1" :value="sid" :options="semesterOptions"
         style="width: 200px" @update:value="load"
       />
       <n-tag v-if="data" size="small" type="success">
-        {{ data.semester_label }} · {{ data.name }}(已發布)
+        {{ data.semester_label }} · {{ data.name }}(已发布)
       </n-tag>
     </n-space>
 
     <n-card v-if="!loading && !data" size="small">
-      <n-empty description="目前尚無已發布的課表" data-testid="tq-none" />
+      <n-empty description="目前尚无已发布的课表" data-testid="tq-none" />
     </n-card>
 
     <template v-else-if="data">
       <n-space align="center" :wrap="true">
         <n-radio-group v-model:value="view">
-          <n-radio-button value="class" data-testid="tq-view-class">班級</n-radio-button>
-          <n-radio-button value="teacher" data-testid="tq-view-teacher">教師</n-radio-button>
-          <n-radio-button value="room" data-testid="tq-view-room">場地</n-radio-button>
+          <n-radio-button value="class" data-testid="tq-view-class">班级</n-radio-button>
+          <n-radio-button value="teacher" data-testid="tq-view-teacher">教师</n-radio-button>
+          <n-radio-button value="room" data-testid="tq-view-room">场地</n-radio-button>
         </n-radio-group>
         <n-select
           v-if="view === 'class'" v-model:value="classId" data-testid="tq-class"
@@ -184,12 +184,12 @@ const entries = computed<GridEntry[]>(() => {
           :options="roomOptions" style="width: 160px" filterable
         />
         <n-tag v-if="me && view === 'teacher' && teacherId === me.id" size="small" type="info">
-          本人課表
+          本人课表
         </n-tag>
       </n-space>
 
       <n-space align="center" :wrap="true">
-        <n-text depth="3" style="font-size: 13px">匯出目前課表:</n-text>
+        <n-text depth="3" style="font-size: 13px">导出目前课表:</n-text>
         <n-button-group>
           <n-button
             size="small" :disabled="targetId === null || exporting"
@@ -216,7 +216,7 @@ const entries = computed<GridEntry[]>(() => {
             size="small" :disabled="exporting" data-testid="export-school"
             @click="onExportAll('school')"
           >
-            總表 Excel
+            总表 Excel
           </n-button>
           <n-button
             size="small" :disabled="exporting" data-testid="export-batch"
@@ -225,19 +225,19 @@ const entries = computed<GridEntry[]>(() => {
             批次 zip
           </n-button>
           <n-text depth="3" style="font-size: 12px">
-            {{ batchView === 'teacher' ? '每位在職教師一張(含沒排到課的)' : '每班一張' }}
+            {{ batchView === 'teacher' ? '每位在职教师一张(含没排到课的)' : '每班一张' }}
           </n-text>
         </template>
       </n-space>
 
       <n-card size="small" data-testid="tq-grid">
-        <n-empty v-if="periods.length === 0" description="此學期尚無節次表" />
+        <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />
         <TimetableGrid
           v-else
           :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
         />
       </n-card>
-      <n-text depth="3" style="font-size: 12px">課表為唯讀檢視;如有異動請洽教學組。</n-text>
+      <n-text depth="3" style="font-size: 12px">课表为唯读查看;如有异动请洽教学组。</n-text>
     </template>
   </n-space>
 </template>

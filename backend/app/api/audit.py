@@ -1,4 +1,4 @@
-"""操作軌跡查詢(僅系統管理員)。"""
+"""操作轨迹查询(仅系统管理员)。"""
 
 from datetime import datetime
 

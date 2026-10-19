@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// E2E 驗收:對「執行中的 Docker 全棧」(http://localhost)驅動真實瀏覽器。
-// 一般執行(CI/無頭):npm run e2e        → chromium(迴歸套件)
-// 有頭 + 放慢動作(給人觀看):npm run e2e:headed
-// 壓測 / 手冊截圖(非迴歸,CI 不跑):npm run e2e:perf / npm run e2e:manual
+// E2E 验收:对「执行中的 Docker 全栈」(http://localhost)驱动真实浏览器。
+// 一般执行(CI/无头):npm run e2e        → chromium(回归套件)
+// 有头 + 放慢动作(给人观看):npm run e2e:headed
+// 压测 / 手册截图(非回归,CI 不跑):npm run e2e:perf / npm run e2e:manual
 const headed = process.env.HEADED === '1'
 const ci = !!process.env.CI
 
@@ -15,7 +15,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,
-  // CI 失敗時留下可診斷產物(trace + HTML 報告);本機維持輕量 list
+  // CI 失败时留下可诊断产物(trace + HTML 报告);本机维持轻量 list
   retries: 0,
   reporter: ci ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
@@ -26,9 +26,9 @@ export default defineConfig({
   },
   projects: [
     {
-      // 迴歸驗收套件(CI 跑這個)。排除兩支「非驗收」spec:
-      //   manual-shots:操作手冊截圖產生器,需另一台已灌示範資料的 :8081 測試站
-      //   perf-page-load:60 班壓測,執行久且 p95 門檻受 runner 效能影響易 flaky
+      // 回归验收套件(CI 跑这个)。排除两支「非验收」spec:
+      //   manual-shots:操作手册截图产生器,需另一台已灌示范资料的 :8081 测试站
+      //   perf-page-load:60 班压测,执行久且 p95 门槛受 runner 效能影响易 flaky
       name: 'chromium',
       use: chrome,
       testIgnore: ['**/manual-shots.spec.ts', '**/perf-page-load.spec.ts'],

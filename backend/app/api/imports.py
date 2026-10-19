@@ -1,4 +1,4 @@
-"""Excel 匯入 API:範本下載、上傳匯入。"""
+"""Excel 导入 API:范本下载、上传导入。"""
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ _FILENAMES = {
 
 def _check_entity(entity: str) -> None:
     if entity not in VALID_ENTITIES:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "未知的匯入類型")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "未知的导入类型")
 
 
 @router.get("/import/templates/{entity}")
@@ -43,7 +43,7 @@ async def upload_import(
     entity: str,
     semester_id: int = Query(...),
     create_accounts: bool = Query(False),
-    # 既有教師(姓名＋末四碼相同)改為更新而非報錯;只覆蓋有填的欄位(使用者回報 #18)
+    # 既有教师(姓名＋末四码相同)改为更新而非报错;只覆盖有填的栏位(用户回报 #18)
     update_existing: bool = Query(False),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -51,7 +51,7 @@ async def upload_import(
 ) -> dict:
     _check_entity(entity)
     if db.get(Semester, semester_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     content = await file.read()
     try:
         result = importer.run_import(
@@ -59,6 +59,6 @@ async def upload_import(
     except Exception:
         db.rollback()
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "無法讀取檔案,請確認為有效的 Excel 檔"
+            status.HTTP_400_BAD_REQUEST, "无法读取档案,请确认为有效的 Excel 档"
         ) from None
     return {"imported": result.imported, "updated": result.updated, "errors": result.errors}

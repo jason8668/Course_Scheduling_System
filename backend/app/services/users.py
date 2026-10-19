@@ -1,4 +1,4 @@
-"""使用者相關服務:建立帳號、首次啟動建立管理員。"""
+"""用户相关服务:建立帐号、首次启动建立管理员。"""
 
 import logging
 from collections.abc import Iterable
@@ -22,7 +22,7 @@ def create_user(
     display_name: str = "",
     must_change_password: bool = True,
 ) -> User:
-    """建立帳號並指派角色。呼叫端負責 commit。"""
+    """建立帐号并指派角色。呼叫端负责 commit。"""
     user = User(
         username=username,
         password_hash=hash_password(password),
@@ -36,9 +36,9 @@ def create_user(
 
 
 def ensure_admin() -> None:
-    """系統首次啟動(尚無任何使用者)時,依 .env 建立管理員帳號。
+    """系统首次启动(尚无任何用户)时,依 .env 建立管理员帐号。
 
-    以「是否已有任何使用者」判斷,避免重複建立;預設要求首次登入改密碼。
+    以「是否已有任何用户」判断,避免重复建立;默认要求首次登录改密码。
     """
     with SessionLocal() as db:
         user_count = db.scalar(select(func.count()).select_from(User))
@@ -49,8 +49,8 @@ def ensure_admin() -> None:
             username=settings.admin_username,
             password=settings.admin_password,
             roles=[Role.admin],
-            display_name="系統管理員",
+            display_name="系统管理员",
             must_change_password=True,
         )
         db.commit()
-        logger.info("已建立初始管理員帳號:%s(首次登入需改密碼)", settings.admin_username)
+        logger.info("已建立初始管理员帐号:%s(首次登录需改密码)", settings.admin_username)

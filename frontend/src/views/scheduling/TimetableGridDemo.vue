@@ -6,7 +6,7 @@ import type { DragData, DropFeedback, GridEntry, PeriodCell } from '@/components
 
 const message = useMessage()
 
-// ── 兩套範例節次表(國小 40 分、技高 50 分)──
+// ── 两套范例节次表(小学 40 分、技高 50 分)──
 function pad(n: number) { return String(n).padStart(2, '0') }
 function slot(start: number, len: number) {
   const s = `${pad(Math.floor(start / 60))}:${pad(start % 60)}`
@@ -16,16 +16,16 @@ function slot(start: number, len: number) {
 
 function buildElementary(): PeriodCell[] {
   const cells: PeriodCell[] = []
-  const starts = [480, 530, 580, 630, 680, 720, 790, 840] // 分鐘
+  const starts = [480, 530, 580, 630, 680, 720, 790, 840] // 分钟
   for (let w = 1; w <= 5; w++) {
     starts.forEach((st, i) => {
       const p = i + 1
       const t = slot(st, p === 6 ? 60 : 40)
       let type = 'regular'
-      let name = `第${p}節`
+      let name = `第${p}节`
       if (p === 6) { type = 'lunch'; name = '午休' }
-      // 週三下午不排課(第 7、8 節)
-      if (w === 3 && p >= 7) { type = 'reserved'; name = '週三不排' }
+      // 周三下午不排课(第 7、8 节)
+      if (w === 3 && p >= 7) { type = 'reserved'; name = '周三不排' }
       cells.push({ weekday: w, period_no: p, name, type, start_time: t.start, end_time: t.end })
     })
   }
@@ -39,7 +39,7 @@ function buildVocational(): PeriodCell[] {
       const p = i + 1
       const t = slot(st, p === 5 ? 60 : 50)
       let type = 'regular'
-      let name = `第${p}節`
+      let name = `第${p}节`
       if (p === 5) { type = 'lunch'; name = '午休' }
       cells.push({ weekday: w, period_no: p, name, type, start_time: t.start, end_time: t.end })
     })
@@ -50,37 +50,37 @@ function buildVocational(): PeriodCell[] {
 const sample = ref<'elementary' | 'vocational'>('elementary')
 const periods = computed(() => (sample.value === 'elementary' ? buildElementary() : buildVocational()))
 
-// 各範例獨立的已排格位與未排清單
+// 各范例独立的已排格位与未排清单
 interface TrayItem { assignmentId: number; subject: string; teacher: string; room?: string; span?: number }
 const state = reactive<Record<string, { entries: GridEntry[]; tray: TrayItem[] }>>({
   elementary: {
     entries: [
-      { id: 1, weekday: 1, period_no: 1, subject: '導師時間', teacher: '王師', locked: true },
-      { id: 2, weekday: 2, period_no: 2, subject: '數學', teacher: '李師' },
+      { id: 1, weekday: 1, period_no: 1, subject: '导师时间', teacher: '王师', locked: true },
+      { id: 2, weekday: 2, period_no: 2, subject: '数学', teacher: '李师' },
     ],
     tray: [
-      { assignmentId: 11, subject: '國語', teacher: '王師' },
-      { assignmentId: 12, subject: '英語', teacher: '陳師' },
-      { assignmentId: 13, subject: '自然', teacher: '林師', room: '自然教室' },
+      { assignmentId: 11, subject: '国语', teacher: '王师' },
+      { assignmentId: 12, subject: '英语', teacher: '陈师' },
+      { assignmentId: 13, subject: '自然', teacher: '林师', room: '自然教室' },
     ],
   },
   vocational: {
     entries: [
-      { id: 21, weekday: 1, period_no: 1, subject: '國文', teacher: '張師', locked: true },
-      { id: 22, weekday: 1, period_no: 6, subject: '機械實習', teacher: '陳師', room: '實習工場', span: 2 },
+      { id: 21, weekday: 1, period_no: 1, subject: '国文', teacher: '张师', locked: true },
+      { id: 22, weekday: 1, period_no: 6, subject: '机械实习', teacher: '陈师', room: '实习工场', span: 2 },
     ],
     tray: [
-      { assignmentId: 31, subject: '數學', teacher: '李師' },
-      { assignmentId: 32, subject: '製圖', teacher: '陳師', room: '製圖室', span: 2 },
+      { assignmentId: 31, subject: '数学', teacher: '李师' },
+      { assignmentId: 32, subject: '制图', teacher: '陈师', room: '制图室', span: 2 },
     ],
   },
 })
 const current = computed(() => state[sample.value])
 
-// 衝突模擬:某些教師在特定時段「已在他處有課」,拖入即紅框
+// 冲突模拟:某些教师在特定时段「已在他处有课」,拖入即红框
 const busy: Record<string, Set<string>> = {
-  王師: new Set(['1-2']), // 王師 週一第 2 節已有課
-  張師: new Set(['2-3']),
+  王师: new Set(['1-2']), // 王师 周一第 2 节已有课
+  张师: new Set(['2-3']),
 }
 
 const dragging = ref<DragData | null>(null)
@@ -109,7 +109,7 @@ function onCheck(payload: { weekday: number; period_no: number; data: DragData |
   feedback.value = {
     weekday: payload.weekday, period_no: payload.period_no,
     ok: !conflict,
-    reason: conflict ? `${teacher} 此時段已有課` : undefined,
+    reason: conflict ? `${teacher} 此时段已有课` : undefined,
   }
 }
 function onDrop(payload: { weekday: number; period_no: number; data: DragData | null }) {
@@ -117,7 +117,7 @@ function onDrop(payload: { weekday: number; period_no: number; data: DragData | 
   const teacher = teacherOf(data)
   const k = `${payload.weekday}-${payload.period_no}`
   if (teacher && busy[teacher]?.has(k)) {
-    message.error(`無法放入:${teacher} 此時段已有課`)
+    message.error(`无法放入:${teacher} 此时段已有课`)
     clearDrag()
     return
   }
@@ -145,7 +145,7 @@ function onTrayDrop(ev: DragEvent) {
     const idx = current.value.entries.findIndex((x) => x.id === data.entryId)
     if (idx >= 0) {
       const e = current.value.entries[idx]
-      if (e.locked) { message.warning('鎖定格位不可移除'); clearDrag(); return }
+      if (e.locked) { message.warning('锁定格位不可移除'); clearDrag(); return }
       current.value.entries.splice(idx, 1)
       current.value.tray.push({
         assignmentId: Number(String(e.id).replace('e', '')) || Date.now(),
@@ -159,7 +159,7 @@ function onSelect(entry: GridEntry) {
   const e = current.value.entries.find((x) => x.id === entry.id)
   if (e) {
     e.locked = !e.locked
-    message.info(e.locked ? `已鎖定「${e.subject}」` : `已解鎖「${e.subject}」`)
+    message.info(e.locked ? `已锁定「${e.subject}」` : `已解锁「${e.subject}」`)
   }
 }
 function clearDrag() {
@@ -170,19 +170,19 @@ function clearDrag() {
 
 <template>
   <n-space vertical size="large">
-    <h1 style="margin: 0">課表元件示範(TimetableGrid)</h1>
+    <h1 style="margin: 0">课表元件示范(TimetableGrid)</h1>
     <n-alert type="info" :show-icon="true">
-      拖動右側未排課務到格子:綠框可放、紅框衝突(模擬:王師週一第2節、張師週二第3節已有課)。
-      點格內卡片可切換鎖定;把格內卡片拖回右側清單可移除。連堂課以較高卡片呈現。
+      拖动右侧未排课务到格子:绿框可放、红框冲突(模拟:王师周一第2节、张师周二第3节已有课)。
+      点格内卡片可切换锁定;把格内卡片拖回右侧清单可移除。连堂课以较高卡片呈现。
     </n-alert>
 
     <n-radio-group v-model:value="sample">
-      <n-radio-button value="elementary" data-testid="demo-elementary">國小(40 分/節)</n-radio-button>
-      <n-radio-button value="vocational" data-testid="demo-vocational">技高(50 分/節)</n-radio-button>
+      <n-radio-button value="elementary" data-testid="demo-elementary">小学(40 分/节)</n-radio-button>
+      <n-radio-button value="vocational" data-testid="demo-vocational">技高(50 分/节)</n-radio-button>
     </n-radio-group>
 
     <div class="demo-layout">
-      <n-card :title="sample === 'elementary' ? '國小週課表' : '技高週課表'" size="small" style="flex: 1; min-width: 0">
+      <n-card :title="sample === 'elementary' ? '小学周课表' : '技高周课表'" size="small" style="flex: 1; min-width: 0">
         <TimetableGrid
           :key="sample"
           :periods="periods" :entries="current.entries"
@@ -193,7 +193,7 @@ function clearDrag() {
       </n-card>
 
       <n-card
-        title="未排課務" size="small" class="tray"
+        title="未排课务" size="small" class="tray"
         @dragover.prevent @drop="onTrayDrop"
       >
         <n-space vertical size="small">
@@ -205,11 +205,11 @@ function clearDrag() {
           >
             <div class="tray-subject">
               {{ item.subject }}
-              <n-tag v-if="item.span && item.span > 1" size="tiny" type="warning">{{ item.span }}連堂</n-tag>
+              <n-tag v-if="item.span && item.span > 1" size="tiny" type="warning">{{ item.span }}连堂</n-tag>
             </div>
             <div class="tray-teacher">{{ item.teacher }}<span v-if="item.room"> · {{ item.room }}</span></div>
           </div>
-          <n-text depth="3" style="font-size: 12px">（拖曳到左側課表格子）</n-text>
+          <n-text depth="3" style="font-size: 12px">（拖曳到左侧课表格子）</n-text>
         </n-space>
       </n-card>
     </div>

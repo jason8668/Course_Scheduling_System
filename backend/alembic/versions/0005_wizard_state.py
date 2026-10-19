@@ -1,4 +1,4 @@
-"""wizard_state 單例資料表
+"""wizard_state 单例资料表
 
 Revision ID: 0005_wizard_state
 Revises: 0004_teacher_id_last4

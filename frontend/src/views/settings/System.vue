@@ -34,7 +34,7 @@ const auth = useAuthStore()
 
 const isAdmin = () => auth.hasRole('admin')
 
-// ── 系統版本與新版本提醒 ──
+// ── 系统版本与新版本提醒 ──
 const update = ref<UpdateStatus | null>(null)
 const checkingUpdate = ref(false)
 
@@ -53,19 +53,19 @@ async function loadUpdate(refresh = false) {
         ? `有新版本 ${update.value.latest}` : '目前已是最新版本')
     }
   } catch (e) {
-    message.error((e as ApiError).message || '無法取得版本資訊')
+    message.error((e as ApiError).message || '无法取得版本信息')
   } finally {
     checkingUpdate.value = false
   }
 }
 
-// ── 結構升級後的一次性提示(v1.3.0):升級前自動備份了哪一份 ──
+// ── 结构升级后的一次性提示(v1.3.0):升级前自动备份了哪一份 ──
 const upgradeNotice = ref<UpgradeNotice | null>(null)
 async function loadUpgradeNotice() {
   try {
     upgradeNotice.value = await getUpgradeNotice()
   } catch {
-    upgradeNotice.value = null // 舊資料或權限問題:不顯示即可,不影響其他功能
+    upgradeNotice.value = null // 旧资料或权限问题:不显示即可,不影响其他功能
   }
 }
 async function onDismissUpgradeNotice() {
@@ -73,7 +73,7 @@ async function onDismissUpgradeNotice() {
   upgradeNotice.value = null
 }
 
-// ── 備份與還原 ──
+// ── 备份与还原 ──
 const backups = ref<Backup[]>([])
 const busy = ref(false)
 
@@ -92,10 +92,10 @@ async function onCreateBackup() {
   busy.value = true
   try {
     await createBackup()
-    message.success('已建立備份')
+    message.success('已建立备份')
     await reloadBackups()
   } catch (e) {
-    message.error((e as ApiError).message || '備份失敗')
+    message.error((e as ApiError).message || '备份失败')
   } finally {
     busy.value = false
   }
@@ -103,7 +103,7 @@ async function onCreateBackup() {
 
 async function onDeleteBackup(name: string) {
   await deleteBackup(name)
-  message.success('已刪除備份')
+  message.success('已删除备份')
   await reloadBackups()
 }
 
@@ -113,23 +113,23 @@ async function redirectToLogin() {
 }
 
 async function afterRestore(r: RestoreResult) {
-  // 還原後所有 session 已失效,需重新登入。若有可忽略的警告,先以對話框讓管理員看見
-  // (訊息在導向登入頁後會消失,警告不能只用一閃即逝的 toast)。
+  // 还原后所有 session 已失效,需重新登录。若有可忽略的警告,先以对话框让管理员看见
+  // (讯息在导向登录页后会消失,警告不能只用一闪即逝的 toast)。
   if (r.warnings.length > 0) {
     dialog.warning({
-      title: '還原完成,但有可忽略的警告',
+      title: '还原完成,但有可忽略的警告',
       content: () => h('div', [
-        h('p', `現狀已備份為 ${r.presafe_backup}。以下警告不影響資料,通常為跨版本的設定參數:`),
+        h('p', `现状已备份为 ${r.presafe_backup}。以下警告不影响资料,通常为跨版本的设置参数:`),
         ...r.warnings.map((w) => h('p', { style: 'font-size:12px;color:#999;margin:4px 0' }, w)),
       ]),
-      positiveText: '知道了,重新登入',
+      positiveText: '知道了,重新登录',
       maskClosable: false,
       onPositiveClick: redirectToLogin,
       onClose: redirectToLogin,
     })
     return
   }
-  message.success(`還原完成(現狀已備份為 ${r.presafe_backup}),請重新登入`)
+  message.success(`还原完成(现状已备份为 ${r.presafe_backup}),请重新登录`)
   await redirectToLogin()
 }
 
@@ -139,7 +139,7 @@ async function onRestore(name: string) {
     const r = await restoreBackup(name)
     await afterRestore(r)
   } catch (e) {
-    message.error((e as ApiError).message || '還原失敗')
+    message.error((e as ApiError).message || '还原失败')
   } finally {
     busy.value = false
   }
@@ -153,7 +153,7 @@ async function onUploadRestore({ file, onFinish, onError }: UploadCustomRequestO
     await afterRestore(r)
   } catch (e) {
     onError()
-    message.error((e as Error).message || '上傳還原失敗')
+    message.error((e as Error).message || '上传还原失败')
   } finally {
     busy.value = false
   }
@@ -171,17 +171,17 @@ const savingScheduling = ref(false)
 
 const schoolName = ref('')
 
-// ── 巡堂表的記錄說明(各校的代碼不同)──
+// ── 巡堂表的记录说明(各校的代码不同)──
 const patrolLegend = ref('')
 const savingPatrol = ref(false)
 async function onSavePatrol() {
   savingPatrol.value = true
   try {
-    // 留空送出 = 恢復預設;後端會回傳實際生效的文字
+    // 留空送出 = 恢复默认;后端会回传实际生效的文字
     patrolLegend.value = (await savePatrolSettings({ legend: patrolLegend.value })).legend
-    message.success('已儲存巡堂表設定')
+    message.success('已储存巡堂表设置')
   } catch (e) {
-    message.error((e as ApiError).message || '儲存失敗')
+    message.error((e as ApiError).message || '储存失败')
   } finally {
     savingPatrol.value = false
   }
@@ -189,13 +189,13 @@ async function onSavePatrol() {
 const savingSchool = ref(false)
 
 async function onSaveSchool() {
-  if (!schoolName.value.trim()) { message.warning('請輸入校名'); return }
+  if (!schoolName.value.trim()) { message.warning('请输入校名'); return }
   savingSchool.value = true
   try {
     schoolName.value = (await saveSchoolSettings({ school_name: schoolName.value })).school_name
     message.success('已更新校名')
   } catch (e) {
-    message.error((e as ApiError).message || '儲存失敗')
+    message.error((e as ApiError).message || '储存失败')
   } finally {
     savingSchool.value = false
   }
@@ -203,7 +203,7 @@ async function onSaveSchool() {
 
 onMounted(async () => {
   if (!isAdmin()) return
-  // 查新版本可能要連外等幾秒,不擋住其他設定載入
+  // 查新版本可能要连外等几秒,不挡住其他设置载入
   void loadUpdate()
   void loadUpgradeNotice()
   const s = await getSmtp()
@@ -220,7 +220,7 @@ onMounted(async () => {
   await reloadBackups()
 })
 
-// ── 示範資料 ──
+// ── 示范资料 ──
 const demoAvailable = ref(false)
 const demoReason = ref('')
 const demoSchool = ref('')
@@ -232,14 +232,14 @@ async function onLoadDemo() {
     const r = await loadDemoData()
     schoolName.value = r.school_name
     demoAvailable.value = false
-    demoReason.value = '示範資料已載入。'
+    demoReason.value = '示范资料已载入。'
     message.success(
-      `已建立 ${r.classes} 班、${r.teachers} 位教師、${r.assignments} 筆配課`
-      + `(共 ${r.total_periods} 節)。可以到「自動排課」試跑了。`,
+      `已建立 ${r.classes} 班、${r.teachers} 位教师、${r.assignments} 笔配课`
+      + `(共 ${r.total_periods} 节)。可以到「自动排课」试跑了。`,
       { duration: 8000 },
     )
   } catch (e) {
-    message.error((e as ApiError).message || '載入失敗')
+    message.error((e as ApiError).message || '载入失败')
   } finally {
     loadingDemo.value = false
   }
@@ -250,9 +250,9 @@ async function onSaveScheduling() {
   try {
     const s = await saveSchedulingSettings({ max_overtime: maxOvertime.value })
     maxOvertime.value = s.max_overtime
-    message.success('已儲存排課設定')
+    message.success('已储存排课设置')
   } catch (e) {
-    message.error((e as ApiError).message || '儲存失敗')
+    message.error((e as ApiError).message || '储存失败')
   } finally {
     savingScheduling.value = false
   }
@@ -265,9 +265,9 @@ async function onSaveSmtp() {
     configured.value = s.configured
     hasPassword.value = s.has_password
     smtp.value.password = ''
-    message.success('已儲存 SMTP 設定')
+    message.success('已储存 SMTP 设置')
   } catch (e) {
-    message.error((e as ApiError).message || '儲存失敗')
+    message.error((e as ApiError).message || '储存失败')
   } finally {
     savingSmtp.value = false
   }
@@ -276,34 +276,34 @@ async function onSaveSmtp() {
 async function onResetWizard() {
   await resetWizard()
   await wizard.fetch()
-  message.success('已重新啟動設定精靈')
+  message.success('已重新启动设置精灵')
   router.push({ name: 'wizard' })
 }
 </script>
 
 <template>
   <n-space vertical size="large">
-    <h1 style="margin: 0">系統管理</h1>
+    <h1 style="margin: 0">系统管理</h1>
 
-    <n-card v-if="isAdmin()" title="系統版本" data-testid="version-card">
+    <n-card v-if="isAdmin()" title="系统版本" data-testid="version-card">
       <n-space vertical>
         <n-alert
           v-if="upgradeNotice" :type="upgradeNotice.error ? 'error' : 'success'"
-          :title="`系統已升級到 ${upgradeNotice.version}(${upgradeNotice.at})`"
+          :title="`系统已升级到 ${upgradeNotice.version}(${upgradeNotice.at})`"
           data-testid="upgrade-notice"
         >
           <template v-if="!upgradeNotice.error">
-            升級時資料庫結構有變更,系統在升級前已<b>自動備份</b>:<code>{{ upgradeNotice.backup }}</code>。
-            這份備份在下方「資料備份與還原」的清單裡(標示「升級前自動備份」),不會被每日備份輪替刪除。
-            若要退回舊版,請先用這份備份還原,再照升級指南把版本號改回舊版。
+            升级时资料库结构有变更,系统在升级前已<b>自动备份</b>:<code>{{ upgradeNotice.backup }}</code>。
+            这份备份在下方「资料备份与还原」的清单里(标示「升级前自动备份」),不会被每日备份轮替删除。
+            若要退回旧版,请先用这份备份还原,再照升级指南把版本号改回旧版。
           </template>
           <template v-else>
-            升級前的<b>自動備份沒有成功</b>({{ upgradeNotice.error }}),系統已照常升級、可以正常使用。
-            建議現在就按下方「立即備份」留一份。若要退回舊版,可用升級前一晚的每日自動備份還原,
-            或照升級指南的「退回指令」操作。
+            升级前的<b>自动备份没有成功</b>({{ upgradeNotice.error }}),系统已照常升级、可以正常使用。
+            建议现在就按下方「立即备份」留一份。若要退回旧版,可用升级前一晚的每日自动备份还原,
+            或照升级指南的「退回指令」操作。
           </template>
           <div style="margin-top: 6px">
-            <a :href="UPGRADE_GUIDE_URL" target="_blank" rel="noopener">升級指南</a>
+            <a :href="UPGRADE_GUIDE_URL" target="_blank" rel="noopener">升级指南</a>
             ・
             <n-button text type="primary" data-testid="upgrade-notice-dismiss" @click="onDismissUpgradeNotice">
               知道了
@@ -313,7 +313,7 @@ async function onResetWizard() {
         <n-space align="center">
           <n-text style="width: 72px">目前版本</n-text>
           <n-tag :type="update?.update_available ? 'warning' : 'success'" data-testid="version-current">
-            {{ update?.current ?? '讀取中…' }}
+            {{ update?.current ?? '读取中…' }}
           </n-tag>
           <template v-if="update?.enabled && update.latest">
             <n-text depth="3" style="margin-left: 12px">最新正式版</n-text>
@@ -325,14 +325,14 @@ async function onResetWizard() {
           v-if="update?.update_available" type="warning" :bordered="false"
           data-testid="version-update"
         >
-          有新版本 <b>{{ update.latest }}</b> 可以升級。升級前請先「立即備份」,
-          再照升級指南把 <code>.env</code> 的 <code>IMAGE_TAG</code> 改成 {{ update.latest }},
-          執行 <code>docker compose pull</code> 與 <code>docker compose up -d</code>。
-          系統不會自動升級。
+          有新版本 <b>{{ update.latest }}</b> 可以升级。升级前请先「立即备份」,
+          再照升级指南把 <code>.env</code> 的 <code>IMAGE_TAG</code> 改成 {{ update.latest }},
+          执行 <code>docker compose pull</code> 与 <code>docker compose up -d</code>。
+          系统不会自动升级。
           <div style="margin-top: 6px">
-            <a :href="update.latest_url || RELEASES_URL" target="_blank" rel="noopener">這一版更新了什麼</a>
+            <a :href="update.latest_url || RELEASES_URL" target="_blank" rel="noopener">这一版更新了什么</a>
             ・
-            <a :href="UPGRADE_GUIDE_URL" target="_blank" rel="noopener">升級指南</a>
+            <a :href="UPGRADE_GUIDE_URL" target="_blank" rel="noopener">升级指南</a>
           </div>
         </n-alert>
         <n-alert
@@ -346,11 +346,11 @@ async function onResetWizard() {
           v-if="update?.enabled && update.error" type="info" :bordered="false"
           data-testid="version-error"
         >
-          {{ update.error }}。不影響系統任何功能;可到
+          {{ update.error }}。不影响系统任何功能;可到
           <a :href="RELEASES_URL" target="_blank" rel="noopener">GitHub Releases</a> 自行查看最新版本。
         </n-alert>
         <n-text v-if="update && !update.enabled" depth="3" data-testid="version-disabled">
-          新版本檢查已關閉(<code>.env</code> 設定 <code>UPDATE_CHECK_ENABLED=false</code>)。
+          新版本检查已关闭(<code>.env</code> 设置 <code>UPDATE_CHECK_ENABLED=false</code>)。
         </n-text>
 
         <n-space v-if="update?.enabled" align="center">
@@ -358,55 +358,55 @@ async function onResetWizard() {
             size="small" :loading="checkingUpdate" data-testid="version-check"
             @click="loadUpdate(true)"
           >
-            立即檢查
+            立即检查
           </n-button>
           <n-text v-if="update.checked_at" depth="3" style="font-size: 13px">
-            上次檢查:{{ twTime(update.checked_at) }}(每天自動檢查一次,只讀取 GitHub 公開的版本資訊,不會傳出學校資料)
+            上次检查:{{ twTime(update.checked_at) }}(每天自动检查一次,只读取 GitHub 公开的版本信息,不会传出学校资料)
           </n-text>
         </n-space>
       </n-space>
     </n-card>
 
-    <n-card v-if="isAdmin()" title="學校資訊" data-testid="school-card">
+    <n-card v-if="isAdmin()" title="学校信息" data-testid="school-card">
       <n-space vertical>
         <n-text depth="3">
-          校名會顯示在介面、匯出的課表(Excel / PDF / PNG)、代課通知信與 A4 公告單上。
-          改完立即生效,不需重新啟動。
+          校名会显示在介面、导出的课表(Excel / PDF / PNG)、代课通知信与 A4 公告单上。
+          改完立即生效,不需重新启动。
         </n-text>
         <n-space align="center">
           <n-text style="width: 72px">校名</n-text>
           <n-input
-            v-model:value="schoolName" placeholder="如:臺南市市立敦品國中"
+            v-model:value="schoolName" placeholder="如:台南市市立敦品初中"
             style="width: 280px" data-testid="school-name"
           />
           <n-button
             type="primary" :loading="savingSchool" data-testid="school-save"
             @click="onSaveSchool"
           >
-            儲存
+            储存
           </n-button>
         </n-space>
       </n-space>
     </n-card>
 
-    <n-card v-if="isAdmin() && demoAvailable" title="示範資料" data-testid="demo-card">
+    <n-card v-if="isAdmin() && demoAvailable" title="示范资料" data-testid="demo-card">
       <n-space vertical>
         <n-text depth="3">
-          一鍵建立一所完整的示範國中「{{ demoSchool || '示範國中' }}」,讓你不必先手 key
-          資料就能試用全部功能:三個年級共 18 班(701~706、801~806、901~906)、
-          48 位教師(含導師、兼行政、外聘)、24 個分科科目、384 筆配課,
-          以及專科教室與場地。建好後可直接到「自動排課」試跑。
+          一键建立一所完整的示范初中「{{ demoSchool || '示范初中' }}」,让你不必先手 key
+          资料就能试用全部功能:三个年级共 18 班(701~706、801~806、901~906)、
+          48 位教师(含导师、兼行政、外聘)、24 个分科科目、384 笔配课,
+          以及专科教室与场地。建好后可直接到「自动排课」试跑。
         </n-text>
         <n-alert type="warning" :show-icon="false">
-          僅限「全新、尚未建立任何學期」的系統。示範資料是虛構的,
-          <strong>請勿在正式使用的系統上載入</strong>。
+          仅限「全新、尚未建立任何学期」的系统。示范资料是虚构的,
+          <strong>请勿在正式使用的系统上载入</strong>。
         </n-alert>
         <div>
           <n-button
             type="primary" :loading="loadingDemo"
             data-testid="demo-load" @click="onLoadDemo"
           >
-            載入示範資料
+            载入示范资料
           </n-button>
         </div>
       </n-space>
@@ -416,19 +416,19 @@ async function onResetWizard() {
       <n-space vertical>
         <n-space align="center">
           <n-text depth="3">
-            設定後,調代課通知除站內外會加寄 Email;未設定時系統照常運作,僅站內通知。
+            设置后,调代课通知除站内外会加寄 Email;未设置时系统照常运作,仅站内通知。
           </n-text>
           <n-tag :type="configured ? 'success' : 'default'" data-testid="smtp-status">
-            {{ configured ? '已設定' : '未設定' }}
+            {{ configured ? '已设置' : '未设置' }}
           </n-tag>
         </n-space>
         <n-space align="center" :wrap="true">
-          <n-text style="width: 72px">主機</n-text>
+          <n-text style="width: 72px">主机</n-text>
           <n-input
             v-model:value="smtp.host" placeholder="smtp.example.com" style="width: 220px"
             data-testid="smtp-host"
           />
-          <n-text>連接埠</n-text>
+          <n-text>连接埠</n-text>
           <n-input-number v-model:value="smtp.port" :min="1" :max="65535" style="width: 110px" />
           <n-checkbox v-model:checked="smtp.use_tls">使用 TLS</n-checkbox>
         </n-space>
@@ -438,50 +438,50 @@ async function onResetWizard() {
             v-model:value="smtp.sender" placeholder="noreply@school.edu.tw"
             style="width: 220px" data-testid="smtp-sender"
           />
-          <n-text>帳號</n-text>
-          <n-input v-model:value="smtp.user" placeholder="(選填)" style="width: 160px" />
-          <n-text>密碼</n-text>
+          <n-text>帐号</n-text>
+          <n-input v-model:value="smtp.user" placeholder="(选填)" style="width: 160px" />
+          <n-text>密码</n-text>
           <n-input
             v-model:value="smtp.password" type="password"
-            :placeholder="hasPassword ? '(已設定,留空不變更)' : '(選填)'" style="width: 160px"
+            :placeholder="hasPassword ? '(已设置,留空不变更)' : '(选填)'" style="width: 160px"
           />
         </n-space>
         <div>
           <n-button
             type="primary" :loading="savingSmtp" data-testid="smtp-save" @click="onSaveSmtp"
           >
-            儲存 SMTP 設定
+            储存 SMTP 设置
           </n-button>
         </div>
       </n-space>
     </n-card>
 
-    <n-card v-if="isAdmin()" title="資料備份與還原" data-testid="backup-card">
+    <n-card v-if="isAdmin()" title="资料备份与还原" data-testid="backup-card">
       <n-space vertical>
         <n-space align="center">
           <n-text depth="3">
-            每日凌晨自動備份(保留 30 份);也可立即備份、下載保存,或上傳備份檔還原。
-            還原前系統會自動先備份現狀,還原後所有人需重新登入。
+            每日凌晨自动备份(保留 30 份);也可立即备份、下载保存,或上传备份档还原。
+            还原前系统会自动先备份现状,还原后所有人需重新登录。
           </n-text>
         </n-space>
         <n-space align="center">
           <n-button
             type="primary" :loading="busy" data-testid="backup-now" @click="onCreateBackup"
           >
-            立即備份
+            立即备份
           </n-button>
           <n-upload
             :custom-request="onUploadRestore" :show-file-list="false" accept=".dump"
             :disabled="busy"
           >
-            <n-button :disabled="busy" data-testid="backup-upload">上傳備份檔並還原</n-button>
+            <n-button :disabled="busy" data-testid="backup-upload">上传备份档并还原</n-button>
           </n-upload>
         </n-space>
 
-        <n-text v-if="!backups.length" depth="3">尚無備份。</n-text>
+        <n-text v-if="!backups.length" depth="3">尚无备份。</n-text>
         <table v-else class="data-table" data-testid="backup-table">
           <thead>
-            <tr><th>時間</th><th>來源</th><th>大小</th><th>操作</th></tr>
+            <tr><th>时间</th><th>来源</th><th>大小</th><th>操作</th></tr>
           </thead>
           <tbody>
             <tr v-for="b in backups" :key="b.name" data-testid="backup-row">
@@ -490,20 +490,20 @@ async function onResetWizard() {
               <td>{{ humanSize(b.size_bytes) }}</td>
               <td>
                 <n-space size="small">
-                  <n-button size="tiny" @click="downloadBackup(b.name)">下載</n-button>
+                  <n-button size="tiny" @click="downloadBackup(b.name)">下载</n-button>
                   <n-popconfirm @positive-click="() => onRestore(b.name)">
                     <template #trigger>
                       <n-button size="tiny" type="warning" data-testid="backup-restore">
-                        還原
+                        还原
                       </n-button>
                     </template>
-                    還原將覆蓋目前所有資料(現狀會先自動備份),確定?
+                    还原将覆盖目前所有资料(现状会先自动备份),确定?
                   </n-popconfirm>
                   <n-popconfirm @positive-click="() => onDeleteBackup(b.name)">
                     <template #trigger>
-                      <n-button size="tiny" tertiary>刪除</n-button>
+                      <n-button size="tiny" tertiary>删除</n-button>
                     </template>
-                    確定刪除此備份?
+                    确定删除此备份?
                   </n-popconfirm>
                 </n-space>
               </td>
@@ -513,30 +513,30 @@ async function onResetWizard() {
       </n-space>
     </n-card>
 
-    <n-card v-if="isAdmin()" title="排課設定" data-testid="scheduling-card">
+    <n-card v-if="isAdmin()" title="排课设置" data-testid="scheduling-card">
       <n-space vertical>
         <n-text depth="3">
-          超鐘點上限依各縣市/各校規定自訂。上限是「應授節數 + N」——應授本身因身分而異
-          (例:臺南市國文科專任 16 節、兼任導師 11 節、兼任主任 6 節),固定值對誰都不合適。
+          超课时上限依各县市/各校规定自订。上限是「应授节数 + N」——应授本身因身分而异
+          (例:台南市国文科专任 16 节、兼任导师 11 节、兼任主任 6 节),固定值对谁都不合适。
         </n-text>
         <n-space align="center">
-          <span>超鐘點上限</span>
+          <span>超课时上限</span>
           <n-input-number
             v-model:value="maxOvertime" :min="0" :max="20" style="width: 120px"
             data-testid="max-overtime"
           />
-          <n-text depth="3">節(0 = 不限制)</n-text>
+          <n-text depth="3">节(0 = 不限制)</n-text>
         </n-space>
         <n-text depth="3" style="font-size: 12px">
-          超過上限的配課會被擋下。未填「基本鐘點」的教師不受此限——那代表資料尚未建立,
-          而非真的不用上課。
+          超过上限的配课会被挡下。未填「基本课时」的教师不受此限——那代表资料尚未建立,
+          而非真的不用上课。
         </n-text>
         <div>
           <n-button
             type="primary" :loading="savingScheduling" data-testid="scheduling-save"
             @click="onSaveScheduling"
           >
-            儲存排課設定
+            储存排课设置
           </n-button>
         </div>
       </n-space>
@@ -545,8 +545,8 @@ async function onResetWizard() {
     <n-card v-if="isAdmin()" title="巡堂表" data-testid="patrol-card">
       <n-space vertical>
         <n-text depth="3">
-          印在巡堂表下方的「記錄說明」。授課情形、學生學習的代碼各校不同,請改成貴校的寫法;
-          一行一項。清空後儲存會恢復預設內容。巡堂表在「今日調代課看板」列印。
+          印在巡堂表下方的「记录说明」。授课情形、学生学习的代码各校不同,请改成贵校的写法;
+          一行一项。清空后储存会恢复默认内容。巡堂表在「今日调代课看板」打印。
         </n-text>
         <n-input
           v-model:value="patrolLegend" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }"
@@ -556,20 +556,20 @@ async function onResetWizard() {
           <n-button
             type="primary" :loading="savingPatrol" data-testid="patrol-save" @click="onSavePatrol"
           >
-            儲存巡堂表設定
+            储存巡堂表设置
           </n-button>
         </div>
       </n-space>
     </n-card>
 
-    <n-card title="設定精靈">
+    <n-card title="设置精灵">
       <n-space vertical>
-        <n-text depth="3">重新執行首次設定的引導流程(不會刪除既有資料)。</n-text>
+        <n-text depth="3">重新执行首次设置的引导流程(不会删除既有资料)。</n-text>
         <n-popconfirm @positive-click="onResetWizard">
           <template #trigger>
-            <n-button>重新啟動設定精靈</n-button>
+            <n-button>重新启动设置精灵</n-button>
           </template>
-          確定重新啟動設定精靈?
+          确定重新启动设置精灵?
         </n-popconfirm>
       </n-space>
     </n-card>

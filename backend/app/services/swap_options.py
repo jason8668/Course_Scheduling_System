@@ -1,11 +1,11 @@
-"""調課:可對調節次的搜尋與逐項檢查(v1.2.1)。
+"""调课:可对调节次的搜寻与逐项检查(v1.2.1)。
 
-調課的語意見 `models/substitution.py`:甲請假那節由乙來上,甲之後補乙的一節。
-後端 M4-2 只會「驗」組長選好的組合;但組長不會自己去翻乙哪一節、哪一天能換——
-這裡替他列出請假那週起**數週內**(預設兩週,最多四週)所有真的換得成的組合。
+调课的语意见 `models/substitution.py`:甲请假那节由乙来上,甲之后补乙的一节。
+后端 M4-2 只会「验」组长选好的组合;但组长不会自己去翻乙哪一节、哪一天能换——
+这里替他列出请假那周起**数周内**(默认两周,最多四周)所有真的换得成的组合。
 
-**列出的與送出時驗的必須是同一套規則**,否則清單上點得到、按下去卻被拒絕。
-所以逐項檢查集中在 `SwapChecker`,`substitutions._validate_swap` 也呼叫它。
+**列出的与送出时验的必须是同一套规则**,否则清单上点得到、按下去却被拒绝。
+所以逐项检查集中在 `SwapChecker`,`substitutions._validate_swap` 也呼叫它。
 """
 
 from dataclasses import dataclass, field
@@ -31,10 +31,10 @@ def _period_label(av: Availability, entry: ScheduleEntry, period_no: int) -> str
 
 
 def block_periods(av: Availability, entry: ScheduleEntry) -> list[int]:
-    """格位佔用的每一節中,可以拿來對調的節次號。
+    """格位占用的每一节中,可以拿来对调的节次号。
 
-    連堂一次佔好幾節,但補課是一節換一節:乙連堂中的任一節都可以單獨換給甲補,
-    其餘幾節照常由乙上。跳過非一般課的節次(與 leaves.expand 展開連堂的規則一致)。
+    连堂一次占好几节,但补课是一节换一节:乙连堂中的任一节都可以单独换给甲补,
+    其余几节照常由乙上。跳过非一般课的节次(与 leaves.expand 展开连堂的规则一致)。
     """
     out = []
     for no in range(entry.period_no, entry.period_no + entry.span):
@@ -45,9 +45,9 @@ def block_periods(av: Availability, entry: ScheduleEntry) -> list[int]:
 
 
 class SwapChecker:
-    """針對一個受影響節次,檢查「乙能不能來」與「某一節能不能拿來換」。
+    """针对一个受影响节次,检查「乙能不能来」与「某一节能不能拿来换」。
 
-    同一次搜尋會對很多組合反覆問同樣的問題(甲某天某節有沒有空),故查詢結果快取在實例上。
+    同一次搜寻会对很多组合反复问同样的问题(甲某天某节有没有空),故查询结果快取在实例上。
     """
 
     def __init__(self, db: Session, affected: AffectedPeriod, av: Availability) -> None:
@@ -59,7 +59,7 @@ class SwapChecker:
         self._taken: set[tuple[int, date, int]] | None = None
 
     def partner_blocker(self, partner: Teacher) -> str | None:
-        """乙在甲請假那節能不能來上課(自己有課、也請假、已被安排代別班都不行)。"""
+        """乙在甲请假那节能不能来上课(自己有课、也请假、已被安排代别班都不行)。"""
         a = self.affected
         conflict = self.av.conflict_for(partner.id, a.date, self.av.slot_of(a))
         if conflict is None:
@@ -67,7 +67,7 @@ class SwapChecker:
         return f"{partner.name} {a.date} {a.period_name} {conflict.detail}"
 
     def _taken_slots(self) -> set[tuple[int, date, int]]:
-        """已經被其他有效調課拿去換的 (乙的格位, 日期, 節次)。同一節課不能換給兩個人補。"""
+        """已经被其他有效调课拿去换的 (乙的格位, 日期, 节次)。同一节课不能换给两个人补。"""
         if self._taken is None:
             rows = self.db.execute(
                 select(Substitution.swap_entry_id, Substitution.swap_date,
@@ -90,27 +90,27 @@ class SwapChecker:
     def option_blocker(
         self, partner: Teacher, entry: ScheduleEntry, when: date, period_no: int
     ) -> str | None:
-        """乙的 `entry` 格位中第 `period_no` 節,在 `when` 這天能不能改由甲來補。"""
+        """乙的 `entry` 格位中第 `period_no` 节,在 `when` 这天能不能改由甲来补。"""
         pname = _period_label(self.av, entry, period_no)
         slot = self.av.entry_slot(entry, period_no)
         sem = self.semester
         if sem is not None and (
             (sem.start_date and when < sem.start_date) or (sem.end_date and when > sem.end_date)
         ):
-            return f"{when} 不在學期期間內"
+            return f"{when} 不在学期期间内"
         if clock.is_past_slot(when, slot.end):
-            return f"{when} {pname} 已經上過,無法補課"
+            return f"{when} {pname} 已经上过,无法补课"
         if self.av.is_on_leave(partner.id, when, slot):
-            return f"{partner.name} {when} {pname} 也請假,這節課本身就需要安排,不能拿來對調"
+            return f"{partner.name} {when} {pname} 也请假,这节课本身就需要安排,不能拿来对调"
         if (entry.id, when, period_no) in self._taken_slots():
-            return f"{partner.name} {when} {pname} 這節已經和別的老師調課了"
+            return f"{partner.name} {when} {pname} 这节已经和别的老师调课了"
         conflict = self.av.conflict_for(self.absent.id, when, slot)
         if conflict is not None:
-            return f"{self.absent.name} 無法在 {when} {pname} 補課:{conflict.detail}"
+            return f"{self.absent.name} 无法在 {when} {pname} 补课:{conflict.detail}"
         return None
 
 
-# ── 搜尋 ─────────────────────────────────────────────────────
+# ── 搜寻 ─────────────────────────────────────────────────────
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,8 +122,8 @@ class SwapOption:
     period_name: str
     class_names: str
     subject_name: str
-    same_class: bool  # 與請假那節是同一班(真正的「同班互調」,學生只是兩科前後對換)
-    in_block: bool    # 是連堂中的一節(只換這一節,其餘照常由乙上)
+    same_class: bool  # 与请假那节是同一班(真正的「同班互调」,学生只是两科前后对换)
+    in_block: bool    # 是连堂中的一节(只换这一节,其余照常由乙上)
 
 
 @dataclass
@@ -131,7 +131,7 @@ class SwapPartner:
     teacher_id: int
     teacher_name: str
     teaches_same_class: bool
-    blocked_reason: str = ""  # 非空 = 乙本身在請假那節就來不了,options 必為空
+    blocked_reason: str = ""  # 非空 = 乙本身在请假那节就来不了,options 必为空
     options: list[SwapOption] = field(default_factory=list)
 
 
@@ -148,10 +148,10 @@ MAX_WEEKS = 4
 
 
 def search_window(on: date, weeks: int = DEFAULT_WEEKS) -> tuple[date, date]:
-    """請假那天所在週的週一,往後共 `weeks` 週(到最後一週的週日)。
+    """请假那天所在周的周一,往后共 `weeks` 周(到最后一周的周日)。
 
-    預設兩週(當週互調或和下週調);使用學校實務上常有隔週、甚至「本週與隔三週」對調,
-    故最多開到四週。範圍再大,清單會長到組長找不到要的那一節。
+    默认两周(当周互调或和下周调);使用学校实务上常有隔周、甚至「本周与隔三周」对调,
+    故最多开到四周。范围再大,清单会长到组长找不到要的那一节。
     """
     weeks = max(1, min(weeks, MAX_WEEKS))
     monday = on - timedelta(days=on.isoweekday() - 1)
@@ -168,7 +168,7 @@ def _class_ids_of(db: Session, assignment_id: int | None) -> set[int]:
 def _same_class_teacher_ids(
     db: Session, timetable_id: int, class_ids: set[int], exclude: int
 ) -> set[int]:
-    """已發布課表中,也在這些班級上課的教師。"""
+    """已发布课表中,也在这些班级上课的教师。"""
     if not class_ids:
         return set()
     rows = db.execute(
@@ -193,10 +193,10 @@ def search(
     weeks: int = DEFAULT_WEEKS,
     availability: Availability | None = None,
 ) -> SwapSearch:
-    """列出可對調的節次。
+    """列出可对调的节次。
 
-    `teacher_id` 為空時只找「也教這個班」的老師(最常見的同班互調);
-    指定時只看那一位(組長心裡已經有人選)。
+    `teacher_id` 为空时只找「也教这个班」的老师(最常见的同班互调);
+    指定时只看那一位(组长心里已经有人选)。
     """
     av = availability or Availability(db, affected.semester_id)
     date_from, date_to = search_window(affected.date, weeks)
@@ -268,7 +268,7 @@ def search(
                     ))
         sp.options.sort(key=lambda o: (not o.same_class, o.date, o.period_no))
 
-    # 有得換的排前面;同班老師優先
+    # 有得换的排前面;同班老师优先
     result.partners.sort(key=lambda p: (
         not p.options, not p.teaches_same_class, p.teacher_name))
     return result

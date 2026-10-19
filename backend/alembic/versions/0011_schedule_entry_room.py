@@ -1,7 +1,7 @@
-"""課表格位的實際場地:schedule_entries.room_id
+"""课表格位的实际场地:schedule_entries.room_id
 
-空 = 沿用配課的 room_id。排課引擎對「只指定場地類型」的配課逐格挑教室,
-結果需存在格位上(M4 調代課的教室異動亦然)。
+空 = 沿用配课的 room_id。排课引擎对「只指定场地类型」的配课逐格挑教室,
+结果需存在格位上(M4 调代课的教室异动亦然)。
 
 Revision ID: 0011_schedule_entry_room
 Revises: 0010_audit_logs

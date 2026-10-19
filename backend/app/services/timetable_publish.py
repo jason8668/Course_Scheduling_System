@@ -1,7 +1,7 @@
-"""課表版本服務:完整性檢查、複製草稿、發布(architecture.md D4)。
+"""课表版本服务:完整性检查、复制草稿、发布(architecture.md D4)。
 
-發布 = draft → published;同學期原有的 published 自動轉 archived(僅一份 published)。
-發布為快照:已發布/已封存的課表不可再編輯格位(見 api/timetables._require_draft)。
+发布 = draft → published;同学期原有的 published 自动转 archived(仅一份 published)。
+发布为快照:已发布/已封存的课表不可再编辑格位(见 api/timetables._require_draft)。
 """
 
 from sqlalchemy import func, select
@@ -16,10 +16,10 @@ from app.models.user import User
 
 
 def _reasons_by_assignment(timetable: Timetable) -> dict[int, str]:
-    """把該課表存下的 solver 未排原因攤成 {配課 id: 原因}(M6-3)。
+    """把该课表存下的 solver 未排原因摊成 {配课 id: 原因}(M6-3)。
 
-    「哪些配課還缺節數」一律由下方 completeness 從 DB 重算——那是唯一真相,連手動改過
-    的課表都算得對。這裡只補上 DB 推導不出來的那一半:**為什麼排不下**。
+    「哪些配课还缺节数」一律由下方 completeness 从 DB 重算——那是唯一真相,连手动改过
+    的课表都算得对。这里只补上 DB 推导不出来的那一半:**为什么排不下**。
     """
     out: dict[int, str] = {}
     for item in timetable.unscheduled or []:
@@ -32,7 +32,7 @@ def _reasons_by_assignment(timetable: Timetable) -> dict[int, str]:
 
 
 def completeness(db: Session, timetable: Timetable) -> dict:
-    """比對每筆配課的每週節數與已排入節數,回傳未排完清單(H8 週節數守恆的發布面檢查)。"""
+    """比对每笔配课的每周节数与已排入节数,回传未排完清单(H8 周节数守恒的发布面检查)。"""
     reasons = _reasons_by_assignment(timetable)
     placed_rows = db.execute(
         select(ScheduleEntry.course_assignment_id, func.sum(ScheduleEntry.span))
@@ -75,11 +75,11 @@ def completeness(db: Session, timetable: Timetable) -> dict:
 
 
 def stale_future_affected_count(db: Session, semester_id: int) -> int:
-    """今日之後仍待處理/已指派的受影響節次數。
+    """今日之后仍待处理/已指派的受影响节次数。
 
-    這些節次的快照是依**先前**已發布課表展開的;學期中重新發布課表後,它們可能指向
-    已移走的格位(代課老師被派去上一節新課表裡不存在的課)。回傳數量供發布後提醒組長
-    重新檢視。完整解(重跑 expand + diff + 通知)見 tasks.md M5-0 條件 D。
+    这些节次的快照是依**先前**已发布课表展开的;学期中重新发布课表后,它们可能指向
+    已移走的格位(代课老师被派去上一节新课表里不存在的课)。回传数量供发布后提醒组长
+    重新查看。完整解(重跑 expand + diff + 通知)见 tasks.md M5-0 条件 D。
     """
     return db.scalar(
         select(func.count())
@@ -97,7 +97,7 @@ def stale_future_affected_count(db: Session, semester_id: int) -> int:
 
 
 def duplicate(db: Session, source: Timetable, name: str) -> Timetable:
-    """複製為新草稿(含全部格位與鎖定狀態);兩份草稿完全獨立。"""
+    """复制为新草稿(含全部格位与锁定状态);两份草稿完全独立。"""
     new = Timetable(semester_id=source.semester_id, name=name,
                     status=TimetableStatus.draft.value)
     db.add(new)
@@ -116,7 +116,7 @@ def duplicate(db: Session, source: Timetable, name: str) -> Timetable:
 
 
 def publish(db: Session, timetable: Timetable, user: User, forced: bool) -> Timetable:
-    """draft → published;同學期原 published 轉 archived。呼叫端負責 commit。"""
+    """draft → published;同学期原 published 转 archived。呼叫端负责 commit。"""
     previous = db.scalars(
         select(Timetable).where(
             Timetable.semester_id == timetable.semester_id,
@@ -132,9 +132,9 @@ def publish(db: Session, timetable: Timetable, user: User, forced: bool) -> Time
         user_id=user.id, username=user.username,
         action="publish_timetable", target_type="timetable", target_id=timetable.id,
         detail=(
-            f"發布課表「{timetable.name}」"
-            + (f",同時封存「{'、'.join(p.name for p in previous)}」" if previous else "")
-            + ("(含未排完課務,強制發布)" if forced else "")
+            f"发布课表「{timetable.name}」"
+            + (f",同时封存「{'、'.join(p.name for p in previous)}」" if previous else "")
+            + ("(含未排完课务,强制发布)" if forced else "")
         )[:500],
     ))
     db.flush()

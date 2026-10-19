@@ -1,7 +1,7 @@
-"""M3-1 驗收③:solver 套件不得依賴 ORM 或 Web 層。
+"""M3-1 验收③:solver 套件不得依赖 ORM 或 Web 层。
 
-引擎必須能獨立測試、獨立跑在 worker 容器,且不被 SQLAlchemy 的 lazy loading 拖垮。
-以 AST 靜態掃描取代 import-linter(少一個 dev 依賴,規則也更明確)。
+引擎必须能独立测试、独立跑在 worker 容器,且不被 SQLAlchemy 的 lazy loading 拖垮。
+以 AST 静态扫描取代 import-linter(少一个 dev 依赖,规则也更明确)。
 """
 
 import ast
@@ -11,7 +11,7 @@ import app.solver
 
 SOLVER_DIR = Path(app.solver.__file__).parent
 
-# solver 只能 import 標準函式庫與自己
+# solver 只能 import 标准函式库与自己
 FORBIDDEN_PREFIXES = ("app.models", "app.api", "app.services", "app.core", "sqlalchemy", "fastapi")
 
 
@@ -32,7 +32,7 @@ def test_solver_imports_neither_orm_nor_web():
         for module in _imported_modules(path):
             if module.startswith(FORBIDDEN_PREFIXES):
                 offenders.append(f"{path.name} → {module}")
-    assert not offenders, f"solver 不得 import 這些模組:{offenders}"
+    assert not offenders, f"solver 不得 import 这些模组:{offenders}"
 
 
 def test_solver_only_imports_itself_within_app():

@@ -1,14 +1,14 @@
-"""示範資料產生器:一鍵建出一所完整的示範國中。
+"""示范资料产生器:一键建出一所完整的示范初中。
 
-為什麼需要這個:裝好系統之後,使用者面對的是一個空系統——要看到「自動排課」
-做了什麼,得先手 key 十幾個班級、四十幾位教師、幾百筆配課。連本專案作者
-自己想完整走一遍都卡在「手邊沒有資料」,遑論素未謀面的評估者。
+为什么需要这个:装好系统之后,用户面对的是一个空系统——要看到「自动排课」
+做了什么,得先手 key 十几个班级、四十几位教师、几百笔配课。连本专案作者
+自己想完整走一遍都卡在「手边没有资料」,遑论素未谋面的评估者。
 
-規格在 app/data/demo_school.json,這裡只負責把規格算成實際資料:
-教師名冊、應授節數、以及「哪位老師教哪一班的哪一科」都是推算出來的,
-改 JSON 裡的人數,配課會自動重新平衡。
+规格在 app/data/demo_school.json,这里只负责把规格算成实际资料:
+教师名册、应授节数、以及「哪位老师教哪一班的哪一科」都是推算出来的,
+改 JSON 里的人数,配课会自动重新平衡。
 
-只在空學期上執行(呼叫端負責擋)。
+只在空学期上执行(呼叫端负责挡)。
 """
 
 import json
@@ -28,12 +28,12 @@ from app.services.assignments import get_or_create_single_unit
 
 _SPEC_PATH = Path(__file__).resolve().parent.parent / "data" / "demo_school.json"
 
-# 教師身分。順序即配課的優先序:導師要先拿到自己班的課(軟約束 S7 才有東西可排),
-# 行政人員應授少、最後才補,免得把他們塞爆。
-ROLE_HOMEROOM = "導師"
-ROLE_FULLTIME = "專任"
+# 教师身分。顺序即配课的优先序:导师要先拿到自己班的课(软约束 S7 才有东西可排),
+# 行政人员应授少、最后才补,免得把他们塞爆。
+ROLE_HOMEROOM = "导师"
+ROLE_FULLTIME = "专任"
 ROLE_EXTERNAL = "外聘"
-ROLE_ORDER = [ROLE_HOMEROOM, ROLE_FULLTIME, "組長", "主任", "專任輔導教師", ROLE_EXTERNAL]
+ROLE_ORDER = [ROLE_HOMEROOM, ROLE_FULLTIME, "组长", "主任", "专任辅导教师", ROLE_EXTERNAL]
 
 
 @lru_cache
@@ -44,7 +44,7 @@ def load_spec() -> dict:
 
 @dataclass
 class _TeacherPlan:
-    """建表前的教師規劃:先算好應授節數,再決定配課。"""
+    """建表前的教师规划:先算好应授节数,再决定配课。"""
 
     name: str
     dept: str
@@ -53,8 +53,8 @@ class _TeacherPlan:
     admin_reduction: int = 0
     admin_title: str | None = None
     is_external: bool = False
-    homeroom_of: str | None = None          # 導師帶的班名
-    assigned: int = 0                        # 累計配課節數
+    homeroom_of: str | None = None          # 导师带的班名
+    assigned: int = 0                        # 累计配课节数
     model: Teacher | None = field(default=None, repr=False)
 
     @property
@@ -63,13 +63,13 @@ class _TeacherPlan:
 
     @property
     def headroom(self) -> int:
-        """離應授還差幾節。負數代表已超鐘點。"""
+        """离应授还差几节。负数代表已超课时。"""
         return self.target - self.assigned
 
 
 @dataclass
 class DemoSummary:
-    """產生結果,供 API 回報與測試斷言。"""
+    """产生结果,供 API 回报与测试断言。"""
 
     semester_id: int
     school_name: str
@@ -79,12 +79,12 @@ class DemoSummary:
     rooms: int
     assignments: int
     total_periods: int
-    max_overtime_used: int   # 全校最大超鐘點節數
-    under_target: int        # 未達應授的教師數
+    max_overtime_used: int   # 全校最大超课时节数
+    under_target: int        # 未达应授的教师数
 
 
 def _base_for(spec: dict, dept: str, role: str) -> int:
-    """該科該身分的基本鐘點。行政職以『專任』為基準,再靠減課降到規定的應授。"""
+    """该科该身分的基本课时。行政职以『专任』为基准,再靠减课降到规定的应授。"""
     table = spec["base_periods"].get(dept, spec["base_periods"]["_default"])
     if role == ROLE_HOMEROOM:
         return table[ROLE_HOMEROOM]
@@ -92,7 +92,7 @@ def _base_for(spec: dict, dept: str, role: str) -> int:
 
 
 def _plan_teachers(spec: dict, class_names: list[str]) -> list[_TeacherPlan]:
-    """依編制表產生教師名冊(含應授節數),導師依序綁定班級。"""
+    """依编制表产生教师名册(含应授节数),导师依序绑定班级。"""
     surnames, givens = spec["surnames"], spec["given_names"]
     titles = {k: list(v) for k, v in spec["admin_titles"].items()}
     homeroom_queue = list(class_names)
@@ -103,7 +103,7 @@ def _plan_teachers(spec: dict, class_names: list[str]) -> list[_TeacherPlan]:
         for role in ROLE_ORDER:
             for _ in range(dept.get(role, 0)):
                 idx = len(plans)
-                # 姓名以索引錯開組合,49 個姓 × 49 個名足以避免重複
+                # 姓名以索引错开组合,49 个姓 × 49 个名足以避免重复
                 name = surnames[idx % len(surnames)] + givens[(idx * 7 + 3) % len(givens)]
                 plan = _TeacherPlan(
                     name=name,
@@ -115,21 +115,21 @@ def _plan_teachers(spec: dict, class_names: list[str]) -> list[_TeacherPlan]:
                 if role in titles and titles[role]:
                     plan.admin_title = titles[role].pop(0)
                 if role in spec["admin_targets"]:
-                    # 主任/組長/專輔:規定寫的是「應授幾節」,換算成減課存進資料庫
+                    # 主任/组长/专辅:规定写的是「应授几节」,换算成减课存进资料库
                     plan.admin_reduction = max(
                         plan.base_periods - spec["admin_targets"][role], 0
                     )
                 if role == ROLE_HOMEROOM and homeroom_queue:
                     plan.homeroom_of = homeroom_queue.pop(0)
                 if role == ROLE_EXTERNAL:
-                    # 外聘兼任:沒有專任基鐘,以實際需求節數為應授
+                    # 外聘兼任:没有专任基钟,以实际需求节数为应授
                     plan.base_periods = 0
                 plans.append(plan)
     return plans
 
 
 def _class_names(spec: dict) -> list[tuple[int, str]]:
-    """班名。十二年國教後多數國中改用年級+序號(701~706),不再用忠孝仁愛。"""
+    """班名。十二年国教后多数初中改用年级+序号(701~706),不再用忠孝仁爱。"""
     cfg = spec["classes"]
     fmt = cfg.get("name_format", "{grade}{index:02d}")
     return [
@@ -140,7 +140,7 @@ def _class_names(spec: dict) -> list[tuple[int, str]]:
 
 
 def _demand(spec: dict, classes: list[tuple[int, str]]) -> list[tuple[str, str, int]]:
-    """展開成 (班名, 科目名, 每週節數);沒有該年級節數的科目自動跳過。"""
+    """展开成 (班名, 科目名, 每周节数);没有该年级节数的科目自动跳过。"""
     rows: list[tuple[str, str, int]] = []
     for grade, cname in classes:
         for subj in spec["subjects"]:
@@ -151,24 +151,24 @@ def _demand(spec: dict, classes: list[tuple[int, str]]) -> list[tuple[str, str, 
 
 
 def _pick_teacher(pool: list[_TeacherPlan]) -> _TeacherPlan:
-    """挑「剩餘容量最多」的老師。
+    """挑「剩余容量最多」的老师。
 
-    這樣自然會把課平均分散,而不是把前幾位塞滿、後幾位沒課。
-    全科都滿了就給最不滿的那位,超出的部分成為超鐘點——真實學校也是這樣。
+    这样自然会把课平均分散,而不是把前几位塞满、后几位没课。
+    全科都满了就给最不满的那位,超出的部分成为超课时——真实学校也是这样。
     """
     return max(pool, key=lambda p: (p.headroom, -p.assigned))
 
 
 def generate(db: Session, spec: dict | None = None) -> DemoSummary:
-    """建立整所示範學校。呼叫端負責確認學期是空的,並負責 commit。"""
+    """建立整所示范学校。呼叫端负责确认学期是空的,并负责 commit。"""
     spec = spec or load_spec()
     classes = _class_names(spec)
     class_names = [name for _, name in classes]
 
-    # 校名一併設好。先前只能改 .env 再重啟,示範資料的校名對不上很突兀。
+    # 校名一并设好。先前只能改 .env 再重启,示范资料的校名对不上很突兀。
     settings_service.save_school_name(db, spec["school_name"])
 
-    # ── 學期與節次表(沿用既有的學制範本,示範資料不另造一套)──
+    # ── 学期与节次表(沿用既有的学制范本,示范资料不另造一套)──
     semester = template_service.create_semester_from_template(
         db,
         academic_year=spec["academic_year"],
@@ -177,7 +177,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
     )
     sid = semester.id
 
-    # 範本會帶入領域層級的科目名稱;示範資料要分科,先清掉再建自己的
+    # 范本会带入领域层级的科目名称;示范资料要分科,先清掉再建自己的
     for row in db.query(Subject).filter(Subject.semester_id == sid).all():
         db.delete(row)
     db.flush()
@@ -194,7 +194,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         db.add(s)
         subjects[item["name"]] = s
 
-    # ── 場地 ──
+    # ── 场地 ──
     rooms: dict[str, list[Room]] = {}
     room_count = 0
     for spec_room in spec["rooms"]:
@@ -209,13 +209,13 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
             for sub_name in spec_room["subjects"]:
                 rooms.setdefault(sub_name, []).append(r)
             room_count += 1
-    # 每班一間普通教室
+    # 每班一间普通教室
     for _, cname in classes:
         db.add(Room(semester_id=sid, name=cname, room_type="normal"))
         room_count += 1
     db.flush()
 
-    # ── 教師 ──
+    # ── 教师 ──
     plans = _plan_teachers(spec, class_names)
     by_name: dict[str, _TeacherPlan] = {}
     for plan in plans:
@@ -232,7 +232,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         by_name[plan.name] = plan
     db.flush()
 
-    # 外聘教師的應授 = 他實際要教的節數(如本土語文 12 節),避免顯示成「超鐘點 12 節」
+    # 外聘教师的应授 = 他实际要教的节数(如本土语文 12 节),避免显示成「超课时 12 节」
     demand = _demand(spec, classes)
     dept_of = {s["name"]: s["dept"] for s in spec["subjects"]}
     for plan in plans:
@@ -243,7 +243,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         assert plan.model is not None
         plan.model.base_periods = total
 
-    # ── 班級(綁導師)──
+    # ── 班级(绑导师)──
     homeroom_by_class = {p.homeroom_of: p for p in plans if p.homeroom_of}
     class_models: dict[str, ClassUnit] = {}
     for grade, cname in classes:
@@ -261,12 +261,12 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         class_models[cname] = cu
     db.flush()
 
-    # ── 配課 ──
+    # ── 配课 ──
     pools: dict[str, list[_TeacherPlan]] = {}
     for plan in plans:
         pools.setdefault(plan.dept, []).append(plan)
 
-    # 導師優先拿自己班、自己科的課:S7(導師的課優先排自己班第一節)才示範得出來
+    # 导师优先拿自己班、自己科的课:S7(导师的课优先排自己班第一节)才示范得出来
     def sort_key(row: tuple[str, str, int]) -> tuple[int, str, str]:
         cname, sname, _ = row
         hr = homeroom_by_class.get(cname)
@@ -302,8 +302,8 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         total_periods += periods
     db.flush()
 
-    # 標記設定精靈已完成。否則載完示範資料回到首頁,路由守衛會因為
-    # 「精靈未完成」把使用者彈回設定精靈——資料明明都建好了,卻被要求重建一次。
+    # 标记设置精灵已完成。否则载完示范资料回到首页,路由守卫会因为
+    # 「精灵未完成」把用户弹回设置精灵——资料明明都建好了,却被要求重建一次。
     wizard = db.get(WizardState, SINGLETON_ID)
     if wizard is None:
         wizard = WizardState(id=SINGLETON_ID)
@@ -329,7 +329,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
 
 
 def semester_is_empty(db: Session, semester_id: int) -> bool:
-    """學期是否還沒有任何班級或教師——示範資料只能建在空學期上。"""
+    """学期是否还没有任何班级或教师——示范资料只能建在空学期上。"""
     has_class = db.query(ClassUnit).filter(ClassUnit.semester_id == semester_id).first()
     has_teacher = db.query(Teacher).filter(Teacher.semester_id == semester_id).first()
     return has_class is None and has_teacher is None

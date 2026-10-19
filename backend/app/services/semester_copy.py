@@ -1,7 +1,7 @@
-"""開新學期:從既有學期複製資料。
+"""开新学期:从既有学期复制资料。
 
-依 FK 依賴逐層複製並建立 舊id→新id 對照,確保新學期資料完全獨立(見 D3 學期快照)。
-可勾選複製項目;班級可選年級進位(超過該學制最高年級者視為畢業,不複製)。
+依 FK 依赖逐层复制并建立 旧id→新id 对照,确保新学期资料完全独立(见 D3 学期快照)。
+可勾选复制项目;班级可选年级进位(超过该学制最高年级者视为毕业,不复制)。
 """
 
 from dataclasses import dataclass
@@ -22,7 +22,7 @@ from app.models.constraint import ConstraintConfig
 from app.models.period import Period, PeriodTable
 from app.models.semester import Semester
 
-# 各學制最高年級(進位後超過即畢業)
+# 各学制最高年级(进位后超过即毕业)
 TRACK_MAX_GRADE = {
     ClassTrack.elementary.value: 6,
     ClassTrack.junior_high.value: 3,
@@ -40,8 +40,8 @@ class CopyOptions:
     rooms: bool = True
     classes: bool = True
     grade_promotion: bool = True
-    # 軟約束權重(constraint_configs)。不帶的話新學期會悄悄回到預設值,
-    # 上學期調好的偏好設定就白調了(M6-4)。
+    # 软约束权重(constraint_configs)。不带的话新学期会悄悄回到默认值,
+    # 上学期调好的偏好设置就白调了(M6-4)。
     constraint_config: bool = True
 
 
@@ -55,10 +55,10 @@ def copy_semester(
     start_date: date | None = None,
     end_date: date | None = None,
 ) -> Semester:
-    """複製 source 到新學期。呼叫端負責檢查目標學年學期未重複、並 commit。
+    """复制 source 到新学期。呼叫端负责检查目标学年学期未重复、并 commit。
 
-    起訖日必須明確給:它不能沿用來源學期(那是上學期的日期),但少了它,請假展開、
-    今日看板、代課的「已上過」判定全部失準——而且畫面上看不出哪裡不對(M6-4)。
+    起讫日必须明确给:它不能沿用来源学期(那是上学期的日期),但少了它,请假展开、
+    今日看板、代课的「已上过」判定全部失准——而且界面上看不出哪里不对(M6-4)。
     """
     new = Semester(
         academic_year=academic_year, term=term,
@@ -91,7 +91,7 @@ def copy_semester(
             db.flush()
             table_map[pt.id] = npt.id
 
-    subject_map: dict[int, Subject] = {}  # 舊 subject id → 新 Subject
+    subject_map: dict[int, Subject] = {}  # 旧 subject id → 新 Subject
     if opts.subjects:
         for s in db.scalars(select(Subject).where(Subject.semester_id == source.id)):
             ns = Subject(
@@ -111,10 +111,10 @@ def copy_semester(
                 base_periods=t.base_periods, admin_title=t.admin_title,
                 admin_reduction=t.admin_reduction, is_external=t.is_external,
                 is_active=t.is_active,
-                # 帳號綁定與聯絡資訊跨學期延續(user_id 唯一性以 semester 為範圍,不衝突)
+                # 帐号绑定与联络信息跨学期延续(user_id 唯一性以 semester 为范围,不冲突)
                 email=t.email, phone=t.phone, line_id=t.line_id, user_id=t.user_id,
             )
-            # 任教科目(僅在科目也複製時對應)
+            # 任教科目(仅在科目也复制时对应)
             nt.subjects = [subject_map[s.id] for s in t.subjects if s.id in subject_map]
             for r in t.time_rules:
                 nt.time_rules.append(
@@ -139,7 +139,7 @@ def copy_semester(
             if opts.grade_promotion:
                 grade += 1
                 if grade > TRACK_MAX_GRADE.get(c.track, 12):
-                    continue  # 畢業年級,不複製
+                    continue  # 毕业年级,不复制
             db.add(
                 ClassUnit(
                     semester_id=new.id, grade=grade, name=c.name, track=c.track,

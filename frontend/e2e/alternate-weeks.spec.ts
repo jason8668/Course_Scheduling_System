@@ -4,11 +4,11 @@ import { SEM_END, SEM_START, WED } from './dates'
 import { deleteSemesterByYearTerm, login } from './helpers'
 
 /**
- * 單雙週課程(v1.3.0)。使用者的例子:
- * 701 週一三、四節(2 連堂)單週生科(甲師)、雙週資科(乙師);702 同一時段反過來。
+ * 单双周课程(v1.3.0)。用户的例子:
+ * 701 周一三、四节(2 连堂)单周生科(甲师)、双周资科(乙师);702 同一时段反过来。
  *
- * 走一遍組長會做的事:建單雙週組 → 配單週、雙週的課 → 工作台拖一張卡片放進兩堂 →
- * 發布 → 課表查詢看到「單/雙」→ 甲師請假時只列出那一週真的有上的那一班。
+ * 走一遍组长会做的事:建单双周组 → 配单周、双周的课 → 工作台拖一张卡片放进两堂 →
+ * 发布 → 课表查询看到「单/双」→ 甲师请假时只列出那一周真的有上的那一班。
  */
 const YEAR = 162
 
@@ -20,7 +20,7 @@ const post = async (page: Page, url: string, data: object) => {
 
 async function selectSemester(page: Page) {
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${YEAR} 學年度第 1 學期` }).click()
+  await page.locator('.n-base-select-option', { hasText: `${YEAR} 学年度第 1 学期` }).click()
 }
 
 async function pick(page: Page, testid: string, text: string) {
@@ -35,7 +35,7 @@ async function dragDrop(page: Page, source: Locator, target: Locator) {
   await target.dispatchEvent('drop', { dataTransfer: dt })
 }
 
-/** 單週/雙週:學期開始那一週是第 1 週(單週),之後輪流。 */
+/** 单周/双周:学期开始那一周是第 1 周(单周),之后轮流。 */
 function weekOf(day: string): 'odd' | 'even' {
   const monday = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7))
   const [sy, sm, sd] = SEM_START.split('-').map(Number)
@@ -45,7 +45,7 @@ function weekOf(day: string): 'odd' | 'even' {
   return weeks % 2 === 0 ? 'odd' : 'even'
 }
 
-test('單雙週:建組、配課、拖放、發布、查詢、請假只列當週的課', async ({ page }) => {
+test('单双周:建组、配课、拖放、发布、查询、请假只列当周的课', async ({ page }) => {
   test.setTimeout(180_000)
   await login(page)
   await page.request.patch('/api/wizard/state', { data: { completed: true } })
@@ -58,40 +58,40 @@ test('單雙週:建組、配課、拖放、發布、查詢、請假只列當週�
   try {
     const c701 = (await post(page, `/api/class-units${q}`, { grade: 7, name: '701', track: 'junior_high' })).id
     const c702 = (await post(page, `/api/class-units${q}`, { grade: 7, name: '702', track: 'junior_high' })).id
-    const tech = (await post(page, `/api/subjects${q}`, { name: '單雙生科' })).id
-    const info = (await post(page, `/api/subjects${q}`, { name: '單雙資科' })).id
-    const jia = (await post(page, `/api/teachers${q}`, { name: '單雙甲師', base_periods: 20 })).id
-    const yi = (await post(page, `/api/teachers${q}`, { name: '單雙乙師', base_periods: 20 })).id
+    const tech = (await post(page, `/api/subjects${q}`, { name: '单双生科' })).id
+    const info = (await post(page, `/api/subjects${q}`, { name: '单双资科' })).id
+    const jia = (await post(page, `/api/teachers${q}`, { name: '单双甲师', base_periods: 20 })).id
+    const yi = (await post(page, `/api/teachers${q}`, { name: '单双乙师', base_periods: 20 })).id
 
-    // 一、畫面上建 701 的單雙週組,配單週、雙週的課
+    // 一、界面上建 701 的单双周组,配单周、双周的课
     await page.goto('/scheduling/assignments')
     await selectSemester(page)
     await page.getByTestId('alt-add').click()
     await pick(page, 'alt-class', '701')
     await page.getByTestId('alt-save').click()
-    const group = page.getByTestId('alt-701 單雙週')
+    const group = page.getByTestId('alt-701 单双周')
     await expect(group).toBeVisible()
 
-    // 單週:生科、甲師、2 節(2 連堂)
+    // 单周:生科、甲师、2 节(2 连堂)
     await group.getByTestId('alt-add-odd').click()
-    await pick(page, 'a-subject', '單雙生科')
-    await pick(page, 'a-teachers', '單雙甲師')
+    await pick(page, 'a-subject', '单双生科')
+    await pick(page, 'a-teachers', '单双甲师')
     await page.keyboard.press('Escape')
     await page.getByTestId('a-periods').locator('input').fill('2')
     await page.getByTestId('a-add-block').click()
     await page.getByTestId('a-save').click()
-    await expect(group).toContainText('單週:單雙生科')
+    await expect(group).toContainText('单周:单双生科')
 
-    // 雙週:節數與連堂自動帶入單週那筆,只要選科目與老師
+    // 双周:节数与连堂自动带入单周那笔,只要选科目与老师
     await group.getByTestId('alt-add-even').click()
     await expect(page.getByTestId('a-periods').locator('input')).toHaveValue('2')
-    await pick(page, 'a-subject', '單雙資科')
-    await pick(page, 'a-teachers', '單雙乙師')
+    await pick(page, 'a-subject', '单双资科')
+    await pick(page, 'a-teachers', '单双乙师')
     await page.keyboard.press('Escape')
     await page.getByTestId('a-save').click()
-    await expect(group).toContainText('雙週:單雙資科')
+    await expect(group).toContainText('双周:单双资科')
 
-    // 702 反過來(用 API 建,節省時間)
+    // 702 反过来(用 API 建,节省时间)
     const u702 = await post(page, `/api/alternate-units${q}`, { class_id: c702 })
     for (const [subject, teacher, week] of [[info, yi, 'odd'], [tech, jia, 'even']] as const) {
       await post(page, `/api/assignments${q}`, {
@@ -100,30 +100,30 @@ test('單雙週:建組、配課、拖放、發布、查詢、請假只列當週�
         block_rules: [{ block_size: 2, count_per_week: 1 }], week_parity: week,
       })
     }
-    // 鐘點:甲師單週 701、雙週 702 各 2 節 → 每週都上 2 節
+    // 课时:甲师单周 701、双周 702 各 2 节 → 每周都上 2 节
     await page.reload()
     await selectSemester(page)
-    const load = page.getByTestId('teacher-load').locator('tr', { hasText: '單雙甲師' })
+    const load = page.getByTestId('teacher-load').locator('tr', { hasText: '单双甲师' })
     await expect(load).toContainText('2 / 20')
 
-    // 二、工作台:701 的單雙週組合成一張卡片,拖進週一第三節(2 連堂)
+    // 二、工作台:701 的单双周组合成一张卡片,拖进周一第三节(2 连堂)
     await page.goto('/scheduling/workbench')
     await selectSemester(page)
-    const card = page.getByTestId('wb-tray-單雙生科')
-    await expect(card).toContainText('單 單雙生科/雙 單雙資科')
-    await expect(card).toContainText('2連堂')
+    const card = page.getByTestId('wb-tray-单双生科')
+    await expect(card).toContainText('单 单双生科/双 单双资科')
+    await expect(card).toContainText('2连堂')
     const periods: { weekday: number; name: string; period_no: number }[] =
       (await (await page.request.get(`/api/class-units/${c701}/period-table`)).json()).periods
-    const third = periods.find((p) => p.weekday === 1 && p.name === '第三節')!.period_no
+    const third = periods.find((p) => p.weekday === 1 && p.name === '第三节')!.period_no
     const target = page.locator(`[data-weekday="1"][data-period="${third}"]`)
     await dragDrop(page, card, target)
     const lines = target.getByTestId('tg-week')
     await expect(lines).toHaveCount(2)
-    await expect(lines.nth(0)).toContainText('單單雙生科')
-    await expect(lines.nth(1)).toContainText('雙單雙資科')
+    await expect(lines.nth(0)).toContainText('单单双生科')
+    await expect(lines.nth(1)).toContainText('双单双资科')
     await expect(page.getByTestId('wb-tray-empty')).toBeVisible()
 
-    // 702 那組用 API 放同一格:甲師單週 701、雙週 702,不衝堂
+    // 702 那组用 API 放同一格:甲师单周 701、双周 702,不冲堂
     const tts = await (await page.request.get(`/api/timetables${q}`)).json()
     const ttId = tts[0].id
     const a702 = (await (await page.request.get(`/api/assignments${q}`)).json())
@@ -135,18 +135,18 @@ test('單雙週:建組、配課、拖放、發布、查詢、請假只列當週�
     expect(check.issues).toEqual([])
     expect((await page.request.post(`/api/timetables/${ttId}/publish`)).ok()).toBeTruthy()
 
-    // 三、課表查詢:甲師的課表同一格單週 701、雙週 702
+    // 三、课表查询:甲师的课表同一格单周 701、双周 702
     await page.goto('/timetable-query')
     await page.getByTestId('tq-view-class').waitFor()
-    if (!(await page.locator('.n-tag', { hasText: `${YEAR} 學年度` }).count())) await selectSemester(page)
+    if (!(await page.locator('.n-tag', { hasText: `${YEAR} 学年度` }).count())) await selectSemester(page)
     await page.getByTestId('tq-view-teacher').click()
-    await pick(page, 'tq-teacher', '單雙甲師')
+    await pick(page, 'tq-teacher', '单双甲师')
     const tcell = page.locator(`[data-weekday="1"][data-period="${third}"]`).getByTestId('tg-week')
     await expect(tcell).toHaveCount(2)
     await expect(tcell.nth(0)).toContainText('701')
     await expect(tcell.nth(1)).toContainText('702')
 
-    // 四、甲師請假:週一只列出那一週真的有上的那一班
+    // 四、甲师请假:周一只列出那一周真的有上的那一班
     const monday = (() => {
       const [y, m, d] = WED.split('-').map(Number)
       const dt = new Date(y, m - 1, d - 2)
@@ -156,7 +156,7 @@ test('單雙週:建組、配課、拖放、發布、查詢、請假只列當週�
       { teacher_id: jia, leave_type: 'sick', start_date: monday, end_date: monday })
     const expected = weekOf(monday) === 'odd' ? '701' : '702'
     expect(leave.affected_periods.map((p: { class_names: string }) => p.class_names))
-      .toEqual([expected, expected]) // 2 連堂 → 兩節
+      .toEqual([expected, expected]) // 2 连堂 → 两节
   } finally {
     await deleteSemesterByYearTerm(page, YEAR, 1)
   }

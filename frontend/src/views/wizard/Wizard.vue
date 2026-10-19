@@ -24,7 +24,7 @@ const templates = ref<Template[]>([])
 const templateKey = ref<string | null>(null)
 const year = ref(115)
 const term = ref(1)
-// 學期起訖日期:請假展開、今日看板與調代課都以它為準,建立時就要填(使用者回報 #15)
+// 学期起讫日期:请假展开、今日看板与调代课都以它为准,建立时就要填(用户回报 #15)
 const startDate = ref<string | null>(null)
 const endDate = ref<string | null>(null)
 const semesterId = ref<number | null>(null)
@@ -33,8 +33,8 @@ const summary = ref<SemesterSummary | null>(null)
 const busy = ref(false)
 
 const termOptions = [
-  { label: '第 1 學期', value: 1 },
-  { label: '第 2 學期', value: 2 },
+  { label: '第 1 学期', value: 1 },
+  { label: '第 2 学期', value: 2 },
 ]
 
 onMounted(async () => {
@@ -45,7 +45,7 @@ onMounted(async () => {
     semesterId.value = wizard.state.semester_id
     if (semesterId.value) await loadSemester(semesterId.value)
   }
-  // 示範資料僅管理員可載;其他角色查詢會 403,靜靜略過即可
+  // 示范资料仅管理员可载;其他角色查询会 403,静静略过即可
   try {
     const demo = await demoDataStatus()
     demoAvailable.value = demo.available
@@ -65,14 +65,14 @@ async function persistStep() {
 }
 
 async function goNext() {
-  // 第 2 步(學年學期)→ 建立學期
+  // 第 2 步(学年学期)→ 建立学期
   if (step.value === 1 && !semesterId.value) {
     if (!templateKey.value) {
-      message.warning('請先於上一步選擇學制範本')
+      message.warning('请先于上一步选择学制范本')
       return
     }
     if (!startDate.value || !endDate.value) {
-      message.warning('請填學期起訖日期(請假與調代課需要)')
+      message.warning('请填学期起讫日期(请假与调代课需要)')
       return
     }
     busy.value = true
@@ -85,7 +85,7 @@ async function goNext() {
       await wizard.patch({ semester_id: sem.id })
       await loadSemester(sem.id)
     } catch (e) {
-      message.error((e as ApiError).detail || '建立學期失敗')
+      message.error((e as ApiError).detail || '建立学期失败')
       busy.value = false
       return
     }
@@ -103,12 +103,12 @@ async function goPrev() {
 
 async function finish() {
   await wizard.patch({ completed: true })
-  message.success('初始設定完成')
+  message.success('初始设置完成')
   router.push({ name: 'basedata' })
 }
 
-// 示範資料入口。放在精靈裡是因為:路由守衛會把「精靈未完成」的使用者一律導來這頁,
-// 所以第一次登入的人根本到不了系統管理——那顆按鈕擺在那裡等於沒人看得到。
+// 示范资料入口。放在精灵里是因为:路由守卫会把「精灵未完成」的用户一律导来这页,
+// 所以第一次登录的人根本到不了系统管理——那颗按钮摆在那里等于没人看得到。
 const demoAvailable = ref(false)
 const demoSchool = ref('')
 const loadingDemo = ref(false)
@@ -119,13 +119,13 @@ async function onLoadDemo() {
     const r = await loadDemoData()
     await wizard.fetch()
     message.success(
-      `已建立 ${r.classes} 班、${r.teachers} 位教師、${r.assignments} 筆配課。`
-      + '可以直接去「自動排課」試跑了。',
+      `已建立 ${r.classes} 班、${r.teachers} 位教师、${r.assignments} 笔配课。`
+      + '可以直接去「自动排课」试跑了。',
       { duration: 8000 },
     )
     router.push({ name: 'dashboard' })
   } catch (e) {
-    message.error((e as ApiError).message || '載入失敗')
+    message.error((e as ApiError).message || '载入失败')
   } finally {
     loadingDemo.value = false
   }
@@ -146,46 +146,46 @@ function openPeriodEditor() {
   <div style="max-width: 860px; margin: 24px auto; padding: 0 16px">
     <n-space vertical size="large">
       <n-space justify="space-between" align="center">
-        <h1 style="margin: 0">設定精靈</h1>
-        <n-button quaternary @click="skip">略過,稍後再設定</n-button>
+        <h1 style="margin: 0">设置精灵</h1>
+        <n-button quaternary @click="skip">略过,稍后再设置</n-button>
       </n-space>
 
       <n-steps :current="step + 1" size="small">
-        <n-step title="學制範本" />
-        <n-step title="學年學期" />
-        <n-step title="節次表" />
-        <n-step title="匯入資料" />
+        <n-step title="学制范本" />
+        <n-step title="学年学期" />
+        <n-step title="节次表" />
+        <n-step title="导入资料" />
         <n-step title="完成" />
       </n-steps>
 
       <n-card>
-        <!-- Step 0:學制範本 -->
+        <!-- Step 0:学制范本 -->
         <template v-if="step === 0">
           <n-alert
-            v-if="demoAvailable" type="info" title="只是想先試看看這套系統?"
+            v-if="demoAvailable" type="info" title="只是想先试看看这套系统?"
             style="margin-bottom: 18px"
           >
             <n-space vertical size="small">
               <n-text>
-                可以先載入一所完整的示範國中「{{ demoSchool }}」——18 班、48 位教師、
-                384 筆配課全部建好,不必輸入任何資料就能直接跑自動排課,
-                把排課、調代課、匯出、備份整套流程玩過一遍。
+                可以先载入一所完整的示范初中「{{ demoSchool }}」——18 班、48 位教师、
+                384 笔配课全部建好,不必输入任何资料就能直接跑自动排课,
+                把排课、调代课、导出、备份整套流程玩过一遍。
               </n-text>
               <n-text depth="3" style="font-size: 12px">
-                之後要正式使用時,重新安裝一套乾淨的系統即可;
-                示範資料只能在「尚未建立任何學期」的系統上載入。
+                之后要正式使用时,重新安装一套干净的系统即可;
+                示范资料只能在「尚未建立任何学期」的系统上载入。
               </n-text>
               <div>
                 <n-button
                   type="primary" size="small" :loading="loadingDemo"
                   data-testid="wizard-demo-load" @click="onLoadDemo"
                 >
-                  載入示範資料
+                  载入示范资料
                 </n-button>
               </div>
             </n-space>
           </n-alert>
-          <n-text>請選擇貴校的學制,系統將自動帶入對應的節次表與科目清單。</n-text>
+          <n-text>请选择贵校的学制,系统将自动带入对应的节次表与科目清单。</n-text>
           <n-grid :cols="2" :x-gap="12" :y-gap="12" style="margin-top: 16px">
             <n-grid-item v-for="t in templates" :key="t.key">
               <n-card
@@ -199,75 +199,75 @@ function openPeriodEditor() {
                 @click="templateKey = t.key"
               >
                 <strong>{{ t.name }}</strong>
-                <div><n-text depth="3">{{ t.minutes_per_period }} 分/節 · {{ t.subject_count }} 科</n-text></div>
+                <div><n-text depth="3">{{ t.minutes_per_period }} 分/节 · {{ t.subject_count }} 科</n-text></div>
               </n-card>
             </n-grid-item>
           </n-grid>
         </template>
 
-        <!-- Step 1:學年學期 -->
+        <!-- Step 1:学年学期 -->
         <template v-else-if="step === 1">
           <n-space vertical>
-            <n-text>設定本學期的學年度與學期別。</n-text>
+            <n-text>设置本学期的学年度与学期别。</n-text>
             <n-space align="center">
-              <n-text>學年度</n-text>
+              <n-text>学年度</n-text>
               <n-input-number v-model:value="year" data-testid="wizard-year" :min="100" :max="200" :disabled="!!semesterId" style="width: 120px" />
               <n-select v-model:value="term" :options="termOptions" :disabled="!!semesterId" style="width: 140px" />
             </n-space>
             <n-space align="center">
-              <n-text>起訖日期</n-text>
+              <n-text>起讫日期</n-text>
               <n-date-picker
                 v-model:formatted-value="startDate" value-format="yyyy-MM-dd" type="date"
-                placeholder="開學日" style="width: 150px" :disabled="!!semesterId"
+                placeholder="开学日" style="width: 150px" :disabled="!!semesterId"
                 data-testid="wizard-start"
               />
               <n-text>~</n-text>
               <n-date-picker
                 v-model:formatted-value="endDate" value-format="yyyy-MM-dd" type="date"
-                placeholder="結業日" style="width: 150px" :disabled="!!semesterId"
+                placeholder="结业日" style="width: 150px" :disabled="!!semesterId"
                 data-testid="wizard-end"
               />
             </n-space>
             <n-text depth="3" style="font-size: 13px">
-              依貴校校曆填寫。請假只能登記在這個範圍內,之後可在「學期與節次表」修改。
+              依贵校校历填写。请假只能登记在这个范围内,之后可在「学期与节次表」修改。
             </n-text>
             <n-text v-if="semesterId" type="success">已建立:{{ semester?.label }}</n-text>
           </n-space>
         </template>
 
-        <!-- Step 2:節次表 -->
+        <!-- Step 2:节次表 -->
         <template v-else-if="step === 2">
           <n-space vertical>
-            <n-text>已依範本帶入預設節次表。可先確認,若需調整(如週三下午不排課)可開啟編輯器。</n-text>
+            <n-text>已依范本带入默认节次表。可先确认,若需调整(如周三下午不排课)可开启编辑器。</n-text>
             <div v-if="semester">
               <n-text strong>{{ semester.period_tables[0]?.name }}</n-text>
               <n-text depth="3">
-                (共 {{ semester.period_tables[0]?.periods.length ?? 0 }} 格,每週
+                (共 {{ semester.period_tables[0]?.periods.length ?? 0 }} 格,每周
                 {{ semester.period_tables[0]?.num_weekdays ?? 5 }} 天)
               </n-text>
             </div>
-            <n-button @click="openPeriodEditor">開啟節次表編輯器</n-button>
-            <n-text depth="3">提示:離開編輯器後回到本精靈會自動回到此步驟。</n-text>
+            <n-button @click="openPeriodEditor">开启节次表编辑器</n-button>
+            <n-text depth="3">提示:离开编辑器后回到本精灵会自动回到此步骤。</n-text>
           </n-space>
         </template>
 
-        <!-- Step 3:匯入資料 -->
+        <!-- Step 3:导入资料 -->
         <template v-else-if="step === 3">
           <n-space vertical>
-            <n-text>下載範本填寫後上傳,批次建立教師、班級與科目(可略過,稍後於基礎資料補建)。</n-text>
+            <n-text>下载范本填写后上传,批次建立教师、班级与科目(可略过,稍后于基础资料补建)。</n-text>
             <ImportTab v-if="semesterId" :semester-id="semesterId" />
           </n-space>
         </template>
 
         <!-- Step 4:完成 -->
         <template v-else>
-          <n-result status="success" title="初始設定即將完成" description="以下是目前已建立的資料摘要">
+          <n-result status="success" title="初始设置即将完成" description="以下是目前已建立的资料摘要">
             <template #footer>
               <n-space justify="center" size="large">
                 <n-statistic label="科目" :value="summary?.subjects ?? 0" />
-                <n-statistic label="教師" :value="summary?.teachers ?? 0" />
-                <n-statistic label="班級" :value="summary?.classes ?? 0" />
-                <n-statistic label="場地" :value="summary?.rooms ?? 0" />
+                <n-statistic label="教师" :value="summary?.teachers ?? 0" />
+                <n-statistic label="班级" :value="summary?.classes ?? 0" />
+                <n-statistic label="场地" :value="summary?.rooms ?? 0" />
               </n-space>
             </template>
           </n-result>
@@ -280,7 +280,7 @@ function openPeriodEditor() {
           下一步
         </n-button>
         <n-button v-else data-testid="wizard-finish" type="primary" @click="finish">
-          完成,前往基礎資料
+          完成,前往基础资料
         </n-button>
       </n-space>
     </n-space>

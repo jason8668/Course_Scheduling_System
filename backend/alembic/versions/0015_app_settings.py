@@ -1,4 +1,4 @@
-"""M4-3:全域系統設定(SMTP)。
+"""M4-3:全域系统设置(SMTP)。
 
 Revision ID: 0015_app_settings
 Revises: 0014_substitutions

@@ -1,12 +1,12 @@
-"""junior_high_mid:國中 12 班(七/八/九年級各 4 班)。
+"""junior_high_mid:初中 12 班(七/八/九年级各 4 班)。
 
-特徵(tasks.md 測試策略總則):
-- **領域課程**:國文/英語/數學/自然科學/社會/健康與體育/藝術/綜合活動/科技
-- **彈性課程**:彈性學習每班 3 節
-- **兼行政減課教師**:教學組長(減 6 節)、訓育組長(減 4 節),配課量相應減少
-- **場地綁定**:健康與體育 → 操場/體育館;科技 → 電腦教室甲/乙
+特征(tasks.md 测试策略总则):
+- **领域课程**:国文/英语/数学/自然科学/社会/健康与体育/艺术/综合活动/科技
+- **弹性课程**:弹性学习每班 3 节
+- **兼行政减课教师**:教学组长(减 6 节)、训育组长(减 4 节),配课量相应减少
+- **场地绑定**:健康与体育 → 操场/体育馆;科技 → 电脑教室甲/乙
 
-每班 33 節,可排格數 35(每日 7 節一般課 × 5 天)。
+每班 33 节,可排格数 35(每日 7 节一般课 × 5 天)。
 """
 
 from sqlalchemy.orm import Session
@@ -21,38 +21,38 @@ CLASS_NAMES = [
     "901", "902", "903", "904",
 ]
 
-# 科目 → (每班節數, 任教教師姓名清單)
-# 每位教師輪流認養班級(round-robin),故各科教師數決定其每人配課量。
+# 科目 → (每班节数, 任教教师姓名清单)
+# 每位教师轮流认养班级(round-robin),故各科教师数决定其每人配课量。
 SUBJECT_PLAN: dict[str, tuple[int, list[str]]] = {
-    "國文":       (5, ["周淑貞", "許家豪", "彭麗雲"]),                    # 4 班 × 5 = 20 節
-    "英語":       (4, ["何美惠", "簡佩玲", "傅冠廷"]),                    # 4 班 × 4 = 16 節
-    "數學":       (4, ["曾國強", "楊子萱", "廖俊宏", "邱雅琪"]),           # 3 班 × 4 = 12 節
-    "自然科學":   (3, ["宋建志", "范文君"]),                              # 6 班 × 3 = 18 節
-    "社會":       (3, ["石清雄", "洪淑娟"]),
-    "健康與體育": (3, ["盧志豪", "馬俊傑"]),
-    "藝術":       (3, ["方雅雯", "潘俐君", "杜秉諺"]),                    # 4 班 × 3 = 12 節
-    "綜合活動":   (3, ["莊惠敏", "施泓宇"]),
-    "科技":       (2, ["連文彬", "唐立群"]),                              # 6 班 × 2 = 12 節
-    "彈性學習":   (3, ["溫子涵", "紀勝文"]),
+    "国文":       (5, ["周淑贞", "许家豪", "彭丽云"]),                    # 4 班 × 5 = 20 节
+    "英语":       (4, ["何美惠", "简佩玲", "傅冠廷"]),                    # 4 班 × 4 = 16 节
+    "数学":       (4, ["曾国强", "杨子萱", "廖俊宏", "邱雅琪"]),           # 3 班 × 4 = 12 节
+    "自然科学":   (3, ["宋建志", "范文君"]),                              # 6 班 × 3 = 18 节
+    "社会":       (3, ["石清雄", "洪淑娟"]),
+    "健康与体育": (3, ["卢志豪", "马俊杰"]),
+    "艺术":       (3, ["方雅雯", "潘俐君", "杜秉谚"]),                    # 4 班 × 3 = 12 节
+    "综合活动":   (3, ["庄惠敏", "施泓宇"]),
+    "科技":       (2, ["连文彬", "唐立群"]),                              # 6 班 × 2 = 12 节
+    "弹性学习":   (3, ["温子涵", "纪胜文"]),
 }
 
-# 兼行政教師:配課量已在 SUBJECT_PLAN 以「多分幾位教師」壓低,故仍不超鐘點
+# 兼行政教师:配课量已在 SUBJECT_PLAN 以「多分几位教师」压低,故仍不超课时
 ADMIN_TEACHERS = {
-    "曾國強": ("教學組長", 6),   # 基本 20 − 減 6 = 應授 14;實配 12
-    "方雅雯": ("訓育組長", 4),   # 基本 20 − 減 4 = 應授 16;實配 12
+    "曾国强": ("教学组长", 6),   # 基本 20 − 减 6 = 应授 14;实配 12
+    "方雅雯": ("训育组长", 4),   # 基本 20 − 减 4 = 应授 16;实配 12
 }
 
-# 場地綁定:同一位教師的班級集中在同一場地,避免場地需求超過供給
+# 场地绑定:同一位教师的班级集中在同一场地,避免场地需求超过供给
 ROOM_BY_TEACHER = {
-    "盧志豪": "操場",
-    "馬俊傑": "體育館",
-    "連文彬": "電腦教室甲",
-    "唐立群": "電腦教室乙",
+    "卢志豪": "操场",
+    "马俊杰": "体育馆",
+    "连文彬": "电脑教室甲",
+    "唐立群": "电脑教室乙",
 }
 ROOM_TYPE_BY_SUBJECT = {
-    "健康與體育": RoomType.outdoor,
+    "健康与体育": RoomType.outdoor,
     "科技": RoomType.special,
-    "藝術": RoomType.special,  # 未綁定場地,由排課引擎自專科教室中指派
+    "艺术": RoomType.special,  # 未绑定场地,由排课引擎自专科教室中指派
 }
 
 
@@ -73,30 +73,30 @@ def build_junior_high_mid(db: Session, academic_year: int = 115, term: int = 1) 
                 subjects=[subject],
             )
 
-    # 導師 12 位取自國文/英語/數學/自然科學教師(3+3+4+2)
+    # 导师 12 位取自国文/英语/数学/自然科学教师(3+3+4+2)
     homerooms = (
-        SUBJECT_PLAN["國文"][1]
-        + SUBJECT_PLAN["英語"][1]
-        + SUBJECT_PLAN["數學"][1]
-        + SUBJECT_PLAN["自然科學"][1]
+        SUBJECT_PLAN["国文"][1]
+        + SUBJECT_PLAN["英语"][1]
+        + SUBJECT_PLAN["数学"][1]
+        + SUBJECT_PLAN["自然科学"][1]
     )
     for cname, homeroom in zip(CLASS_NAMES, homerooms, strict=True):
         b.klass(
             cname,
-            grade=int(cname[0]) + 6,  # 701 → 7 年級
+            grade=int(cname[0]) + 6,  # 701 → 7 年级
             track=ClassTrack.junior_high.value,
             student_count=29,
             homeroom=homeroom,
         )
         b.room(f"{cname}教室", room_type=RoomType.normal, capacity=32)
 
-    b.room("操場", room_type=RoomType.outdoor, capacity=200, subjects=["健康與體育"])
-    b.room("體育館", room_type=RoomType.outdoor, capacity=150, subjects=["健康與體育"])
-    b.room("電腦教室甲", room_type=RoomType.special, capacity=35, subjects=["科技"])
-    b.room("電腦教室乙", room_type=RoomType.special, capacity=35, subjects=["科技"])
-    b.room("音樂教室", room_type=RoomType.special, capacity=35, subjects=["藝術"])
-    b.room("美術教室", room_type=RoomType.special, capacity=35, subjects=["藝術"])
-    b.room("理化實驗室", room_type=RoomType.special, capacity=32, subjects=["自然科學"])
+    b.room("操场", room_type=RoomType.outdoor, capacity=200, subjects=["健康与体育"])
+    b.room("体育馆", room_type=RoomType.outdoor, capacity=150, subjects=["健康与体育"])
+    b.room("电脑教室甲", room_type=RoomType.special, capacity=35, subjects=["科技"])
+    b.room("电脑教室乙", room_type=RoomType.special, capacity=35, subjects=["科技"])
+    b.room("音乐教室", room_type=RoomType.special, capacity=35, subjects=["艺术"])
+    b.room("美术教室", room_type=RoomType.special, capacity=35, subjects=["艺术"])
+    b.room("理化实验室", room_type=RoomType.special, capacity=32, subjects=["自然科学"])
 
     for subject, (periods, names) in SUBJECT_PLAN.items():
         for idx, cname in enumerate(CLASS_NAMES):

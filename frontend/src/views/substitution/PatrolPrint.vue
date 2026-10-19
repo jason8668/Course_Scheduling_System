@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// 巡堂表列印頁(v1.2.12),A4 橫式。版面照使用學校的紙本:
-//   巡堂紀錄:班級為欄、節次為列,一天分上午/下午各一張;科目/教師/教室/備註由系統帶出
-//             (已套用當天的調代課),授課情形、學生學習、巡堂簽名留白手寫。
-//   分組巡堂單:社團這類大型跑班群組另列清單(一列一組),一張 A4 並排兩份。
+// 巡堂表打印页(v1.2.12),A4 横式。版面照使用学校的纸本:
+//   巡堂纪录:班级为栏、节次为列,一天分上午/下午各一张;科目/教师/教室/备注由系统带出
+//             (已套用当天的调代课),授课情形、学生学习、巡堂签名留白手写。
+//   分组巡堂单:社团这类大型跑班群组另列清单(一列一组),一张 A4 并排两份。
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { ApiError } from '@/api/client'
@@ -16,7 +16,7 @@ const data = ref<PatrolSheets | null>(null)
 const error = ref('')
 const loading = ref(true)
 
-/** 「115年9月29日 星期二」:紙本用民國年 */
+/** 「115年9月29日 星期二」:纸本用民国年 */
 function dateLabel(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   const weekday = new Date(y, m - 1, d).getDay()
@@ -24,10 +24,10 @@ function dateLabel(iso: string): string {
 }
 
 function range(first: number, last: number): string {
-  return first === last ? `第 ${first} 節` : `第 ${first}~${last} 節`
+  return first === last ? `第 ${first} 节` : `第 ${first}~${last} 节`
 }
 
-/** 分組巡堂單兩份一頁(社團常連上兩節,剛好並排) */
+/** 分组巡堂单两份一页(社团常连上两节,刚好并排) */
 const listPairs = computed(() => {
   const lists = data.value?.group_lists ?? []
   const out: PatrolGroupList[][] = []
@@ -52,7 +52,7 @@ onMounted(async () => {
   try {
     data.value = await getPatrolSheets(sid, from, to)
   } catch (e) {
-    error.value = (e as ApiError).message || '無法產生巡堂表'
+    error.value = (e as ApiError).message || '无法产生巡堂表'
   } finally {
     loading.value = false
   }
@@ -62,17 +62,17 @@ onMounted(async () => {
 <template>
   <div class="patrol">
     <div class="no-print toolbar">
-      <span v-if="data" class="hint">共 {{ total }} 頁(A4 橫式)</span>
-      <button type="button" data-testid="patrol-print" @click="doPrint">列印</button>
-      <button type="button" @click="doClose">關閉</button>
+      <span v-if="data" class="hint">共 {{ total }} 页(A4 横式)</span>
+      <button type="button" data-testid="patrol-print" @click="doPrint">打印</button>
+      <button type="button" @click="doClose">关闭</button>
     </div>
 
-    <p v-if="loading" class="msg">載入中…</p>
+    <p v-if="loading" class="msg">载入中…</p>
     <p v-else-if="error" class="msg" data-testid="patrol-error">{{ error }}</p>
 
     <section v-for="(page, i) in data?.pages ?? []" :key="`p${i}`" class="page" data-testid="patrol-page">
       <h1 class="title">
-        <span class="school">{{ data?.title }}巡堂紀錄</span>
+        <span class="school">{{ data?.title }}巡堂纪录</span>
         <span>{{ dateLabel(page.date) }}</span>
         <span>{{ range(page.first_ordinal, page.last_ordinal) }}</span>
         <span v-if="page.table_name" class="table-name">({{ page.table_name }})</span>
@@ -87,16 +87,16 @@ onMounted(async () => {
         </colgroup>
         <thead>
           <tr>
-            <th>節次</th>
+            <th>节次</th>
             <th />
             <th v-for="c in page.classes" :key="c" data-testid="patrol-class">{{ c }}</th>
-            <th>巡堂<br>簽名</th>
+            <th>巡堂<br>签名</th>
           </tr>
         </thead>
         <tbody v-for="row in page.rows" :key="row.ordinal" class="period">
           <tr class="lesson">
             <td rowspan="5" class="ordinal">{{ row.ordinal }}</td>
-            <td class="label">科目<br>教師</td>
+            <td class="label">科目<br>教师</td>
             <td v-for="(cell, k) in row.cells" :key="k" data-testid="patrol-cell">
               <div class="subject">{{ cell.subject }}</div>
               <div class="teacher">{{ cell.teacher }}</div>
@@ -108,15 +108,15 @@ onMounted(async () => {
             <td v-for="(cell, k) in row.cells" :key="k">{{ cell.room }}</td>
           </tr>
           <tr class="blank">
-            <td class="label">授課情形</td>
+            <td class="label">授课情形</td>
             <td v-for="k in row.cells.length" :key="k" />
           </tr>
           <tr class="blank">
-            <td class="label">學生學習</td>
+            <td class="label">学生学习</td>
             <td v-for="k in row.cells.length" :key="k" />
           </tr>
           <tr class="blank">
-            <td class="label">備註</td>
+            <td class="label">备注</td>
             <td v-for="(cell, k) in row.cells" :key="k" class="note" data-testid="patrol-note">{{ cell.note }}</td>
           </tr>
         </tbody>
@@ -124,11 +124,11 @@ onMounted(async () => {
 
       <table class="foot">
         <tr>
-          <td class="foot-label">記錄<br>說明</td>
+          <td class="foot-label">记录<br>说明</td>
           <td class="legend" data-testid="patrol-legend">
             <div v-for="(line, k) in legendLines" :key="k">{{ line }}</div>
           </td>
-          <td class="foot-label">註記事項</td>
+          <td class="foot-label">注记事项</td>
           <td class="remarks" />
         </tr>
       </table>
@@ -138,7 +138,7 @@ onMounted(async () => {
       <div v-for="(list, k) in pair" :key="k" class="list" data-testid="patrol-group-list">
         <div class="list-school">{{ data?.title }}</div>
         <h1 class="title list-title">
-          <span class="school">{{ list.group_name }}巡堂單</span>
+          <span class="school">{{ list.group_name }}巡堂单</span>
           <span>{{ dateLabel(list.date) }}</span>
           <span>{{ list.period_name }}</span>
         </h1>
@@ -148,7 +148,7 @@ onMounted(async () => {
             <col style="width: 20%"><col style="width: 16%"><col style="width: 16%">
           </colgroup>
           <thead>
-            <tr><th>編號</th><th>名稱</th><th>教師</th><th>地點</th><th>上課狀況</th><th>學生表現</th></tr>
+            <tr><th>编号</th><th>名称</th><th>教师</th><th>地点</th><th>上课状况</th><th>学生表现</th></tr>
           </thead>
           <tbody>
             <tr v-for="item in list.items" :key="item.no" class="list-row" data-testid="patrol-group-item">
@@ -170,7 +170,7 @@ onMounted(async () => {
 .patrol {
   color: #000;
   background: #fff;
-  font-family: "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", serif;
+  font-family: "DFKai-SB", "BiauKai", "标楷体", "Kaiti TC", serif;
 }
 .toolbar { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 16px 24px 0; }
 .toolbar button {
@@ -206,7 +206,7 @@ tr.blank td { height: 22px; }
 .legend { width: 52%; line-height: 1.5; }
 .remarks { height: 62px; }
 
-/* 分組巡堂單:一張 A4 橫式並排兩份 */
+/* 分组巡堂单:一张 A4 横式并排两份 */
 .lists { display: flex; gap: 32px; align-items: flex-start; }
 .list { flex: 1; min-width: 0; }
 .list-title { flex-wrap: wrap; row-gap: 2px; }

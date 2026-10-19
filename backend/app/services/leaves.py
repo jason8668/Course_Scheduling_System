@@ -1,15 +1,15 @@
-"""請假登記與受影響節次展開(M4-1,architecture.md §5.3)。
+"""请假登记与受影响节次展开(M4-1,architecture.md §5.3)。
 
-**把週循環格展開成日曆日期。** 課表說「王師週三第三節上 301 班國文」;
-請假說「王師 11/12 上午請假」。這裡負責把兩者對起來:
+**把周循环格展开成日历日期。** 课表说「王师周三第三节上 301 班国文」;
+请假说「王师 11/12 上午请假」。这里负责把两者对起来:
 
-1. 走訪請假期間的每一天;
-2. 跳過該班節次表沒有的星期(週末,或六日制學校的週六以外);
-3. 取出**已發布課表**中該教師當天的每一節課(連堂展開成每一節);
-4. 半天假以牆鐘時間區間重疊判定,整天假則全部列入;
-5. 寫成 `affected_period` 快照。
+1. 走访请假期间的每一天;
+2. 跳过该班节次表没有的星期(周末,或六日制学校的周六以外);
+3. 取出**已发布课表**中该教师当天的每一节课(连堂展开成每一节);
+4. 半天假以墙钟时间区间重叠判定,整天假则全部列入;
+5. 写成 `affected_period` 快照。
 
-只看**已發布**課表:草稿隨時會變,拿草稿去找代課老師沒有意義。
+只看**已发布**课表:草稿随时会变,拿草稿去找代课老师没有意义。
 """
 
 from collections.abc import Iterator
@@ -36,15 +36,15 @@ from app.models.timetable import ScheduleEntry, Timetable, TimetableStatus
 from app.services import notifications
 from app.services import period_tables as pt_service
 
-MAX_LEAVE_DAYS = 180  # 產假上限約 8 週;180 天足夠,同時擋住手殘輸入的 2099 年
+MAX_LEAVE_DAYS = 180  # 产假上限约 8 周;180 天足够,同时挡住手残输入的 2099 年
 
 
 class LeaveError(Exception):
-    """請假單本身不合法(呼叫端轉為 400)。"""
+    """请假单本身不合法(呼叫端转为 400)。"""
 
 
 def school_dates(start: date, end: date) -> Iterator[date]:
-    """請假期間的每一天(含頭尾)。是否為上課日由節次表決定,不在這裡判斷。"""
+    """请假期间的每一天(含头尾)。是否为上课日由节次表决定,不在这里判断。"""
     day = start
     while day <= end:
         yield day
@@ -52,9 +52,9 @@ def school_dates(start: date, end: date) -> Iterator[date]:
 
 
 def _leave_window(leave: LeaveRequest, day: date) -> tuple[time | None, time | None]:
-    """該日的請假時間區間。回傳 (from, to),None 表示該端點沒有限制(整天)。
+    """该日的请假时间区间。回传 (from, to),None 表示该端点没有限制(整天)。
 
-    只有第一天受 start_time 限制、最後一天受 end_time 限制;中間的日子一律整天。
+    只有第一天受 start_time 限制、最后一天受 end_time 限制;中间的日子一律整天。
     「11/12 13:00 ~ 11/14 12:00」= 12 日下午 + 13 日整天 + 14 日上午。
     """
     begin = leave.start_time if day == leave.start_date else None
@@ -63,13 +63,13 @@ def _leave_window(leave: LeaveRequest, day: date) -> tuple[time | None, time | N
 
 
 def _overlaps(period: Period, window: tuple[time | None, time | None]) -> bool:
-    """節次是否落在該日的請假區間內。"""
+    """节次是否落在该日的请假区间内。"""
     begin, finish = window
     if begin is None and finish is None:
         return True  # 整天假
     if period.start_time is None or period.end_time is None:
-        # 節次表沒填起訖時間就無法判定半天假。寧可多列一節讓組長刪掉,
-        # 也不要漏掉一節沒人代課——漏掉的那節會直接變成沒有老師的教室。
+        # 节次表没填起讫时间就无法判定半天假。宁可多列一节让组长删掉,
+        # 也不要漏掉一节没人代课——漏掉的那节会直接变成没有老师的教室。
         return True
     if finish is not None and period.start_time >= finish:
         return False
@@ -103,7 +103,7 @@ def _teacher_entries(db: Session, timetable_id: int, teacher_id: int) -> list[Sc
 
 
 class _Expander:
-    """一次展開所需的節次表/班級/科目/場地查詢,全部先撈好再組裝。"""
+    """一次展开所需的节次表/班级/科目/场地查询,全部先捞好再组装。"""
 
     def __init__(self, db: Session) -> None:
         self.db = db
@@ -125,7 +125,7 @@ class _Expander:
         return self._periods[table_id]
 
     def is_school_day(self, table_id: int, day: date) -> bool:
-        """節次表沒有這個星期 = 不上課(週末;六日制學校則週六有課)。"""
+        """节次表没有这个星期 = 不上课(周末;六日制学校则周六有课)。"""
         self._load_table(table_id)
         return day.isoweekday() <= self._num_weekdays[table_id]
 
@@ -141,9 +141,9 @@ class _Expander:
 
 
 def expand(db: Session, leave: LeaveRequest) -> list[AffectedPeriod]:
-    """依已發布課表展開受影響節次。呼叫端負責 commit。
+    """依已发布课表展开受影响节次。呼叫端负责 commit。
 
-    課表尚未發布時回傳空清單——假單照樣成立,只是沒有課要處理。
+    课表尚未发布时回传空清单——假单照样成立,只是没有课要处理。
     """
     timetable = _published_timetable(db, leave.semester_id)
     if timetable is None:
@@ -168,13 +168,13 @@ def expand(db: Session, leave: LeaveRequest) -> list[AffectedPeriod]:
                 continue
             a = entry.assignment
             if not runs_in_week(a.week_parity, week):
-                continue  # 單雙週的課:這一週沒有上(v1.3.0)
+                continue  # 单双周的课:这一周没有上(v1.3.0)
             table_id = exp.table_of(a)
             if table_id is None or not exp.is_school_day(table_id, day):
                 continue
 
             subject_name, class_names, room_name = exp.describe(a, entry)
-            # 連堂佔用連續數節,逐節展開:代課是逐節找人的
+            # 连堂占用连续数节,逐节展开:代课是逐节找人的
             for k in range(entry.span):
                 period = exp.period(table_id, weekday, entry.period_no + k)
                 if period is None or period.type != PeriodType.regular.value:
@@ -201,17 +201,17 @@ def expand(db: Session, leave: LeaveRequest) -> list[AffectedPeriod]:
 
 def validate(semester: Semester, start: date, end: date) -> None:
     if end < start:
-        raise LeaveError("結束日期不可早於開始日期")
+        raise LeaveError("结束日期不可早于开始日期")
     if (end - start).days + 1 > MAX_LEAVE_DAYS:
-        raise LeaveError(f"單張假單最長 {MAX_LEAVE_DAYS} 天")
+        raise LeaveError(f"单张假单最长 {MAX_LEAVE_DAYS} 天")
     if semester.start_date is None or semester.end_date is None:
         raise LeaveError(
-            "學期尚未設定起訖日期,無法登記請假;"
-            "請到「學期與節次表」點該學期的「編輯學期」補上開學日與結業日"
+            "学期尚未设置起讫日期,无法登记请假;"
+            "请到「学期与节次表」点该学期的「编辑学期」补上开学日与结业日"
         )
     if start < semester.start_date or end > semester.end_date:
         raise LeaveError(
-            f"請假日期須落在學期範圍內({semester.start_date} ~ {semester.end_date})"
+            f"请假日期须落在学期范围内({semester.start_date} ~ {semester.end_date})"
         )
 
 
@@ -230,10 +230,10 @@ def create(
     created_by_name: str,
     notify_teacher: bool,
 ) -> LeaveRequest:
-    """登記請假並展開受影響節次。呼叫端負責 commit。"""
+    """登记请假并展开受影响节次。呼叫端负责 commit。"""
     validate(semester, start_date, end_date)
     if start_date == end_date and start_time and end_time and end_time <= start_time:
-        raise LeaveError("結束時間不可早於開始時間")
+        raise LeaveError("结束时间不可早于开始时间")
 
     leave = LeaveRequest(
         semester_id=semester.id, teacher_id=teacher.id, leave_type=leave_type,
@@ -249,24 +249,24 @@ def create(
     db.flush()
 
     if notify_teacher:
-        # 組長代登:當事人要知道有人替他請了假
+        # 组长代登:当事人要知道有人替他请了假
         notifications.notify(
             db, semester_id=semester.id, teacher_id=teacher.id,
             type=NotificationType.leave_registered,
-            title=f"{created_by_name} 已為您登記{LEAVE_TYPE_CN[leave.leave_type]}",
-            body=f"{range_text(leave)},共 {len(leave.affected_periods)} 節課受影響",
+            title=f"{created_by_name} 已为您登记{LEAVE_TYPE_CN[leave.leave_type]}",
+            body=f"{range_text(leave)},共 {len(leave.affected_periods)} 节课受影响",
         )
     return leave
 
 
 def cancel(db: Session, leave: LeaveRequest, *, actor_name: str) -> list[AffectedPeriod]:
-    """銷假:級聯取消所有受影響節次,並通知已被指派的代課教師。
+    """销假:级联取消所有受影响节次,并通知已被指派的代课教师。
 
-    回傳「原本已指派、現在被取消」的節次。已完成的節次不動——那堂課已經上過了,
-    事後銷假不能把歷史抹掉(鐘點統計要照算)。
+    回传「原本已指派、现在被取消」的节次。已完成的节次不动——那堂课已经上过了,
+    事后销假不能把历史抹掉(课时统计要照算)。
     """
     if leave.status == LeaveStatus.cancelled.value:
-        raise LeaveError("此假單已銷假")
+        raise LeaveError("此假单已销假")
 
     leave.status = LeaveStatus.cancelled.value
     leave.cancelled_at = datetime.now().astimezone()
@@ -275,14 +275,14 @@ def cancel(db: Session, leave: LeaveRequest, *, actor_name: str) -> list[Affecte
     for period in leave.affected_periods:
         if period.status == AffectedStatus.completed.value:
             continue
-        # 已上過的課不因銷假抹除——那堂課發生了,代課鐘點照算(architecture.md §5.3 已完成)
+        # 已上过的课不因销假抹除——那堂课发生了,代课课时照算(architecture.md §5.3 已完成)
         if clock.is_past_slot(period.date, period.end_time):
             continue
         if period.status == AffectedStatus.resolved.value:
             revoked.append(period)
         period.status = AffectedStatus.cancelled.value
 
-    # 一位代課老師可能被取消好幾節,合併成一封通知
+    # 一位代课老师可能被取消好几节,合并成一封通知
     by_handler: dict[int, list[AffectedPeriod]] = {}
     for period in revoked:
         if period.handler_teacher_id:
@@ -294,15 +294,15 @@ def cancel(db: Session, leave: LeaveRequest, *, actor_name: str) -> list[Affecte
         notifications.notify(
             db, semester_id=leave.semester_id, teacher_id=handler_id,
             type=NotificationType.substitution_cancelled,
-            title=f"原訂代課已取消({leave.teacher.name} 銷假)",
-            body=f"以下 {len(periods)} 節課不需要您代課了:{detail}",
+            title=f"原订代课已取消({leave.teacher.name} 销假)",
+            body=f"以下 {len(periods)} 节课不需要您代课了:{detail}",
         )
 
     notifications.notify(
         db, semester_id=leave.semester_id, teacher_id=leave.teacher_id,
         type=NotificationType.leave_cancelled,
-        title=f"{actor_name} 已為您銷假" if actor_name != leave.teacher.name else "銷假完成",
-        body=f"{range_text(leave)} 的{LEAVE_TYPE_CN[leave.leave_type]}已銷假",
+        title=f"{actor_name} 已为您销假" if actor_name != leave.teacher.name else "销假完成",
+        body=f"{range_text(leave)} 的{LEAVE_TYPE_CN[leave.leave_type]}已销假",
     )
     db.flush()
     return revoked
@@ -311,8 +311,8 @@ def cancel(db: Session, leave: LeaveRequest, *, actor_name: str) -> list[Affecte
 def range_text(leave: LeaveRequest) -> str:
     if leave.start_date == leave.end_date:
         if leave.is_half_day:
-            begin = leave.start_time.strftime("%H:%M") if leave.start_time else "上課起"
-            finish = leave.end_time.strftime("%H:%M") if leave.end_time else "放學"
+            begin = leave.start_time.strftime("%H:%M") if leave.start_time else "上课起"
+            finish = leave.end_time.strftime("%H:%M") if leave.end_time else "放学"
             return f"{leave.start_date} {begin}~{finish}"
         return f"{leave.start_date} 整天"
     return f"{leave.start_date} ~ {leave.end_date}"
@@ -325,7 +325,7 @@ def find_teacher(db: Session, semester_id: int, teacher_id: int) -> Teacher | No
 
 
 def effective_status(status: str, day: date, end_time: time | None) -> str:
-    """顯示用的推導狀態:已指派且已上過的節次顯示為『已完成』(不落盤,見 core.clock)。"""
+    """显示用的推导状态:已指派且已上过的节次显示为『已完成』(不落盘,见 core.clock)。"""
     if status == AffectedStatus.resolved.value and clock.is_past_slot(day, end_time):
         return AffectedStatus.completed.value
     return status

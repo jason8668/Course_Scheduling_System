@@ -1,4 +1,4 @@
-"""學期與節次表測試。對應 M1-1 驗收標準。"""
+"""学期与节次表测试。对应 M1-1 验收标准。"""
 
 from app.models.user import Role
 from tests.conftest import make_user
@@ -22,7 +22,7 @@ def test_list_templates(env):
 
 
 def test_create_semester_from_elementary_template(env):
-    """驗收①:建立 115 學年第 1 學期,選國小範本自動帶入節次表(含週三下午空)。"""
+    """验收①:建立 115 学年第 1 学期,选小学范本自动带入节次表(含周三下午空)。"""
     client, db = env
     login(client, db)
     resp = client.post(
@@ -31,12 +31,12 @@ def test_create_semester_from_elementary_template(env):
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert body["label"] == "115 學年度第 1 學期"
+    assert body["label"] == "115 学年度第 1 学期"
     assert len(body["period_tables"]) == 1
     table = body["period_tables"][0]
     assert table["is_default"] is True
 
-    # 週三(weekday=3)下午(第五~七節,period_no 7/8/9)應為 reserved(不排課)
+    # 周三(weekday=3)下午(第五~七节,period_no 7/8/9)应为 reserved(不排课)
     wed_pm = [
         p for p in table["periods"]
         if p["weekday"] == 3 and p["period_no"] in (7, 8, 9)
@@ -44,10 +44,10 @@ def test_create_semester_from_elementary_template(env):
     assert len(wed_pm) == 3
     assert all(p["type"] == "reserved" for p in wed_pm)
 
-    # 範本應一併帶入科目清單
+    # 范本应一并带入科目清单
     subjects = client.get(f"/api/subjects?semester_id={body['id']}").json()
     assert len(subjects) >= 8
-    assert any(s["name"] == "國語" for s in subjects)
+    assert any(s["name"] == "国语" for s in subjects)
 
 
 def test_create_duplicate_semester_conflict(env):
@@ -59,7 +59,7 @@ def test_create_duplicate_semester_conflict(env):
 
 
 def test_available_slots_reflects_type_change(env):
-    """驗收②:將某格改為導師時間後,可排時段查詢即時反映(該格消失)。"""
+    """验收②:将某格改为导师时间后,可排时段查询即时反映(该格消失)。"""
     client, db = env
     login(client, db)
     sem = client.post(
@@ -70,7 +70,7 @@ def test_available_slots_reflects_type_change(env):
     table_id = table["id"]
 
     before = client.get(f"/api/period-tables/{table_id}/available-slots").json()
-    # 找週五(5)一個 regular 格位,改成 homeroom
+    # 找周五(5)一个 regular 格位,改成 homeroom
     target = next(
         p for p in table["periods"]
         if p["weekday"] == 5 and p["type"] == "regular"
@@ -92,7 +92,7 @@ def test_available_slots_reflects_type_change(env):
 
 
 def test_second_period_table_and_default_switch(env):
-    """驗收③:同學期建第二套節次表,設為預設會取代原預設。"""
+    """验收③:同学期建第二套节次表,设为默认会取代原默认。"""
     client, db = env
     login(client, db)
     sem = client.post(
@@ -104,7 +104,7 @@ def test_second_period_table_and_default_switch(env):
 
     resp = client.post(
         f"/api/semesters/{sid}/period-tables",
-        json={"name": "國中部節次表", "template_key": "junior_high", "is_default": True},
+        json={"name": "初中部节次表", "template_key": "junior_high", "is_default": True},
     )
     assert resp.status_code == 201
 
@@ -149,7 +149,7 @@ def test_replace_periods_rejects_duplicate_cell(env):
         f"/api/semesters/{sem['id']}/period-tables", json={"name": "空表"}
     ).json()
     dup = [
-        {"weekday": 1, "period_no": 1, "name": "第一節", "type": "regular"},
-        {"weekday": 1, "period_no": 1, "name": "重複", "type": "regular"},
+        {"weekday": 1, "period_no": 1, "name": "第一节", "type": "regular"},
+        {"weekday": 1, "period_no": 1, "name": "重复", "type": "regular"},
     ]
     assert client.put(f"/api/period-tables/{table['id']}/periods", json=dup).status_code == 400

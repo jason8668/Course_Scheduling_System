@@ -1,15 +1,15 @@
-"""軟約束達成度報告(architecture.md §3.2 S1–S8)。
+"""软约束达成度报告(architecture.md §3.2 S1–S8)。
 
-與 `validator.py` 一樣**從課表本身重新推導**,不讀 CP-SAT 的目標值——建模的懲罰項
-寫錯時,solver 回報的目標值只會忠實反映錯誤的模型。報告要說人話:
-不是「S1 得分 0.82」,而是「教師王師 週四第七節 被排課(該時段標記為盡量避開)」。
+与 `validator.py` 一样**从课表本身重新推导**,不读 CP-SAT 的目标值——建模的惩罚项
+写错时,solver 回报的目标值只会忠实反映错误的模型。报告要说人话:
+不是「S1 得分 0.82」,而是「教师王师 周四第七节 被排课(该时段标记为尽量避开)」。
 
-滿分 = 機會數(可以被滿足的次數),得分 = 實際滿足數。
+满分 = 机会数(可以被满足的次数),得分 = 实际满足数。
 
-**`total_penalty` 不等於 `SolveResult.objective`**,兩者刻意用不同尺度:
-目標函數以「超出的節數」計價(S3 超 2 節就罰 2 份),讓 solver 有梯度可下降;
-報告以「未達成的次數」計價(S3 那天沒排好就是 1 次),讓教學組長知道要修幾個地方。
-比較兩份課表的優劣時看 objective,看報告是為了知道**哪裡**還不夠好。
+**`total_penalty` 不等于 `SolveResult.objective`**,两者刻意用不同尺度:
+目标函数以「超出的节数」计价(S3 超 2 节就罚 2 份),让 solver 有梯度可下降;
+报告以「未达成的次数」计价(S3 那天没排好就是 1 次),让教学组长知道要修几个地方。
+比较两份课表的优劣时看 objective,看报告是为了知道**哪里**还不够好。
 """
 
 from collections.abc import Sequence
@@ -26,11 +26,11 @@ from app.solver.problem import (
     SolverConfig,
 )
 
-MAX_DETAILS = 20  # 每項軟約束最多列出的明細筆數(其餘以總數表示)
+MAX_DETAILS = 20  # 每项软约束最多列出的明细笔数(其余以总数表示)
 
 
 def _wd(weekday: int) -> str:
-    names = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"]
+    names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     return names[weekday - 1] if 1 <= weekday <= 7 else f"星期{weekday}"
 
 
@@ -39,7 +39,7 @@ class SoftScore:
     code: str
     name: str
     weight: int
-    opportunities: int  # 滿分
+    opportunities: int  # 满分
     violations: int
     details: tuple[str, ...] = field(default_factory=tuple)
 
@@ -70,7 +70,7 @@ class SoftReport:
 
 @dataclass(frozen=True, slots=True)
 class _Busy:
-    """教師在某一節次上課。position 是該教師當日可排節次序列中的位置(用來算連續/空堂)。"""
+    """教师在某一节次上课。position 是该教师当日可排节次序列中的位置(用来算连续/空堂)。"""
 
     weekday: int
     position: int
@@ -99,7 +99,7 @@ def evaluate(
 
 
 def _teacher_day_slots(problem: Problem, teacher_id: int) -> dict[int, list[Slot]]:
-    """該教師可能上課的節次,依星期分組並按牆鐘時間排序(跨節次表也有一致的順序)。"""
+    """该教师可能上课的节次,依星期分组并按墙钟时间排序(跨节次表也有一致的顺序)。"""
     slots: list[Slot] = []
     for table in problem.tables_of_teacher(teacher_id):
         slots.extend(table.slots)
@@ -138,7 +138,7 @@ def _teacher_busy(
     return out
 
 
-# ── S1 教師偏好時段 ──────────────────────────────────────────
+# ── S1 教师偏好时段 ──────────────────────────────────────────
 def _s1_preferences(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) -> SoftScore:
     opportunities = 0
     violations = 0
@@ -153,14 +153,14 @@ def _s1_preferences(problem: Problem, busy: dict[int, list[_Busy]], c: SolverCon
                 violations += 1
                 if len(details) < MAX_DETAILS:
                     details.append(
-                        f"教師{t.name} {_wd(b.weekday)}{b.slot.name} 被排課"
-                        f"(該時段標記為盡量避開)"
+                        f"教师{t.name} {_wd(b.weekday)}{b.slot.name} 被排课"
+                        f"(该时段标记为尽量避开)"
                     )
     return SoftScore("S1", SOFT_NAMES["S1"], c.weight("S1"), opportunities, violations,
                      tuple(details))
 
 
-# ── S2 同班同科目分散於不同日 ────────────────────────────────
+# ── S2 同班同科目分散于不同日 ────────────────────────────────
 def _s2_spread(
     problem: Problem, entries: Sequence[SolvedEntry], by_id: dict[int, AssignmentSpec],
     c: SolverConfig,
@@ -168,7 +168,7 @@ def _s2_spread(
     counts: dict[tuple[int, int, int], int] = {}
     for e in entries:
         if e.span != 1:
-            continue  # 連堂本來就是同一天上完
+            continue  # 连堂本来就是同一天上完
         a = by_id[e.assignment_id]
         for cls in problem.classes_of(a):
             key = (cls.id, a.subject_id, e.weekday)
@@ -184,14 +184,14 @@ def _s2_spread(
                 subject = next(a.subject_name for a in problem.assignments
                                if a.subject_id == subject_id)
                 details.append(
-                    f"班級 {problem.classes[class_id].name} {_wd(weekday)} "
-                    f"排了 {n} 節「{subject}」"
+                    f"班级 {problem.classes[class_id].name} {_wd(weekday)} "
+                    f"排了 {n} 节「{subject}」"
                 )
     return SoftScore("S2", SOFT_NAMES["S2"], c.weight("S2"), opportunities, violations,
                      tuple(details))
 
 
-# ── S3 教師每日授課節數上限 ──────────────────────────────────
+# ── S3 教师每日授课节数上限 ──────────────────────────────────
 def _s3_daily_load(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) -> SoftScore:
     opportunities = 0
     violations = 0
@@ -206,14 +206,14 @@ def _s3_daily_load(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConf
                 violations += 1
                 if len(details) < MAX_DETAILS:
                     details.append(
-                        f"教師{t.name} {_wd(weekday)} 排了 {load} 節,"
-                        f"超過每日上限 {c.teacher_daily_max} 節"
+                        f"教师{t.name} {_wd(weekday)} 排了 {load} 节,"
+                        f"超过每日上限 {c.teacher_daily_max} 节"
                     )
     return SoftScore("S3", SOFT_NAMES["S3"], c.weight("S3"), opportunities, violations,
                      tuple(details))
 
 
-# ── S4 教師空堂集中 ──────────────────────────────────────────
+# ── S4 教师空堂集中 ──────────────────────────────────────────
 def _s4_gaps(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) -> SoftScore:
     opportunities = 0
     violations = 0
@@ -228,12 +228,12 @@ def _s4_gaps(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) ->
             if gaps > 0:
                 violations += 1
                 if len(details) < MAX_DETAILS:
-                    details.append(f"教師{t.name} {_wd(weekday)} 有 {gaps} 節零碎空堂")
+                    details.append(f"教师{t.name} {_wd(weekday)} 有 {gaps} 节零碎空堂")
     return SoftScore("S4", SOFT_NAMES["S4"], c.weight("S4"), opportunities, violations,
                      tuple(details))
 
 
-# ── S5 主科優先排上午 ────────────────────────────────────────
+# ── S5 主科优先排上午 ────────────────────────────────────────
 def _s5_major_in_morning(
     problem: Problem, entries: Sequence[SolvedEntry], by_id: dict[int, AssignmentSpec],
     c: SolverConfig,
@@ -264,7 +264,7 @@ def _s5_major_in_morning(
                      tuple(details))
 
 
-# ── S6 教師連續授課節數上限 ──────────────────────────────────
+# ── S6 教师连续授课节数上限 ──────────────────────────────────
 def _s6_consecutive(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) -> SoftScore:
     opportunities = 0
     violations = 0
@@ -280,8 +280,8 @@ def _s6_consecutive(problem: Problem, busy: dict[int, list[_Busy]], c: SolverCon
                 violations += 1
                 if len(details) < MAX_DETAILS:
                     details.append(
-                        f"教師{t.name} {_wd(weekday)} 連續授課 {longest} 節,"
-                        f"超過上限 {c.teacher_consecutive_max} 節"
+                        f"教师{t.name} {_wd(weekday)} 连续授课 {longest} 节,"
+                        f"超过上限 {c.teacher_consecutive_max} 节"
                     )
     return SoftScore("S6", SOFT_NAMES["S6"], c.weight("S6"), opportunities, violations,
                      tuple(details))
@@ -297,9 +297,9 @@ def _longest_run(sorted_positions: list[int]) -> int:
     return best
 
 
-# ── S7 導師的課排在自己班第一節 ──────────────────────────────
+# ── S7 导师的课排在自己班第一节 ──────────────────────────────
 def _homeroom_classes(problem: Problem) -> list[tuple[ClassSpec, int]]:
-    """有導師、且導師確實任教該班的班級(否則這條軟約束無從滿足)。"""
+    """有导师、且导师确实任教该班的班级(否则这条软约束无从满足)。"""
     out: list[tuple[ClassSpec, int]] = []
     for cls in problem.classes.values():
         tid = cls.homeroom_teacher_id
@@ -339,14 +339,14 @@ def _s7_homeroom_first_period(
                 violations += 1
                 if len(details) < MAX_DETAILS:
                     details.append(
-                        f"班級 {cls.name} {_wd(weekday)}{first.name} 不是導師"
-                        f"{problem.teachers[tid].name}的課"
+                        f"班级 {cls.name} {_wd(weekday)}{first.name} 不是导师"
+                        f"{problem.teachers[tid].name}的课"
                     )
     return SoftScore("S7", SOFT_NAMES["S7"], c.weight("S7"), opportunities, violations,
                      tuple(details))
 
 
-# ── S8 教師偏好達成率的公平性 ────────────────────────────────
+# ── S8 教师偏好达成率的公平性 ────────────────────────────────
 def _s8_fairness(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig) -> SoftScore:
     unmet: dict[int, int] = {}
     for t in problem.teachers.values():
@@ -361,8 +361,8 @@ def _s8_fairness(problem: Problem, busy: dict[int, list[_Busy]], c: SolverConfig
         worst_id = max(unmet, key=lambda tid: unmet[tid])
         if unmet[worst_id] > 0:
             details.append(
-                f"偏好未達成最多的是教師{problem.teachers[worst_id].name}"
-                f"({unmet[worst_id]} 節);共 {violations}/{opportunities} 位教師的偏好未完全達成"
+                f"偏好未达成最多的是教师{problem.teachers[worst_id].name}"
+                f"({unmet[worst_id]} 节);共 {violations}/{opportunities} 位教师的偏好未完全达成"
             )
     return SoftScore("S8", SOFT_NAMES["S8"], c.weight("S8"), opportunities, violations,
                      tuple(details))

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="常見問題 FAQ — 排課與調代課系統部署與維運文件">
-<title>常見問題 FAQ · 排課與調代課系統</title>
+<meta name="description" content="常见问题 FAQ — 排课与调代课系统部署与维运文件">
+<title>常见问题 FAQ · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📗</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/deploy/faq.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/deploy/faq.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,110 +151,110 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="../index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="../index.html">教學組長操作手冊</a>
+<a class="brand" href="../index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="../index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc" href="README.html">總覽:從哪開始</a>
-<a class="doc" href="install.html">安裝指南</a>
-<a class="doc" href="upgrade.html">升級指南</a>
-<a class="doc" href="backup.html">備份與還原</a>
-<a class="doc" href="https.html">網域與 HTTPS</a>
-<a class="doc here" href="faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc" href="README.html">总览:从哪开始</a>
+<a class="doc" href="install.html">安装指南</a>
+<a class="doc" href="upgrade.html">升级指南</a>
+<a class="doc" href="backup.html">备份与还原</a>
+<a class="doc" href="https.html">网域与 HTTPS</a>
+<a class="doc here" href="faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="../architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc" href="../roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="../tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="../architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc" href="../roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="../tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#安裝與啟動">安裝與啟動</a><a class="lv2" href="#帳號與登入">帳號與登入</a><a class="lv2" href="#資料與備份">資料與備份</a><a class="lv2" href="#效能與規模">效能與規模</a><a class="lv2" href="#升級與版本">升級與版本</a><a class="lv2" href="#其他">其他</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#安装与启动">安装与启动</a><a class="lv2" href="#帐号与登录">帐号与登录</a><a class="lv2" href="#资料与备份">资料与备份</a><a class="lv2" href="#效能与规模">效能与规模</a><a class="lv2" href="#升级与版本">升级与版本</a><a class="lv2" href="#其他">其他</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEPLOYMENT GUIDE</div>
-        <h1>常見問題 FAQ</h1>
-        <div class="src">原始檔 <code>docs/deploy/faq.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/faq.md">在 GitHub 上檢視</a></div>
+        <h1>常见问题 FAQ</h1>
+        <div class="src">原始档 <code>docs/deploy/faq.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/faq.md">在 GitHub 上查看</a></div>
       </header>
-      <h2 id="安裝與啟動">安裝與啟動</h2>
-      <p><strong>Q:<code>docker compose up -d</code> 後開網頁看到「502」或「無法連線」。</strong>
-      容器可能還在啟動(尤其首次要跑資料庫遷移)。等 20–30 秒再試,並看狀態:</p>
+      <h2 id="安装与启动">安装与启动</h2>
+      <p><strong>Q:<code>docker compose up -d</code> 后开网页看到「502」或「无法连线」。</strong>
+      容器可能还在启动(尤其首次要跑资料库迁移)。等 20–30 秒再试,并看状态:</p>
       <pre><code class="language-bash">docker compose ps          # 看是否都 healthy
-      docker compose logs api    # 看 api 是否卡在遷移或報錯
+      docker compose logs api    # 看 api 是否卡在迁移或报错
       </code></pre>
       <p><strong>Q:<code>docker compose ps</code> 有容器一直 restarting。</strong>
-      看該容器 log 找原因:</p>
-      <pre><code class="language-bash">docker compose logs --tail=50 &lt;服務名&gt;   # 例如 api / worker / postgres
+      看该容器 log 找原因:</p>
+      <pre><code class="language-bash">docker compose logs --tail=50 &lt;服务名&gt;   # 例如 api / worker / postgres
       </code></pre>
-      <p>常見:<code>.env</code> 的 <code>DATABASE_URL</code> 與 <code>POSTGRES_*</code> 帳密不一致;<code>SECRET_KEY</code> 未設。</p>
-      <p><strong>Q:80 埠被占用,啟動失敗(port is already allocated)。</strong>
-      改 <code>.env</code> 的 <code>HTTP_PORT</code>(例如 <code>8080</code>)再 <code>docker compose up -d</code>,改用 <code>http://&lt;主機IP&gt;:8080</code>。</p>
-      <p><strong>Q:校內其他電腦連不到。</strong>
-      確認用的是主機的<strong>區網 IP</strong>(非 <code>localhost</code>),且主機防火牆放行該埠。手機/平板需與主機同一網段(同一 Wi-Fi)。</p>
+      <p>常见:<code>.env</code> 的 <code>DATABASE_URL</code> 与 <code>POSTGRES_*</code> 帐密不一致;<code>SECRET_KEY</code> 未设。</p>
+      <p><strong>Q:80 埠被占用,启动失败(port is already allocated)。</strong>
+      改 <code>.env</code> 的 <code>HTTP_PORT</code>(例如 <code>8080</code>)再 <code>docker compose up -d</code>,改用 <code>http://&lt;主机IP&gt;:8080</code>。</p>
+      <p><strong>Q:校内其他电脑连不到。</strong>
+      确认用的是主机的<strong>区网 IP</strong>(非 <code>localhost</code>),且主机防火墙放行该埠。手机/平板需与主机同一网段(同一 Wi-Fi)。</p>
       <hr />
-      <h2 id="帳號與登入">帳號與登入</h2>
-      <p><strong>Q:忘記管理員密碼怎麼辦?</strong>
-      若你還記得 <code>.env</code> 的初始 <code>ADMIN_PASSWORD</code>,那是<strong>首次登入</strong>用的;登入後改過的密碼存在資料庫。若連改過的都忘了,目前需由具資料庫存取權者重設。最務實的做法是<strong>還原一份記得密碼的舊備份</strong>(見<a href="backup.html">備份指南</a>),或聯繫維護者。請妥善保管管理員密碼。</p>
-      <p><strong>Q:還原備份後大家被登出了。</strong>
-      這是預期行為。還原會替換整個資料庫(含帳號),為安全起見系統會強制所有人以還原時點的帳密重新登入。</p>
-      <p><strong>Q:老師收不到調代課 Email。</strong>
-      Email 為<strong>選配</strong>;未在「系統管理」設定 SMTP 時,只有站內通知(鈴鐺),系統一切正常。要寄 Email 需填學校的 SMTP 主機資訊,並可按「寄測試信」當場驗證。</p>
+      <h2 id="帐号与登录">帐号与登录</h2>
+      <p><strong>Q:忘记管理员密码怎么办?</strong>
+      若你还记得 <code>.env</code> 的初始 <code>ADMIN_PASSWORD</code>,那是<strong>首次登录</strong>用的;登录后改过的密码存在资料库。若连改过的都忘了,目前需由具资料库存取权者重设。最务实的做法是<strong>还原一份记得密码的旧备份</strong>(见<a href="backup.html">备份指南</a>),或联系维护者。请妥善保管管理员密码。</p>
+      <p><strong>Q:还原备份后大家被登出了。</strong>
+      这是预期行为。还原会替换整个资料库(含帐号),为安全起见系统会强制所有人以还原时点的帐密重新登录。</p>
+      <p><strong>Q:老师收不到调代课 Email。</strong>
+      Email 为<strong>选配</strong>;未在「系统管理」设置 SMTP 时,只有站内通知(铃铛),系统一切正常。要寄 Email 需填学校的 SMTP 主机信息,并可按「寄测试信」当场验证。</p>
       <hr />
-      <h2 id="資料與備份">資料與備份</h2>
-      <p><strong>Q:我的資料存在哪?會不會不見?</strong>
-      存在 Docker volume <code>pgdata</code>。只要不刪這個 volume,<code>docker compose down</code> / 重啟 / 升級都不會動到資料。<strong>但主機硬碟壞掉 volume 會一起沒</strong>,所以務必做<a href="backup.html">異地備援</a>。</p>
-      <p><strong>Q:<code>docker compose down</code> 會刪資料嗎?</strong>
-      不會。<code>down</code> 只停止並移除容器,volume 保留。<strong>只有 <code>docker compose down -v</code> 的 <code>-v</code> 會刪 volume(含你的資料)</strong>,請勿誤用。</p>
-      <p><strong>Q:怎麼把系統搬到新主機?</strong>
-      新主機裝好空系統 → 舊主機下載一份備份 <code>.dump</code> → 新主機「系統管理 → 上傳還原」。詳見<a href="backup.html">備份指南</a>。</p>
+      <h2 id="资料与备份">资料与备份</h2>
+      <p><strong>Q:我的资料存在哪?会不会不见?</strong>
+      存在 Docker volume <code>pgdata</code>。只要不删这个 volume,<code>docker compose down</code> / 重启 / 升级都不会动到资料。<strong>但主机硬碟坏掉 volume 会一起没</strong>,所以务必做<a href="backup.html">异地备援</a>。</p>
+      <p><strong>Q:<code>docker compose down</code> 会删资料吗?</strong>
+      不会。<code>down</code> 只停止并移除容器,volume 保留。<strong>只有 <code>docker compose down -v</code> 的 <code>-v</code> 会删 volume(含你的资料)</strong>,请勿误用。</p>
+      <p><strong>Q:怎么把系统搬到新主机?</strong>
+      新主机装好空系统 → 旧主机下载一份备份 <code>.dump</code> → 新主机「系统管理 → 上传还原」。详见<a href="backup.html">备份指南</a>。</p>
       <hr />
-      <h2 id="效能與規模">效能與規模</h2>
-      <p><strong>Q:自動排課很慢或跑不出來。</strong>
-      排課是計算密集工作,受班級數、約束複雜度影響。建議主機 ≥ 4 核 8GB。無解時系統會給「衝突定位」報告,依提示放寬條件或補資源。可設定求解逾時(預設 10 分鐘),逾時取當前最佳解。</p>
-      <p><strong>Q:頁面偶爾轉圈久。</strong>
-      自動排課/大量匯出時 worker 較忙,但與 api 分離,一般操作不受影響。自 v1.1 起排課(<code>worker</code>)與匯出/備份(<code>worker-ops</code>)分屬兩個容器,<strong>排課進行中按匯出仍是秒回</strong>。若持續緩慢,查主機資源(<code>docker stats</code>)是否吃緊。</p>
-      <p><strong>Q:匯出/備份時出現「維運背景服務(worker-ops)沒有在執行」。</strong></p>
-      <p>你的 <code>docker-compose.yml</code> 少了 <code>worker-ops</code> 這個容器(多半是用了舊版的 compose 檔)。它負責匯出、備份、還原、寄信與每日自動備份——沒有它,這些功能全都沒人處理,而且<strong>每日自動備份是無聲停擺的</strong>。</p>
-      <p>取得最新的 compose 檔再重啟即可,資料不受影響:</p>
+      <h2 id="效能与规模">效能与规模</h2>
+      <p><strong>Q:自动排课很慢或跑不出来。</strong>
+      排课是计算密集工作,受班级数、约束复杂度影响。建议主机 ≥ 4 核 8GB。无解时系统会给「冲突定位」报告,依提示放宽条件或补资源。可设置求解逾时(默认 10 分钟),逾时取当前最佳解。</p>
+      <p><strong>Q:页面偶尔转圈久。</strong>
+      自动排课/大量导出时 worker 较忙,但与 api 分离,一般操作不受影响。自 v1.1 起排课(<code>worker</code>)与导出/备份(<code>worker-ops</code>)分属两个容器,<strong>排课进行中按导出仍是秒回</strong>。若持续缓慢,查主机资源(<code>docker stats</code>)是否吃紧。</p>
+      <p><strong>Q:导出/备份时出现「维运背景服务(worker-ops)没有在执行」。</strong></p>
+      <p>你的 <code>docker-compose.yml</code> 少了 <code>worker-ops</code> 这个容器(多半是用了旧版的 compose 档)。它负责导出、备份、还原、寄信与每日自动备份——没有它,这些功能全都没人处理,而且<strong>每日自动备份是无声停摆的</strong>。</p>
+      <p>取得最新的 compose 档再重启即可,资料不受影响:</p>
       <pre><code class="language-bash">curl -fLO https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/docker-compose.yml
       docker compose up -d
-      docker compose ps          # 應看到六個容器,含 worker 與 worker-ops
+      docker compose ps          # 应看到六个容器,含 worker 与 worker-ops
       </code></pre>
-      <p><strong>Q:匯出課表 / 備份失敗,說「背景忙碌或逾時」。</strong></p>
-      <p><code>worker-ops</code> 有在跑但沒做完。查它的 log:</p>
+      <p><strong>Q:导出课表 / 备份失败,说「背景忙碌或逾时」。</strong></p>
+      <p><code>worker-ops</code> 有在跑但没做完。查它的 log:</p>
       <pre><code class="language-bash">docker compose ps worker-ops
       docker compose logs --tail=50 worker-ops
       </code></pre>
-      <p>PDF/PNG 匯出在低階機器上偶爾會超過 90 秒;主機吃緊(<code>docker stats</code>)時先讓自動排課跑完再試。</p>
+      <p>PDF/PNG 导出在低阶机器上偶尔会超过 90 秒;主机吃紧(<code>docker stats</code>)时先让自动排课跑完再试。</p>
       <hr />
-      <h2 id="升級與版本">升級與版本</h2>
-      <p><strong>Q:怎麼知道有沒有新版、這版改了什麼?</strong>
-      v1.2.3 起,系統管理員登入後:有新版時右上角會出現「有新版本 vX.Y.Z」,「系統管理 → 系統版本」可看到目前版本、最新正式版,並連到更新內容與<a href="upgrade.html">升級指南</a>。系統<strong>只提醒、不會自動升級</strong>。也可以直接看專案 <a href="../../CHANGELOG.html">CHANGELOG.md</a> 與 GitHub Releases。</p>
-      <p><strong>Q:新版本提醒會把學校資料傳出去嗎?可以關掉嗎?</strong>
-      不會。系統每天最多一次向 GitHub 讀取本專案<strong>公開的</strong>最新版本資訊(一個 GET 請求),不送出任何學校資料。學校主機不能連外時,只會在系統版本卡片顯示「無法連線」,不影響任何功能。若不希望主機連外,在 <code>.env</code> 加上 <code>UPDATE_CHECK_ENABLED=false</code> 後執行 <code>docker compose up -d</code> 即可關閉。</p>
-      <p><strong>Q:怎麼看目前是哪一版?</strong>
-      左側選單最下方會顯示版本號(v1.2.3 起)。回報問題時附上版本號,會比較容易查。</p>
-      <p><strong>Q:升級會不會弄壞資料?</strong>
-      資料表結構變更由 <code>api</code> 啟動時自動、向前相容地遷移,資料保留。仍建議升級前先「立即備份」。破壞性變更(若有)會在 CHANGELOG 該版本以 ⚠️ 標註。</p>
+      <h2 id="升级与版本">升级与版本</h2>
+      <p><strong>Q:怎么知道有没有新版、这版改了什么?</strong>
+      v1.2.3 起,系统管理员登录后:有新版时右上角会出现「有新版本 vX.Y.Z」,「系统管理 → 系统版本」可看到目前版本、最新正式版,并连到更新内容与<a href="upgrade.html">升级指南</a>。系统<strong>只提醒、不会自动升级</strong>。也可以直接看专案 <a href="../../CHANGELOG.html">CHANGELOG.md</a> 与 GitHub Releases。</p>
+      <p><strong>Q:新版本提醒会把学校资料传出去吗?可以关掉吗?</strong>
+      不会。系统每天最多一次向 GitHub 读取本专案<strong>公开的</strong>最新版本信息(一个 GET 请求),不送出任何学校资料。学校主机不能连外时,只会在系统版本卡片显示「无法连线」,不影响任何功能。若不希望主机连外,在 <code>.env</code> 加上 <code>UPDATE_CHECK_ENABLED=false</code> 后执行 <code>docker compose up -d</code> 即可关闭。</p>
+      <p><strong>Q:怎么看目前是哪一版?</strong>
+      左侧选单最下方会显示版本号(v1.2.3 起)。回报问题时附上版本号,会比较容易查。</p>
+      <p><strong>Q:升级会不会弄坏资料?</strong>
+      资料表结构变更由 <code>api</code> 启动时自动、向前相容地迁移,资料保留。仍建议升级前先「立即备份」。破坏性变更(若有)会在 CHANGELOG 该版本以 ⚠️ 标注。</p>
       <hr />
       <h2 id="其他">其他</h2>
-      <p><strong>Q:可以多所學校共用一套嗎?</strong>
-      本系統設計為<strong>單校自架</strong>,一所學校一套部署,資料彼此隔離、最單純也最安全。多校請各自部署。</p>
+      <p><strong>Q:可以多所学校共用一套吗?</strong>
+      本系统设计为<strong>单校自架</strong>,一所学校一套部署,资料彼此隔离、最单纯也最安全。多校请各自部署。</p>
       <p><strong>Q:如何完全移除?</strong></p>
-      <pre><code class="language-bash">docker compose down -v     # ⚠️ 連同資料 volume 一起刪除,不可復原,請先備份!
+      <pre><code class="language-bash">docker compose down -v     # ⚠️ 连同资料 volume 一起删除,不可复原,请先备份!
       </code></pre>
-      <p><strong>Q:找不到答案 / 想回報問題?</strong>
-      到專案 GitHub 開 Issue(見 <a href="../../CONTRIBUTING.html">CONTRIBUTING.md</a>)。回報時附上 <code>docker compose logs</code> 相關片段會更快解決。</p>
+      <p><strong>Q:找不到答案 / 想回报问题?</strong>
+      到专案 GitHub 开 Issue(见 <a href="../../CONTRIBUTING.html">CONTRIBUTING.md</a>)。回报时附上 <code>docker compose logs</code> 相关片段会更快解决。</p>
       <div class="foot">
-        本頁由 <code>docs/deploy/faq.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/deploy/faq.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -262,7 +262,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

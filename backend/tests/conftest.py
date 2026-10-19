@@ -1,7 +1,7 @@
-"""測試共用設定。
+"""测试共用设置。
 
-以 SQLite 記憶體資料庫建立獨立測試環境,並組出一個含 auth 路由與
-兩個受保護測試路由(_protected、_scheduler)的 app,用來驗證 RBAC 依賴。
+以 SQLite 记忆体资料库建立独立测试环境,并组出一个含 auth 路由与
+两个受保护测试路由(_protected、_scheduler)的 app,用来验证 RBAC 依赖。
 """
 
 from collections.abc import Iterable
@@ -44,7 +44,7 @@ from app.services.users import create_user
 
 @pytest.fixture
 def db():
-    """乾淨的測試資料庫 session(不經 API)。給 fixtures builder 與服務層測試用。"""
+    """干净的测试资料库 session(不经 API)。给 fixtures builder 与服务层测试用。"""
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -62,7 +62,7 @@ def db():
 
 @pytest.fixture
 def env():
-    """回傳 (client, db) — client 打 API,db 供測試準備資料。共用同一 SQLite 連線。"""
+    """回传 (client, db) — client 打 API,db 供测试准备资料。共用同一 SQLite 连线。"""
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

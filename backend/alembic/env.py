@@ -1,11 +1,11 @@
-"""Alembic 遷移環境。連線字串取自應用程式設定(環境變數),
-target_metadata 取自 app.core.db.Base,並匯入 app.models 以註冊所有 model。"""
+"""Alembic 迁移环境。连线字串取自应用程序设置(环境变数),
+target_metadata 取自 app.core.db.Base,并导入 app.models 以注册所有 model。"""
 
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
-# 匯入 models 讓其 metadata 註冊到 Base(M0-1 尚無 model,之後陸續加入)
+# 导入 models 让其 metadata 注册到 Base(M0-1 尚无 model,之后陆续加入)
 import app.models  # noqa: F401
 from alembic import context
 from app.core.config import settings

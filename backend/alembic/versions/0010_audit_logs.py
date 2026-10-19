@@ -1,4 +1,4 @@
-"""操作軌跡:audit_logs
+"""操作轨迹:audit_logs
 
 Revision ID: 0010_audit_logs
 Revises: 0009_timetables

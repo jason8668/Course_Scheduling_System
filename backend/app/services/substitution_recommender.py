@@ -1,10 +1,10 @@
-"""代課推薦(M4-2,architecture.md §5.3)。
+"""代课推荐(M4-2,architecture.md §5.3)。
 
-回答「這一節該找誰代」。兩段式:先**硬性過濾**(只留下那個特定日期真的能來的人),
-再**排序**(同科目 > 當天已在校 > 本月代課鐘點少),每位候選附上為什麼排這個位置。
+回答「这一节该找谁代」。两段式:先**硬性过滤**(只留下那个特定日期真的能来的人),
+再**排序**(同科目 > 当天已在校 > 本月代课课时少),每位候选附上为什么排这个位置。
 
-硬性過濾一律經 `availability`——那裡才知道「李師週三第二節空堂」不等於「11/11 他能代」
-(他自己可能也請假、或已被指派代別班)。排序理由給人看,不是黑箱分數。
+硬性过滤一律经 `availability`——那里才知道「李师周三第二节空堂」不等于「11/11 他能代」
+(他自己可能也请假、或已被指派代别班)。排序理由给人看,不是黑箱分数。
 """
 
 from dataclasses import dataclass, field
@@ -23,14 +23,14 @@ from app.services.availability import Availability
 class Candidate:
     teacher_id: int
     teacher_name: str
-    same_subject: bool       # 教這個科目
-    at_school_that_day: bool  # 當天本來就有課(免多跑一趟)
-    sub_periods_this_month: int  # 本月已代課節數(愈少愈優先,公平)
-    reasons: tuple[str, ...]  # 為什麼排這個位置(給人看)
+    same_subject: bool       # 教这个科目
+    at_school_that_day: bool  # 当天本来就有课(免多跑一趟)
+    sub_periods_this_month: int  # 本月已代课节数(愈少愈优先,公平)
+    reasons: tuple[str, ...]  # 为什么排这个位置(给人看)
 
     @property
     def sort_key(self) -> tuple:
-        # 同科目最重要,其次當天在校,再者本月代課少者優先;同分以姓名穩定排序
+        # 同科目最重要,其次当天在校,再者本月代课少者优先;同分以姓名稳定排序
         return (
             0 if self.same_subject else 1,
             0 if self.at_school_that_day else 1,
@@ -43,12 +43,12 @@ class Candidate:
 class Recommendation:
     affected_period_id: int
     candidates: list[Candidate] = field(default_factory=list)
-    # 全校無人可代時,給組長明確的下一步(併班/自習),而不是空清單
+    # 全校无人可代时,给组长明确的下一步(并班/自习),而不是空清单
     no_candidate_hint: str = ""
 
 
 def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> set[int]:
-    """教這個科目的教師 id。以科目『名稱』比對(受影響節次存的是快照名稱)。"""
+    """教这个科目的教师 id。以科目『名称』比对(受影响节次存的是快照名称)。"""
     if not subject_name:
         return set()
     from app.models.basedata import Subject, teacher_subjects
@@ -63,7 +63,7 @@ def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> se
 
 
 def _monthly_sub_counts(db: Session, semester_id: int, month_start: date) -> dict[int, int]:
-    """本月各教師已計鐘點的代課節數(swap 的補課方也算一節)。"""
+    """本月各教师已计课时的代课节数(swap 的补课方也算一节)。"""
     counts: dict[int, int] = {}
     rows = db.execute(
         select(Substitution.handler_teacher_id, func.count())
@@ -72,8 +72,8 @@ def _monthly_sub_counts(db: Session, semester_id: int, month_start: date) -> dic
             Substitution.semester_id == semester_id,
             Substitution.counts_toward_hours.is_(True),
             Substitution.handler_teacher_id.isnot(None),
-            # 銷假後 substitution 列仍在、但節次已取消——不能算進公平計數的幽靈代課
-            # (與 M4-5 統計的 status != cancelled 過濾同口徑)
+            # 销假后 substitution 列仍在、但节次已取消——不能算进公平计数的幽灵代课
+            # (与 M4-5 统计的 status != cancelled 过滤同口径)
             AffectedPeriod.status != AffectedStatus.cancelled.value,
             AffectedPeriod.date >= month_start,
             AffectedPeriod.date < _next_month(month_start),
@@ -81,7 +81,7 @@ def _monthly_sub_counts(db: Session, semester_id: int, month_start: date) -> dic
         .group_by(Substitution.handler_teacher_id)
     ).all()
     for teacher_id, n in rows:
-        if teacher_id is None:  # 查詢已過濾掉,這裡只是讓型別檢查看得懂
+        if teacher_id is None:  # 查询已过滤掉,这里只是让型别检查看得懂
             continue
         counts[teacher_id] = n
     return counts
@@ -97,7 +97,7 @@ def recommend(
     *,
     availability: Availability | None = None,
 ) -> Recommendation:
-    """為一個受影響節次列出可代教師,已排序、附理由。"""
+    """为一个受影响节次列出可代教师,已排序、附理由。"""
     semester_id = affected.semester_id
     av = availability or Availability(db, semester_id)
     slot = av.slot_of(affected)
@@ -125,10 +125,10 @@ def recommend(
         month_n = month_counts.get(t.id, 0)
 
         reasons: list[str] = []
-        reasons.append("同科目教師" if same_subject else "非本科教師")
+        reasons.append("同科目教师" if same_subject else "非本科教师")
         if at_school:
-            reasons.append("當天已在校")
-        reasons.append(f"本月已代 {month_n} 節")
+            reasons.append("当天已在校")
+        reasons.append(f"本月已代 {month_n} 节")
 
         rec.candidates.append(Candidate(
             teacher_id=t.id, teacher_name=t.name,
@@ -139,6 +139,6 @@ def recommend(
     rec.candidates.sort(key=lambda c: c.sort_key)
     if not rec.candidates:
         rec.no_candidate_hint = (
-            f"該時段全校 {blocked} 位教師都無法代課,建議改採「併班」或「自習」"
+            f"该时段全校 {blocked} 位教师都无法代课,建议改采「并班」或「自习」"
         )
     return rec

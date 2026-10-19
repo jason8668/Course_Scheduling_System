@@ -8,9 +8,9 @@ import { exportPatrolSheets, getDailyBoard, openPatrolSheets } from '@/api/subst
 import type { DailyBoard, LogEntry } from '@/api/substitutionLog'
 import { listSemesters } from '@/api/semesters'
 
-const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
-// NDatePicker 給的是毫秒時間戳;以本機日期組出 YYYY-MM-DD,避免 toISOString 的 UTC 倒退
+// NDatePicker 给的是毫秒时间戳;以本机日期组出 YYYY-MM-DD,避免 toISOString 的 UTC 倒退
 function toISODate(ts: number): string {
   const d = new Date(ts)
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -69,7 +69,7 @@ function openPrint() {
   window.open(url, '_blank')
 }
 
-/** 巡堂表的範圍:當天,或選定日期那一週(週一到週日;沒課的日子後端會略過) */
+/** 巡堂表的范围:当天,或选定日期那一周(周一到周日;没课的日子后端会略过) */
 function patrolRange(week: boolean): [string, string] {
   if (!week) return [toISODate(dateTs.value), toISODate(dateTs.value)]
   const d = new Date(dateTs.value)
@@ -83,7 +83,7 @@ function openPatrol(week: boolean) {
   openPatrolSheets(sid.value, ...patrolRange(week))
 }
 
-// 匯出 Excel:列印頁印出來就不能改,學校常要再加欄位、填巡堂人員
+// 导出 Excel:打印页印出来就不能改,学校常要再加栏位、填巡堂人员
 const exportingPatrol = ref(false)
 async function exportPatrol(week: boolean) {
   if (sid.value === null) return
@@ -91,7 +91,7 @@ async function exportPatrol(week: boolean) {
   try {
     await exportPatrolSheets(sid.value, ...patrolRange(week))
   } catch (e) {
-    message.error((e as Error).message || '匯出失敗')
+    message.error((e as Error).message || '导出失败')
   } finally {
     exportingPatrol.value = false
   }
@@ -100,10 +100,10 @@ async function exportPatrol(week: boolean) {
 function dispositionText(e: LogEntry): string {
   if (!e.disposed) return '待安排'
   if (e.row_kind === 'swap_makeup') {
-    return `調課補課 · ${e.handler_name}(與 ${e.swap_date} ${e.swap_period_name} 對調)`
+    return `调课补课 · ${e.handler_name}(与 ${e.swap_date} ${e.swap_period_name} 对调)`
   }
   if (e.sub_type === 'swap' && e.swap_period_name) {
-    return `調課 · ${e.handler_name}(補 ${e.swap_date} ${e.swap_period_name})`
+    return `调课 · ${e.handler_name}(补 ${e.swap_date} ${e.swap_period_name})`
   }
   if (e.handler_name) return `${e.sub_type_label} · ${e.handler_name}`
   return e.sub_type_label ?? ''
@@ -119,10 +119,10 @@ function statusType(e: LogEntry): string {
 <template>
   <n-space vertical size="large">
     <n-space align="center" :wrap="true">
-      <h2 style="margin: 0">今日調代課看板</h2>
+      <h2 style="margin: 0">今日调代课看板</h2>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 200px"
-        placeholder="選擇學期" @update:value="onSemesterChange"
+        placeholder="选择学期" @update:value="onSemesterChange"
       />
       <n-date-picker
         v-model:value="dateTs" type="date" style="width: 160px"
@@ -132,24 +132,24 @@ function statusType(e: LogEntry): string {
         v-if="board?.entries.length" type="primary" data-testid="board-print"
         @click="openPrint"
       >
-        列印通知單
+        打印通知单
       </n-button>
       <template v-if="sid !== null">
         <n-text depth="3">巡堂表:</n-text>
         <n-button-group>
-          <n-button data-testid="board-patrol" @click="openPatrol(false)">列印當天</n-button>
-          <n-button data-testid="board-patrol-week" @click="openPatrol(true)">列印整週</n-button>
+          <n-button data-testid="board-patrol" @click="openPatrol(false)">打印当天</n-button>
+          <n-button data-testid="board-patrol-week" @click="openPatrol(true)">打印整周</n-button>
         </n-button-group>
         <n-button-group>
           <n-button
             :loading="exportingPatrol" data-testid="board-patrol-xlsx" @click="exportPatrol(false)"
           >
-            當天 Excel
+            当天 Excel
           </n-button>
           <n-button
             :loading="exportingPatrol" data-testid="board-patrol-week-xlsx" @click="exportPatrol(true)"
           >
-            整週 Excel
+            整周 Excel
           </n-button>
         </n-button-group>
       </template>
@@ -159,14 +159,14 @@ function statusType(e: LogEntry): string {
 
     <n-empty
       v-if="board && !board.entries.length && !loading"
-      description="今日無調代課" data-testid="board-empty" style="padding: 40px 0"
+      description="今日无调代课" data-testid="board-empty" style="padding: 40px 0"
     />
 
     <table v-else-if="board?.entries.length" class="data-table" data-testid="board-table">
       <thead>
         <tr>
-          <th>節次</th><th>班級</th><th>科目</th><th>原任教師</th>
-          <th>假別</th><th>處置</th><th>狀態</th>
+          <th>节次</th><th>班级</th><th>科目</th><th>原任教师</th>
+          <th>假别</th><th>处置</th><th>状态</th>
         </tr>
       </thead>
       <tbody>

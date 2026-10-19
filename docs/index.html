@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="排課與調代課系統 · 教學組長完整操作手冊:設定精靈、配課、手動與自動排課、調代課全流程、匯出、備份與常見問題。">
-<title>教學組長操作手冊 · 排課與調代課系統</title>
+<meta name="description" content="排课与调代课系统 · 教学组长完整操作手册:设置精灵、配课、手动与自动排课、调代课全流程、导出、备份与常见问题。">
+<title>教学组长操作手册 · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📘</text></svg>">
 </head>
 <body>
@@ -210,41 +210,41 @@
 
 <div class="grid-bg" aria-hidden="true"></div>
 
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 
 <div class="shell">
   <aside class="side" id="side">
     <div class="brand">
-      <span class="mark">排課與調代課系統</span>
+      <span class="mark">排课与调代课系统</span>
     </div>
-    <div class="brand"><span class="sub">教學組長操作手冊 · v1.1</span></div>
-    <div class="grp">本手冊章節</div>
+    <div class="brand"><span class="sub">教学组长操作手册 · v1.1</span></div>
+    <div class="grp">本手册章节</div>
     <nav id="toc">
-      <a href="#intro"><span class="n">00</span>如何使用本手冊</a>
-      <a href="#value"><span class="n">01</span>這套系統能幫你做什麼</a>
-      <a href="#prepare"><span class="n">02</span>開始前:準備哪些資料</a>
-      <a href="#wizard"><span class="n">03</span>第一次設定(設定精靈)</a>
-      <a href="#assign"><span class="n">04</span>配課管理</a>
-      <a href="#manual"><span class="n">05</span>手動排課工作台</a>
-      <a href="#auto"><span class="n">06</span>自動排課</a>
-      <a href="#publish"><span class="n">07</span>發布課表與全校查詢</a>
-      <a href="#subst"><span class="n">08</span>學期中的調代課</a>
-      <a href="#export"><span class="n">09</span>匯出課表</a>
-      <a href="#admin"><span class="n">10</span>系統管理</a>
-      <a href="#faq"><span class="n">11</span>常見情境 FAQ</a>
+      <a href="#intro"><span class="n">00</span>如何使用本手册</a>
+      <a href="#value"><span class="n">01</span>这套系统能帮你做什么</a>
+      <a href="#prepare"><span class="n">02</span>开始前:准备哪些资料</a>
+      <a href="#wizard"><span class="n">03</span>第一次设置(设置精灵)</a>
+      <a href="#assign"><span class="n">04</span>配课管理</a>
+      <a href="#manual"><span class="n">05</span>手动排课工作台</a>
+      <a href="#auto"><span class="n">06</span>自动排课</a>
+      <a href="#publish"><span class="n">07</span>发布课表与全校查询</a>
+      <a href="#subst"><span class="n">08</span>学期中的调代课</a>
+      <a href="#export"><span class="n">09</span>导出课表</a>
+      <a href="#admin"><span class="n">10</span>系统管理</a>
+      <a href="#faq"><span class="n">11</span>常见情境 FAQ</a>
     </nav>
-    <!-- 給裝機的人。刻意放在 #toc 之外:scrollspy 只認本頁錨點 -->
-    <div class="grp">部署與維運手冊</div>
+    <!-- 给装机的人。刻意放在 #toc 之外:scrollspy 只认本页锚点 -->
+    <div class="grp">部署与维运手册</div>
     <nav>
-      <a href="deploy/README.html">總覽:從哪開始</a>
-      <a href="deploy/install.html">安裝指南</a>
-      <a href="deploy/upgrade.html">升級指南</a>
-      <a href="deploy/backup.html">備份與還原</a>
-      <a href="deploy/https.html">網域與 HTTPS</a>
-      <a href="deploy/faq.html">常見問題 FAQ</a>
+      <a href="deploy/README.html">总览:从哪开始</a>
+      <a href="deploy/install.html">安装指南</a>
+      <a href="deploy/upgrade.html">升级指南</a>
+      <a href="deploy/backup.html">备份与还原</a>
+      <a href="deploy/https.html">网域与 HTTPS</a>
+      <a href="deploy/faq.html">常见问题 FAQ</a>
     </nav>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
 
   <main>
@@ -253,504 +253,504 @@
       <!-- HERO -->
       <header class="hero" id="intro">
         <div class="eyebrow">Operations Handbook</div>
-        <h1>教學組長操作手冊</h1>
-        <p class="lede">從零開始,帶你把一整個學期的排課與調代課工作,在這套系統裡走一遍。不需要程式背景,照著章節做,你就能獨立上手。</p>
+        <h1>教学组长操作手册</h1>
+        <p class="lede">从零开始,带你把一整个学期的排课与调代课工作,在这套系统里走一遍。不需要程序背景,照著章节做,你就能独立上手。</p>
         <div class="hero-meta">
-          <span class="chip on">對象:教學組長</span>
-          <span class="chip">繁體中文 · 台灣教務用語</span>
-          <span class="chip">單校自架 · 資料不出校</span>
-          <span class="chip">開源免費(MIT)</span>
+          <span class="chip on">对象:教学组长</span>
+          <span class="chip">繁体中文 · 台湾教务用语</span>
+          <span class="chip">单校自架 · 资料不出校</span>
+          <span class="chip">开源免费(MIT)</span>
         </div>
       </header>
 
       <!-- 00 -->
       <section class="ch" id="intro-body">
-        <div class="ch-head"><span class="ch-num">00</span><h2>如何使用本手冊</h2></div>
-        <p>這本手冊照著「一個學期的實際流程」編排:先把學校的基礎資料建好,再排課、發布,學期中再處理請假與調代課,最後匯出與備份。<strong>第一次使用建議從第 3 章「設定精靈」開始照做</strong>;之後遇到特定工作,再從左側目錄跳到對應章節。</p>
-        <p><strong>如果你只是想先試看看這套系統能做什麼</strong>,不必急著建自己學校的資料——<strong>第一次登入時,設定精靈的第一步上方就有「載入示範資料」</strong>——按一下,系統會建出一所完整的虛構國中(18 班、48 位教師),你可以直接跑自動排課、登記請假、指派代課、匯出課表,把整個學期的流程玩過一遍再決定。載完之後,本手冊的第 4 章以後都能照著操作,<strong>第 2、3 章(準備資料、設定精靈)可以先跳過</strong>。</p>
+        <div class="ch-head"><span class="ch-num">00</span><h2>如何使用本手册</h2></div>
+        <p>这本手册照著「一个学期的实际流程」编排:先把学校的基础资料建好,再排课、发布,学期中再处理请假与调代课,最后导出与备份。<strong>第一次使用建议从第 3 章「设置精灵」开始照做</strong>;之后遇到特定工作,再从左侧目录跳到对应章节。</p>
+        <p><strong>如果你只是想先试看看这套系统能做什么</strong>,不必急著建自己学校的资料——<strong>第一次登录时,设置精灵的第一步上方就有「载入示范资料」</strong>——按一下,系统会建出一所完整的虚构初中(18 班、48 位教师),你可以直接跑自动排课、登记请假、指派代课、导出课表,把整个学期的流程玩过一遍再决定。载完之后,本手册的第 4 章以后都能照著操作,<strong>第 2、3 章(准备资料、设置精灵)可以先跳过</strong>。</p>
 
-        <h3>系統裡的四種角色</h3>
-        <p>登入後右上角會顯示你的角色。不同角色看得到的功能不同——本手冊主要寫給<span class="rb sch">教學組長</span>。</p>
+        <h3>系统里的四种角色</h3>
+        <p>登录后右上角会显示你的角色。不同角色看得到的功能不同——本手册主要写给<span class="rb sch">教学组长</span>。</p>
         <div class="tw"><table>
-          <thead><tr><th>角色</th><th>負責什麼</th><th>看得到的頁面</th></tr></thead>
+          <thead><tr><th>角色</th><th>负责什么</th><th>看得到的页面</th></tr></thead>
           <tbody>
-            <tr><td><span class="rb admin">系統管理員</span></td><td>安裝、帳號、備份還原、SMTP 等系統層設定</td><td>全部,含「系統管理」</td></tr>
-            <tr><td><span class="rb dir">教務主任</span></td><td>綜覽與審核,權限同組長</td><td>幾乎全部(除系統管理)</td></tr>
-            <tr><td><span class="rb sch">教學組長</span></td><td>日常主力:基礎資料、配課、排課、調代課</td><td>基礎資料、排課作業、調代課</td></tr>
-            <tr><td><span class="rb tea">教師</span></td><td>查自己的課表、自己請假、確認代課通知</td><td>課表查詢、請假登記、我的代課鐘點</td></tr>
+            <tr><td><span class="rb admin">系统管理员</span></td><td>安装、帐号、备份还原、SMTP 等系统层设置</td><td>全部,含「系统管理」</td></tr>
+            <tr><td><span class="rb dir">教务主任</span></td><td>综览与审核,权限同组长</td><td>几乎全部(除系统管理)</td></tr>
+            <tr><td><span class="rb sch">教学组长</span></td><td>日常主力:基础资料、配课、排课、调代课</td><td>基础资料、排课作业、调代课</td></tr>
+            <tr><td><span class="rb tea">教师</span></td><td>查自己的课表、自己请假、确认代课通知</td><td>课表查询、请假登记、我的代课课时</td></tr>
           </tbody>
         </table></div>
 
-        <h3>選單地圖</h3>
-        <p>左側選單(教學組長視角)分成四大區。本手冊每一步驟都會用麵包屑標出位置,例如 <span class="path"><b>排課作業</b><i>›</i><b>配課管理</b></span>。</p>
+        <h3>选单地图</h3>
+        <p>左侧选单(教学组长视角)分成四大区。本手册每一步骤都会用面包屑标出位置,例如 <span class="path"><b>排课作业</b><i>›</i><b>配课管理</b></span>。</p>
         <div class="tw"><table>
-          <thead><tr><th>選單區</th><th>底下的頁面</th></tr></thead>
+          <thead><tr><th>选单区</th><th>底下的页面</th></tr></thead>
           <tbody>
-            <tr><td><b>基礎資料</b></td><td>學期與節次表 · 教師/班級/科目/場地</td></tr>
-            <tr><td><b>排課作業</b></td><td>配課管理 · 排課工作台 · 自動排課 · 版本與發布 · 課表元件(示範)</td></tr>
-            <tr><td><b>調代課</b></td><td>請假登記 · 調代課處理 · 今日調代課 · 調代課紀錄 · 代課鐘點統計 · 通知確認看板</td></tr>
-            <tr><td><b>系統管理</b></td><td>學校資訊 · 示範資料 · 排課設定 · 備份還原 · SMTP · 重新啟動精靈(限系統管理員)</td></tr>
+            <tr><td><b>基础资料</b></td><td>学期与节次表 · 教师/班级/科目/场地</td></tr>
+            <tr><td><b>排课作业</b></td><td>配课管理 · 排课工作台 · 自动排课 · 版本与发布 · 课表元件(示范)</td></tr>
+            <tr><td><b>调代课</b></td><td>请假登记 · 调代课处理 · 今日调代课 · 调代课纪录 · 代课课时统计 · 通知确认看板</td></tr>
+            <tr><td><b>系统管理</b></td><td>学校信息 · 示范资料 · 排课设置 · 备份还原 · SMTP · 重新启动精灵(限系统管理员)</td></tr>
           </tbody>
         </table></div>
 
-        <div class="cal note"><div class="lab">📖 圖示說明</div>
-          <p><strong>提示</strong>=讓你更省力的小技巧;<strong>注意</strong>=容易忽略但重要;<strong>小心</strong>=做錯會有後果的操作;<strong>情境</strong>=模擬一個真實情況帶你操作。書中截圖皆取自實際運作的系統(一個 3 班、8 位教師的小型測試學期),你的畫面會因學校資料而異——若你載入的是系統內建的<strong>示範資料</strong>(18 班、48 位教師,見第 10 章),畫面會比截圖熱鬧許多,但操作方式一模一樣。</p>
+        <div class="cal note"><div class="lab">📖 图示说明</div>
+          <p><strong>提示</strong>=让你更省力的小技巧;<strong>注意</strong>=容易忽略但重要;<strong>小心</strong>=做错会有后果的操作;<strong>情境</strong>=模拟一个真实情况带你操作。书中截图皆取自实际运作的系统(一个 3 班、8 位教师的小型测试学期),你的界面会因学校资料而异——若你载入的是系统内建的<strong>示范资料</strong>(18 班、48 位教师,见第 10 章),界面会比截图热闹许多,但操作方式一模一样。</p>
         </div>
       </section>
 
       <!-- 01 -->
       <section class="ch" id="value">
-        <div class="ch-head"><span class="ch-num">01</span><h2>這套系統能幫你做什麼</h2></div>
-        <p>如果你現在用 Excel 手工排課、用紙本或 LINE 處理臨時調代課,這套系統要解決的正是那些最耗神、最容易出錯的環節。</p>
+        <div class="ch-head"><span class="ch-num">01</span><h2>这套系统能帮你做什么</h2></div>
+        <p>如果你现在用 Excel 手工排课、用纸本或 LINE 处理临时调代课,这套系统要解决的正是那些最耗神、最容易出错的环节。</p>
 
-        <h3>它幫你收掉的三件苦差事</h3>
+        <h3>它帮你收掉的三件苦差事</h3>
         <ul>
-          <li><strong>排課的衝突檢查</strong>——拖一格課,系統即時告訴你「王老師這節已經在 302 班有課」,不必自己用眼睛比對整張表。排不出來時,還會用人話說明是哪個條件卡住。</li>
-          <li><strong>學期中的調代課全流程</strong>——老師請假,系統自動列出受影響的每一節、推薦當節有空又同科的代課老師、發通知給對方、月底自動結算代課鐘點。這通常是組長最零碎、最怕漏掉的工作。</li>
-          <li><strong>課表的產出與保存</strong>——一鍵匯出各種格式的課表、全校總表、批次打包;每天自動備份,資料不怕不見。</li>
+          <li><strong>排课的冲突检查</strong>——拖一格课,系统即时告诉你「王老师这节已经在 302 班有课」,不必自己用眼睛比对整张表。排不出来时,还会用人话说明是哪个条件卡住。</li>
+          <li><strong>学期中的调代课全流程</strong>——老师请假,系统自动列出受影响的每一节、推荐当节有空又同科的代课老师、发通知给对方、月底自动结算代课课时。这通常是组长最零碎、最怕漏掉的工作。</li>
+          <li><strong>课表的产出与保存</strong>——一键导出各种格式的课表、全校总表、批次打包;每天自动备份,资料不怕不见。</li>
         </ul>
 
-        <h3>為什麼選它,而不是繼續用現有做法</h3>
+        <h3>为什么选它,而不是继续用现有做法</h3>
         <div class="tw"><table>
-          <thead><tr><th>面向</th><th>這套系統</th></tr></thead>
+          <thead><tr><th>面向</th><th>这套系统</th></tr></thead>
           <tbody>
-            <tr><td>費用</td><td><b>完全免費</b>、開源(MIT),沒有每人授權費、沒有訂閱費</td></tr>
-            <tr><td>資料隱私</td><td><b>單校自架,資料只留在學校自己的機器</b>,不上任何雲端第三方</td></tr>
-            <tr><td>適用學制</td><td>國小、國中、普高、綜高、技高<b>五種範本內建</b>,連完全中學多套節次表都支援</td></tr>
-            <tr><td>語言與用語</td><td>全繁體中文,節次、配課、跑班、鐘點、調代課等台灣教務術語</td></tr>
-            <tr><td>排課引擎</td><td>內建自動排課(可處理連堂、跑班、協同教學、教師不可排時段等)</td></tr>
+            <tr><td>费用</td><td><b>完全免费</b>、开源(MIT),没有每人授权费、没有订阅费</td></tr>
+            <tr><td>资料隐私</td><td><b>单校自架,资料只留在学校自己的机器</b>,不上任何云端第三方</td></tr>
+            <tr><td>适用学制</td><td>小学、初中、普高、综高、技高<b>五种范本内建</b>,连完全中学多套节次表都支援</td></tr>
+            <tr><td>语言与用语</td><td>全繁体中文,节次、配课、跑班、课时、调代课等台湾教务术语</td></tr>
+            <tr><td>排课引擎</td><td>内建自动排课(可处理连堂、跑班、协同教学、教师不可排时段等)</td></tr>
           </tbody>
         </table></div>
-        <div class="cal tip"><div class="lab">💡 提示</div><p>不確定合不合用?你不需要真實資料就能試玩:用內建範本 + 少量假資料,10 分鐘就能跑完「排課 → 發布 → 請假 → 代課 → 月結」一整條流程,親眼看看順不順手。</p></div>
+        <div class="cal tip"><div class="lab">💡 提示</div><p>不确定合不合用?你不需要真实资料就能试玩:用内建范本 + 少量假资料,10 分钟就能跑完「排课 → 发布 → 请假 → 代课 → 月结」一整条流程,亲眼看看顺不顺手。</p></div>
       </section>
 
       <!-- 02 -->
       <section class="ch" id="prepare">
-        <div class="ch-head"><span class="ch-num">02</span><h2>開始前:準備哪些資料</h2></div>
-        <p>正式建置前,先把下列清單準備好(電子檔最佳)。系統在「匯入資料」步驟提供 <strong>Excel 範本</strong>可下載,你把資料填進去上傳即可批次建立,不必一筆筆手打。</p>
+        <div class="ch-head"><span class="ch-num">02</span><h2>开始前:准备哪些资料</h2></div>
+        <p>正式建置前,先把下列清单准备好(电子档最佳)。系统在「导入资料」步骤提供 <strong>Excel 范本</strong>可下载,你把资料填进去上传即可批次建立,不必一笔笔手打。</p>
 
-        <h3>核心五份清單</h3>
+        <h3>核心五份清单</h3>
         <div class="tw"><table>
-          <thead><tr><th>清單</th><th>建議欄位</th><th>備註</th></tr></thead>
+          <thead><tr><th>清单</th><th>建议栏位</th><th>备注</th></tr></thead>
           <tbody>
-            <tr><td><b>教師</b></td><td>姓名、任教科目、基本鐘點數、行政減課、Email/手機/LINE</td><td>Email 供調代課通知;勾選可同時建立教師登入帳號</td></tr>
-            <tr><td><b>班級</b></td><td>年級、班名、學制、導師、(技高)群科</td><td>國小可指定導師</td></tr>
-            <tr><td><b>科目</b></td><td>科目名稱、(可選)是否主科</td><td>選範本時已帶入常見科目,可增修</td></tr>
-            <tr><td><b>場地</b></td><td>名稱、類型(一般/專科)、容量</td><td>如自然實驗室、體育館、實習工場</td></tr>
-            <tr><td><b>配課</b></td><td>班級、科目、任課教師、每週節數、(連堂)、(場地需求)</td><td>這是排課的核心輸入,見第 4 章</td></tr>
+            <tr><td><b>教师</b></td><td>姓名、任教科目、基本课时数、行政减课、Email/手机/LINE</td><td>Email 供调代课通知;勾选可同时建立教师登录帐号</td></tr>
+            <tr><td><b>班级</b></td><td>年级、班名、学制、导师、(技高)群科</td><td>小学可指定导师</td></tr>
+            <tr><td><b>科目</b></td><td>科目名称、(可选)是否主科</td><td>选范本时已带入常见科目,可增修</td></tr>
+            <tr><td><b>场地</b></td><td>名称、类型(一般/专科)、容量</td><td>如自然实验室、体育馆、实习工场</td></tr>
+            <tr><td><b>配课</b></td><td>班级、科目、任课教师、每周节数、(连堂)、(场地需求)</td><td>这是排课的核心输入,见第 4 章</td></tr>
           </tbody>
         </table></div>
 
-        <div class="cal tip"><div class="lab">💡 老師事後才需要帳號?</div>
-          <p>匯入時沒勾「建立帳號」的老師,到 <span class="path"><b>基礎資料</b><i>›</i><b>教師</b></span> 點該位老師的<b>編輯</b>,下方可以直接<strong>建立登入帳號</strong>(輸入帳號、預設密碼,建好自動綁定這位老師,他首次登入必須自己改密碼)。老師忘記密碼時,同一個地方可以<strong>重設密碼</strong>——重設後他目前的登入狀態會失效,下次登入要自行設定新密碼。</p></div>
+        <div class="cal tip"><div class="lab">💡 老师事后才需要帐号?</div>
+          <p>导入时没勾「建立帐号」的老师,到 <span class="path"><b>基础资料</b><i>›</i><b>教师</b></span> 点该位老师的<b>编辑</b>,下方可以直接<strong>建立登录帐号</strong>(输入帐号、默认密码,建好自动绑定这位老师,他首次登录必须自己改密码)。老师忘记密码时,同一个地方可以<strong>重设密码</strong>——重设后他目前的登录状态会失效,下次登录要自行设置新密码。</p></div>
 
-        <div class="cal warn"><div class="lab">⚠️ 老師離職了怎麼處理</div>
-          <p><strong>請「停用」,不要「刪除」。</strong>刪除教師會<strong>連帶刪掉他的請假紀錄</strong>與配課的任課教師關聯,調代課紀錄也會查不出當時是誰代的課——這些都救不回來。</p>
-          <p>建議做法(兩步,歷史紀錄完整保留):</p>
+        <div class="cal warn"><div class="lab">⚠️ 老师离职了怎么处理</div>
+          <p><strong>请「停用」,不要「删除」。</strong>删除教师会<strong>连带删掉他的请假纪录</strong>与配课的任课教师关联,调代课纪录也会查不出当时是谁代的课——这些都救不回来。</p>
+          <p>建议做法(两步,历史纪录完整保留):</p>
           <ol class="steps">
-            <li><span class="st-t">設為非在職</span>——<span class="path"><b>基礎資料</b><i>›</i><b>教師</b></span> → 該位老師「編輯」→ 取消「在職」。之後代課推薦不會再推薦他。</li>
-            <li><span class="st-t">停用登入帳號</span>——同一個畫面的帳號區塊按「<b>停用帳號</b>」。他立刻無法登入,帳號與所有紀錄都留著;日後回任再按「啟用帳號」即可。</li>
+            <li><span class="st-t">设为非在职</span>——<span class="path"><b>基础资料</b><i>›</i><b>教师</b></span> → 该位老师「编辑」→ 取消「在职」。之后代课推荐不会再推荐他。</li>
+            <li><span class="st-t">停用登录帐号</span>——同一个界面的帐号区块按「<b>停用帐号</b>」。他立刻无法登录,帐号与所有纪录都留著;日后回任再按「启用帐号」即可。</li>
           </ol>
-          <p>真的要刪除時,確認視窗會先列出會一併消失的紀錄筆數;刪除後,他的登入帳號也會自動停用。</p></div>
+          <p>真的要删除时,确认视窗会先列出会一并消失的纪录笔数;删除后,他的登录帐号也会自动停用。</p></div>
 
-        <div class="cal tip"><div class="lab">💡 新學年職務異動:用匯入批次更新</div>
-          <p>每學年總有老師卸任或新任行政職、鐘點與減課調整。到 <span class="path"><b>基礎資料</b><i>›</i><b>批次匯入</b></span> 選「教師」,勾選「<b>既有教師改為更新資料</b>」後上傳名冊即可一次改完,不必一位位編輯。</p>
+        <div class="cal tip"><div class="lab">💡 新学年职务异动:用导入批次更新</div>
+          <p>每学年总有老师卸任或新任行政职、课时与减课调整。到 <span class="path"><b>基础资料</b><i>›</i><b>批次导入</b></span> 选「教师」,勾选「<b>既有教师改为更新资料</b>」后上传名册即可一次改完,不必一位位编辑。</p>
           <ul>
-            <li>以<strong>姓名＋身分末四碼</strong>比對:系統裡沒有的照舊新增,已存在的改為更新。</li>
-            <li><strong>只覆蓋有填的欄位,空白保留原值</strong>——只想改行政職稱時,其他欄位留白即可,不會被清掉。</li>
-            <li>要<strong>清除行政職稱</strong>(卸任)請填「<b>無</b>」或「-」;行政減課、基本鐘點要歸零請填 <code>0</code>。</li>
-            <li>任教科目有填就整組取代,空白則不動。</li>
-            <li>匯入後會顯示「新增 N 筆、更新 M 筆」。</li>
-            <li>既有教師的<strong>登入帳號不會在匯入時建立</strong>(避免誤建);要補帳號請用教師編輯畫面的「建立登入帳號」。</li>
+            <li>以<strong>姓名＋身分末四码</strong>比对:系统里没有的照旧新增,已存在的改为更新。</li>
+            <li><strong>只覆盖有填的栏位,空白保留原值</strong>——只想改行政职称时,其他栏位留白即可,不会被清掉。</li>
+            <li>要<strong>清除行政职称</strong>(卸任)请填「<b>无</b>」或「-」;行政减课、基本课时要归零请填 <code>0</code>。</li>
+            <li>任教科目有填就整组取代,空白则不动。</li>
+            <li>导入后会显示「新增 N 笔、更新 M 笔」。</li>
+            <li>既有教师的<strong>登录帐号不会在导入时建立</strong>(避免误建);要补帐号请用教师编辑界面的「建立登录帐号」。</li>
           </ul>
-          <p>不勾這個選項時維持原本的行為:遇到既有教師視為重複、整批不匯入。</p></div>
+          <p>不勾这个选项时维持原本的行为:遇到既有教师视为重复、整批不导入。</p></div>
 
-        <div class="cal tip"><div class="lab">💡 只想先試玩?最小資料組</div>
-          <p>選一個學制範本(科目與節次表會自動帶入),再手動加 <strong>3~5 位教師、2~3 個班級、幾筆配課</strong>,就足以體驗完整流程。真實全校資料等你決定採用後再匯入。</p>
+        <div class="cal tip"><div class="lab">💡 只想先试玩?最小资料组</div>
+          <p>选一个学制范本(科目与节次表会自动带入),再手动加 <strong>3~5 位教师、2~3 个班级、几笔配课</strong>,就足以体验完整流程。真实全校资料等你决定采用后再导入。</p>
         </div>
 
-        <div class="cal note"><div class="lab">📌 注意:節次表不用自己從零建</div>
-          <p>你選學制範本時,系統會自動帶入該學制的<strong>預設節次表</strong>(例如國小 40 分鐘、含週三下午不排課)。你只需要在精靈裡確認、微調,不必手工排每一節。</p>
+        <div class="cal note"><div class="lab">📌 注意:节次表不用自己从零建</div>
+          <p>你选学制范本时,系统会自动带入该学制的<strong>默认节次表</strong>(例如小学 40 分钟、含周三下午不排课)。你只需要在精灵里确认、微调,不必手工排每一节。</p>
         </div>
       </section>
 
       <!-- 03 -->
       <section class="ch" id="wizard">
-        <div class="ch-head"><span class="ch-num">03</span><h2>第一次設定(設定精靈)</h2></div>
-        <p>全新系統第一次登入時,會<strong>自動進入五步驟設定精靈</strong>。每一步都可以「上一步」回去修改,也可以「略過,稍後再設定」。</p>
+        <div class="ch-head"><span class="ch-num">03</span><h2>第一次设置(设置精灵)</h2></div>
+        <p>全新系统第一次登录时,会<strong>自动进入五步骤设置精灵</strong>。每一步都可以「上一步」回去修改,也可以「略过,稍后再设置」。</p>
 
-        <h4>登入與首次改密碼</h4>
+        <h4>登录与首次改密码</h4>
         <ol class="steps">
-          <li><span class="st-t">開啟系統網址</span>——本機是 <code>http://localhost</code>,校內其他電腦用主機的區網 IP(例如 <code>http://192.168.1.50</code>)。</li>
-          <li><span class="st-t">以管理員帳密登入</span>——帳號密碼由安裝系統時的設定決定(見部署文件)。</li>
-          <li><span class="st-t">依提示修改密碼</span>——第一次登入會強制改一次密碼,改完才會進入系統。</li>
-          <li><span class="st-t">之後想換密碼</span>——登入後按右上角的<b>修改密碼</b>,隨時可以自己改。</li>
+          <li><span class="st-t">开启系统网址</span>——本机是 <code>http://localhost</code>,校内其他电脑用主机的区网 IP(例如 <code>http://192.168.1.50</code>)。</li>
+          <li><span class="st-t">以管理员帐密登录</span>——帐号密码由安装系统时的设置决定(见部署文件)。</li>
+          <li><span class="st-t">依提示修改密码</span>——第一次登录会强制改一次密码,改完才会进入系统。</li>
+          <li><span class="st-t">之后想换密码</span>——登录后按右上角的<b>修改密码</b>,随时可以自己改。</li>
         </ol>
-        <figure class="shot"><img src="manual-img/01-login.png" alt="登入頁(輸入帳號/密碼的畫面)" loading="lazy"><figcaption><b>登入頁</b>(輸入帳號/密碼的畫面)</figcaption></figure>
+        <figure class="shot"><img src="manual-img/01-login.png" alt="登录页(输入帐号/密码的界面)" loading="lazy"><figcaption><b>登录页</b>(输入帐号/密码的界面)</figcaption></figure>
 
-        <h4>精靈五步驟</h4>
+        <h4>精灵五步骤</h4>
         <ol class="steps">
-          <li><span class="st-t">學制範本</span>——選擇貴校學制(國小/國中/普高/綜高/技高),系統自動帶入對應的節次表與科目清單。</li>
-          <li><span class="st-t">學年學期</span>——設定本學期的學年度、學期別(例如 115 學年度第 1 學期)與<strong>起訖日期</strong>(開學日~結業日,依貴校校曆)。此步會實際建立學期。<b>起訖日期一定要填</b>:請假展開節次、今日看板與調代課都以它為準,日後可在「學期與節次表」修改。</li>
-          <li><span class="st-t">節次表</span>——已依範本帶好預設節次表。先確認即可;若要調整(如把週五第 7 節改成導師時間、或週三下午不排課),點「開啟節次表編輯器」。</li>
-          <li><span class="st-t">匯入資料</span>——下載 Excel 範本,填入教師、班級、科目後上傳,批次建立(可略過,稍後於「基礎資料」補建)。</li>
-          <li><span class="st-t">完成</span>——顯示已建立的資料摘要(科目、教師、班級、場地各幾筆),按「完成,前往基礎資料」。</li>
+          <li><span class="st-t">学制范本</span>——选择贵校学制(小学/初中/普高/综高/技高),系统自动带入对应的节次表与科目清单。</li>
+          <li><span class="st-t">学年学期</span>——设置本学期的学年度、学期别(例如 115 学年度第 1 学期)与<strong>起讫日期</strong>(开学日~结业日,依贵校校历)。此步会实际建立学期。<b>起讫日期一定要填</b>:请假展开节次、今日看板与调代课都以它为准,日后可在「学期与节次表」修改。</li>
+          <li><span class="st-t">节次表</span>——已依范本带好默认节次表。先确认即可;若要调整(如把周五第 7 节改成导师时间、或周三下午不排课),点「开启节次表编辑器」。</li>
+          <li><span class="st-t">导入资料</span>——下载 Excel 范本,填入教师、班级、科目后上传,批次建立(可略过,稍后于「基础资料」补建)。</li>
+          <li><span class="st-t">完成</span>——显示已建立的资料摘要(科目、教师、班级、场地各几笔),按「完成,前往基础资料」。</li>
         </ol>
-        <figure class="shot"><img src="manual-img/02-wizard.png" alt="設定精靈(頂端五步驟進度條的畫面)" loading="lazy"><figcaption><b>設定精靈</b>(頂端五步驟進度條的畫面)</figcaption></figure>
+        <figure class="shot"><img src="manual-img/02-wizard.png" alt="设置精灵(顶端五步骤进度条的界面)" loading="lazy"><figcaption><b>设置精灵</b>(顶端五步骤进度条的界面)</figcaption></figure>
 
-        <div class="cal note"><div class="lab">📌 注意</div><p>中途關掉瀏覽器沒關係——下次登入會從上次的步驟接續。日後想重跑精靈,可到 <span class="path"><b>系統管理</b></span> 重新啟動。</p></div>
+        <div class="cal note"><div class="lab">📌 注意</div><p>中途关掉浏览器没关系——下次登录会从上次的步骤接续。日后想重跑精灵,可到 <span class="path"><b>系统管理</b></span> 重新启动。</p></div>
 
-        <div class="cal tip"><div class="lab">💡 學期起訖日期要改?</div><p>到 <span class="path"><b>基礎資料</b><i>›</i><b>學期與節次表</b></span>,在該學期卡片上點「<b>編輯學期</b>」即可修改。卡片上會顯示目前的起訖日期;沒有設定時會標示「尚未設定起訖日期(無法登記請假)」——請假一定要有這個範圍才能展開受影響節次。改動不影響已排好的課表。</p></div>
+        <div class="cal tip"><div class="lab">💡 学期起讫日期要改?</div><p>到 <span class="path"><b>基础资料</b><i>›</i><b>学期与节次表</b></span>,在该学期卡片上点「<b>编辑学期</b>」即可修改。卡片上会显示目前的起讫日期;没有设置时会标示「尚未设置起讫日期(无法登记请假)」——请假一定要有这个范围才能展开受影响节次。改动不影响已排好的课表。</p></div>
       </section>
 
       <!-- 04 -->
       <section class="ch" id="assign">
-        <div class="ch-head"><span class="ch-num">04</span><h2>配課管理</h2></div>
-        <p><span class="path"><b>排課作業</b><i>›</i><b>配課管理</b></span></p>
-        <p>「配課」就是決定<strong>哪位老師、教哪個班、哪一科、每週幾節</strong>。這是排課的核心輸入——配課建好,才能開始排課。</p>
+        <div class="ch-head"><span class="ch-num">04</span><h2>配课管理</h2></div>
+        <p><span class="path"><b>排课作业</b><i>›</i><b>配课管理</b></span></p>
+        <p>「配课」就是决定<strong>哪位老师、教哪个班、哪一科、每周几节</strong>。这是排课的核心输入——配课建好,才能开始排课。</p>
 
-        <h3>建立一筆基本配課</h3>
+        <h3>建立一笔基本配课</h3>
         <ol class="steps">
-          <li><span class="st-t">選班級</span>——例如 301 班。</li>
-          <li><span class="st-t">選科目</span>——例如國文。</li>
-          <li><span class="st-t">指定任課教師</span>——例如王老師。</li>
-          <li><span class="st-t">填每週節數</span>——例如 5 節。</li>
-          <li><span class="st-t">(選填)連堂與場地需求</span>——如需 2 節連上,設定連堂;需要特定場地(如實驗室)可指定場地類型。</li>
+          <li><span class="st-t">选班级</span>——例如 301 班。</li>
+          <li><span class="st-t">选科目</span>——例如国文。</li>
+          <li><span class="st-t">指定任课教师</span>——例如王老师。</li>
+          <li><span class="st-t">填每周节数</span>——例如 5 节。</li>
+          <li><span class="st-t">(选填)连堂与场地需求</span>——如需 2 节连上,设置连堂;需要特定场地(如实验室)可指定场地类型。</li>
         </ol>
-        <figure class="shot"><img src="manual-img/03-assignments.png" alt="配課管理頁(含右側鐘點統計側欄)" loading="lazy"><figcaption><b>配課管理</b>頁(含右側鐘點統計側欄)</figcaption></figure>
+        <figure class="shot"><img src="manual-img/03-assignments.png" alt="配课管理页(含右侧课时统计侧栏)" loading="lazy"><figcaption><b>配课管理</b>页(含右侧课时统计侧栏)</figcaption></figure>
 
-        <h3>進階結構</h3>
+        <h3>进阶结构</h3>
         <div class="tw"><table>
-          <thead><tr><th>情況</th><th>怎麼建</th></tr></thead>
+          <thead><tr><th>情况</th><th>怎么建</th></tr></thead>
           <tbody>
-            <tr><td><b>跑班群組</b>(如高二多元選修,多班同時開多門)</td><td>先把多個班級組成一個「群組」,再於群組內建立多筆配課;排課時整組同進同出</td></tr>
-            <tr><td><b>協同教學</b>(一門課兩位老師一起上)</td><td>同一筆配課裡加入多位教師(第一位為主教)</td></tr>
-            <tr><td><b>連堂</b>(如實習 3 節連上)</td><td>在配課設定連堂長度與每週次數</td></tr>
-            <tr><td><b>單雙週</b>(同一節單週上生科、雙週上資科)</td><td>先建「單雙週組」(一個班),再配單週、雙週各一筆課;排課時兩筆同一格輪流上(見 FAQ)</td></tr>
+            <tr><td><b>跑班群组</b>(如高二多元选修,多班同时开多门)</td><td>先把多个班级组成一个「群组」,再于群组内建立多笔配课;排课时整组同进同出</td></tr>
+            <tr><td><b>协同教学</b>(一门课两位老师一起上)</td><td>同一笔配课里加入多位教师(第一位为主教)</td></tr>
+            <tr><td><b>连堂</b>(如实习 3 节连上)</td><td>在配课设置连堂长度与每周次数</td></tr>
+            <tr><td><b>单双周</b>(同一节单周上生科、双周上资科)</td><td>先建「单双周组」(一个班),再配单周、双周各一笔课;排课时两笔同一格轮流上(见 FAQ)</td></tr>
           </tbody>
         </table></div>
 
-        <div class="cal tip"><div class="lab">💡 提示:即時鐘點統計</div><p>頁面右側會即時顯示每位教師的「配課節數 vs 基本鐘點」。超鐘點會變紅字(如配 22 節、基本 20 → 顯示 +2),讓你當下就發現負擔不均。</p></div>
-        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>若某班每週配課總節數<strong>超過可排的節次數</strong>,系統會警告(這班根本排不下)。跑班群組的成員班級若<strong>節次表不一致</strong>,建立會被擋下。</p></div>
-        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>跑班群組裡的課是<strong>同一節一起上</strong>,所以<strong>同一位老師在一個群組裡只能有一筆配課</strong>。請照「這一節有哪幾位老師在上課」來建,不要照班級每班各建一筆;建了兩筆,排課前檢查會指出是哪個群組的哪位老師,修正後才能自動排課。</p></div>
-        <div class="cal tip"><div class="lab">💡 大量配課</div><p>整學期配課很多時,用 Excel <strong>批次匯入配課</strong>,比一筆筆點快得多。</p></div>
+        <div class="cal tip"><div class="lab">💡 提示:即时课时统计</div><p>页面右侧会即时显示每位教师的「配课节数 vs 基本课时」。超课时会变红字(如配 22 节、基本 20 → 显示 +2),让你当下就发现负担不均。</p></div>
+        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>若某班每周配课总节数<strong>超过可排的节次数</strong>,系统会警告(这班根本排不下)。跑班群组的成员班级若<strong>节次表不一致</strong>,建立会被挡下。</p></div>
+        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>跑班群组里的课是<strong>同一节一起上</strong>,所以<strong>同一位老师在一个群组里只能有一笔配课</strong>。请照「这一节有哪几位老师在上课」来建,不要照班级每班各建一笔;建了两笔,排课前检查会指出是哪个群组的哪位老师,修正后才能自动排课。</p></div>
+        <div class="cal tip"><div class="lab">💡 大量配课</div><p>整学期配课很多时,用 Excel <strong>批次导入配课</strong>,比一笔笔点快得多。</p></div>
       </section>
 
       <!-- 05 -->
       <section class="ch" id="manual">
-        <div class="ch-head"><span class="ch-num">05</span><h2>手動排課工作台</h2></div>
-        <p><span class="path"><b>排課作業</b><i>›</i><b>排課工作台</b></span></p>
-        <p>工作台是一張<strong>拖拉式週課表</strong>。左側是還沒排的課務清單(附剩餘節數),你把課拖進格子裡即可。適合微調,或想完全手動掌控時使用。</p>
+        <div class="ch-head"><span class="ch-num">05</span><h2>手动排课工作台</h2></div>
+        <p><span class="path"><b>排课作业</b><i>›</i><b>排课工作台</b></span></p>
+        <p>工作台是一张<strong>拖拉式周课表</strong>。左侧是还没排的课务清单(附剩余节数),你把课拖进格子里即可。适合微调,或想完全手动掌控时使用。</p>
 
         <h3>基本操作</h3>
         <ol class="steps">
-          <li><span class="st-t">從左側清單拖曳</span>——把一筆未排課務拖進課表格子。</li>
-          <li><span class="st-t">看即時衝突</span>——可放的位置顯示綠框;有衝突顯示<strong>紅框</strong>,滑上去會浮出原因(用節次名稱說明,如「王老師 週一第一節 已有 302 班數學」)。</li>
-          <li><span class="st-t">鎖定重要格位</span>——不希望被更動的課,點鎖定圖示固定住。</li>
-          <li><span class="st-t">移除</span>——把格子裡的課拖回左側清單即取消。</li>
-          <li><span class="st-t">課務很多時</span>——未排清單會自己捲動,課表格固定在畫面上,捲到最底下的卡片一樣拖得進去。</li>
+          <li><span class="st-t">从左侧清单拖曳</span>——把一笔未排课务拖进课表格子。</li>
+          <li><span class="st-t">看即时冲突</span>——可放的位置显示绿框;有冲突显示<strong>红框</strong>,滑上去会浮出原因(用节次名称说明,如「王老师 周一第一节 已有 302 班数学」)。</li>
+          <li><span class="st-t">锁定重要格位</span>——不希望被更动的课,点锁定图示固定住。</li>
+          <li><span class="st-t">移除</span>——把格子里的课拖回左侧清单即取消。</li>
+          <li><span class="st-t">课务很多时</span>——未排清单会自己卷动,课表格固定在界面上,卷到最底下的卡片一样拖得进去。</li>
         </ol>
-        <figure class="shot"><img src="manual-img/04-workbench.png" alt="排課工作台(左側未排清單 + 週課表,含一個衝突紅框)" loading="lazy"><figcaption><b>排課工作台</b>(左側未排清單 + 週課表,含一個衝突紅框)</figcaption></figure>
+        <figure class="shot"><img src="manual-img/04-workbench.png" alt="排课工作台(左侧未排清单 + 周课表,含一个冲突红框)" loading="lazy"><figcaption><b>排课工作台</b>(左侧未排清单 + 周课表,含一个冲突红框)</figcaption></figure>
 
-        <h3>好用的輔助</h3>
+        <h3>好用的辅助</h3>
         <ul>
-          <li><strong>復原 / 重做</strong>——按 <kbd>Ctrl</kbd>+<kbd>Z</kbd> 可復原最近的操作。</li>
-          <li><strong>三視角切換</strong>——同一份課表可用「班級 / 教師 / 場地」三種角度檢視,彼此即時同步(班級視角排的課,教師視角立刻看得到)。</li>
-          <li><strong>自動儲存草稿</strong>——編輯過程會自動存,不必擔心忘記存檔。</li>
+          <li><strong>复原 / 重做</strong>——按 <kbd>Ctrl</kbd>+<kbd>Z</kbd> 可复原最近的操作。</li>
+          <li><strong>三视角切换</strong>——同一份课表可用「班级 / 教师 / 场地」三种角度查看,彼此即时同步(班级视角排的课,教师视角立刻看得到)。</li>
+          <li><strong>自动储存草稿</strong>——编辑过程会自动存,不必担心忘记存档。</li>
         </ul>
-        <div class="cal tip"><div class="lab">💡 提示</div><p>手動排課適合「補幾節」或「照校內慣例微調」。想一次把整週排滿,直接用下一章的<strong>自動排課</strong>,再回工作台微調通常最省力。</p></div>
+        <div class="cal tip"><div class="lab">💡 提示</div><p>手动排课适合「补几节」或「照校内惯例微调」。想一次把整周排满,直接用下一章的<strong>自动排课</strong>,再回工作台微调通常最省力。</p></div>
       </section>
 
       <!-- 06 -->
       <section class="ch" id="auto">
-        <div class="ch-head"><span class="ch-num">06</span><h2>自動排課</h2></div>
-        <p><span class="path"><b>排課作業</b><i>›</i><b>自動排課</b></span></p>
-        <p>系統內建排課引擎,能在遵守各種硬性規則(教師/場地不衝突、連堂不跨午休、教師不可排時段…)下,自動排出一整週的課表。</p>
+        <div class="ch-head"><span class="ch-num">06</span><h2>自动排课</h2></div>
+        <p><span class="path"><b>排课作业</b><i>›</i><b>自动排课</b></span></p>
+        <p>系统内建排课引擎,能在遵守各种硬性规则(教师/场地不冲突、连堂不跨午休、教师不可排时段…)下,自动排出一整周的课表。</p>
 
         <h3>操作流程</h3>
         <ol class="steps">
-          <li><span class="st-t">選擇學期</span>與作為輸入的來源草稿。</li>
-          <li><span class="st-t">看排課前置檢查</span>——系統先做 pre-flight,確認資料合理(如沒有老師配課數超過可排格數)。通過會顯示「資料檢查通過,可以開始排課」。</li>
-          <li><span class="st-t">設定排課時間上限</span>(預設 10 分鐘)後,按「開始排課」。</li>
-          <li><span class="st-t">觀察進度</span>——畫面顯示已找到幾個解、目前目標值、經過時間。</li>
-          <li><span class="st-t">(可選)提前結束</span>——找到解後可按「提前結束」,直接取當前最佳解。</li>
-          <li><span class="st-t">取得結果</span>——排好後產生一份新草稿「<em>來源名 自排結果</em>」,<strong>來源草稿不會被動到</strong>,排壞了隨時可丟。</li>
+          <li><span class="st-t">选择学期</span>与作为输入的来源草稿。</li>
+          <li><span class="st-t">看排课前置检查</span>——系统先做 pre-flight,确认资料合理(如没有老师配课数超过可排格数)。通过会显示「资料检查通过,可以开始排课」。</li>
+          <li><span class="st-t">设置排课时间上限</span>(默认 10 分钟)后,按「开始排课」。</li>
+          <li><span class="st-t">观察进度</span>——界面显示已找到几个解、目前目标值、经过时间。</li>
+          <li><span class="st-t">(可选)提前结束</span>——找到解后可按「提前结束」,直接取当前最佳解。</li>
+          <li><span class="st-t">取得结果</span>——排好后产生一份新草稿「<em>来源名 自排结果</em>」,<strong>来源草稿不会被动到</strong>,排坏了随时可丢。</li>
         </ol>
-        <figure class="shot"><img src="manual-img/05-auto-schedule.png" alt="自動排課頁(排課進度 + 軟約束達成度報告)" loading="lazy"><figcaption><b>自動排課</b>頁(排課進度 + 軟約束達成度報告)</figcaption></figure>
+        <figure class="shot"><img src="manual-img/05-auto-schedule.png" alt="自动排课页(排课进度 + 软约束达成度报告)" loading="lazy"><figcaption><b>自动排课</b>页(排课进度 + 软约束达成度报告)</figcaption></figure>
 
-        <h3>排不出來怎麼辦?系統會說人話</h3>
-        <p>如果條件互相矛盾排不出來,系統不會只丟一句「失敗」,而是做<strong>衝突定位</strong>,告訴你是哪幾件事湊在一起、鬆開哪一個就好,並附上具體數字與建議。例如:</p>
-        <div class="cal scene"><div class="lab">🎬 情境:排不出來</div>
-          <p>報告顯示「301 班國文 12 節單節課,但每日上限 2 節 × 5 天 = 10 節」。你就知道:把每日上限放寬,或減少該科節數即可。系統還提供「一鍵照建議重試」。</p>
+        <h3>排不出来怎么办?系统会说人话</h3>
+        <p>如果条件互相矛盾排不出来,系统不会只丢一句「失败」,而是做<strong>冲突定位</strong>,告诉你是哪几件事凑在一起、松开哪一个就好,并附上具体数字与建议。例如:</p>
+        <div class="cal scene"><div class="lab">🎬 情境:排不出来</div>
+          <p>报告显示「301 班国文 12 节单节课,但每日上限 2 节 × 5 天 = 10 节」。你就知道:把每日上限放宽,或减少该科节数即可。系统还提供「一键照建议重试」。</p>
         </div>
-        <div class="cal tip"><div class="lab">💡 部分排課</div><p>勾選「允許部分排課」,系統會盡量排、把真的排不下的課列成「未排清單」告訴你是哪一班哪一科,而不是整個失敗。</p></div>
+        <div class="cal tip"><div class="lab">💡 部分排课</div><p>勾选「允许部分排课」,系统会尽量排、把真的排不下的课列成「未排清单」告诉你是哪一班哪一科,而不是整个失败。</p></div>
       </section>
 
       <!-- 07 -->
       <section class="ch" id="publish">
-        <div class="ch-head"><span class="ch-num">07</span><h2>發布課表與全校查詢</h2></div>
-        <p><span class="path"><b>排課作業</b><i>›</i><b>版本與發布</b></span></p>
-        <p>你可以同時保留<strong>多份草稿</strong>互相比較。滿意哪一份,就把它「發布」——發布後全校師生就能查到這份課表。</p>
+        <div class="ch-head"><span class="ch-num">07</span><h2>发布课表与全校查询</h2></div>
+        <p><span class="path"><b>排课作业</b><i>›</i><b>版本与发布</b></span></p>
+        <p>你可以同时保留<strong>多份草稿</strong>互相比较。满意哪一份,就把它「发布」——发布后全校师生就能查到这份课表。</p>
 
-        <h3>發布流程</h3>
+        <h3>发布流程</h3>
         <ol class="steps">
-          <li><span class="st-t">在版本清單找到要發布的草稿</span>(可複製、改名、刪除來管理多份)。</li>
-          <li><span class="st-t">(建議)先按「檢查課表」</span>——會告訴你課務有沒有排完、課表有沒有衝突(教師或班級同一節兩堂課、排在教師不可排時段、超過每日上限…),有問題就列出清單。草稿、已發布的課表都可以檢查。</li>
-          <li><span class="st-t">按「發布」</span>——若有未排完的課或衝突,會先列出來再問一次;確認後可強制發布。</li>
-          <li><span class="st-t">舊版自動封存</span>——發布新版後,同學期原本已發布的那份會轉為「已封存」。</li>
+          <li><span class="st-t">在版本清单找到要发布的草稿</span>(可复制、改名、删除来管理多份)。</li>
+          <li><span class="st-t">(建议)先按「检查课表」</span>——会告诉你课务有没有排完、课表有没有冲突(教师或班级同一节两堂课、排在教师不可排时段、超过每日上限…),有问题就列出清单。草稿、已发布的课表都可以检查。</li>
+          <li><span class="st-t">按「发布」</span>——若有未排完的课或冲突,会先列出来再问一次;确认后可强制发布。</li>
+          <li><span class="st-t">旧版自动封存</span>——发布新版后,同学期原本已发布的那份会转为「已封存」。</li>
         </ol>
-        <div class="cal note"><div class="lab">📌 為什麼排好的課表還會有衝突</div><p>手動拖放每一步都有檢查、自動排課排出來的也一定合規,所以衝突幾乎都是<strong>課表排好之後又改了資料</strong>造成的:事後把某節設成教師「不可排」、改了配課的任課教師或每週節數、調低每日上限。系統不會自動調動已排的課,只會在「檢查課表」與發布時列出來,由你決定怎麼處理。</p><p>另外,在「教師 → 時段規則」儲存不可排時段時,如果這位老師在那些時段已經有課,<strong>儲存當下就會提示</strong>是哪份課表的哪幾節(規則仍會存好)。</p></div>
-        <figure class="shot"><img src="manual-img/06-versions.png" alt="版本與發布頁(草稿列表,狀態顯示草稿/已發布/已封存)" loading="lazy"><figcaption><b>版本與發布</b>頁(草稿列表,狀態顯示草稿/已發布/已封存)</figcaption></figure>
+        <div class="cal note"><div class="lab">📌 为什么排好的课表还会有冲突</div><p>手动拖放每一步都有检查、自动排课排出来的也一定合规,所以冲突几乎都是<strong>课表排好之后又改了资料</strong>造成的:事后把某节设成教师「不可排」、改了配课的任课教师或每周节数、调低每日上限。系统不会自动调动已排的课,只会在「检查课表」与发布时列出来,由你决定怎么处理。</p><p>另外,在「教师 → 时段规则」储存不可排时段时,如果这位老师在那些时段已经有课,<strong>储存当下就会提示</strong>是哪份课表的哪几节(规则仍会存好)。</p></div>
+        <figure class="shot"><img src="manual-img/06-versions.png" alt="版本与发布页(草稿列表,状态显示草稿/已发布/已封存)" loading="lazy"><figcaption><b>版本与发布</b>页(草稿列表,状态显示草稿/已发布/已封存)</figcaption></figure>
 
-        <div class="cal note"><div class="lab">📌 已發布課表是「定格快照」</div><p>發布後那份課表就固定下來,即使你之後改草稿也不影響它——這樣調代課才有穩定的依據。要更新,就發布新的一份。</p></div>
+        <div class="cal note"><div class="lab">📌 已发布课表是「定格快照」</div><p>发布后那份课表就固定下来,即使你之后改草稿也不影响它——这样调代课才有稳定的依据。要更新,就发布新的一份。</p></div>
 
-        <h3>全校查詢</h3>
-        <p><span class="path"><b>課表查詢</b></span> 是<strong>唯讀</strong>的查詢頁,可用班級 / 教師 / 場地三種角度查已發布課表,手機也能看。教師登入時,預設直接顯示<strong>本人課表</strong>。</p>
+        <h3>全校查询</h3>
+        <p><span class="path"><b>课表查询</b></span> 是<strong>唯读</strong>的查询页,可用班级 / 教师 / 场地三种角度查已发布课表,手机也能看。教师登录时,默认直接显示<strong>本人课表</strong>。</p>
       </section>
 
       <!-- 08 -->
       <section class="ch" id="subst">
-        <div class="ch-head"><span class="ch-num">08</span><h2>學期中的調代課</h2></div>
-        <p>這是學期開始後最日常、也最零碎的工作。系統把它拆成一條清楚的鏈:<strong>請假 → 找代課或調課 → 通知 → 確認 → 看板 → 月結</strong>。</p>
+        <div class="ch-head"><span class="ch-num">08</span><h2>学期中的调代课</h2></div>
+        <p>这是学期开始后最日常、也最零碎的工作。系统把它拆成一条清楚的链:<strong>请假 → 找代课或调课 → 通知 → 确认 → 看板 → 月结</strong>。</p>
         <div class="lifecycle">
-          <span class="n">請假登記</span><span class="ar">→</span>
-          <span class="n">調代課處理</span><span class="ar">→</span>
-          <span class="n">通知與確認</span><span class="ar">→</span>
+          <span class="n">请假登记</span><span class="ar">→</span>
+          <span class="n">调代课处理</span><span class="ar">→</span>
+          <span class="n">通知与确认</span><span class="ar">→</span>
           <span class="n">今日看板</span><span class="ar">→</span>
-          <span class="n">鐘點統計</span>
+          <span class="n">课时统计</span>
         </div>
 
-        <h3>8.1 請假登記</h3>
-        <p><span class="path"><b>調代課</b><i>›</i><b>請假登記</b></span></p>
-        <p>老師可以自己登記請假,教學組長也能代登。</p>
+        <h3>8.1 请假登记</h3>
+        <p><span class="path"><b>调代课</b><i>›</i><b>请假登记</b></span></p>
+        <p>老师可以自己登记请假,教学组长也能代登。</p>
         <ol class="steps">
-          <li><span class="st-t">選教師、假別</span>(公假/事假/病假…)。</li>
-          <li><span class="st-t">填請假起訖</span>——可整天、半天、多天、跨週。</li>
-          <li><span class="st-t">系統自動展開受影響節次</span>——依已發布課表,列出這段期間他原本要上的每一節。跨週末只會展開上課日。</li>
+          <li><span class="st-t">选教师、假别</span>(公假/事假/病假…)。</li>
+          <li><span class="st-t">填请假起讫</span>——可整天、半天、多天、跨周。</li>
+          <li><span class="st-t">系统自动展开受影响节次</span>——依已发布课表,列出这段期间他原本要上的每一节。跨周末只会展开上课日。</li>
         </ol>
-        <div class="cal note"><div class="lab">📌 銷假</div><p>若要銷假,系統會級聯處理:已指派的代課老師會收到取消通知;已經上完的課不受影響(鐘點照算)。</p></div>
-        <figure class="shot"><img src="manual-img/07-leaves.png" alt="請假登記頁(展開的受影響節次清單)" loading="lazy"><figcaption><b>請假登記</b>頁(展開的受影響節次清單)</figcaption></figure>
+        <div class="cal note"><div class="lab">📌 销假</div><p>若要销假,系统会级联处理:已指派的代课老师会收到取消通知;已经上完的课不受影响(课时照算)。</p></div>
+        <figure class="shot"><img src="manual-img/07-leaves.png" alt="请假登记页(展开的受影响节次清单)" loading="lazy"><figcaption><b>请假登记</b>页(展开的受影响节次清单)</figcaption></figure>
 
-        <h3>8.2 調代課處理</h3>
-        <p><span class="path"><b>調代課</b><i>›</i><b>調代課處理</b></span></p>
-        <p>對每一節受影響的課,選一種處置方式:</p>
+        <h3>8.2 调代课处理</h3>
+        <p><span class="path"><b>调代课</b><i>›</i><b>调代课处理</b></span></p>
+        <p>对每一节受影响的课,选一种处置方式:</p>
         <div class="tw"><table>
-          <thead><tr><th>處置</th><th>意思</th><th>計鐘點?</th></tr></thead>
+          <thead><tr><th>处置</th><th>意思</th><th>计课时?</th></tr></thead>
           <tbody>
-            <tr><td><b>代課</b></td><td>找另一位老師代上</td><td>計</td></tr>
-            <tr><td><b>調課</b></td><td>請另一位老師來上這節,請假的老師改天補回對方一節(見 8.3)</td><td>不計(兩人互換,沒有多上課)</td></tr>
-            <tr><td><b>併班</b></td><td>併到他班一起上</td><td>預設不計(可改)</td></tr>
-            <tr><td><b>自習</b></td><td>學生自習</td><td>不計</td></tr>
-            <tr><td><b>不處理</b></td><td>當天停課/彈性運用</td><td>不計</td></tr>
+            <tr><td><b>代课</b></td><td>找另一位老师代上</td><td>计</td></tr>
+            <tr><td><b>调课</b></td><td>请另一位老师来上这节,请假的老师改天补回对方一节(见 8.3)</td><td>不计(两人互换,没有多上课)</td></tr>
+            <tr><td><b>并班</b></td><td>并到他班一起上</td><td>默认不计(可改)</td></tr>
+            <tr><td><b>自习</b></td><td>学生自习</td><td>不计</td></tr>
+            <tr><td><b>不处理</b></td><td>当天停课/弹性运用</td><td>不计</td></tr>
           </tbody>
         </table></div>
-        <div class="cal tip"><div class="lab">💡 代課推薦</div><p>選「代課」時,系統會列出<strong>推薦清單</strong>:優先「當節有空 + 同科目」,並附人話理由(如「同科目教師 · 當天已在校 · 本月已代 2 節」)。已排很滿的老師會自動排後面。</p></div>
-        <div class="cal note"><div class="lab">📌 指派即生效</div><p>指派後<strong>立即生效</strong>——沒有「邀請/婉拒」流程(實務上組長多半已事先口頭徵得同意)。通知只是正式告知 + 請對方確認收到。若要撤回,退回待處理即可。</p></div>
-        <div class="cal note"><div class="lab">📌 計費方式</div><p>選「代課」時,推薦清單上方有<strong>計費方式</strong>選單(公費代課/自費代課/日薪代課/課務自理/不支鐘點),會印在代課通知單上。預設依假別帶入:<strong>事假</strong>帶「自費代課」,其餘帶「公費代課」;學校規定不同時可以直接改,也可以自行輸入其他寫法。</p></div>
-        <div class="cal tip"><div class="lab">💡 整天或多天的假:整批指派代課</div><p>導師請整天或好幾天假、由同一位代課老師接手時,不必一節一節點。假單右上角按「<strong>整批指派代課</strong>」,選代課老師、計費方式與範圍(整張假單,或只派其中一天),就會把還沒處理的節次一次派完。<strong>代課老師自己有課的節次會跳過</strong>並列出原因,那幾節仍是「待處理」,再個別找人即可;已經處理過的節次不會更動。</p></div>
-        <div class="cal tip"><div class="lab">🖨️ 列印代課通知單</div><p>指派代課後,可以印出和紙本一樣的<strong>教師代課通知單</strong>與<strong>班級代課通知單</strong>(A4 直式,週課表格式)。表頭寫代課教師(或代課班級)、請假教師、請假起訖、假別與計費方式;格子裡教師單寫「日期/科目/班級[代]」,班級單寫「日期/科目/代課老師[代]」。<strong>併班</strong>也會印,標記寫「[併]」。</p>
+        <div class="cal tip"><div class="lab">💡 代课推荐</div><p>选「代课」时,系统会列出<strong>推荐清单</strong>:优先「当节有空 + 同科目」,并附人话理由(如「同科目教师 · 当天已在校 · 本月已代 2 节」)。已排很满的老师会自动排后面。</p></div>
+        <div class="cal note"><div class="lab">📌 指派即生效</div><p>指派后<strong>立即生效</strong>——没有「邀请/婉拒」流程(实务上组长多半已事先口头征得同意)。通知只是正式告知 + 请对方确认收到。若要撤回,退回待处理即可。</p></div>
+        <div class="cal note"><div class="lab">📌 计费方式</div><p>选「代课」时,推荐清单上方有<strong>计费方式</strong>选单(公费代课/自费代课/日薪代课/课务自理/不支课时),会印在代课通知单上。默认依假别带入:<strong>事假</strong>带「自费代课」,其余带「公费代课」;学校规定不同时可以直接改,也可以自行输入其他写法。</p></div>
+        <div class="cal tip"><div class="lab">💡 整天或多天的假:整批指派代课</div><p>导师请整天或好几天假、由同一位代课老师接手时,不必一节一节点。假单右上角按「<strong>整批指派代课</strong>」,选代课老师、计费方式与范围(整张假单,或只派其中一天),就会把还没处理的节次一次派完。<strong>代课老师自己有课的节次会跳过</strong>并列出原因,那几节仍是「待处理」,再个别找人即可;已经处理过的节次不会更动。</p></div>
+        <div class="cal tip"><div class="lab">🖨️ 打印代课通知单</div><p>指派代课后,可以印出和纸本一样的<strong>教师代课通知单</strong>与<strong>班级代课通知单</strong>(A4 直式,周课表格式)。表头写代课教师(或代课班级)、请假教师、请假起讫、假别与计费方式;格子里教师单写「日期/科目/班级[代]」,班级单写「日期/科目/代课老师[代]」。<strong>并班</strong>也会印,标记写「[并]」。</p>
           <ul>
-            <li><strong>印一筆</strong>:該節旁點「列印代課單」,代課老師一張、班級一張。</li>
-            <li><strong>印一張假單的全部代課</strong>:假單卡片右上角「列印代課單(N 節)」。同一位代課老師代好幾節會合併成一張。</li>
-            <li><strong>一次印一週</strong>:到「調代課紀錄」篩出區間,點「列印這些紀錄中的代課單」。</li>
+            <li><strong>印一笔</strong>:该节旁点「打印代课单」,代课老师一张、班级一张。</li>
+            <li><strong>印一张假单的全部代课</strong>:假单卡片右上角「打印代课单(N 节)」。同一位代课老师代好几节会合并成一张。</li>
+            <li><strong>一次印一周</strong>:到「调代课纪录」筛出区间,点「打印这些纪录中的代课单」。</li>
           </ul>
-          <p>一張假單裡若既有代課又有調課,兩種單子分開印(調課單見 8.3)。</p></div>
-        <figure class="shot"><img src="manual-img/13-substitute-slips.png" alt="教師代課通知單的列印頁:週課表格式,表頭寫代課教師、請假教師、假別與計費方式" loading="lazy"><figcaption><b>代課通知單</b>列印頁(教師單;往下捲是班級單,按右上角「列印」即可)</figcaption></figure>
+          <p>一张假单里若既有代课又有调课,两种单子分开印(调课单见 8.3)。</p></div>
+        <figure class="shot"><img src="manual-img/13-substitute-slips.png" alt="教师代课通知单的打印页:周课表格式,表头写代课教师、请假教师、假别与计费方式" loading="lazy"><figcaption><b>代课通知单</b>打印页(教师单;往下卷是班级单,按右上角「打印」即可)</figcaption></figure>
 
-        <h3>8.3 調課</h3>
-        <p>調課和代課不一樣:代課是「請人幫忙上」,調課是「<strong>兩位老師互換</strong>」——乙老師來上請假的這一節,請假的甲老師<strong>改天補回乙老師的一節</strong>,彼此都沒有多上或少上,所以不計代課鐘點。</p>
+        <h3>8.3 调课</h3>
+        <p>调课和代课不一样:代课是「请人帮忙上」,调课是「<strong>两位老师互换</strong>」——乙老师来上请假的这一节,请假的甲老师<strong>改天补回乙老师的一节</strong>,彼此都没有多上或少上,所以不计代课课时。</p>
         <ol class="steps">
-          <li><span class="st-t">在「調代課處理」點該節的「處理」</span>,再點下方「或改採:」後面的 <b>調課</b>。</li>
-          <li><span class="st-t">系統列出可對調的節次</span>——預設範圍是<strong>請假那週的週一到下週日</strong>,所以「當週互調」和「跟下週調」都在同一張清單裡。要和更後面的週次調(例如隔週、本週與隔三週),把老師選單右邊的「範圍」改成「往後共 3 週」或「往後共 4 週」;選過之後,處理其他節次時會沿用。每一個按鈕都已經檢查過:對方在請假那節有空、請假的老師在補課那節有空、兩邊都沒有請假、那節課也還沒被換給別人。</li>
-          <li><span class="st-t">預設只列出「也教這個班」的老師</span>(標示<b>也教這班</b>),這是最常見的同班互調:學生只是兩科前後對換。想找別班的老師,從上方選單<strong>指定一位老師</strong>即可。每位老師先只列出<strong>同一班</strong>的節次,其他班的節次收在「顯示其他班級的 N 個節次」裡,需要時再點開。</li>
-          <li><span class="st-t">點一下要對調的節次</span>,調課立即成立。同班的節次會排在前面,外框也比較醒目。</li>
+          <li><span class="st-t">在「调代课处理」点该节的「处理」</span>,再点下方「或改采:」后面的 <b>调课</b>。</li>
+          <li><span class="st-t">系统列出可对调的节次</span>——默认范围是<strong>请假那周的周一到下周日</strong>,所以「当周互调」和「跟下周调」都在同一张清单里。要和更后面的周次调(例如隔周、本周与隔三周),把老师选单右边的「范围」改成「往后共 3 周」或「往后共 4 周」;选过之后,处理其他节次时会沿用。每一个按钮都已经检查过:对方在请假那节有空、请假的老师在补课那节有空、两边都没有请假、那节课也还没被换给别人。</li>
+          <li><span class="st-t">默认只列出「也教这个班」的老师</span>(标示<b>也教这班</b>),这是最常见的同班互调:学生只是两科前后对换。想找别班的老师,从上方选单<strong>指定一位老师</strong>即可。每位老师先只列出<strong>同一班</strong>的节次,其他班的节次收在「显示其他班级的 N 个节次」里,需要时再点开。</li>
+          <li><span class="st-t">点一下要对调的节次</span>,调课立即成立。同班的节次会排在前面,外框也比较醒目。</li>
         </ol>
-        <div class="cal tip"><div class="lab">💡 老師去研習要調課?</div><p>研習也是「那一節老師不在」,請先到「請假登記」幫他登<strong>公假</strong>(或<strong>進修</strong>),起訖時間只填研習的時段,系統就會列出受影響的節次,再照上面的步驟調課即可。</p></div>
-        <div class="cal tip"><div class="lab">💡 為什麼某位老師「無法對調」?</div><p>清單會直接寫出原因,例如「陳師 10/7 第一節 該時段有自己的課」或「當天也請假」。如果某位老師寫著「這段期間找不到雙方都有空的節次」,表示這段期間兩位的空堂剛好錯開,可以放寬週數、改找別人,或改用代課。</p></div>
-        <div class="cal note"><div class="lab">📌 誰會收到通知</div><p>兩個人都會收到:<strong>來上課的老師</strong>收到「請於某日某節代某某老師一節」;<strong>請假的老師</strong>收到「請於某日某節補上某某老師的課」。若撤回調課,兩人也都會收到取消通知。</p></div>
-        <div class="cal tip"><div class="lab">🖨️ 列印調課通知單</div><p>調課成立後,可以印出和紙本一樣的<strong>教師調課通知單</strong>與<strong>班級調課通知單</strong>(A4 直式,週課表格式,只在有異動的格子寫上「日期/科目/上課老師/[調09-15_25]」,中括號表示「和 9/15 星期二第 5 節對調」)。</p>
+        <div class="cal tip"><div class="lab">💡 老师去研习要调课?</div><p>研习也是「那一节老师不在」,请先到「请假登记」帮他登<strong>公假</strong>(或<strong>进修</strong>),起讫时间只填研习的时段,系统就会列出受影响的节次,再照上面的步骤调课即可。</p></div>
+        <div class="cal tip"><div class="lab">💡 为什么某位老师「无法对调」?</div><p>清单会直接写出原因,例如「陈师 10/7 第一节 该时段有自己的课」或「当天也请假」。如果某位老师写著「这段期间找不到双方都有空的节次」,表示这段期间两位的空堂刚好错开,可以放宽周数、改找别人,或改用代课。</p></div>
+        <div class="cal note"><div class="lab">📌 谁会收到通知</div><p>两个人都会收到:<strong>来上课的老师</strong>收到「请于某日某节代某某老师一节」;<strong>请假的老师</strong>收到「请于某日某节补上某某老师的课」。若撤回调课,两人也都会收到取消通知。</p></div>
+        <div class="cal tip"><div class="lab">🖨️ 打印调课通知单</div><p>调课成立后,可以印出和纸本一样的<strong>教师调课通知单</strong>与<strong>班级调课通知单</strong>(A4 直式,周课表格式,只在有异动的格子写上「日期/科目/上课老师/[调09-15_25]」,中括号表示「和 9/15 星期二第 5 节对调」)。</p>
           <ul>
-            <li><strong>印一筆</strong>:在「調代課處理」該節旁點「列印調課單」,會出現兩位老師各一張、班級一張。</li>
-            <li><strong>印一張假單的全部調課</strong>(例如研習整個上午都調課):假單卡片右上角「列印調課單(N 節)」。</li>
-            <li><strong>一次印一週</strong>:到「調代課紀錄」用日期區間篩出這週,點「列印這些紀錄中的調課單」。同一位老師、同一個班會合併成一張。</li>
+            <li><strong>印一笔</strong>:在「调代课处理」该节旁点「打印调课单」,会出现两位老师各一张、班级一张。</li>
+            <li><strong>印一张假单的全部调课</strong>(例如研习整个上午都调课):假单卡片右上角「打印调课单(N 节)」。</li>
+            <li><strong>一次印一周</strong>:到「调代课纪录」用日期区间筛出这周,点「打印这些纪录中的调课单」。同一位老师、同一个班会合并成一张。</li>
           </ul>
-          <p>同班互調時,格子裡的科目跟著老師走(學生只是兩科前後對換);跨班對調時,沿用那一節原本的科目。跨週的調課會印成兩頁(每週一頁)。</p></div>
-        <figure class="shot"><img src="manual-img/12-swap-slips.png" alt="教師調課通知單的列印頁:週課表格式,異動的格子寫上日期、科目、上課老師與對調代碼" loading="lazy"><figcaption><b>調課通知單</b>列印頁(教師單;往下捲是另一位老師與班級的單子,按右上角「列印」即可)</figcaption></figure>
-        <div class="cal note"><div class="lab">📌 看板上會出現兩天</div><p>調課成立後,「今日調代課看板」與 A4 公告單在<strong>兩天</strong>都會列出:請假那天顯示「調課 · 陳師(補 10/8 第二節)」;補課那天也會列出換來的那一節,假別欄寫「調課補課」,處置寫「調課補課 · 王師(與 10/7 第一節對調)」——那一班的學生與導師一看就知道為什麼來的不是課表上的老師。</p></div>
-        <div class="cal tip"><div class="lab">💡 連堂課也能換</div><p>對方如果是連堂(例如理化實驗連上兩節),清單會把兩節分開列出、標示「(連堂之一)」。只換其中一節,另一節照常由原老師上。</p></div>
-        <figure class="shot"><img src="manual-img/11-swap.png" alt="調代課處理頁的調課清單:列出也教這班的老師與可對調的節次" loading="lazy"><figcaption><b>調課</b>:列出也教這班的老師,以及範圍內雙方都有空的節次</figcaption></figure>
+          <p>同班互调时,格子里的科目跟著老师走(学生只是两科前后对换);跨班对调时,沿用那一节原本的科目。跨周的调课会印成两页(每周一页)。</p></div>
+        <figure class="shot"><img src="manual-img/12-swap-slips.png" alt="教师调课通知单的打印页:周课表格式,异动的格子写上日期、科目、上课老师与对调代码" loading="lazy"><figcaption><b>调课通知单</b>打印页(教师单;往下卷是另一位老师与班级的单子,按右上角「打印」即可)</figcaption></figure>
+        <div class="cal note"><div class="lab">📌 看板上会出现两天</div><p>调课成立后,「今日调代课看板」与 A4 公告单在<strong>两天</strong>都会列出:请假那天显示「调课 · 陈师(补 10/8 第二节)」;补课那天也会列出换来的那一节,假别栏写「调课补课」,处置写「调课补课 · 王师(与 10/7 第一节对调)」——那一班的学生与导师一看就知道为什么来的不是课表上的老师。</p></div>
+        <div class="cal tip"><div class="lab">💡 连堂课也能换</div><p>对方如果是连堂(例如理化实验连上两节),清单会把两节分开列出、标示「(连堂之一)」。只换其中一节,另一节照常由原老师上。</p></div>
+        <figure class="shot"><img src="manual-img/11-swap.png" alt="调代课处理页的调课清单:列出也教这班的老师与可对调的节次" loading="lazy"><figcaption><b>调课</b>:列出也教这班的老师,以及范围内双方都有空的节次</figcaption></figure>
 
-        <h3>8.4 通知與確認</h3>
-        <p>指派後,代課老師會收到<strong>站內通知</strong>(右上角鈴鐺,含未讀數),若有設定 SMTP 也會收到 <strong>Email</strong>。老師點開可一鍵「確認收到」。</p>
-        <p>你可在 <span class="path"><b>調代課</b><i>›</i><b>通知確認看板</b></span> 看到每一筆的確認狀態,對還沒確認的人一鍵「再次提醒」。</p>
+        <h3>8.4 通知与确认</h3>
+        <p>指派后,代课老师会收到<strong>站内通知</strong>(右上角铃铛,含未读数),若有设置 SMTP 也会收到 <strong>Email</strong>。老师点开可一键「确认收到」。</p>
+        <p>你可在 <span class="path"><b>调代课</b><i>›</i><b>通知确认看板</b></span> 看到每一笔的确认状态,对还没确认的人一键「再次提醒」。</p>
 
-        <h3>8.5 今日調代課看板</h3>
-        <p><span class="path"><b>調代課</b><i>›</i><b>今日調代課</b></span>(儀表板上也有)——一眼看到今天全部異動:誰代誰的課、誰和誰調課、教室有沒有變。可<strong>列印 A4 公告單</strong>(傳統公告格式)貼出來或發群組。</p>
-        <figure class="shot"><img src="manual-img/08-daily-board.png" alt="今日調代課看板與 A4 列印通知單" loading="lazy"><figcaption><b>今日調代課看板</b>與 <b>A4 列印通知單</b></figcaption></figure>
+        <h3>8.5 今日调代课看板</h3>
+        <p><span class="path"><b>调代课</b><i>›</i><b>今日调代课</b></span>(仪表板上也有)——一眼看到今天全部异动:谁代谁的课、谁和谁调课、教室有没有变。可<strong>打印 A4 公告单</strong>(传统公告格式)贴出来或发群组。</p>
+        <figure class="shot"><img src="manual-img/08-daily-board.png" alt="今日调代课看板与 A4 打印通知单" loading="lazy"><figcaption><b>今日调代课看板</b>与 <b>A4 打印通知单</b></figcaption></figure>
 
-        <h3>8.6 調代課紀錄</h3>
-        <p><span class="path"><b>調代課</b><i>›</i><b>調代課紀錄</b></span>——歷史查詢,可依教師、日期、假別篩選。查一位老師時,他「缺的課」和他「代的課」都會出現。篩選結果裡有調課時,可以直接「列印這些紀錄中的調課單」。</p>
+        <h3>8.6 调代课纪录</h3>
+        <p><span class="path"><b>调代课</b><i>›</i><b>调代课纪录</b></span>——历史查询,可依教师、日期、假别筛选。查一位老师时,他「缺的课」和他「代的课」都会出现。筛选结果里有调课时,可以直接「打印这些纪录中的调课单」。</p>
 
-        <h3>8.7 代課鐘點統計</h3>
-        <p><span class="path"><b>調代課</b><i>›</i><b>代課鐘點統計</b></span>——月結報表,依教師彙總<strong>代課節數</strong>與<strong>計費節數</strong>(併班/自習不計費),可匯出 Excel。跨月的假單會自動依每一節的日期分月計算。教師本人也能查自己的明細。</p>
-        <p><strong>日薪代課</strong>(國小常見:按日計酬,不按節):指派代課時計費方式選「日薪代課」,這些節次就不計入鐘點,改列在「<strong>日薪天數</strong>」——同一位代課老師同一天代幾節都算 1 天,旁邊會註明共幾節供核對。如果同一位請假教師同一天的課由兩位以上日薪代課老師分擔,每位各算 1 天並標示「分擔」,實際怎麼給付請依學校規定核對。系統只提供天數與節數,<strong>不計算金額</strong>(日薪依代課老師的學歷、薪級與各縣市規定而不同)。沒有用到日薪代課的學校,這一頁和原本一樣。</p>
+        <h3>8.7 代课课时统计</h3>
+        <p><span class="path"><b>调代课</b><i>›</i><b>代课课时统计</b></span>——月结报表,依教师汇总<strong>代课节数</strong>与<strong>计费节数</strong>(并班/自习不计费),可导出 Excel。跨月的假单会自动依每一节的日期分月计算。教师本人也能查自己的明细。</p>
+        <p><strong>日薪代课</strong>(小学常见:按日计酬,不按节):指派代课时计费方式选「日薪代课」,这些节次就不计入课时,改列在「<strong>日薪天数</strong>」——同一位代课老师同一天代几节都算 1 天,旁边会注明共几节供核对。如果同一位请假教师同一天的课由两位以上日薪代课老师分担,每位各算 1 天并标示「分担」,实际怎么给付请依学校规定核对。系统只提供天数与节数,<strong>不计算金额</strong>(日薪依代课老师的学历、薪级与各县市规定而不同)。没有用到日薪代课的学校,这一页和原本一样。</p>
         <h3>8.8 巡堂表</h3>
-        <p>調代課之後,原本印好的巡堂表會對不上——該班那一節來的已經不是課表上的老師。到 <span class="path"><b>調代課</b><i>›</i><b>今日調代課</b></span> 選好日期,在「巡堂表」那一組按鈕按<strong>「列印當天」</strong>或<strong>「列印整週」</strong>,系統會把已發布的課表和那一天的調代課疊起來,印出當天真正的樣子:</p>
+        <p>调代课之后,原本印好的巡堂表会对不上——该班那一节来的已经不是课表上的老师。到 <span class="path"><b>调代课</b><i>›</i><b>今日调代课</b></span> 选好日期,在「巡堂表」那一组按钮按<strong>「打印当天」</strong>或<strong>「打印整周」</strong>,系统会把已发布的课表和那一天的调代课叠起来,印出当天真正的样子:</p>
         <ul>
-          <li><strong>巡堂紀錄</strong>:A4 橫式,班級為欄、節次為列,一天分<strong>上午、下午各一張</strong>(以午休為界;早自習與午休不列)。每格的<strong>科目、教師、教室、備註</strong>由系統帶出——代課印代課老師並備註「代課」,調課、併班、自習、停課、請假待處理也都會標示。「授課情形」「學生學習」「巡堂簽名」留白手寫。班級超過 12 班會自動分頁。</li>
-          <li><strong>分組巡堂單</strong>:社團、多元選修這類一個時段拆成很多組的跑班群組(同一節 4 組以上),格子塞不下,會另外列成清單——一列一組,寫名稱、教師、地點。主表那一格只寫群組名稱與組數。</li>
+          <li><strong>巡堂纪录</strong>:A4 横式,班级为栏、节次为列,一天分<strong>上午、下午各一张</strong>(以午休为界;早自习与午休不列)。每格的<strong>科目、教师、教室、备注</strong>由系统带出——代课印代课老师并备注「代课」,调课、并班、自习、停课、请假待处理也都会标示。「授课情形」「学生学习」「巡堂签名」留白手写。班级超过 12 班会自动分页。</li>
+          <li><strong>分组巡堂单</strong>:社团、多元选修这类一个时段拆成很多组的跑班群组(同一节 4 组以上),格子塞不下,会另外列成清单——一列一组,写名称、教师、地点。主表那一格只写群组名称与组数。</li>
         </ul>
-        <figure class="shot"><img src="manual-img/14-patrol-sheet.png" alt="巡堂紀錄列印頁:班級為欄、節次為列,格子裡印科目、教師與備註" loading="lazy"><figcaption><b>巡堂紀錄</b>列印頁(上午那一張;往下捲是下午,按右上角「列印」即可)</figcaption></figure>
-        <p><strong>想先改再印?用 Excel。</strong>同一組按鈕旁邊有<strong>「當天 Excel」</strong>與<strong>「整週 Excel」</strong>,下載的活頁簿內容與列印頁相同:每天的上午、下午各一個分頁,社團巡堂單另外成頁。可以自己增減欄位、填上巡堂人員或值日,或併進學校原本的巡堂紀錄檔;分頁已設成 A4 橫向一頁寬,不改也能直接印。匯出之後若又有新的調代課,檔案不會跟著變,請重新匯出。</p>
-        <div class="cal tip"><div class="lab">💡 提示</div><p>表格下方的「記錄說明」(授課情形、學生學習的代碼)各校不同,系統管理員可到 <span class="path"><b>系統管理</b><i>›</i><b>巡堂表</b></span> 改成貴校的寫法。教室欄只會印出配課時有指定場地的課,其餘留白手寫。巡堂人員不在表上——那一欄是簽名欄。</p></div>
+        <figure class="shot"><img src="manual-img/14-patrol-sheet.png" alt="巡堂纪录打印页:班级为栏、节次为列,格子里印科目、教师与备注" loading="lazy"><figcaption><b>巡堂纪录</b>打印页(上午那一张;往下卷是下午,按右上角「打印」即可)</figcaption></figure>
+        <p><strong>想先改再印?用 Excel。</strong>同一组按钮旁边有<strong>「当天 Excel」</strong>与<strong>「整周 Excel」</strong>,下载的活页簿内容与打印页相同:每天的上午、下午各一个分页,社团巡堂单另外成页。可以自己增减栏位、填上巡堂人员或值日,或并进学校原本的巡堂纪录档;分页已设成 A4 横向一页宽,不改也能直接印。导出之后若又有新的调代课,档案不会跟著变,请重新导出。</p>
+        <div class="cal tip"><div class="lab">💡 提示</div><p>表格下方的「记录说明」(授课情形、学生学习的代码)各校不同,系统管理员可到 <span class="path"><b>系统管理</b><i>›</i><b>巡堂表</b></span> 改成贵校的写法。教室栏只会印出配课时有指定场地的课,其余留白手写。巡堂人员不在表上——那一栏是签名栏。</p></div>
 
-        <div class="cal scene"><div class="lab">🎬 情境:老師今早臨時請病假</div>
-          <p>① 到「請假登記」幫他登病假(今天整天)→ 系統列出他今天 4 節課。② 到「調代課處理」逐節選代課,從推薦清單各挑一位有空同科的老師。③ 對方收到通知、確認收到。④ 到「今日調代課」列印公告單。⑤ 月底「代課鐘點統計」自動把這幾節算進代課老師的鐘點。全程不到幾分鐘。</p>
+        <div class="cal scene"><div class="lab">🎬 情境:老师今早临时请病假</div>
+          <p>① 到「请假登记」帮他登病假(今天整天)→ 系统列出他今天 4 节课。② 到「调代课处理」逐节选代课,从推荐清单各挑一位有空同科的老师。③ 对方收到通知、确认收到。④ 到「今日调代课」打印公告单。⑤ 月底「代课课时统计」自动把这几节算进代课老师的课时。全程不到几分钟。</p>
         </div>
-        <div class="cal scene"><div class="lab">🎬 情境:老師下週三要出公差,想跟同班老師調課</div>
-          <p>① 到「請假登記」幫王老師登公假(下週三)。② 到「調代課處理」點週三第一節 701 國文的「處理」→「調課」。③ 清單上看到陳老師(也教 701)週四第二節數學有空,點下去。④ 陳老師週三第一節進 701 上課,王老師週四第二節回 701 上課——兩人都收到通知,學生只是兩科前後對換。</p>
+        <div class="cal scene"><div class="lab">🎬 情境:老师下周三要出公差,想跟同班老师调课</div>
+          <p>① 到「请假登记」帮王老师登公假(下周三)。② 到「调代课处理」点周三第一节 701 国文的「处理」→「调课」。③ 清单上看到陈老师(也教 701)周四第二节数学有空,点下去。④ 陈老师周三第一节进 701 上课,王老师周四第二节回 701 上课——两人都收到通知,学生只是两科前后对换。</p>
         </div>
       </section>
 
       <!-- 09 -->
       <section class="ch" id="export">
-        <div class="ch-head"><span class="ch-num">09</span><h2>匯出課表</h2></div>
-        <p>已發布的課表可從 <span class="path"><b>課表查詢</b></span> 頁的匯出按鈕輸出成多種格式。</p>
+        <div class="ch-head"><span class="ch-num">09</span><h2>导出课表</h2></div>
+        <p>已发布的课表可从 <span class="path"><b>课表查询</b></span> 页的导出按钮输出成多种格式。</p>
         <div class="tw"><table>
-          <thead><tr><th>要什麼</th><th>怎麼拿</th></tr></thead>
+          <thead><tr><th>要什么</th><th>怎么拿</th></tr></thead>
           <tbody>
-            <tr><td>單一班級/教師/場地課表</td><td>Excel、PDF、PNG 三選一(PDF 內嵌中文字型,不會亂碼)</td></tr>
-            <tr><td>全校總表</td><td>一個 Excel,每班(或每位教師)一個分頁</td></tr>
-            <tr><td>全部一次拿</td><td>批次匯出,每班(或每位教師)一個 Excel,打包成一個 zip</td></tr>
+            <tr><td>单一班级/教师/场地课表</td><td>Excel、PDF、PNG 三选一(PDF 内嵌中文字型,不会乱码)</td></tr>
+            <tr><td>全校总表</td><td>一个 Excel,每班(或每位教师)一个分页</td></tr>
+            <tr><td>全部一次拿</td><td>批次导出,每班(或每位教师)一个 Excel,打包成一个 zip</td></tr>
           </tbody>
         </table></div>
-        <div class="cal tip"><div class="lab">💡 全校教師課表一次拿</div>
-          <p>「全校」那兩個按鈕會<strong>跟著目前的檢視走</strong>:在<b>班級</b>視角匯出的是全校班級課表;切到<b>教師</b>視角,按鈕就變成「全校教師」——總表是每位教師一個分頁,批次 zip 是每位教師一個 Excel,開學時要發給每位老師很方便。</p>
-          <p>範圍是<strong>在職教師</strong>,依姓名排序;<strong>沒有排到課的在職老師也會有一張(空白)課表</strong>,確保發放時不會漏人。設為非在職的教師不列入。場地視角沒有這兩個按鈕。</p></div>
-        <div class="cal note"><div class="lab">📌 權限</div><p>單一課表所有登入者都能匯出(課表本就全校可查);全校總表與批次打包限教學組長以上。檔名為中文,直接就能歸檔。</p></div>
-        <figure class="shot"><img src="manual-img/09-timetable-query.png" alt="課表查詢頁的匯出按鈕與匯出的 PDF 課表" loading="lazy"><figcaption><b>課表查詢</b>頁的匯出按鈕與匯出的 PDF 課表</figcaption></figure>
+        <div class="cal tip"><div class="lab">💡 全校教师课表一次拿</div>
+          <p>「全校」那两个按钮会<strong>跟著目前的查看走</strong>:在<b>班级</b>视角导出的是全校班级课表;切到<b>教师</b>视角,按钮就变成「全校教师」——总表是每位教师一个分页,批次 zip 是每位教师一个 Excel,开学时要发给每位老师很方便。</p>
+          <p>范围是<strong>在职教师</strong>,依姓名排序;<strong>没有排到课的在职老师也会有一张(空白)课表</strong>,确保发放时不会漏人。设为非在职的教师不列入。场地视角没有这两个按钮。</p></div>
+        <div class="cal note"><div class="lab">📌 权限</div><p>单一课表所有登录者都能导出(课表本就全校可查);全校总表与批次打包限教学组长以上。档名为中文,直接就能归档。</p></div>
+        <figure class="shot"><img src="manual-img/09-timetable-query.png" alt="课表查询页的导出按钮与导出的 PDF 课表" loading="lazy"><figcaption><b>课表查询</b>页的导出按钮与导出的 PDF 课表</figcaption></figure>
       </section>
 
       <!-- 10 -->
       <section class="ch" id="admin">
-        <div class="ch-head"><span class="ch-num">10</span><h2>系統管理</h2></div>
-        <p><span class="path"><b>系統管理</b></span>(限<span class="rb admin">系統管理員</span>)</p>
+        <div class="ch-head"><span class="ch-num">10</span><h2>系统管理</h2></div>
+        <p><span class="path"><b>系统管理</b></span>(限<span class="rb admin">系统管理员</span>)</p>
 
-        <h3>系統版本與新版本提醒</h3>
-        <p>頁面最上方的<strong>系統版本</strong>卡片會顯示<strong>目前版本</strong>與 GitHub 上的<strong>最新正式版</strong>。有新版本時,卡片會提示並附上「這一版更新了什麼」與「升級指南」的連結,右上角也會出現「有新版本」的標籤(只有系統管理員看得到)。左側選單最下方則隨時顯示目前版本,回報問題時很方便。</p>
-        <div class="cal note"><div class="lab">📌 只提醒,不會自動升級</div><p>升級一定由學校自己決定:先「立即備份」,再照升級指南修改 <code>.env</code> 的 <code>IMAGE_TAG</code>、執行 <code>docker compose pull</code> 與 <code>docker compose up -d</code>。系統每天最多查一次 GitHub 公開的版本資訊,不會傳出學校資料;主機不能連外時只會顯示「無法連線」,不影響任何功能。不想讓主機連外,可在 <code>.env</code> 設 <code>UPDATE_CHECK_ENABLED=false</code> 關閉。</p></div>
+        <h3>系统版本与新版本提醒</h3>
+        <p>页面最上方的<strong>系统版本</strong>卡片会显示<strong>目前版本</strong>与 GitHub 上的<strong>最新正式版</strong>。有新版本时,卡片会提示并附上「这一版更新了什么」与「升级指南」的连结,右上角也会出现「有新版本」的标签(只有系统管理员看得到)。左侧选单最下方则随时显示目前版本,回报问题时很方便。</p>
+        <div class="cal note"><div class="lab">📌 只提醒,不会自动升级</div><p>升级一定由学校自己决定:先「立即备份」,再照升级指南修改 <code>.env</code> 的 <code>IMAGE_TAG</code>、执行 <code>docker compose pull</code> 与 <code>docker compose up -d</code>。系统每天最多查一次 GitHub 公开的版本信息,不会传出学校资料;主机不能连外时只会显示「无法连线」,不影响任何功能。不想让主机连外,可在 <code>.env</code> 设 <code>UPDATE_CHECK_ENABLED=false</code> 关闭。</p></div>
 
-        <h3>學校資訊</h3>
-        <p><strong>校名</strong>——顯示在介面、匯出的課表(Excel / PDF / PNG)、代課通知信與 A4 公告單上。改完立即生效,不需重新啟動系統。</p>
-        <div class="cal note"><div class="lab">📌 注意</div><p>安裝時 <code>.env</code> 的 <code>SCHOOL_NAME</code> 只是<strong>初始值</strong>;之後一律以這裡設定的為準。舊系統升級後若沒改過,仍沿用原本的值,不會突然變掉。</p></div>
+        <h3>学校信息</h3>
+        <p><strong>校名</strong>——显示在介面、导出的课表(Excel / PDF / PNG)、代课通知信与 A4 公告单上。改完立即生效,不需重新启动系统。</p>
+        <div class="cal note"><div class="lab">📌 注意</div><p>安装时 <code>.env</code> 的 <code>SCHOOL_NAME</code> 只是<strong>初始值</strong>;之后一律以这里设置的为准。旧系统升级后若没改过,仍沿用原本的值,不会突然变掉。</p></div>
 
-        <h3>示範資料(只有全新系統看得到)</h3>
-        <p>剛裝好、還沒建任何學期時,這裡會有一個<strong>「載入示範資料」</strong>按鈕(<strong>第一次登入時,設定精靈的第一步也有同一個入口</strong>——多數人會在那裡先看到)。按一下就會建出一所完整的虛構國中——<strong>臺南市市立敦品國中</strong>:三個年級 18 班(701~706、801~806、901~906)、48 位教師(含導師、兼行政、外聘)、24 個分科科目、384 筆配課。</p>
-        <p>用途是<strong>先試開一遍再決定要不要正式用</strong>:載完直接去按「自動排課」,十幾秒就會看到一張排好的全校課表,接著請假、代課、匯出、備份全部都能玩過一輪,不必先手 key 幾百筆資料。</p>
-        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>只有在<strong>系統完全沒有任何學期</strong>時才能載入,以免蓋掉正式資料。一旦建了自己的學期,這個按鈕就會消失。<strong>試完要正式使用時,請重新安裝一套乾淨的系統</strong>(或刪掉示範學期),不要把示範資料和真實資料混在一起。</p></div>
-        <div class="cal tip"><div class="lab">💡 提示</div><p>載入示範資料時會<strong>順便把校名設成「臺南市市立敦品國中」</strong>,你不必另外設定。試用完要改回自己學校的名字,就在上面的「學校資訊」改。</p></div>
+        <h3>示范资料(只有全新系统看得到)</h3>
+        <p>刚装好、还没建任何学期时,这里会有一个<strong>「载入示范资料」</strong>按钮(<strong>第一次登录时,设置精灵的第一步也有同一个入口</strong>——多数人会在那里先看到)。按一下就会建出一所完整的虚构初中——<strong>台南市市立敦品初中</strong>:三个年级 18 班(701~706、801~806、901~906)、48 位教师(含导师、兼行政、外聘)、24 个分科科目、384 笔配课。</p>
+        <p>用途是<strong>先试开一遍再决定要不要正式用</strong>:载完直接去按「自动排课」,十几秒就会看到一张排好的全校课表,接著请假、代课、导出、备份全部都能玩过一轮,不必先手 key 几百笔资料。</p>
+        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>只有在<strong>系统完全没有任何学期</strong>时才能载入,以免盖掉正式资料。一旦建了自己的学期,这个按钮就会消失。<strong>试完要正式使用时,请重新安装一套干净的系统</strong>(或删掉示范学期),不要把示范资料和真实资料混在一起。</p></div>
+        <div class="cal tip"><div class="lab">💡 提示</div><p>载入示范资料时会<strong>顺便把校名设成「台南市市立敦品初中」</strong>,你不必另外设置。试用完要改回自己学校的名字,就在上面的「学校信息」改。</p></div>
 
-        <h3>排課設定</h3>
-        <p><strong>超鐘點上限</strong>——一位教師的配課最多可超出「應授節數」幾節(預設 8 節,設 0 表示不限制)。配課時超過就會被擋下並指名是誰、超了幾節。</p>
-        <p>上限是「應授 + N」而不是一個固定節數,因為<strong>應授本身就因身分而異</strong>。以臺南市為例:國文科專任 16 節、兼任導師 11 節、兼任主任 6 節——固定值對誰都不合適。各縣市規定不同,依貴校規定調整即可。</p>
-        <div class="cal note"><div class="lab">📌 注意</div><p><strong>沒有填「基本鐘點」的教師不受此限。</strong>基本鐘點欄位可以留空(預設 0),那代表資料還沒建、不是真的不用上課;若把它當真,沒有維護基鐘的學校會發現所有超過 8 節的配課全被擋下。</p></div>
+        <h3>排课设置</h3>
+        <p><strong>超课时上限</strong>——一位教师的配课最多可超出「应授节数」几节(默认 8 节,设 0 表示不限制)。配课时超过就会被挡下并指名是谁、超了几节。</p>
+        <p>上限是「应授 + N」而不是一个固定节数,因为<strong>应授本身就因身分而异</strong>。以台南市为例:国文科专任 16 节、兼任导师 11 节、兼任主任 6 节——固定值对谁都不合适。各县市规定不同,依贵校规定调整即可。</p>
+        <div class="cal note"><div class="lab">📌 注意</div><p><strong>没有填「基本课时」的教师不受此限。</strong>基本课时栏位可以留空(默认 0),那代表资料还没建、不是真的不用上课;若把它当真,没有维护基钟的学校会发现所有超过 8 节的配课全被挡下。</p></div>
 
-        <h3>資料備份與還原</h3>
+        <h3>资料备份与还原</h3>
         <ul>
-          <li><strong>每日自動備份</strong>——系統每天凌晨自動備份,預設保留最新 30 份、自動輪替。</li>
-          <li><strong>立即備份</strong>——重大操作(升級、大量匯入、換學期)前,建議先按一次。</li>
-          <li><strong>下載 / 上傳還原</strong>——可下載備份檔異地保存;換主機或救援時上傳還原。</li>
-          <li><strong>還原的安全網</strong>——還原前系統會<strong>自動先備份現狀</strong>(可反悔),還原完成後<strong>強制所有人重新登入</strong>。</li>
+          <li><strong>每日自动备份</strong>——系统每天凌晨自动备份,默认保留最新 30 份、自动轮替。</li>
+          <li><strong>立即备份</strong>——重大操作(升级、大量导入、换学期)前,建议先按一次。</li>
+          <li><strong>下载 / 上传还原</strong>——可下载备份档异地保存;换主机或救援时上传还原。</li>
+          <li><strong>还原的安全网</strong>——还原前系统会<strong>自动先备份现状</strong>(可反悔),还原完成后<strong>强制所有人重新登录</strong>。</li>
         </ul>
-        <div class="cal danger"><div class="lab">🛑 小心</div><p>還原會<strong>覆蓋目前所有資料</strong>。務必確認選對備份檔。所幸有「還原前保護」這道自動備份墊底,誤操作仍可救回。</p></div>
-        <div class="cal warn"><div class="lab">⚠️ 異地備援</div><p>備份檔存在同一台主機。<strong>硬碟壞掉就一起沒了</strong>。請定期把備份檔下載到另一台電腦或雲端硬碟(詳見部署文件的「備份與還原」)。</p></div>
-        <figure class="shot"><img src="manual-img/10-backup.png" alt="系統管理 → 資料備份與還原卡片" loading="lazy"><figcaption><b>系統管理 → 資料備份與還原</b>卡片</figcaption></figure>
+        <div class="cal danger"><div class="lab">🛑 小心</div><p>还原会<strong>覆盖目前所有资料</strong>。务必确认选对备份档。所幸有「还原前保护」这道自动备份垫底,误操作仍可救回。</p></div>
+        <div class="cal warn"><div class="lab">⚠️ 异地备援</div><p>备份档存在同一台主机。<strong>硬碟坏掉就一起没了</strong>。请定期把备份档下载到另一台电脑或云端硬碟(详见部署文件的「备份与还原」)。</p></div>
+        <figure class="shot"><img src="manual-img/10-backup.png" alt="系统管理 → 资料备份与还原卡片" loading="lazy"><figcaption><b>系统管理 → 资料备份与还原</b>卡片</figcaption></figure>
 
-        <h3>Email 通知(SMTP,選填)</h3>
-        <p>填入學校的 SMTP 主機資訊,調代課通知才會寄 Email。<strong>沒設定也沒關係</strong>——系統照常運作,只是僅有站內鈴鐺通知。可按「寄測試信」當場驗證。</p>
+        <h3>Email 通知(SMTP,选填)</h3>
+        <p>填入学校的 SMTP 主机信息,调代课通知才会寄 Email。<strong>没设置也没关系</strong>——系统照常运作,只是仅有站内铃铛通知。可按「寄测试信」当场验证。</p>
 
-        <h3>開新學期複製精靈</h3>
-        <p>新學期不必從零建。可從既有學期<strong>複製</strong>教師/班級/科目/場地/節次表,班級年級自動 +1(可關閉),畢業年級提示移除。兩學期資料獨立,改一邊不影響另一邊。</p>
+        <h3>开新学期复制精灵</h3>
+        <p>新学期不必从零建。可从既有学期<strong>复制</strong>教师/班级/科目/场地/节次表,班级年级自动 +1(可关闭),毕业年级提示移除。两学期资料独立,改一边不影响另一边。</p>
       </section>
 
       <!-- 11 -->
       <section class="ch" id="faq">
-        <div class="ch-head"><span class="ch-num">11</span><h2>常見情境 FAQ</h2></div>
+        <div class="ch-head"><span class="ch-num">11</span><h2>常见情境 FAQ</h2></div>
 
-        <h4>Q. 自動排課排不出來,怎麼辦?</h4>
-        <p>看系統給的<strong>衝突定位報告</strong>——它會指出是哪個條件卡住、附上數字與建議。依建議放寬條件(如某科每日上限、教師不可排時段),或用「部分排課」先排大部分、再手動補未排的幾節。</p>
+        <h4>Q. 自动排课排不出来,怎么办?</h4>
+        <p>看系统给的<strong>冲突定位报告</strong>——它会指出是哪个条件卡住、附上数字与建议。依建议放宽条件(如某科每日上限、教师不可排时段),或用「部分排课」先排大部分、再手动补未排的几节。</p>
 
-        <h4>Q. 老師早上臨時請假,最快的處理流程?</h4>
-        <p>請假登記(當天整天)→ 調代課處理(逐節從推薦清單選代課)→ 對方收到通知確認 → 今日看板列印公告。見第 8 章情境框。</p>
+        <h4>Q. 老师早上临时请假,最快的处理流程?</h4>
+        <p>请假登记(当天整天)→ 调代课处理(逐节从推荐清单选代课)→ 对方收到通知确认 → 今日看板打印公告。见第 8 章情境框。</p>
 
-        <h4>Q. 我們是國中小(或完全中學),兩部作息不同,老師還會跨部上課?</h4>
-        <p>系統支援<strong>同學期多套節次表</strong>。設定精靈與建立學期一次只能選一個學制,那只是「先帶入哪一套」,另一套事後補上即可:</p>
+        <h4>Q. 我们是初中小(或完全中学),两部作息不同,老师还会跨部上课?</h4>
+        <p>系统支援<strong>同学期多套节次表</strong>。设置精灵与建立学期一次只能选一个学制,那只是「先带入哪一套」,另一套事后补上即可:</p>
         <ol>
-          <li>建學期時先選班級較多的那一部(例如「國中」)。</li>
-          <li>到「學期與節次表」,在該學期按<strong>「+ 新增節次表」</strong>,範本選另一部(例如「國小」)。</li>
-          <li>兩套節次表各按「編輯節次表」,把每一節的起訖時間改成學校實際的作息。<strong>這一步最重要</strong>:跨部老師會不會衝堂,系統是看實際時間有沒有重疊,不是看第幾節。有<strong>第八節</strong>的學校,在這裡按「+ 新增節次列」加上去(國中範本預設七節、高中範本預設八節;沒有第八節的高中把那一列刪掉即可),<strong>新增的列記得填起訖時間</strong>。</li>
-          <li>到「教師/班級/科目/場地 → 班級」,有兩套以上節次表時表單會多出「節次表」下拉,把另一部的班級指過去(多數學校全校統一,則完全看不到這個欄位)。</li>
-          <li>另一部的科目不會自動帶入,請手動新增或用 Excel 匯入。</li>
+          <li>建学期时先选班级较多的那一部(例如「初中」)。</li>
+          <li>到「学期与节次表」,在该学期按<strong>「+ 新增节次表」</strong>,范本选另一部(例如「小学」)。</li>
+          <li>两套节次表各按「编辑节次表」,把每一节的起讫时间改成学校实际的作息。<strong>这一步最重要</strong>:跨部老师会不会冲堂,系统是看实际时间有没有重叠,不是看第几节。有<strong>第八节</strong>的学校,在这里按「+ 新增节次列」加上去(初中范本默认七节、高中范本默认八节;没有第八节的高中把那一列删掉即可),<strong>新增的列记得填起讫时间</strong>。</li>
+          <li>到「教师/班级/科目/场地 → 班级」,有两套以上节次表时表单会多出「节次表」下拉,把另一部的班级指过去(多数学校全校统一,则完全看不到这个栏位)。</li>
+          <li>另一部的科目不会自动带入,请手动新增或用 Excel 导入。</li>
         </ol>
-        <p>之後排課時,老師在國小 10:20–11:00 有課,國中 10:20–11:05 那一節就排不進去(手動會擋、自動排課會避開);請假、代課推薦、調課也用同一套判斷。</p>
-        <div class="cal note"><div class="lab">📌 注意</div><p>教師課表與教師的通知單只能照一套節次表畫格線,另一部的課會<strong>在格子裡另外標出實際時間</strong>(如「11:10–11:50」),請以格子裡的時間為準。兩部的<strong>節數可以不同</strong>(例如國中七節、高中八節):跨部老師的課表會自動多出第八節那一列,通知單則照節數多的那一套畫。兩套共同的部分請維持<strong>相同的順序</strong>(都有早自習、上午都是四節這樣),另一部的課才會落在對應的那一列。系統不考慮兩部之間的移動時間;需要的話,用教師的「不可排時段」自行保留。</p></div>
+        <p>之后排课时,老师在小学 10:20–11:00 有课,初中 10:20–11:05 那一节就排不进去(手动会挡、自动排课会避开);请假、代课推荐、调课也用同一套判断。</p>
+        <div class="cal note"><div class="lab">📌 注意</div><p>教师课表与教师的通知单只能照一套节次表画格线,另一部的课会<strong>在格子里另外标出实际时间</strong>(如「11:10–11:50」),请以格子里的时间为准。两部的<strong>节数可以不同</strong>(例如初中七节、高中八节):跨部老师的课表会自动多出第八节那一列,通知单则照节数多的那一套画。两套共同的部分请维持<strong>相同的顺序</strong>(都有早自习、上午都是四节这样),另一部的课才会落在对应的那一列。系统不考虑两部之间的移动时间;需要的话,用教师的「不可排时段」自行保留。</p></div>
 
-        <h4>Q. 我們有第八節(課後輔導),要怎麼排?正課會不會被排進去?</h4>
-        <p>國中範本預設七節。第八節多半是課後輔導、不能排正課,所以系統不預設加上;需要的學校照下面做,<strong>正課就不會跑進第八節</strong>:</p>
+        <h4>Q. 我们有第八节(课后辅导),要怎么排?正课会不会被排进去?</h4>
+        <p>初中范本默认七节。第八节多半是课后辅导、不能排正课,所以系统不默认加上;需要的学校照下面做,<strong>正课就不会跑进第八节</strong>:</p>
         <ol>
-          <li>「學期與節次表」→「編輯節次表」→「+ 新增節次列」,名稱改成「第八節」並<strong>填上起訖時間</strong>。只有某幾天有第八節的話,把沒有的那幾天改成不排課。</li>
-          <li>「教師/班級/科目/場地 → 科目」新增「課後輔導」,再到「配課管理」幫每個班配這門課(每週幾天就配幾節)。</li>
-          <li>到「排課工作台」,把各班的課後輔導<strong>手動拖進第八節</strong>,點卡片<strong>上鎖(🔒)</strong>。</li>
-          <li>再跑「自動排課」。鎖定的格位不會被移動,第八節已被輔導課佔滿,體育、藝術等正課排不進去。</li>
+          <li>「学期与节次表」→「编辑节次表」→「+ 新增节次列」,名称改成「第八节」并<strong>填上起讫时间</strong>。只有某几天有第八节的话,把没有的那几天改成不排课。</li>
+          <li>「教师/班级/科目/场地 → 科目」新增「课后辅导」,再到「配课管理」帮每个班配这门课(每周几天就配几节)。</li>
+          <li>到「排课工作台」,把各班的课后辅导<strong>手动拖进第八节</strong>,点卡片<strong>上锁(🔒)</strong>。</li>
+          <li>再跑「自动排课」。锁定的格位不会被移动,第八节已被辅导课占满,体育、艺术等正课排不进去。</li>
         </ol>
-        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>順序不能反:<strong>先鎖好輔導課,再自動排課</strong>。第八節那一列若是空的就直接自動排課,系統會把它當成一般節次,正課可能被排進去。不想在系統裡管理輔導課的學校,不要加第八節這一列即可。</p></div>
+        <div class="cal warn"><div class="lab">⚠️ 注意</div><p>顺序不能反:<strong>先锁好辅导课,再自动排课</strong>。第八节那一列若是空的就直接自动排课,系统会把它当成一般节次,正课可能被排进去。不想在系统里管理辅导课的学校,不要加第八节这一列即可。</p></div>
 
-        <h4>Q. 社團課要怎麼建?巡堂表印得出社團嗎?</h4>
-        <p>社團是全校(或全年級)學生打散重組,用<strong>跑班群組</strong>來建:</p>
+        <h4>Q. 社团课要怎么建?巡堂表印得出社团吗?</h4>
+        <p>社团是全校(或全年级)学生打散重组,用<strong>跑班群组</strong>来建:</p>
         <ol>
-          <li>「配課管理」→「新增跑班群組」,名稱填「社團」,把參加的班級全部選進去。</li>
-          <li>先到「科目」把每個社團新增成一個科目(羽球社、桌球社…)。</li>
-          <li>「新增配課」→ 排課對象選「跑班群組」→ 選「社團」,<strong>一個社團開一筆配課</strong>:科目選社團名稱、選指導老師、每週節數(各社團要相同),場地需求填活動地點。</li>
-          <li>到「排課工作台」把社團拖進固定的時段並上鎖(🔒),再跑自動排課。連上兩節的社團,<strong>節數配 2、不要設連堂</strong>,第六節、第七節各拖一次。</li>
+          <li>「配课管理」→「新增跑班群组」,名称填「社团」,把参加的班级全部选进去。</li>
+          <li>先到「科目」把每个社团新增成一个科目(羽球社、桌球社…)。</li>
+          <li>「新增配课」→ 排课对象选「跑班群组」→ 选「社团」,<strong>一个社团开一笔配课</strong>:科目选社团名称、选指导老师、每周节数(各社团要相同),场地需求填活动地点。</li>
+          <li>到「排课工作台」把社团拖进固定的时段并上锁(🔒),再跑自动排课。连上两节的社团,<strong>节数配 2、不要设连堂</strong>,第六节、第七节各拖一次。</li>
         </ol>
-        <p>建好之後,巡堂表會自動多出一張「社團巡堂單」,一列一個社團(見 8.8)。</p>
+        <p>建好之后,巡堂表会自动多出一张「社团巡堂单」,一列一个社团(见 8.8)。</p>
 
-        <h4>Q. 有單雙週的課(同一節單週、雙週上不同科),要怎麼排?</h4>
-        <p>例如 701 週一三、四節:單週上生科(甲老師)、雙週上資科(乙老師);702 同一時段反過來。用<strong>單雙週組</strong>來建(v1.3.0 起):</p>
+        <h4>Q. 有单双周的课(同一节单周、双周上不同科),要怎么排?</h4>
+        <p>例如 701 周一三、四节:单周上生科(甲老师)、双周上资科(乙老师);702 同一时段反过来。用<strong>单双周组</strong>来建(v1.3.0 起):</p>
         <ol>
-          <li>「配課管理」→「新增單雙週組」,選 701。</li>
-          <li>在「單雙週組」卡片按「+ 新增單週的課」:科目生科、老師甲、每週節數 2、連堂 2 節 × 1。</li>
-          <li>再按「+ 新增雙週的課」:節數與連堂會自動帶入,只要選資科、乙老師。</li>
-          <li>702 照樣再建一組(單週資科、雙週生科)。</li>
-          <li>到「排課工作台」把那張「單 生科/雙 資科」卡片拖進格子,單週、雙週兩堂一起放入;也可以直接跑自動排課。</li>
+          <li>「配课管理」→「新增单双周组」,选 701。</li>
+          <li>在「单双周组」卡片按「+ 新增单周的课」:科目生科、老师甲、每周节数 2、连堂 2 节 × 1。</li>
+          <li>再按「+ 新增双周的课」:节数与连堂会自动带入,只要选资科、乙老师。</li>
+          <li>702 照样再建一组(单周资科、双周生科)。</li>
+          <li>到「排课工作台」把那张「单 生科/双 资科」卡片拖进格子,单周、双周两堂一起放入;也可以直接跑自动排课。</li>
         </ol>
-        <p><strong>單週、雙週怎麼算</strong>:學期開始那一週是第 1 週(單週),之後每週輪流,放假、段考都不調整。請確認「學期與節次表」的開學日正確。</p>
-        <p><strong>系統會自動處理的事</strong>:甲老師單週在 701、雙週在 702 不算衝堂;請假時只列出那一週真的有上的課;代課推薦、調課、今日看板、巡堂表都看當天是單週還是雙週;課表與匯出的格子上下列出「單 生科 甲師」「雙 資科 乙師」。</p>
-        <p><strong>鐘點</strong>:隔週的課每筆算一半。甲老師單週 701、雙週 702 各 2 節,合計每週 2 節;如果只有單週那筆(例如年級班數是奇數、落單的那一班),算 1 節。</p>
-        <div class="cal note"><div class="lab">📌 注意</div><p>單週、雙週兩筆的<strong>每週節數與連堂要相同</strong>,而且各只能一筆;缺一邊時,排課前檢查會提醒。跑班群組不能同時是單雙週組(例如「單週社團、雙週班會」目前不支援),Excel 匯入配課也還不能設定單雙週。</p></div>
+        <p><strong>单周、双周怎么算</strong>:学期开始那一周是第 1 周(单周),之后每周轮流,放假、段考都不调整。请确认「学期与节次表」的开学日正确。</p>
+        <p><strong>系统会自动处理的事</strong>:甲老师单周在 701、双周在 702 不算冲堂;请假时只列出那一周真的有上的课;代课推荐、调课、今日看板、巡堂表都看当天是单周还是双周;课表与导出的格子上下列出「单 生科 甲师」「双 资科 乙师」。</p>
+        <p><strong>课时</strong>:隔周的课每笔算一半。甲老师单周 701、双周 702 各 2 节,合计每周 2 节;如果只有单周那笔(例如年级班数是奇数、落单的那一班),算 1 节。</p>
+        <div class="cal note"><div class="lab">📌 注意</div><p>单周、双周两笔的<strong>每周节数与连堂要相同</strong>,而且各只能一笔;缺一边时,排课前检查会提醒。跑班群组不能同时是单双周组(例如「单周社团、双周班会」目前不支援),Excel 导入配课也还不能设置单双周。</p></div>
 
-        <h4>Q. 忘記密碼了?</h4>
-        <p>初始密碼由安裝設定決定;登入後改過的密碼存在資料庫。若都忘了,最務實的是<strong>還原一份記得密碼的舊備份</strong>,或請系統管理員協助。請妥善保管管理員密碼。</p>
+        <h4>Q. 忘记密码了?</h4>
+        <p>初始密码由安装设置决定;登录后改过的密码存在资料库。若都忘了,最务实的是<strong>还原一份记得密码的旧备份</strong>,或请系统管理员协助。请妥善保管管理员密码。</p>
 
-        <h4>Q. 老師收不到 Email 通知?</h4>
-        <p>Email 是選填功能。若「系統管理」沒設定 SMTP,就只有站內鈴鐺通知,這是正常的。要寄 Email 需填學校 SMTP 並可寄測試信驗證。</p>
+        <h4>Q. 老师收不到 Email 通知?</h4>
+        <p>Email 是选填功能。若「系统管理」没设置 SMTP,就只有站内铃铛通知,这是正常的。要寄 Email 需填学校 SMTP 并可寄测试信验证。</p>
 
-        <h4>Q. 資料會不會不見?</h4>
-        <p>資料存在學校自己的主機。系統每天自動備份、保留 30 份。<strong>但請務必做異地備援</strong>(把備份檔下載到別處),主機硬碟壞掉時才救得回。</p>
+        <h4>Q. 资料会不会不见?</h4>
+        <p>资料存在学校自己的主机。系统每天自动备份、保留 30 份。<strong>但请务必做异地备援</strong>(把备份档下载到别处),主机硬碟坏掉时才救得回。</p>
 
-        <h4>Q. 換到下學期,要重新建一次全部資料嗎?</h4>
-        <p>不用。用「開新學期複製精靈」從上學期複製,年級自動進位,再微調即可。</p>
+        <h4>Q. 换到下学期,要重新建一次全部资料吗?</h4>
+        <p>不用。用「开新学期复制精灵」从上学期复制,年级自动进位,再微调即可。</p>
 
         <div class="callbox">
-          <p style="margin:16px 0"><strong>還有問題?</strong> 系統的安裝、升級、備份策略、網域 HTTPS 等「部署維運」細節,見專案的 <code>docs/deploy/</code> 六篇部署文件;操作上的疑難,歡迎到專案 <a href="https://github.com/begin0808/Course_Scheduling_System/issues">GitHub Issue</a> 回報。</p>
-          <p style="margin:16px 0"><strong>回報錯誤或提供建議</strong>,也歡迎直接來信:<br>
-          專案開發者 <strong>國立南大附中 李佳恩老師</strong> · <a href="mailto:begin0808@gmail.com">begin0808@gmail.com</a><br>
-          <span style="color:var(--text-faint);font-size:.9em">這套系統是為第一線教學組長而寫的,你的實際使用回饋對它的改進最有幫助。</span></p>
+          <p style="margin:16px 0"><strong>还有问题?</strong> 系统的安装、升级、备份策略、网域 HTTPS 等「部署维运」细节,见专案的 <code>docs/deploy/</code> 六篇部署文件;操作上的疑难,欢迎到专案 <a href="https://github.com/begin0808/Course_Scheduling_System/issues">GitHub Issue</a> 回报。</p>
+          <p style="margin:16px 0"><strong>回报错误或提供建议</strong>,也欢迎直接来信:<br>
+          专案开发者 <strong>国立南大附中 李佳恩老师</strong> · <a href="mailto:begin0808@gmail.com">begin0808@gmail.com</a><br>
+          <span style="color:var(--text-faint);font-size:.9em">这套系统是为第一线教学组长而写的,你的实际使用回馈对它的改进最有帮助。</span></p>
         </div>
 
         <div class="foot">
-          <p>排課與調代課系統 · 教學組長操作手冊 · v1.1 ·  開源免費(MIT)· 單校自架</p>
-          <p>本手冊隨系統版本更新;截圖對應系統 v1.2.9(8.8 巡堂表為 v1.2.12),文字內容已更新至 v1.3.0。</p>
+          <p>排课与调代课系统 · 教学组长操作手册 · v1.1 ·  开源免费(MIT)· 单校自架</p>
+          <p>本手册随系统版本更新;截图对应系统 v1.2.9(8.8 巡堂表为 v1.2.12),文字内容已更新至 v1.3.0。</p>
         </div>
       </section>
 
@@ -760,7 +760,7 @@
 
 <script>
   (function(){
-    // theme toggle(與部署手冊共用 csDocsTheme,翻頁不會被打回系統色)
+    // theme toggle(与部署手册共用 csDocsTheme,翻页不会被打回系统色)
     var root=document.documentElement, btn=document.getElementById('themeBtn');
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;

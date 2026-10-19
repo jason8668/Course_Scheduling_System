@@ -7,8 +7,8 @@ const props = withDefaults(defineProps<{
   entries?: GridEntry[]
   numWeekdays?: number
   readonly?: boolean
-  dragging?: DragData | null // 父層告知目前拖曳中的內容(供 check feedback)
-  feedback?: DropFeedback | null // 父層回填的可放/衝突判定
+  dragging?: DragData | null // 父层告知目前拖曳中的内容(供 check feedback)
+  feedback?: DropFeedback | null // 父层回填的可放/冲突判定
 }>(), {
   entries: () => [],
   numWeekdays: undefined,
@@ -39,7 +39,7 @@ const periodMap = computed(() => {
   for (const p of props.periods) m.set(`${p.weekday}-${p.period_no}`, p)
   return m
 })
-// 各節次的代表資訊(取任一天),用於左欄的節次名稱與時間
+// 各节次的代表信息(取任一天),用于左栏的节次名称与时间
 const periodInfo = computed(() => {
   const m = new Map<number, PeriodCell>()
   for (const p of props.periods) if (!m.has(p.period_no)) m.set(p.period_no, p)
@@ -49,21 +49,21 @@ const entryMap = computed(() => {
   const m = new Map<string, GridEntry>()
   for (const e of props.entries) {
     const k = `${e.weekday}-${e.period_no}`
-    if (!m.has(k)) m.set(k, e) // 代表卡片(拖曳、點選用):單雙週那一格取單週那堂
+    if (!m.has(k)) m.set(k, e) // 代表卡片(拖曳、点击用):单双周那一格取单周那堂
   }
   return m
 })
-// 單雙週的格子:單週、雙週兩堂上下並列(v1.3.0)
+// 单双周的格子:单周、双周两堂上下并列(v1.3.0)
 const weekMap = computed(() => {
   const m = new Map<string, GridEntry[]>()
   for (const e of props.entries) {
     if (!e.week) continue
     const k = `${e.weekday}-${e.period_no}`
-    m.set(k, [...(m.get(k) ?? []), e].sort((a, b) => (a.week === '單' ? -1 : 1) - (b.week === '單' ? -1 : 1)))
+    m.set(k, [...(m.get(k) ?? []), e].sort((a, b) => (a.week === '单' ? -1 : 1) - (b.week === '单' ? -1 : 1)))
   }
   return m
 })
-// 連堂佔用的下方格位(跳過不渲染)
+// 连堂占用的下方格位(跳过不渲染)
 const coveredSet = computed(() => {
   const s = new Set<string>()
   const nos = periodNos.value
@@ -86,7 +86,7 @@ function weekdayLabel(w: number): string {
   return `星期${WEEKDAY_LABELS[w - 1] ?? w}`
 }
 function periodLabelName(p: number): string {
-  return periodInfo.value.get(p)?.name ?? `第${p}節`
+  return periodInfo.value.get(p)?.name ?? `第${p}节`
 }
 function periodTime(p: number): string {
   const info = periodInfo.value.get(p)
@@ -138,7 +138,7 @@ function cellClass(w: number, p: number) {
 }
 function feedbackReason(w: number, p: number): string | null {
   const fb = props.feedback
-  if (fb && !fb.ok && fb.weekday === w && fb.period_no === p) return fb.reason ?? '衝突'
+  if (fb && !fb.ok && fb.weekday === w && fb.period_no === p) return fb.reason ?? '冲突'
   return null
 }
 
@@ -154,7 +154,7 @@ function onCardDragStart(e: GridEntry, ev: DragEvent) {
 }
 function onCellCheck(w: number, p: number, ev: DragEvent) {
   if (props.readonly || !isRegular(w, p) || entryAt(w, p)) return
-  ev.preventDefault() // 允許放下
+  ev.preventDefault() // 允许放下
   emit('check', { weekday: w, period_no: p, data: props.dragging })
 }
 function onCellDrop(w: number, p: number, ev: DragEvent) {
@@ -208,7 +208,7 @@ function onCellDrop(w: number, p: number, ev: DragEvent) {
               @dragend="emit('dragend')"
               @click="emit('select', entryAt(w, p)!)"
             >
-              <span v-if="entryAt(w, p)!.locked" class="tg-lock" title="已鎖定">🔒</span>
+              <span v-if="entryAt(w, p)!.locked" class="tg-lock" title="已锁定">🔒</span>
               <template v-if="weeksAt(w, p).length">
                 <div
                   v-for="x in weeksAt(w, p)" :key="x.id" class="tg-week-line" data-testid="tg-week"
@@ -264,7 +264,7 @@ function onCellDrop(w: number, p: number, ev: DragEvent) {
   background: repeating-linear-gradient(45deg, rgba(128,128,128,0.06),
     rgba(128,128,128,0.06) 6px, rgba(128,128,128,0.12) 6px, rgba(128,128,128,0.12) 12px);
 }
-.tg-cell.is-droppable { outline: 2px solid #0d7a43; outline-offset: -2px; }  /* 主色,見 src/theme.ts */
+.tg-cell.is-droppable { outline: 2px solid #0d7a43; outline-offset: -2px; }  /* 主色,见 src/theme.ts */
 .tg-cell.is-conflict { outline: 2px solid #d03050; outline-offset: -2px; background: rgba(208,48,80,0.06); }
 .tg-blocked-label { font-size: 12px; opacity: 0.55; text-align: center; padding-top: 14px; }
 .tg-reason { font-size: 12px; color: #d03050; text-align: center; padding-top: 12px; }

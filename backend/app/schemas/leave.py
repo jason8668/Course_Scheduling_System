@@ -1,10 +1,10 @@
-"""請假與受影響節次 schema(M4-1)。"""
+"""请假与受影响节次 schema(M4-1)。"""
 
 from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field
 
-# 欄位名 date 會遮蔽同名型別(mypy 判為變數),其後的欄位以別名標註
+# 栏位名 date 会遮蔽同名型别(mypy 判为变数),其后的栏位以别名标注
 _Date = date
 
 
@@ -13,7 +13,7 @@ class AffectedPeriodOut(BaseModel):
     date: date
     weekday: int
     period_no: int
-    period_name: str  # 「第三節」——一律用節次表的名稱,不用內部 period_no
+    period_name: str  # 「第三节」——一律用节次表的名称,不用内部 period_no
     start_time: time | None = None
     end_time: time | None = None
     subject_name: str
@@ -22,8 +22,8 @@ class AffectedPeriodOut(BaseModel):
     status: str  # pending / resolved / completed / cancelled
     handler_teacher_id: int | None = None
     handler_name: str | None = None
-    sub_type: str | None = None  # 已處置時的處置方式(substitute/swap/…),未處置為空
-    # 調課才有:請假教師回來補課的那一節(讓清單直接寫出「王師 10/8 第二節補課」)
+    sub_type: str | None = None  # 已处置时的处置方式(substitute/swap/…),未处置为空
+    # 调课才有:请假教师回来补课的那一节(让清单直接写出「王师 10/8 第二节补课」)
     swap_date: _Date | None = None
     swap_period_name: str = ""
 
@@ -31,9 +31,9 @@ class AffectedPeriodOut(BaseModel):
 
 
 class LeaveRequestIn(BaseModel):
-    """時間為空 = 該端點整天。單日 + 起訖時間 = 半天假。"""
+    """时间为空 = 该端点整天。单日 + 起讫时间 = 半天假。"""
 
-    teacher_id: int | None = None  # 組長代登時指定;教師自登留空
+    teacher_id: int | None = None  # 组长代登时指定;教师自登留空
     leave_type: str
     start_date: date
     start_time: time | None = None
@@ -65,6 +65,6 @@ class LeaveRequestOut(BaseModel):
 class LeaveCancelled(BaseModel):
     id: int
     status: str
-    revoked_count: int  # 原本已指派、現在被取消的節次數
+    revoked_count: int  # 原本已指派、现在被取消的节次数
     notified_teachers: list[str] = []
 

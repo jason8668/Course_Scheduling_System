@@ -1,6 +1,6 @@
-"""代課鐘點月結統計(M4-5)。
+"""代课课时月结统计(M4-5)。
 
-組長/主任看全校並可匯出 Excel;教師只能查自己的明細(`/mine`)。
+组长/主任看全校并可导出 Excel;教师只能查自己的明细(`/mine`)。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -42,13 +42,13 @@ def _report_out(report: stats_service.MonthlyReport) -> MonthlyReportOut:
 def _get_semester(db: Session, semester_id: int) -> Semester:
     sem = db.get(Semester, semester_id)
     if sem is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     return sem
 
 
 def _check_month(month: int) -> None:
     if not 1 <= month <= 12:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "月份須為 1~12")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "月份须为 1~12")
 
 
 @router.get("/substitution-stats", response_model=MonthlyReportOut)
@@ -60,7 +60,7 @@ def substitution_stats(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """某月代課鐘點統計(全校,可篩單一教師)。"""
+    """某月代课课时统计(全校,可筛单一教师)。"""
     _get_semester(db, semester_id)
     _check_month(month)
     report = stats_service.monthly_report(db, semester_id, year, month, teacher_id=teacher_id)
@@ -75,7 +75,7 @@ def my_substitution_stats(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """教師查自己的代課明細。未綁定教師主檔者回空報表。"""
+    """教师查自己的代课明细。未绑定教师主档者回空报表。"""
     _get_semester(db, semester_id)
     _check_month(month)
     me = current_teacher(db, user, semester_id)
@@ -94,7 +94,7 @@ def export_substitution_stats(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ) -> Response:
-    """匯出某月代課鐘點 Excel(彙總 + 明細兩張表)。"""
+    """导出某月代课课时 Excel(汇总 + 明细两张表)。"""
     _get_semester(db, semester_id)
     _check_month(month)
     report = stats_service.monthly_report(db, semester_id, year, month, teacher_id=teacher_id)

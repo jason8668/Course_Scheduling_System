@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="部署與維運手冊 — 排課與調代課系統部署與維運文件">
-<title>部署與維運手冊 · 排課與調代課系統</title>
+<meta name="description" content="部署与维运手册 — 排课与调代课系统部署与维运文件">
+<title>部署与维运手册 · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📗</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/deploy/README.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/deploy/README.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,137 +151,137 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="../index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="../index.html">教學組長操作手冊</a>
+<a class="brand" href="../index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="../index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc here" href="README.html">總覽:從哪開始</a>
-<a class="doc" href="install.html">安裝指南</a>
-<a class="doc" href="upgrade.html">升級指南</a>
-<a class="doc" href="backup.html">備份與還原</a>
-<a class="doc" href="https.html">網域與 HTTPS</a>
-<a class="doc" href="faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc here" href="README.html">总览:从哪开始</a>
+<a class="doc" href="install.html">安装指南</a>
+<a class="doc" href="upgrade.html">升级指南</a>
+<a class="doc" href="backup.html">备份与还原</a>
+<a class="doc" href="https.html">网域与 HTTPS</a>
+<a class="doc" href="faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="../architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc" href="../roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="../tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="../architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc" href="../roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="../tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#我該從哪裡開始">我該從哪裡開始?</a><a class="lv2" href="#三分鐘理解這套系統怎麼跑">三分鐘理解這套系統怎麼跑</a><a class="lv2" href="#兩種部署方式">兩種部署方式</a><a class="lv2" href="#名詞對照">名詞對照</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#我该从哪里开始">我该从哪里开始?</a><a class="lv2" href="#三分钟理解这套系统怎么跑">三分钟理解这套系统怎么跑</a><a class="lv2" href="#两种部署方式">两种部署方式</a><a class="lv2" href="#名词对照">名词对照</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEPLOYMENT GUIDE</div>
-        <h1>部署與維運手冊</h1>
-        <div class="src">原始檔 <code>docs/deploy/README.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/README.md">在 GitHub 上檢視</a></div>
+        <h1>部署与维运手册</h1>
+        <div class="src">原始档 <code>docs/deploy/README.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/README.md">在 GitHub 上查看</a></div>
       </header>
-      <p>給<strong>學校資訊管理者/教學組長</strong>的完整操作文件。系統為單校自架、純 Web,以 Docker Compose 一鍵部署,六個容器(web / api / worker / worker-ops / postgres / redis)在一台主機上跑完。</p>
+      <p>给<strong>学校信息管理者/教学组长</strong>的完整操作文件。系统为单校自架、纯 Web,以 Docker Compose 一键部署,六个容器(web / api / worker / worker-ops / postgres / redis)在一台主机上跑完。</p>
       <blockquote>
-      <p><code>worker</code> 專跑自動排課(一次可跑好幾分鐘),<code>worker-ops</code> 跑匯出、備份、還原、寄信與定時任務。分開的用意是:<strong>排課那幾分鐘裡,你按「匯出課表」仍然是秒回的</strong>。</p>
+      <p><code>worker</code> 专跑自动排课(一次可跑好几分钟),<code>worker-ops</code> 跑导出、备份、还原、寄信与定时任务。分开的用意是:<strong>排课那几分钟里,你按「导出课表」仍然是秒回的</strong>。</p>
       </blockquote>
-      <h2 id="我該從哪裡開始">我該從哪裡開始?</h2>
+      <h2 id="我该从哪里开始">我该从哪里开始?</h2>
       <div class="tw"><table>
       <thead>
       <tr>
-      <th>你的情況</th>
-      <th>看這篇</th>
+      <th>你的情况</th>
+      <th>看这篇</th>
       </tr>
       </thead>
       <tbody>
       <tr>
-      <td>第一次安裝,想在校內主機/NAS 上架起來</td>
-      <td><strong><a href="install.html">安裝指南</a></strong></td>
+      <td>第一次安装,想在校内主机/NAS 上架起来</td>
+      <td><strong><a href="install.html">安装指南</a></strong></td>
       </tr>
       <tr>
-      <td>已在跑,要升級到新版本</td>
-      <td><strong><a href="upgrade.html">升級指南</a></strong></td>
+      <td>已在跑,要升级到新版本</td>
+      <td><strong><a href="upgrade.html">升级指南</a></strong></td>
       </tr>
       <tr>
-      <td>想確認資料有備份、或要搬移/還原資料</td>
-      <td><strong><a href="backup.html">備份與還原</a></strong></td>
+      <td>想确认资料有备份、或要搬移/还原资料</td>
+      <td><strong><a href="backup.html">备份与还原</a></strong></td>
       </tr>
       <tr>
-      <td>要讓校外也能連(網域 + HTTPS)</td>
-      <td><strong><a href="https.html">網域與 HTTPS(選配)</a></strong></td>
+      <td>要让校外也能连(网域 + HTTPS)</td>
+      <td><strong><a href="https.html">网域与 HTTPS(选配)</a></strong></td>
       </tr>
       <tr>
-      <td>遇到問題、啟動不了、忘記密碼</td>
-      <td><strong><a href="faq.html">常見問題 FAQ</a></strong></td>
+      <td>遇到问题、启动不了、忘记密码</td>
+      <td><strong><a href="faq.html">常见问题 FAQ</a></strong></td>
       </tr>
       </tbody>
       </table></div>
-      <h2 id="三分鐘理解這套系統怎麼跑">三分鐘理解這套系統怎麼跑</h2>
-      <pre><code>                 使用者瀏覽器
-                            │  http://校內主機IP
+      <h2 id="三分钟理解这套系统怎么跑">三分钟理解这套系统怎么跑</h2>
+      <pre><code>                 用户浏览器
+                            │  http://校内主机IP
                     ┌───────▼────────┐
-                    │  web (Caddy)   │  靜態前端 + 反向代理 /api
+                    │  web (Caddy)   │  静态前端 + 反向代理 /api
                     └───────┬────────┘
                             │
               ┌─────────────▼──────────────┐
-              │  api (FastAPI)             │  登入、資料維護、手動排課、報表
+              │  api (FastAPI)             │  登录、资料维护、手动排课、报表
               └───┬──────────────────┬─────┘
                   │                  │
            ┌──────▼──────┐    ┌──────▼───────┐
-           │ postgres    │    │ redis        │  兩條工作佇列 + session 時效
-           │ (你的資料)  │    └──┬────────┬──┘
+           │ postgres    │    │ redis        │  两条工作伫列 + session 时效
+           │ (你的资料)  │    └──┬────────┬──┘
            └─────────────┘       │        │
                   ▲       ┌──────▼─────┐ ┌▼──────────────┐
                   ├───────┤ worker     │ │ worker-ops    │
-                  │       │ 自動排課   │ │ 匯出/備份/還原 │
-                  └───────┤ (可跑數分鐘)│ │ 寄信/每日備份  │
+                  │       │ 自动排课   │ │ 导出/备份/还原 │
+                  └───────┤ (可跑数分钟)│ │ 寄信/每日备份  │
                           └────────────┘ └───────────────┘
       </code></pre>
       <ul>
-      <li><strong>你的資料只在 <code>postgres</code></strong>(存於 Docker volume <code>pgdata</code>),備份檔在 volume <code>backups</code>。只要這兩者在,系統可隨時重建。</li>
-      <li><strong>worker</strong> 只跑自動排課——它一開跑就會佔住好幾分鐘,這是正常的。</li>
-      <li><strong>worker-ops</strong> 跑匯出、備份、還原、寄信與每日自動備份。<strong>分開的用意</strong>:排課那幾分鐘正是組長最常按「匯出課表」的時候,不該排在排課後面等。</li>
-      <li>全部跑在<strong>一台主機</strong>,不需要外網、不需要雲端帳號,校內網路即可使用。</li>
+      <li><strong>你的资料只在 <code>postgres</code></strong>(存于 Docker volume <code>pgdata</code>),备份档在 volume <code>backups</code>。只要这两者在,系统可随时重建。</li>
+      <li><strong>worker</strong> 只跑自动排课——它一开跑就会占住好几分钟,这是正常的。</li>
+      <li><strong>worker-ops</strong> 跑导出、备份、还原、寄信与每日自动备份。<strong>分开的用意</strong>:排课那几分钟正是组长最常按「导出课表」的时候,不该排在排课后面等。</li>
+      <li>全部跑在<strong>一台主机</strong>,不需要外网、不需要云端帐号,校内网路即可使用。</li>
       </ul>
-      <h2 id="兩種部署方式">兩種部署方式</h2>
-      <p>同一份 <code>docker-compose.yml</code> 支援兩種做法:</p>
+      <h2 id="两种部署方式">两种部署方式</h2>
+      <p>同一份 <code>docker-compose.yml</code> 支援两种做法:</p>
       <ol>
-      <li><strong>拉取官方預建映像</strong>(推薦,免建置、升級快):只要 <code>docker-compose.yml</code> + <code>.env</code> 兩個檔案,<code>docker compose pull &amp;&amp; docker compose up -d</code>。</li>
-      <li><strong>從原始碼自行建置</strong>(想改程式、或內網無法連 GHCR 時):<code>git clone</code> 本專案後 <code>docker compose up -d</code>,首次會在本機建置映像(數分鐘)。</li>
+      <li><strong>拉取官方预建映像</strong>(推荐,免建置、升级快):只要 <code>docker-compose.yml</code> + <code>.env</code> 两个档案,<code>docker compose pull &amp;&amp; docker compose up -d</code>。</li>
+      <li><strong>从原始码自行建置</strong>(想改程序、或内网无法连 GHCR 时):<code>git clone</code> 本专案后 <code>docker compose up -d</code>,首次会在本机建置映像(数分钟)。</li>
       </ol>
-      <p>詳見 <a href="install.html">安裝指南</a>。</p>
-      <h2 id="名詞對照">名詞對照</h2>
+      <p>详见 <a href="install.html">安装指南</a>。</p>
+      <h2 id="名词对照">名词对照</h2>
       <div class="tw"><table>
       <thead>
       <tr>
-      <th>文件用詞</th>
+      <th>文件用词</th>
       <th>意思</th>
       </tr>
       </thead>
       <tbody>
       <tr>
-      <td>主機 / host</td>
-      <td>跑 Docker 的那台電腦(校內伺服器、桌機、NAS 皆可)</td>
+      <td>主机 / host</td>
+      <td>跑 Docker 的那台电脑(校内服务器、桌机、NAS 皆可)</td>
       </tr>
       <tr>
       <td>容器 container</td>
-      <td>一個服務的執行實體,如上圖六個</td>
+      <td>一个服务的执行实体,如上图六个</td>
       </tr>
       <tr>
       <td>volume</td>
-      <td>Docker 管理的資料儲存區,容器刪掉也不會消失</td>
+      <td>Docker 管理的资料储存区,容器删掉也不会消失</td>
       </tr>
       <tr>
       <td><code>.env</code></td>
-      <td>你的設定檔(密碼、校名、埠號),<strong>含機密,不要上傳到任何地方</strong></td>
+      <td>你的设置档(密码、校名、埠号),<strong>含机密,不要上传到任何地方</strong></td>
       </tr>
       </tbody>
       </table></div>
       <div class="foot">
-        本頁由 <code>docs/deploy/README.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/deploy/README.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -289,7 +289,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

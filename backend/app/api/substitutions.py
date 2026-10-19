@@ -1,6 +1,6 @@
-"""調代課處理工作台:代課推薦、指派處置、調課(M4-2)。
+"""调代课处理工作台:代课推荐、指派处置、调课(M4-2)。
 
-處置是行政決定,一律限教學組長/教務主任。教師端不在這裡處理(只在通知端「確認收到」)。
+处置是行政决定,一律限教学组长/教务主任。教师端不在这里处理(只在通知端「确认收到」)。
 """
 
 from dataclasses import asdict
@@ -44,7 +44,7 @@ editor = require_roles(Role.scheduler, Role.director)
 def _get_affected(db: Session, affected_id: int) -> AffectedPeriod:
     ap = db.get(AffectedPeriod, affected_id)
     if ap is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到受影響節次")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到受影响节次")
     return ap
 
 
@@ -65,7 +65,7 @@ def _sub_out(sub: Substitution) -> SubstitutionOut:
 def get_recommendations(
     affected_id: int, db: Session = Depends(get_db), _: User = Depends(editor)
 ):
-    """這一節該找誰代:硬性過濾後排序,每位候選附理由。"""
+    """这一节该找谁代:硬性过滤后排序,每位候选附理由。"""
     affected = _get_affected(db, affected_id)
     rec = recommender.recommend(db, affected)
     return RecommendationOut(
@@ -90,7 +90,7 @@ def get_swap_options(
     db: Session = Depends(get_db),
     _: User = Depends(editor),
 ):
-    """調課:列出請假那週起 `weeks` 週內可對調的節次。未指定教師時只找也教這個班的老師。"""
+    """调课:列出请假那周起 `weeks` 周内可对调的节次。未指定教师时只找也教这个班的老师。"""
     affected = _get_affected(db, affected_id)
     return SwapOptionsOut.model_validate(
         asdict(swap_options.search(db, affected, teacher_id=teacher_id, weeks=weeks)))
@@ -103,7 +103,7 @@ def get_swap_slips(
     db: Session = Depends(get_db),
     _: User = Depends(editor),
 ):
-    """調課通知單(教師調課單 + 班級調課單)的列印資料。非調課的節次略過。"""
+    """调课通知单(教师调课单 + 班级调课单)的打印资料。非调课的节次略过。"""
     try:
         slips = swap_slips.build(db, semester_id, affected_period_ids)
     except SlipError as exc:
@@ -118,7 +118,7 @@ def get_substitute_slips(
     db: Session = Depends(get_db),
     _: User = Depends(editor),
 ):
-    """代課通知單(教師代課單 + 班級代課單)的列印資料。代課與併班以外的節次略過。"""
+    """代课通知单(教师代课单 + 班级代课单)的打印资料。代课与并班以外的节次略过。"""
     try:
         slips = sub_slips.build(db, semester_id, affected_period_ids)
     except SlipError as exc:
@@ -133,7 +133,7 @@ def assign_substitution(
     db: Session = Depends(get_db),
     user: User = Depends(editor),
 ):
-    """指派處置(代課/調課/併班/自習/不處理);指派即生效並通知處理教師。"""
+    """指派处置(代课/调课/并班/自习/不处理);指派即生效并通知处理教师。"""
     affected = _get_affected(db, affected_id)
     try:
         sub = sub_service.assign(
@@ -165,7 +165,7 @@ def assign_substitution(
 def clear_substitution(
     affected_id: int, db: Session = Depends(get_db), user: User = Depends(editor)
 ):
-    """撤回處置:退回待處理,已指派教師收到取消通知。"""
+    """撤回处置:退回待处理,已指派教师收到取消通知。"""
     affected = _get_affected(db, affected_id)
     try:
         sub_service.clear(db, affected, actor_name=user.username)
@@ -187,13 +187,13 @@ def assign_substitutions_batch(
     db: Session = Depends(get_db),
     user: User = Depends(editor),
 ):
-    """整批指派代課:這張假單(或其中一天)還沒處理的節次,全部派給同一位老師。
+    """整批指派代课:这张假单(或其中一天)还没处理的节次,全部派给同一位老师。
 
-    派不成的節次(代課老師那一節自己有課等)跳過並回報原因;已處理過的不動。
+    派不成的节次(代课老师那一节自己有课等)跳过并回报原因;已处理过的不动。
     """
     leave = db.get(LeaveRequest, leave_id)
     if leave is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到假單")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到假单")
     try:
         done, skipped = sub_service.assign_batch(
             db, leave,
@@ -206,14 +206,14 @@ def assign_substitutions_batch(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
     if done:
-        scope = body.date.isoformat() if body.date else "整張假單"
+        scope = body.date.isoformat() if body.date else "整张假单"
         handler = done[0].handler
         db.add(AuditLog(
             user_id=user.id, username=user.username, action="assign_substitution_batch",
             target_type="leave_request", target_id=leave.id,
             detail=(
-                f"{leave.teacher.name} {scope} → 代課({handler.name if handler else ''})"
-                f" {len(done)} 節" + (f",{len(skipped)} 節未派" if skipped else "")
+                f"{leave.teacher.name} {scope} → 代课({handler.name if handler else ''})"
+                f" {len(done)} 节" + (f",{len(skipped)} 节未派" if skipped else "")
             )[:500],
         ))
     db.commit()
@@ -232,7 +232,7 @@ def assign_substitutions_batch(
 
 @router.get("/substitution-funding-sources", response_model=list[str])
 def substitution_funding_sources(_: User = Depends(editor)):
-    """代課鐘點的計費方式常用選項(印在代課通知單上);畫面也允許自行輸入。"""
+    """代课课时的计费方式常用选项(印在代课通知单上);界面也允许自行输入。"""
     return list(FUNDING_SOURCES)
 
 

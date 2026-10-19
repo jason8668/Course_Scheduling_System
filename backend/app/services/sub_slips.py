@@ -1,20 +1,20 @@
-"""代課通知單(教師代課單、班級代課單)的資料組裝(v1.2.5)。
+"""代课通知单(教师代课单、班级代课单)的资料组装(v1.2.5)。
 
-版面照使用學校現行的紙本:一張週課表,只在「有代課的格子」寫上
-「日期 / 科目 / 班級[代]」(教師單)或「日期 / 科目 / 代課老師[代]」(班級單)。
-表頭寫代課教師(或代課班級)、請假教師、請假起訖、假別與計費方式。
+版面照使用学校现行的纸本:一张周课表,只在「有代课的格子」写上
+「日期 / 科目 / 班级[代]」(教师单)或「日期 / 科目 / 代课老师[代]」(班级单)。
+表头写代课教师(或代课班级)、请假教师、请假起讫、假别与计费方式。
 
-**一筆代課 = 一個異動格**(不像調課要動兩格):請假那節改由代課老師上。
-併班比照辦理,標記寫「[併]」。
+**一笔代课 = 一个异动格**(不像调课要动两格):请假那节改由代课老师上。
+并班比照办理,标记写「[并]」。
 
-- 教師代課單:同一張假單裡,每位代課老師一張。
-- 班級代課單:同一張假單裡,每個班一張。
-- 跨週的假單一週一頁(共用 `slip_layout`)。
+- 教师代课单:同一张假单里,每位代课老师一张。
+- 班级代课单:同一张假单里,每个班一张。
+- 跨周的假单一周一页(共用 `slip_layout`)。
 
-表頭的請假資訊逐張假單不同,故分組時把假單一起當 key;跨假單批次列印時
-會各自成張,不會把兩位請假教師混在同一張紙上。
+表头的请假信息逐张假单不同,故分组时把假单一起当 key;跨假单批次打印时
+会各自成张,不会把两位请假教师混在同一张纸上。
 
-本模組只讀,不寫資料庫。
+本模组只读,不写资料库。
 """
 
 from sqlalchemy import select
@@ -30,23 +30,23 @@ from app.models.leave import (
 from app.models.substitution import Substitution, SubstitutionType
 from app.services.slip_layout import Move, Slip, SlipError, Slips, Tables, assemble, school_title
 
-# 代課單印得出來的處置:找人代(代課)與併入他班(併班),兩者都有「接手的老師」
+# 代课单印得出来的处置:找人代(代课)与并入他班(并班),两者都有「接手的老师」
 _PRINTABLE = (SubstitutionType.substitute.value, SubstitutionType.merge.value)
-_MARK = {SubstitutionType.substitute.value: "[代]", SubstitutionType.merge.value: "[併]"}
+_MARK = {SubstitutionType.substitute.value: "[代]", SubstitutionType.merge.value: "[并]"}
 
 
 def _teacher_actor(m: Move) -> str:
-    """教師代課單的第三行:去哪一班代課。"""
+    """教师代课单的第三行:去哪一班代课。"""
     return f"{m.class_names}{m.mark}"
 
 
 def _class_actor(m: Move) -> str:
-    """班級代課單的第三行:這一節改由誰上。"""
+    """班级代课单的第三行:这一节改由谁上。"""
     return f"{m.teacher_name}{m.mark}"
 
 
 def _header(slip: Slip, leave: LeaveRequest, funding: str) -> Slip:
-    """表頭改寫成紙本的樣子:日期用請假起訖(不是只有被代的那幾天)。"""
+    """表头改写成纸本的样子:日期用请假起讫(不是只有被代的那几天)。"""
     slip.absent_teacher_name = leave.teacher.name
     slip.leave_type_name = LEAVE_TYPE_CN.get(leave.leave_type, leave.leave_type)
     slip.funding_label = funding
@@ -56,9 +56,9 @@ def _header(slip: Slip, leave: LeaveRequest, funding: str) -> Slip:
 
 
 def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
-    """把指定的代課/併班組成通知單:先每位代課老師一張,再每個班一張。
+    """把指定的代课/并班组成通知单:先每位代课老师一张,再每个班一张。
 
-    非代課/併班、沒有指定教師、已撤回或已銷假的節次略過;一筆都沒有時拋 `SlipError`。
+    非代课/并班、没有指定教师、已撤回或已销假的节次略过;一笔都没有时抛 `SlipError`。
     """
     rows = db.execute(
         select(AffectedPeriod, Substitution)
@@ -75,16 +75,16 @@ def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
         .order_by(AffectedPeriod.date, AffectedPeriod.period_no)
     ).all()
     if not rows:
-        raise SlipError("選取的節次中沒有已指派的代課")
+        raise SlipError("选取的节次中没有已指派的代课")
 
     tables = Tables(db)
     leaves: dict[int, LeaveRequest] = {}
-    fundings: dict[int, str] = {}                     # 假單 → 計費方式(取第一個有填的)
+    fundings: dict[int, str] = {}                     # 假单 → 计费方式(取第一个有填的)
     by_teacher: dict[tuple[int, int], list[Move]] = {}
     by_class: dict[tuple[int, str], list[Move]] = {}
     for ap, sub in rows:
         handler = sub.handler
-        if handler is None:                           # 指派後教師被刪:略過,不讓整批印不出來
+        if handler is None:                           # 指派后教师被删:略过,不让整批印不出来
             continue
         leave = ap.leave_request
         leaves.setdefault(leave.id, leave)
@@ -99,7 +99,7 @@ def build(db: Session, semester_id: int, affected_ids: list[int]) -> Slips:
         by_teacher.setdefault((leave.id, handler.id), []).append(move)
         by_class.setdefault((leave.id, ap.class_names), []).append(move)
     if not by_teacher:
-        raise SlipError("選取的節次中沒有已指派的代課")
+        raise SlipError("选取的节次中没有已指派的代课")
 
     result = Slips(title=school_title(db), kind="substitute")
     for (leave_id, _), ms in by_teacher.items():

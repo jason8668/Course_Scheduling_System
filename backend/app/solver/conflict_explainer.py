@@ -1,30 +1,30 @@
-"""無解衝突定位(architecture.md §3.4)。
+"""无解冲突定位(architecture.md §3.4)。
 
-市售排課系統無解時只回一句「排不出來」,教學組長只能靠經驗猜。本模組回答的是
-「**是哪幾件事湊在一起才排不出來,鬆開哪一個就好了**」,並附上具體數字。
+市售排课系统无解时只回一句「排不出来」,教学组长只能靠经验猜。本模组回答的是
+「**是哪几件事凑在一起才排不出来,松开哪一个就好了**」,并附上具体数字。
 
-兩條路徑,先廉價後昂貴:
+两条路径,先廉价后昂贵:
 
-1. **pre-flight**:必要條件不成立(某位教師配課 30 節但只有 21 格可排)。
-   這已經是證明,而且數字現成,不必啟動 solver。
-2. **逐項驗證**:必要條件全數通過卻仍然無解——代表是幾條約束**交互作用**的結果,
-   單看任何一條都很合理。此時把每個「教學組長轉得動的旋鈕」逐一關掉重解,
-   看哪一個關掉之後就排得出來。
+1. **pre-flight**:必要条件不成立(某位教师配课 30 节但只有 21 格可排)。
+   这已经是证明,而且数字现成,不必启动 solver。
+2. **逐项验证**:必要条件全数通过却仍然无解——代表是几条约束**交互作用**的结果,
+   单看任何一条都很合理。此时把每个「教学组长转得动的旋钮」逐一关掉重解,
+   看哪一个关掉之后就排得出来。
 
-第 2 條路徑正是差異化所在。例:兩位音樂老師各教 15 節、各自都有充裕的可排時段,
-音樂教室一週也有 35 格——每一項單獨看都寬鬆。但兩人都不排週五,音樂教室週五就
-沒人能用,實際只有 28 格要塞 30 節課。這種「數字都對、湊起來就是不行」的情形,
-任何逐項檢查都抓不到。
+第 2 条路径正是差异化所在。例:两位音乐老师各教 15 节、各自都有充裕的可排时段,
+音乐教室一周也有 35 格——每一项单独看都宽松。但两人都不排周五,音乐教室周五就
+没人能用,实际只有 28 格要塞 30 节课。这种「数字都对、凑起来就是不行」的情形,
+任何逐项检查都抓不到。
 
-**為什麼不用 CP-SAT 的 assumption / unsat core?**
-原本的設計(architecture.md §3.4)是每類硬約束掛 assumption literal,無解時取
-unsat core。實測不可行:掛上 enforcement literal 之後,presolve 認不出「30 節課
-塞進 28 格」的鴿籠結構,同一個問題從 **0.8 秒證完變成 60 秒證不完**。
-改用「關掉一組約束 → 重新求解」的刪除法後,每次求解都是完整 presolve 過的乾淨模型,
-上例整套定位約 3 秒。附帶的好處是每一條結論都被一次真實的求解驗證過:
-報告說「放寬音樂師1 的不可排時段就排得出來」,是因為真的排出來了。
+**为什么不用 CP-SAT 的 assumption / unsat core?**
+原本的设计(architecture.md §3.4)是每类硬约束挂 assumption literal,无解时取
+unsat core。实测不可行:挂上 enforcement literal 之后,presolve 认不出「30 节课
+塞进 28 格」的鸽笼结构,同一个问题从 **0.8 秒证完变成 60 秒证不完**。
+改用「关掉一组约束 → 重新求解」的删除法后,每次求解都是完整 presolve 过的干净模型,
+上例整套定位约 3 秒。附带的好处是每一条结论都被一次真实的求解验证过:
+报告说「放宽音乐师1 的不可排时段就排得出来」,是因为真的排出来了。
 
-本模組屬於 `app.solver`,不得 import `app.models` / SQLAlchemy(見 problem.py)。
+本模组属于 `app.solver`,不得 import `app.models` / SQLAlchemy(见 problem.py)。
 """
 
 import time
@@ -50,25 +50,25 @@ from app.solver.problem import (
 )
 from app.solver.week_parity import fmt_periods
 
-# 衝突定位的預設時間預算。求解本身可能跑十分鐘,但「為什麼排不出來」要儘快回答;
-# 拖太久的話,教學組長會直接關掉視窗。
+# 冲突定位的默认时间预算。求解本身可能跑十分钟,但「为什么排不出来」要尽快回答;
+# 拖太久的话,教学组长会直接关掉视窗。
 DEFAULT_MAX_SECONDS = 60.0
-# 單次試解的上限。試解要嘛很快找到解(該項是成因),要嘛很快證明仍然無解;
-# 卡住的那種對定位沒有幫助,不值得等。
+# 单次试解的上限。试解要嘛很快找到解(该项是成因),要嘛很快证明仍然无解;
+# 卡住的那种对定位没有帮助,不值得等。
 STEP_SECONDS = 15.0
 
 
 @dataclass(frozen=True, slots=True)
 class Cause:
-    """一條「造成無解」的原因。message 說發生什麼事,suggestion 說可以怎麼辦。"""
+    """一条「造成无解」的原因。message 说发生什么事,suggestion 说可以怎么办。"""
 
-    code: str  # H3 / H4 / H9 / H10 / structural,或 pre-flight 的檢查代碼
+    code: str  # H3 / H4 / H9 / H10 / structural,或 pre-flight 的检查代码
     scope_type: str  # class / teacher / room / assignment / semester
     scope_id: int
     scope_name: str
     message: str
     suggestion: str
-    relaxable: bool = False  # 可在「部分排課」中勾選放寬
+    relaxable: bool = False  # 可在「部分排课」中勾选放宽
     detail: dict = field(default_factory=dict)
 
 
@@ -77,10 +77,10 @@ class ConflictReport:
     status: str  # infeasible / feasible / unknown
     source: str  # preflight / analysis / none
     causes: tuple[Cause, ...] = ()
-    # each:放寬任一項即可解決。joint:必須一起處理。structural:旋鈕轉到底仍無解。
+    # each:放宽任一项即可解决。joint:必须一起处理。structural:旋钮转到底仍无解。
     mode: str = ""
     wall_time: float = 0.0
-    complete: bool = True  # 是否把所有可調項目都試過(時間用完時為 False)
+    complete: bool = True  # 是否把所有可调项目都试过(时间用完时为 False)
 
     @property
     def explained(self) -> bool:
@@ -91,24 +91,24 @@ class ConflictReport:
         if not self.causes:
             return ""
         if self.source == "preflight":
-            return "資料本身就排不出來,以下每一項都必須修正"
+            return "资料本身就排不出来,以下每一项都必须修正"
         if self.mode == "each":
-            # 每一項都經過一次真實求解驗證(關掉它就排出來了),即使清單可能不完整
-            return f"以下 {len(self.causes)} 項各自都是瓶頸,放寬其中任何一項即可排出課表"
+            # 每一项都经过一次真实求解验证(关掉它就排出来了),即使清单可能不完整
+            return f"以下 {len(self.causes)} 项各自都是瓶颈,放宽其中任何一项即可排出课表"
         if self.mode == "joint":
-            return "以下項目必須一起處理,只鬆開其中一項仍然排不出來"
-        # structural:只有「全部放寬後仍證明無解」時才敢把話說死;
-        # 有任何一次試解在時限內沒判定出來,就不能宣稱「即使放寬所有項目仍然無解」。
+            return "以下项目必须一起处理,只松开其中一项仍然排不出来"
+        # structural:只有「全部放宽后仍证明无解」时才敢把话说死;
+        # 有任何一次试解在时限内没判定出来,就不能宣称「即使放宽所有项目仍然无解」。
         if self.complete:
-            return "即使放寬所有可調整的項目仍然無解,問題出在配課總量"
+            return "即使放宽所有可调整的项目仍然无解,问题出在配课总量"
         return (
-            "放寬所有可調整的項目後仍未排出課表,但部分試解在時限內未能判定;"
-            "最可能是配課總量的問題"
+            "放宽所有可调整的项目后仍未排出课表,但部分试解在时限内未能判定;"
+            "最可能是配课总量的问题"
         )
 
     @property
     def relaxable_codes(self) -> tuple[str, ...]:
-        """可放寬的約束代碼,依原因出現順序。UI 用來預先勾選「部分排課」選項。"""
+        """可放宽的约束代码,依原因出现顺序。UI 用来预先勾选「部分排课」选项。"""
         seen: list[str] = []
         for c in self.causes:
             if c.relaxable and c.code not in seen:
@@ -117,10 +117,10 @@ class ConflictReport:
 
 
 class Cancelled(Exception):
-    """使用者在定位期間按了取消(M6-5)。
+    """用户在定位期间按了取消(M6-5)。
 
-    定位最長會跑一分鐘。先前這段完全不看取消旗標,使用者按了「取消」只能乾等,
-    最後還拿到一份 failed 報告——他明明已經說不要了。
+    定位最长会跑一分钟。先前这段完全不看取消旗标,用户按了「取消」只能干等,
+    最后还拿到一份 failed 报告——他明明已经说不要了。
     """
 
 
@@ -131,10 +131,10 @@ def explain(
     max_seconds: float = DEFAULT_MAX_SECONDS,
     should_stop: Callable[[], bool] | None = None,
 ) -> ConflictReport:
-    """為什麼排不出來。
+    """为什么排不出来。
 
-    `should_stop` 回 True 時擲出 `Cancelled`:定位是「反覆試解」的迴圈,能中斷的
-    只有兩次試解之間(CP-SAT 單次求解上限為 STEP_SECONDS,故最慢數秒內就會回應)。
+    `should_stop` 回 True 时掷出 `Cancelled`:定位是「反复试解」的回圈,能中断的
+    只有两次试解之间(CP-SAT 单次求解上限为 STEP_SECONDS,故最慢数秒内就会回应)。
     """
     config = config or SolverConfig()
 
@@ -178,11 +178,11 @@ def _raise_if_cancelled(should_stop: Callable[[], bool] | None) -> None:
 
 # ── 定位 ───────────────────────────────────────────────────
 class _Prober:
-    """反覆試解,並記住「有沒有哪一次沒能得到確定的答案」。
+    """反复试解,并记住「有没有哪一次没能得到确定的答案」。
 
-    `check_feasibility` 回 unknown 時,我們只能保守地當作「沒能證明可行」——
-    但那**不等於**已證明不可行。若不追蹤這件事,報告會拿一個從未被證明的結論
-    (「即使放寬所有項目仍然無解」)講得斬釘截鐵。`certain` 就是這份誠實。
+    `check_feasibility` 回 unknown 时,我们只能保守地当作「没能证明可行」——
+    但那**不等于**已证明不可行。若不追踪这件事,报告会拿一个从未被证明的结论
+    (「即使放宽所有项目仍然无解」)讲得斩钉截铁。`certain` 就是这份诚实。
     """
 
     def __init__(
@@ -196,14 +196,14 @@ class _Prober:
         self._config = config
         self._deadline = deadline
         self._should_stop = should_stop
-        self.certain = True  # 每一次試解都在時限內得到確定答案
+        self.certain = True  # 每一次试解都在时限内得到确定答案
 
     @property
     def out_of_time(self) -> bool:
         return time.monotonic() >= self._deadline
 
     def feasible_without(self, disabled: set[ConstraintTag]) -> bool:
-        # 每次試解前檢查取消:定位是「反覆試解」的迴圈,只有在兩次試解之間能中斷
+        # 每次试解前检查取消:定位是「反复试解」的回圈,只有在两次试解之间能中断
         _raise_if_cancelled(self._should_stop)
         if self.out_of_time:
             self.certain = False
@@ -224,7 +224,7 @@ def _locate(
     deadline: float,
     should_stop: Callable[[], bool] | None = None,
 ) -> tuple[list[ConstraintTag], str, bool]:
-    """逐一關掉每個旋鈕重解,看誰是瓶頸。"""
+    """逐一关掉每个旋钮重解,看谁是瓶颈。"""
     probe = _Prober(problem, config, deadline, should_stop)
 
     critical: list[ConstraintTag] = []
@@ -233,21 +233,21 @@ def _locate(
             probe.certain = False
             break
         if probe.feasible_without({tag}):
-            critical.append(tag)  # 只鬆開這一項就排得出來 → 它就是瓶頸
+            critical.append(tag)  # 只松开这一项就排得出来 → 它就是瓶颈
 
     if critical:
-        # 每一個 critical 都被一次真實求解驗證過,結論本身可信;
-        # certain 只影響「清單是否完整」。
+        # 每一个 critical 都被一次真实求解验证过,结论本身可信;
+        # certain 只影响「清单是否完整」。
         return critical, "each", probe.certain
 
-    # 沒有單一項目能解決:要嘛需要同時鬆開多項,要嘛連全部鬆開都不夠
+    # 没有单一项目能解决:要嘛需要同时松开多项,要嘛连全部松开都不够
     if not knobs or not probe.feasible_without(set(knobs)):
         return [], "structural", probe.certain
     return _joint(probe, knobs), "joint", probe.certain
 
 
 def _joint(probe: _Prober, knobs: list[ConstraintTag]) -> list[ConstraintTag]:
-    """需要同時鬆開多項時,找一組夠小的組合:先累加到可行,再逐一試著拿掉。"""
+    """需要同时松开多项时,找一组够小的组合:先累加到可行,再逐一试著拿掉。"""
     disabled: set[ConstraintTag] = set()
     for tag in knobs:
         disabled.add(tag)
@@ -259,18 +259,18 @@ def _joint(probe: _Prober, knobs: list[ConstraintTag]) -> list[ConstraintTag]:
 
     for tag in list(disabled):
         if probe.out_of_time:
-            probe.certain = False  # 剩下的沒試過 → 這組未必是最小的
+            probe.certain = False  # 剩下的没试过 → 这组未必是最小的
             break
         if probe.feasible_without(disabled - {tag}):
-            disabled.discard(tag)  # 少了它照樣可行 → 它不是必要的
+            disabled.discard(tag)  # 少了它照样可行 → 它不是必要的
     return [t for t in knobs if t in disabled]
 
 
 def _knobs(problem: Problem, config: SolverConfig) -> list[ConstraintTag]:
-    """教學組長轉得動的旋鈕,依「有多緊」由緊到鬆排序。
+    """教学组长转得动的旋钮,依「有多紧」由紧到松排序。
 
-    H1(班級同時段一門課)與 H2(教師同時段一門課)不在此列:它們沒有旋鈕可轉,
-    而且真正的成因(某位教師配課超過可排格數)pre-flight 已經算得出來。
+    H1(班级同时段一门课)与 H2(教师同时段一门课)不在此列:它们没有旋钮可转,
+    而且真正的成因(某位教师配课超过可排格数)pre-flight 已经算得出来。
     """
     scored: list[tuple[float, ConstraintTag]] = []
 
@@ -284,7 +284,7 @@ def _knobs(problem: Problem, config: SolverConfig) -> list[ConstraintTag]:
         if not teacher.unavailable or not problem.assignments_of_teacher(teacher.id):
             continue
         if _blocked_slots(problem, teacher) == 0:
-            continue  # 不可排時段全落在午休之類的非上課格位,擋不住任何課
+            continue  # 不可排时段全落在午休之类的非上课格位,挡不住任何课
         assigned, available = _teacher_numbers(problem, teacher)
         scored.append((assigned / max(available, 1), ConstraintTag("H4", "teacher", teacher.id)))
 
@@ -304,19 +304,19 @@ def _knobs(problem: Problem, config: SolverConfig) -> list[ConstraintTag]:
     return [tag for _score, tag in scored]
 
 
-# ── pre-flight 錯誤 → 原因 ─────────────────────────────────
+# ── pre-flight 错误 → 原因 ─────────────────────────────────
 _PREFLIGHT_SUGGESTIONS = {
-    "teacher_overload": "減少該教師的配課節數,或放寬其不可排時段",
-    "class_overload": "減少該班配課節數,或在節次表增加一般課節次",
-    "room_supply": "增設同類型場地,或把部分課移到其他場地",
-    "room_type_supply": "增設該類型的場地,或減少需要此類型場地的課",
-    "block_infeasible": "縮短連堂長度,或調整節次表讓連續的一般課更長",
-    "block_exceeds_periods": "調整連堂設定,使連堂節數不超過每週節數",
-    "group_shape_mismatch": "讓跑班群組內各門課的每週節數與連堂結構一致",
-    "group_teacher_duplicate": "同一個跑班群組內,每位教師只留一筆配課",
-    "alternate_incomplete": "單雙週組補齊單週、雙週各一筆配課",
-    "no_period_table": "為該班級指派節次表",
-    "assignment_without_class": "為該配課指定班級或跑班群組",
+    "teacher_overload": "减少该教师的配课节数,或放宽其不可排时段",
+    "class_overload": "减少该班配课节数,或在节次表增加一般课节次",
+    "room_supply": "增设同类型场地,或把部分课移到其他场地",
+    "room_type_supply": "增设该类型的场地,或减少需要此类型场地的课",
+    "block_infeasible": "缩短连堂长度,或调整节次表让连续的一般课更长",
+    "block_exceeds_periods": "调整连堂设置,使连堂节数不超过每周节数",
+    "group_shape_mismatch": "让跑班群组内各门课的每周节数与连堂结构一致",
+    "group_teacher_duplicate": "同一个跑班群组内,每位教师只留一笔配课",
+    "alternate_incomplete": "单双周组补齐单周、双周各一笔配课",
+    "no_period_table": "为该班级指派节次表",
+    "assignment_without_class": "为该配课指定班级或跑班群组",
 }
 
 
@@ -327,7 +327,7 @@ def _from_issue(problem: Problem, issue: preflight.Issue) -> Cause:
         scope_id=issue.subject_id,
         scope_name=_scope_name(problem, issue.subject_type, issue.subject_id),
         message=issue.message,
-        suggestion=_PREFLIGHT_SUGGESTIONS.get(issue.code, "請修正上述資料"),
+        suggestion=_PREFLIGHT_SUGGESTIONS.get(issue.code, "请修正上述资料"),
         detail=dict(issue.detail),
     )
 
@@ -346,7 +346,7 @@ def _scope_name(problem: Problem, scope_type: str, scope_id: int) -> str:
     return problem.semester_label
 
 
-# ── 旋鈕 → 人話 ────────────────────────────────────────────
+# ── 旋钮 → 人话 ────────────────────────────────────────────
 def _describe(problem: Problem, tag: ConstraintTag, config: SolverConfig) -> Cause:
     builders = {
         "H3": _room_cause,
@@ -362,25 +362,25 @@ def _room_cause(problem: Problem, tag: ConstraintTag, _config: SolverConfig) -> 
     room = problem.rooms[tag.scope_id]
     demand, supply, usable, pool = _room_numbers(problem, room)
 
-    # 需求是「用到這間教室的那些課」的總和,供給就必須是「它們可用的那些教室」的總和。
-    # 兩者的範圍不一致(池需求 vs 單間供給)會憑空放大缺口,數字錯一次信任就沒了。
+    # 需求是「用到这间教室的那些课」的总和,供给就必须是「它们可用的那些教室」的总和。
+    # 两者的范围不一致(池需求 vs 单间供给)会凭空放大缺口,数字错一次信任就没了。
     if len(pool) > 1:
         names = "、".join(r.name for r in pool)
-        where = f"這 {len(pool)} 間場地({names})"
+        where = f"这 {len(pool)} 间场地({names})"
     else:
-        where = f"場地「{room.name}」"
+        where = f"场地「{room.name}」"
 
     if usable < supply:
         message = (
-            f"{where}需求 {fmt_periods(demand)} 節,但扣除相關教師的不可排時段後"
-            f"只剩 {usable} 節可用(合計一週共 {supply} 節)"
+            f"{where}需求 {fmt_periods(demand)} 节,但扣除相关教师的不可排时段后"
+            f"只剩 {usable} 节可用(合计一周共 {supply} 节)"
         )
     else:
-        message = f"{where}需求 {fmt_periods(demand)} 節,可用 {usable} 節,同時段每間只能容納一班"
+        message = f"{where}需求 {fmt_periods(demand)} 节,可用 {usable} 节,同时段每间只能容纳一班"
 
     return Cause(
         "H3", "room", room.id, room.name, message,
-        "增設同類型場地、把部分課移到其他場地,或放寬使用該場地之教師的不可排時段",
+        "增设同类型场地、把部分课移到其他场地,或放宽使用该场地之教师的不可排时段",
         _relaxable("H3"),
         {"demand": demand, "supply": supply, "usable": usable, "rooms": len(pool)},
     )
@@ -392,9 +392,9 @@ def _unavailable_cause(problem: Problem, tag: ConstraintTag, _config: SolverConf
     blocked = _blocked_slots(problem, teacher)
     return Cause(
         "H4", "teacher", teacher.id, teacher.name,
-        f"教師{teacher.name} 有 {blocked} 格不可排時段,扣除後只剩 {available} 格"
-        f"可安排 {fmt_periods(assigned)} 節課,擋住了排課",
-        f"放寬 {teacher.name} 的不可排時段(或在部分排課中勾選放寬此項)",
+        f"教师{teacher.name} 有 {blocked} 格不可排时段,扣除后只剩 {available} 格"
+        f"可安排 {fmt_periods(assigned)} 节课,挡住了排课",
+        f"放宽 {teacher.name} 的不可排时段(或在部分排课中勾选放宽此项)",
         _relaxable("H4"),
         {"assigned": assigned, "available": available, "unavailable": blocked},
     )
@@ -411,11 +411,11 @@ def _locked_cause(problem: Problem, tag: ConstraintTag, _config: SolverConfig) -
     )
     tail = f"(共 {len(locked)} 格)" if len(locked) > 3 else ""
     return Cause(
-        # 全校性的旋鈕沒有「某位教師」「某間場地」可指,scope_name 用旋鈕本身的名字,
-        # 學期名稱對讀報告的人毫無資訊。
+        # 全校性的旋钮没有「某位教师」「某间场地」可指,scope_name 用旋钮本身的名字,
+        # 学期名称对读报告的人毫无信息。
         "H9", "semester", tag.scope_id, RELAXABLE_NAMES["H9"],
-        f"來源草稿中被鎖定的格位與其他限制衝突:{sample}{tail}",
-        "解除這些格位的鎖定,或改動與它們衝突的其他課",
+        f"来源草稿中被锁定的格位与其他限制冲突:{sample}{tail}",
+        "解除这些格位的锁定,或改动与它们冲突的其他课",
         _relaxable("H9"),
         {"locked": len(locked)},
     )
@@ -426,33 +426,33 @@ def _daily_cap_cause(problem: Problem, tag: ConstraintTag, config: SolverConfig)
     over = _over_cap_pairs(problem, config)
     if over:
         cls, subject_name, singles, ceiling, days = over[0]
-        extra = f",另有 {len(over) - 1} 組同樣超量" if len(over) > 1 else ""
+        extra = f",另有 {len(over) - 1} 组同样超量" if len(over) > 1 else ""
         message = (
-            f"班級 {cls.name}「{subject_name}」有 {singles} 節單節課,"
-            f"但每日上限 {cap} 節 × {days} 天最多只能排 {ceiling} 節{extra}"
+            f"班级 {cls.name}「{subject_name}」有 {singles} 节单节课,"
+            f"但每日上限 {cap} 节 × {days} 天最多只能排 {ceiling} 节{extra}"
         )
         detail = {"cap": cap, "singles": singles, "ceiling": ceiling, "over_pairs": len(over)}
     else:
         message = (
-            f"「同班同科目每日至多 {cap} 節」的限制與其他條件一起造成無解"
-            f"(單看任何一個班級都沒有超量)"
+            f"「同班同科目每日至多 {cap} 节」的限制与其他条件一起造成无解"
+            f"(单看任何一个班级都没有超量)"
         )
         detail = {"cap": cap, "over_pairs": 0}
 
     return Cause(
         "H10", "semester", tag.scope_id, RELAXABLE_NAMES["H10"], message,
-        "提高「同班同科目每日節數上限」,或把部分節數改為連堂"
-        "(連堂是一次上完的整塊,不計入每日上限)",
+        "提高「同班同科目每日节数上限」,或把部分节数改为连堂"
+        "(连堂是一次上完的整块,不计入每日上限)",
         _relaxable("H10"),
         detail,
     )
 
 
 def _structural_causes(problem: Problem) -> tuple[Cause, ...]:
-    """所有旋鈕都轉到底仍然無解:問題出在配課總量與可排格數的硬碰硬。
+    """所有旋钮都转到底仍然无解:问题出在配课总量与可排格数的硬碰硬。
 
-    列出最吃緊的班級與教師——pre-flight 沒報錯只代表沒有單一項目超量,
-    但湊在一起就是塞不下。
+    列出最吃紧的班级与教师——pre-flight 没报错只代表没有单一项目超量,
+    但凑在一起就是塞不下。
     """
     rows: list[tuple[float, Cause]] = []
     for cls in problem.classes.values():
@@ -460,8 +460,8 @@ def _structural_causes(problem: Problem) -> tuple[Cause, ...]:
         if capacity:
             rows.append((used / capacity, Cause(
                 "structural", "class", cls.id, cls.name,
-                f"班級 {cls.name} 每週配課 {used} 節,可排節次 {capacity} 格",
-                "減少該班配課節數,或在節次表增加一般課節次",
+                f"班级 {cls.name} 每周配课 {used} 节,可排节次 {capacity} 格",
+                "减少该班配课节数,或在节次表增加一般课节次",
                 detail={"assigned": used, "capacity": capacity},
             )))
     for teacher in problem.teachers.values():
@@ -469,8 +469,8 @@ def _structural_causes(problem: Problem) -> tuple[Cause, ...]:
         if assigned and available:
             rows.append((assigned / available, Cause(
                 "structural", "teacher", teacher.id, teacher.name,
-                f"教師{teacher.name} 配課 {fmt_periods(assigned)} 節,可排時段 {available} 格",
-                f"減少 {teacher.name} 的配課,或改由其他教師分擔",
+                f"教师{teacher.name} 配课 {fmt_periods(assigned)} 节,可排时段 {available} 格",
+                f"减少 {teacher.name} 的配课,或改由其他教师分担",
                 detail={"assigned": assigned, "available": available},
             )))
     rows.sort(key=lambda r: -r[0])
@@ -481,7 +481,7 @@ def _relaxable(code: str) -> bool:
     return code in RELAXABLE_CODES
 
 
-# ── 數字 ───────────────────────────────────────────────────
+# ── 数字 ───────────────────────────────────────────────────
 def _class_numbers(problem: Problem, cls: ClassSpec) -> tuple[int, int]:
     used = sum(
         problem.unit_slot_consumption(u.id)
@@ -498,7 +498,7 @@ def _teacher_numbers(problem: Problem, teacher: TeacherSpec) -> tuple[float, int
 
 
 def _blocked_slots(problem: Problem, teacher: TeacherSpec) -> int:
-    """不可排時段中,真正落在一般課節次上的格數(設在午休上的規則不擋住任何課)。"""
+    """不可排时段中,真正落在一般课节次上的格数(设在午休上的规则不挡住任何课)。"""
     cells = {s.key for table in problem.tables_of_teacher(teacher.id) for s in table.slots}
     return len(cells & teacher.unavailable)
 
@@ -507,7 +507,7 @@ def _room_users(problem: Problem, room: RoomSpec) -> list[AssignmentSpec]:
     bound = [a for a in problem.assignments if a.room_id == room.id]
     if bound:
         return bound
-    # 未綁定場地、由引擎在候選中挑選的配課
+    # 未绑定场地、由引擎在候选中挑选的配课
     return [
         a for a in problem.assignments
         if a.room_id is None
@@ -517,10 +517,10 @@ def _room_users(problem: Problem, room: RoomSpec) -> list[AssignmentSpec]:
 
 
 def _room_pool(problem: Problem, room: RoomSpec) -> tuple[RoomSpec, ...]:
-    """與 room 一起承擔同一批課的場地。
+    """与 room 一起承担同一批课的场地。
 
-    已綁定場地的課只能用那一間;未綁定、只指定類型的課則可用整個候選池,
-    供給必須以整池計算。
+    已绑定场地的课只能用那一间;未绑定、只指定类型的课则可用整个候选池,
+    供给必须以整池计算。
     """
     if any(a.room_id == room.id for a in problem.assignments):
         return (room,)
@@ -536,7 +536,7 @@ def _room_pool(problem: Problem, room: RoomSpec) -> tuple[RoomSpec, ...]:
 def _room_numbers(
     problem: Problem, room: RoomSpec
 ) -> tuple[float, int, int, tuple[RoomSpec, ...]]:
-    """(需求節數, 候選池一週合計節次數, 扣掉相關教師不可排時段後可用的節次數, 候選池)。"""
+    """(需求节数, 候选池一周合计节次数, 扣掉相关教师不可排时段后可用的节次数, 候选池)。"""
     users = _room_users(problem, room)
     demand = sum(a.weekly_load for a in users)
     pool = _room_pool(problem, room)
@@ -573,7 +573,7 @@ def _subject_ids_of(problem: Problem, cls: ClassSpec) -> set[int]:
 
 
 def _subject_singles(problem: Problem, cls: ClassSpec, subject_id: int) -> tuple[int, str]:
-    """該班該科目的「單節」總數(連堂不計入每日上限)與科目名稱。"""
+    """该班该科目的「单节」总数(连堂不计入每日上限)与科目名称。"""
     singles = 0
     name = str(subject_id)
     for a in problem.assignments:
@@ -594,7 +594,7 @@ def _cap_ratio(problem: Problem, cls: ClassSpec, subject_id: int, config: Solver
 def _over_cap_pairs(
     problem: Problem, config: SolverConfig
 ) -> list[tuple[ClassSpec, str, int, int, int]]:
-    """(班級, 科目, 單節數, 每週上限, 天數),依超量程度排序。"""
+    """(班级, 科目, 单节数, 每周上限, 天数),依超量程度排序。"""
     out = []
     for cls in problem.classes.values():
         table = problem.tables.get(cls.period_table_id)
@@ -609,8 +609,8 @@ def _over_cap_pairs(
 
 
 def _cell_label(problem: Problem, a: AssignmentSpec, weekday: int, period_no: int) -> str:
-    """「週二第三節」——一律用節次表裡的名稱,不用內部的節次編號。"""
-    names = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"]
+    """「周二第三节」——一律用节次表里的名称,不用内部的节次编号。"""
+    names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     day = names[weekday - 1] if 1 <= weekday <= 7 else f"星期{weekday}"
     table = problem.table_of(a)
     slot = table.slot(weekday, period_no) if table else None

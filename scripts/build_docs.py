@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""把 docs/ 下的 Markdown 文件轉成可直接用瀏覽器開的 HTML。
+"""把 docs/ 下的 Markdown 文件转成可直接用浏览器开的 HTML。
 
-用意:部署手冊的讀者常常是在校內主機或機房、沒有網路的情況下讀文件。
-.md 在 GitHub 網頁上看是排版好的,但把資料夾複製到本機後就只是一坨純文字;
-產出的 .html 則是雙擊就開、離線可讀、附側邊目錄與深/淺色切換。
+用意:部署手册的读者常常是在校内主机或机房、没有网路的情况下读文件。
+.md 在 GitHub 网页上看是排版好的,但把资料夹复制到本机后就只是一坨纯文字;
+产出的 .html 则是双击就开、离线可读、附侧边目录与深/浅色切换。
 
-**產出的 .html 一律不要手動編輯**——改 .md 之後重跑本腳本即可。
+**产出的 .html 一律不要手动编辑**——改 .md 之后重跑本脚本即可。
 
 用法:
     pip install markdown
-    python scripts/build_docs.py            # 產生 / 更新全部 HTML
-    python scripts/build_docs.py --check    # 只檢查是否與 .md 同步(CI 用,不寫檔)
+    python scripts/build_docs.py            # 产生 / 更新全部 HTML
+    python scripts/build_docs.py --check    # 只检查是否与 .md 同步(CI 用,不写档)
 
-新增一份文件時,把它加進下方 GROUPS 即可。
+新增一份文件时,把它加进下方 GROUPS 即可。
 """
 
 from __future__ import annotations
@@ -27,36 +27,36 @@ from pathlib import Path
 try:
     import markdown
 except ModuleNotFoundError:
-    sys.exit("需要 markdown 套件,請先執行:pip install markdown")
+    sys.exit("需要 markdown 套件,请先执行:pip install markdown")
 
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 GITHUB_BLOB = "https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/"
 
-# 側邊欄的文件清單。(相對 docs/ 的 .md 路徑, 側邊欄顯示的短標題)
+# 侧边栏的文件清单。(相对 docs/ 的 .md 路径, 侧边栏显示的短标题)
 GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
-        "部署與維運手冊",
+        "部署与维运手册",
         [
-            ("deploy/README.md", "總覽:從哪開始"),
-            ("deploy/install.md", "安裝指南"),
-            ("deploy/upgrade.md", "升級指南"),
-            ("deploy/backup.md", "備份與還原"),
-            ("deploy/https.md", "網域與 HTTPS"),
-            ("deploy/faq.md", "常見問題 FAQ"),
+            ("deploy/README.md", "总览:从哪开始"),
+            ("deploy/install.md", "安装指南"),
+            ("deploy/upgrade.md", "升级指南"),
+            ("deploy/backup.md", "备份与还原"),
+            ("deploy/https.md", "网域与 HTTPS"),
+            ("deploy/faq.md", "常见问题 FAQ"),
         ],
     ),
     (
-        "專案技術文件",
+        "专案技术文件",
         [
-            ("architecture.md", "架構設計"),
-            ("roadmap.md", "路線圖"),
-            ("tasks.md", "開發任務卡"),
+            ("architecture.md", "架构设计"),
+            ("roadmap.md", "路线图"),
+            ("tasks.md", "开发任务卡"),
         ],
     ),
 ]
 
-# 這兩份是給開發者的規格與開發日誌,在側邊欄標示出來,免得一般使用者誤入
+# 这两份是给开发者的规格与开发日志,在侧边栏标示出来,免得一般用户误入
 DEV_DOCS = {"architecture.md", "roadmap.md", "tasks.md"}
 
 CSS = """
@@ -117,7 +117,7 @@ CSS = """
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -173,7 +173,7 @@ CSS = """
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -205,7 +205,7 @@ CSS = """
 JS = """
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}
@@ -242,25 +242,25 @@ def esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-# tasks.md 用 `### [x] M0-1 …` 在標題上標任務狀態
+# tasks.md 用 `### [x] M0-1 …` 在标题上标任务状态
 TICKS = {" ": ("todo", "☐"), "~": ("wip", "◐"), "x": ("done", "☑")}
 TICK_RE = re.compile(r"^\[([ ~x])\]\s*")
 
 
 def slugify(value: str, separator: str) -> str:
-    """產生保留中文的錨點,規則比照 GitHub,好處是同一個 #錨點 在 .md 與 .html 都通。
+    """产生保留中文的锚点,规则比照 GitHub,好处是同一个 #锚点 在 .md 与 .html 都通。
 
-    python-markdown 內建的 slugify 會把非 ASCII 全部丟掉,中文標題會退化成
-    #_1、#_2 這種序號——一旦中間插入新章節,所有既有連結就全歪掉。
+    python-markdown 内建的 slugify 会把非 ASCII 全部丢掉,中文标题会退化成
+    #_1、#_2 这种序号——一旦中间插入新章节,所有既有连结就全歪掉。
     """
     value = TICK_RE.sub("", value.strip())
     value = unicodedata.normalize("NFKC", value).lower()
-    value = re.sub(r"[^\w\s-]", "", value)  # \w 在 unicode 模式下含中日韓
+    value = re.sub(r"[^\w\s-]", "", value)  # \w 在 unicode 模式下含中日韩
     return re.sub(r"\s+", separator, value.strip())
 
 
 def md_to_html(text: str) -> tuple[str, str, list]:
-    """回傳 (標題, 內文 HTML, TOC tokens)。第一個 # 標題抽出來當頁首,不重複出現在內文。"""
+    """回传 (标题, 内文 HTML, TOC tokens)。第一个 # 标题抽出来当页首,不重复出现在内文。"""
     lines = text.splitlines()
     title = ""
     for i, line in enumerate(lines):
@@ -277,7 +277,7 @@ def md_to_html(text: str) -> tuple[str, str, list]:
 
 
 def rewrite_links(html: str) -> str:
-    """把指向 .md 的相對連結改指向產生出來的 .html。外部連結不動。"""
+    """把指向 .md 的相对连结改指向产生出来的 .html。外部连结不动。"""
 
     def sub(m: re.Match) -> str:
         href = m.group(1)
@@ -289,12 +289,12 @@ def rewrite_links(html: str) -> str:
 
 
 def wrap_tables(html: str) -> str:
-    """表格包一層可橫向捲動的容器,窄螢幕才不會把整頁撐開。"""
+    """表格包一层可横向卷动的容器,窄萤幕才不会把整页撑开。"""
     return html.replace("<table>", '<div class="tw"><table>').replace("</table>", "</table></div>")
 
 
 def render_ticks(html: str) -> str:
-    """tasks.md 標題與清單上的 [ ] / [~] / [x] 任務狀態改成有顏色的記號。"""
+    """tasks.md 标题与清单上的 [ ] / [~] / [x] 任务状态改成有颜色的记号。"""
 
     def sub(m: re.Match) -> str:
         cls, glyph = TICKS[m.group(2)]
@@ -304,7 +304,7 @@ def render_ticks(html: str) -> str:
 
 
 def build_toc(tokens: list, out: list | None = None) -> list:
-    """攤平 h2 / h3 當側邊目錄;h1 已抽成頁首,更深的層級略過免得目錄爆長。"""
+    """摊平 h2 / h3 当侧边目录;h1 已抽成页首,更深的层级略过免得目录爆长。"""
     out = [] if out is None else out
     for t in tokens:
         if t["level"] in (2, 3):
@@ -317,7 +317,7 @@ def build_toc(tokens: list, out: list | None = None) -> list:
 
 
 def link_to(target: str, current: str) -> str:
-    """從 current 這一頁連到 target(兩者皆為相對 docs/ 的路徑)。"""
+    """从 current 这一页连到 target(两者皆为相对 docs/ 的路径)。"""
     return posixpath.relpath(target, posixpath.dirname(current)) or target
 
 
@@ -325,17 +325,17 @@ def nav_html(current: str) -> str:
     home = link_to("index.html", current)
     parts = [
         '<a class="brand" href="%s">'
-        '<span class="mark">排課與調代課系統</span>'
+        '<span class="mark">排课与调代课系统</span>'
         '<span class="sub">文件</span></a>' % home,
-        '<div class="grp">給使用者</div><nav>',
-        '<a href="%s">教學組長操作手冊</a>' % home,
+        '<div class="grp">给用户</div><nav>',
+        '<a href="%s">教学组长操作手册</a>' % home,
         "</nav>",
     ]
     for group, items in GROUPS:
         parts.append('<div class="grp">%s</div><nav>' % esc(group))
         for rel, label in items:
             here = " here" if rel == current else ""
-            dev = '<span class="dev">開發用</span>' if rel in DEV_DOCS else ""
+            dev = '<span class="dev">开发用</span>' if rel in DEV_DOCS else ""
             parts.append(
                 '<a class="doc%s" href="%s">%s%s</a>'
                 % (here, link_to(rel.replace(".md", ".html"), current), esc(label), dev)
@@ -357,7 +357,7 @@ def toc_html(toc: list) -> str:
             '<a class="%s" href="#%s">%s%s</a>'
             % ("lv3" if lv == 3 else "lv2", tid, tick, esc(name))
         )
-    return '<div class="grp">本頁目錄</div><div class="toc">%s</div>' % "".join(rows)
+    return '<div class="grp">本页目录</div><div class="toc">%s</div>' % "".join(rows)
 
 
 PAGE = """<!doctype html>
@@ -366,32 +366,32 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="{desc}">
-<title>{title} · 排課與調代課系統</title>
+<title>{title} · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>{icon}</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/{src} 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/{src} 自动产生,请勿直接编辑。 -->
 <style>{css}</style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
 {nav}
 {toc}
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">{eyebrow}</div>
         <h1>{title}</h1>
-        <div class="src">原始檔 <code>docs/{src}</code> · <a href="{blob}">在 GitHub 上檢視</a></div>
+        <div class="src">原始档 <code>docs/{src}</code> · <a href="{blob}">在 GitHub 上查看</a></div>
       </header>
 {body}
       <div class="foot">
-        本頁由 <code>docs/{src}</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/{src}</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -410,7 +410,7 @@ def render(rel: str) -> str:
     dev = rel in DEV_DOCS
     return PAGE.format(
         title=esc(title),
-        desc=esc("%s — 排課與調代課系統%s文件" % (title, "開發" if dev else "部署與維運")),
+        desc=esc("%s — 排课与调代课系统%s文件" % (title, "开发" if dev else "部署与维运")),
         icon="🛠" if dev else "📗",
         eyebrow="DEVELOPER DOCS" if dev else "DEPLOYMENT GUIDE",
         css=CSS,
@@ -424,15 +424,15 @@ def render(rel: str) -> str:
 
 
 def main() -> int:
-    # Windows 主控台預設 cp950,印中文與 ✓ 會炸掉
+    # Windows 主控台默认 cp950,印中文与 ✓ 会炸掉
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
 
-    ap = argparse.ArgumentParser(description="把 docs/ 的 Markdown 轉成 HTML")
-    ap.add_argument("--check", action="store_true", help="只檢查是否同步,不寫檔(CI 用)")
+    ap = argparse.ArgumentParser(description="把 docs/ 的 Markdown 转成 HTML")
+    ap.add_argument("--check", action="store_true", help="只检查是否同步,不写档(CI 用)")
     args = ap.parse_args()
 
     stale, written = [], []
@@ -450,12 +450,12 @@ def main() -> int:
 
     if args.check:
         if stale:
-            print("以下文件的 HTML 未與 Markdown 同步:")
+            print("以下文件的 HTML 未与 Markdown 同步:")
             for rel in stale:
                 print("  - docs/%s" % rel)
-            print("\n請執行 python scripts/build_docs.py 後一併提交。")
+            print("\n请执行 python scripts/build_docs.py 后一并提交。")
             return 1
-        print("docs HTML 與 Markdown 同步 ✓")
+        print("docs HTML 与 Markdown 同步 ✓")
         return 0
 
     print("更新 %d 份(共 %d 份)" % (len(written), sum(len(i) for _, i in GROUPS)))

@@ -16,7 +16,7 @@ const post = async (page: Page, url: string, data: object) =>
   (await page.request.post(url, { data })).json()
 const get = async (page: Page, url: string) => (await page.request.get(url)).json()
 
-/** 綁定 e2e_teacher 帳號的「陳老師」,回傳 teacherId。 */
+/** 绑定 e2e_teacher 帐号的「陈老师」,回传 teacherId。 */
 async function bindTeacher(page: Page, sid: number): Promise<number> {
   const file = fileURLToPath(new URL('./fixtures/teachers_with_account.xlsx', import.meta.url))
   const imp = await (await page.request.post(
@@ -25,13 +25,13 @@ async function bindTeacher(page: Page, sid: number): Promise<number> {
   )).json()
   if (imp.imported === 1) {
     const list = await get(page, `/api/teachers?semester_id=${sid}`)
-    return list.find((x: { name: string }) => x.name === '陳老師').id
+    return list.find((x: { name: string }) => x.name === '陈老师').id
   }
-  const created = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陳老師' })
+  const created = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陈老师' })
   const accounts = await get(page, `/api/teachers/bindable-accounts?semester_id=${sid}`)
   const acc = accounts.find((x: { username: string }) => x.username === TEACHER_USER)
   await page.request.patch(`/api/teachers/${created.id}`,
-    { data: { name: '陳老師', user_id: acc.id } })
+    { data: { name: '陈老师', user_id: acc.id } })
   return created.id
 }
 
@@ -46,11 +46,11 @@ async function ensureTeacherPassword(page: Page) {
   await page.request.post('/api/auth/logout')
 }
 
-/** 王師請假,陳老師代課 1 節、併班 1 節。 */
+/** 王师请假,陈老师代课 1 节、并班 1 节。 */
 async function seed(page: Page, sid: number, chenId: number) {
   const q = `?semester_id=${sid}`
-  const guo = (await post(page, `/api/subjects${q}`, { name: '國文' })).id
-  const wang = (await post(page, `/api/teachers${q}`, { name: '王師', base_periods: 20 })).id
+  const guo = (await post(page, `/api/subjects${q}`, { name: '国文' })).id
+  const wang = (await post(page, `/api/teachers${q}`, { name: '王师', base_periods: 20 })).id
   const c701 = (await post(page, `/api/class-units${q}`,
     { grade: 7, name: '701', track: 'junior_high' })).id
   const c702 = (await post(page, `/api/class-units${q}`,
@@ -76,14 +76,14 @@ async function seed(page: Page, sid: number, chenId: number) {
     { data: { type: 'merge', handler_teacher_id: chenId } })
 }
 
-test.describe('代課鐘點統計', () => {
+test.describe('代课课时统计', () => {
   test.afterEach(async ({ page }) => {
     await page.request.post('/api/auth/logout')
     await login(page)
     for (const y of YEARS) await deleteSemesterByYearTerm(page, y, 1)
   })
 
-  test('組長看月結彙總與明細,可匯出 Excel;教師只看自己', async ({ page }) => {
+  test('组长看月结汇总与明细,可导出 Excel;教师只看自己', async ({ page }) => {
     test.setTimeout(180_000)
     await login(page)
     await page.request.patch('/api/wizard/state', { data: { completed: true } })
@@ -96,30 +96,30 @@ test.describe('代課鐘點統計', () => {
     await seed(page, sem.id, chenId)
     await ensureTeacherPassword(page)
 
-    // ── 組長:請假當月的彙總 + 明細 ──
+    // ── 组长:请假当月的汇总 + 明细 ──
     await login(page)
     await page.goto(`/substitution-stats?semester_id=${sem.id}${STATS_QUERY}`)
-    const sumRow = page.getByTestId('stats-summary-row').filter({ hasText: '陳老師' }).first()
-    await expect(sumRow).toContainText('陳老師')
-    // 代課節數 2、計費節數 1(代課計、併班不計)
+    const sumRow = page.getByTestId('stats-summary-row').filter({ hasText: '陈老师' }).first()
+    await expect(sumRow).toContainText('陈老师')
+    // 代课节数 2、计费节数 1(代课计、并班不计)
     await expect(sumRow.locator('td').nth(1)).toHaveText('2')
     await expect(sumRow.locator('td').nth(2)).toHaveText('1')
     await expect(page.getByTestId('stats-total')).toContainText('1')
     await expect(page.getByTestId('stats-detail-row')).toHaveCount(2)
     await page.screenshot({ path: `${SHOTS}/m45-1-stats.png`, fullPage: true })
 
-    // 匯出 Excel:觸發下載
+    // 导出 Excel:触发下载
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('stats-export').click(),
     ])
     expect(download.suggestedFilename()).toContain('.xlsx')
 
-    // ── 教師陳老師:只看自己,無匯出鈕、無教師篩選 ──
+    // ── 教师陈老师:只看自己,无导出钮、无教师筛选 ──
     await page.request.post('/api/auth/logout')
     await login(page, TEACHER_USER, TEACHER_PASS)
     await page.goto(`/substitution-stats?semester_id=${sem.id}${STATS_QUERY}`)
-    await expect(page.getByRole('heading', { name: '我的代課鐘點' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '我的代课课时' })).toBeVisible()
     await expect(page.getByTestId('stats-detail-row')).toHaveCount(2)
     await expect(page.getByTestId('stats-export')).toHaveCount(0)
     await expect(page.getByTestId('stats-teacher')).toHaveCount(0)

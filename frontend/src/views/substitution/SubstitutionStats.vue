@@ -15,7 +15,7 @@ const auth = useAuthStore()
 const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
 
-const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 function withWeekday(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${iso}(${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`
@@ -55,15 +55,15 @@ const periodLabel = computed(() => {
 })
 const totalBillable = computed(() =>
   (report.value?.summaries ?? []).reduce((n, s) => n + s.billable_count, 0))
-// 日薪代課(國小常見)按日計酬:沒有用到日薪的學校,畫面和原本完全一樣
+// 日薪代课(小学常见)按日计酬:没有用到日薪的学校,界面和原本完全一样
 const totalDailyDays = computed(() =>
   (report.value?.summaries ?? []).reduce((n, s) => n + s.daily_days, 0))
 const hasDaily = computed(() => (report.value?.details ?? []).some((d) => d.pay_kind === 'daily'))
 const hasShared = computed(() => (report.value?.details ?? []).some((d) => d.daily_shared))
 const PAY: Record<string, { label: string; type: 'success' | 'info' | 'default' }> = {
-  hourly: { label: '計費', type: 'success' },
+  hourly: { label: '计费', type: 'success' },
   daily: { label: '日薪', type: 'info' },
-  none: { label: '不計', type: 'default' },
+  none: { label: '不计', type: 'default' },
 }
 
 async function reload() {
@@ -94,7 +94,7 @@ function onExport() {
 }
 
 onMounted(async () => {
-  // 教師看不到 /semesters(管理權限),改用已發布學期清單
+  // 教师看不到 /semesters(管理权限),改用已发布学期清单
   semesters.value = canManage.value ? await listSemesters() : await publishedSemesters()
   if (!semesters.value.length) return
   const qsid = Number(route.query.semester_id)
@@ -105,12 +105,12 @@ onMounted(async () => {
 
 <template>
   <n-space vertical size="large">
-    <h2 style="margin: 0">{{ canManage ? '代課鐘點統計' : '我的代課鐘點' }}</h2>
+    <h2 style="margin: 0">{{ canManage ? '代课课时统计' : '我的代课课时' }}</h2>
 
     <n-space align="center" :wrap="true">
       <n-select
         :value="sid" :options="semesterOptions" style="width: 200px"
-        placeholder="選擇學期" @update:value="onSemesterChange"
+        placeholder="选择学期" @update:value="onSemesterChange"
       />
       <n-date-picker
         v-model:value="monthValue" type="month" style="width: 160px"
@@ -118,47 +118,47 @@ onMounted(async () => {
       />
       <n-select
         v-if="canManage" v-model:value="teacherId" :options="teacherOptions" clearable filterable
-        placeholder="全部教師" style="width: 180px"
+        placeholder="全部教师" style="width: 180px"
         data-testid="stats-teacher" @update:value="reload"
       />
       <n-button
         v-if="canManage && report?.details.length" type="primary"
         data-testid="stats-export" @click="onExport"
       >
-        匯出 Excel
+        导出 Excel
       </n-button>
     </n-space>
 
     <n-space align="center">
       <n-text depth="3">{{ periodLabel }}</n-text>
       <n-tag v-if="report" type="info" data-testid="stats-total">
-        計費合計 {{ totalBillable }} 節
+        计费合计 {{ totalBillable }} 节
       </n-tag>
       <n-tag v-if="hasDaily" type="info" data-testid="stats-total-daily">
-        日薪合計 {{ totalDailyDays }} 天
+        日薪合计 {{ totalDailyDays }} 天
       </n-tag>
     </n-space>
 
     <n-alert v-if="hasDaily" type="info" :show-icon="true" data-testid="stats-daily-note">
-      計費方式為「日薪代課」的節次按日計酬:列在「日薪天數」,不計入鐘點計費節數。
+      计费方式为「日薪代课」的节次按日计酬:列在「日薪天数」,不计入课时计费节数。
       <template v-if="hasShared">
-        標示「分擔」的日子,同一位請假教師的課由兩位以上日薪代課老師分擔,每位各算 1 天,
-        實際如何給付請依學校規定核對。
+        标示「分担」的日子,同一位请假教师的课由两位以上日薪代课老师分担,每位各算 1 天,
+        实际如何给付请依学校规定核对。
       </template>
     </n-alert>
 
     <n-empty
       v-if="report && !report.details.length && !loading"
-      description="本月無代課紀錄" data-testid="stats-empty"
+      description="本月无代课纪录" data-testid="stats-empty"
     />
 
     <template v-else-if="report?.details.length">
-      <!-- 彙總:每位教師 -->
+      <!-- 汇总:每位教师 -->
       <table v-if="canManage" class="data-table" data-testid="stats-summary">
         <thead>
           <tr>
-            <th>教師</th><th>代課節數</th><th>{{ hasDaily ? '鐘點計費節數' : '計費節數' }}</th>
-            <th v-if="hasDaily">日薪天數</th>
+            <th>教师</th><th>代课节数</th><th>{{ hasDaily ? '课时计费节数' : '计费节数' }}</th>
+            <th v-if="hasDaily">日薪天数</th>
           </tr>
         </thead>
         <tbody>
@@ -169,9 +169,9 @@ onMounted(async () => {
             <td v-if="hasDaily" data-testid="stats-daily-cell">
               <template v-if="s.daily_days">
                 {{ s.daily_days }} 天
-                <n-text depth="3">(共 {{ s.daily_periods }} 節)</n-text>
+                <n-text depth="3">(共 {{ s.daily_periods }} 节)</n-text>
                 <n-tag v-if="s.daily_shared_days" size="tiny" type="warning">
-                  其中 {{ s.daily_shared_days }} 天分擔
+                  其中 {{ s.daily_shared_days }} 天分担
                 </n-tag>
               </template>
               <template v-else>—</template>
@@ -180,13 +180,13 @@ onMounted(async () => {
         </tbody>
       </table>
 
-      <!-- 明細:逐節 -->
+      <!-- 明细:逐节 -->
       <table class="data-table" data-testid="stats-detail">
         <thead>
           <tr>
-            <th v-if="canManage">教師</th>
-            <th>日期</th><th>節次</th><th>班級</th><th>科目</th>
-            <th>原任教師</th><th>假別</th><th>處置</th><th>計費</th>
+            <th v-if="canManage">教师</th>
+            <th>日期</th><th>节次</th><th>班级</th><th>科目</th>
+            <th>原任教师</th><th>假别</th><th>处置</th><th>计费</th>
           </tr>
         </thead>
         <tbody>
@@ -203,7 +203,7 @@ onMounted(async () => {
               <n-tag size="tiny" :type="PAY[d.pay_kind].type" data-testid="stats-pay">
                 {{ PAY[d.pay_kind].label }}
               </n-tag>
-              <n-tag v-if="d.daily_shared" size="tiny" type="warning">分擔</n-tag>
+              <n-tag v-if="d.daily_shared" size="tiny" type="warning">分担</n-tag>
             </td>
           </tr>
         </tbody>

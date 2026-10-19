@@ -1,4 +1,4 @@
-"""FastAPI 應用程式進入點。"""
+"""FastAPI 应用程序进入点。"""
 
 import asyncio
 import logging
@@ -37,17 +37,17 @@ from app.services.users import ensure_admin
 logger = logging.getLogger(__name__)
 
 
-# 啟動時 worker-ops 可能還在起(compose 是平行啟動的),故給它一段寬限期再判定。
+# 启动时 worker-ops 可能还在起(compose 是平行启动的),故给它一段宽限期再判定。
 OPS_CHECK_RETRIES = 6
 OPS_CHECK_INTERVAL = 2.0
 
 
 async def _warn_if_no_ops_worker() -> None:
-    """背景檢查 ops 佇列有沒有 worker 在守,沒有就在啟動 log 講清楚。
+    """背景检查 ops 伫列有没有 worker 在守,没有就在启动 log 讲清楚。
 
-    升級只換映像、沒更新 docker-compose.yml 的話,worker-ops 根本不存在;此時匯出/備份
-    會失敗(那還算吵),而每日自動備份是**靜默**停擺的——沒人會發現,直到需要那份備份的
-    那一天。不阻塞啟動,也不在冷啟動的頭幾秒就誤報。
+    升级只换映像、没更新 docker-compose.yml 的话,worker-ops 根本不存在;此时导出/备份
+    会失败(那还算吵),而每日自动备份是**静默**停摆的——没人会发现,直到需要那份备份的
+    那一天。不阻塞启动,也不在冷启动的头几秒就误报。
     """
     try:
         from app.workers.queue import OPS_WORKER_MISSING, ops_worker_available
@@ -59,13 +59,13 @@ async def _warn_if_no_ops_worker() -> None:
         logger.warning(OPS_WORKER_MISSING)
     except asyncio.CancelledError:
         raise
-    except Exception:  # noqa: BLE001 - Redis 尚未就緒等情況不該影響 api 運作
+    except Exception:  # noqa: BLE001 - Redis 尚未就绪等情况不该影响 api 运作
         pass
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # 啟動時:若系統尚無任何使用者,依 .env 建立初始管理員
+    # 启动时:若系统尚无任何用户,依 .env 建立初始管理员
     ensure_admin()
     check = asyncio.create_task(_warn_if_no_ops_worker())
     yield
@@ -74,9 +74,9 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    description="開源免費的排課與調代課系統 API",
+    description="开源免费的排课与调代课系统 API",
     version=settings.app_version,
-    # 正式部署預設關閉(見 settings.api_docs_enabled);None = 該路由不存在,回 404
+    # 正式部署默认关闭(见 settings.api_docs_enabled);None = 该路由不存在,回 404
     docs_url="/api/docs" if settings.api_docs_enabled else None,
     openapi_url="/api/openapi.json" if settings.api_docs_enabled else None,
     lifespan=lifespan,
@@ -90,7 +90,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 所有 API 掛在 /api 前綴之下(Caddy 依此前綴分流)
+# 所有 API 挂在 /api 前缀之下(Caddy 依此前缀分流)
 app.include_router(health.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(auth.router, prefix="/api/auth")

@@ -1,8 +1,8 @@
 """SMTP 寄信(M4-3)。
 
-實際寄送走 RQ(見 workers/email_job.py),不在請求執行緒裡卡住。
-SMTP 未設定時 `send` 直接回 False——站內通知已經送達,Email 只是加分,不該讓整個
-調代課流程因為沒設信箱而失敗。
+实际寄送走 RQ(见 workers/email_job.py),不在请求执行绪里卡住。
+SMTP 未设置时 `send` 直接回 False——站内通知已经送达,Email 只是加分,不该让整个
+调代课流程因为没设信箱而失败。
 """
 
 import smtplib
@@ -14,7 +14,7 @@ from app.services import settings as app_settings
 
 
 def send(db: Session, *, to: str, subject: str, body: str) -> bool:
-    """寄一封信。回傳是否真的送出(未設定 SMTP、或無收件人時回 False)。"""
+    """寄一封信。回传是否真的送出(未设置 SMTP、或无收件人时回 False)。"""
     if not to:
         return False
     cfg = app_settings.smtp_config(db)

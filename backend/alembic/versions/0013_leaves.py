@@ -1,4 +1,4 @@
-"""M4-1:請假、受影響節次、通知。
+"""M4-1:请假、受影响节次、通知。
 
 Revision ID: 0013_leaves
 Revises: 0012_soft_constraints
@@ -48,7 +48,7 @@ def upgrade() -> None:
         sa.Column("date", sa.Date(), nullable=False),
         sa.Column("weekday", sa.Integer(), nullable=False),
         sa.Column("period_no", sa.Integer(), nullable=False),
-        # 快照欄位:課表改版後仍保留展開當下的事實
+        # 快照栏位:课表改版后仍保留展开当下的事实
         sa.Column("period_name", sa.String(length=32), nullable=False, server_default=""),
         sa.Column("start_time", sa.Time(), nullable=True),
         sa.Column("end_time", sa.Time(), nullable=True),

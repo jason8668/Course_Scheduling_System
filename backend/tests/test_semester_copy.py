@@ -1,4 +1,4 @@
-"""開新學期複製測試。對應 M1-5 驗收標準。"""
+"""开新学期复制测试。对应 M1-5 验收标准。"""
 
 import pytest
 
@@ -10,7 +10,7 @@ PW = "password123"
 
 @pytest.fixture
 def populated(env):
-    """已登入教學組長 + 一個含完整基礎資料的來源學期。回傳 (client, source_id)。"""
+    """已登录教学组长 + 一个含完整基础资料的来源学期。回传 (client, source_id)。"""
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
@@ -18,11 +18,11 @@ def populated(env):
         "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
     ).json()
     sid = sem["id"]
-    # 科目已由範本帶入;再加教師(含科目+時段規則)、場地、班級
+    # 科目已由范本带入;再加教师(含科目+时段规则)、场地、班级
     subs = client.get(f"/api/subjects?semester_id={sid}").json()
     t = client.post(
         f"/api/teachers?semester_id={sid}",
-        json={"name": "王老師", "base_periods": 20, "subject_ids": [subs[0]["id"]]},
+        json={"name": "王老师", "base_periods": 20, "subject_ids": [subs[0]["id"]]},
     ).json()
     client.put(
         f"/api/teachers/{t['id']}/time-rules",
@@ -49,8 +49,8 @@ def test_copy_all_and_counts(populated):
     assert r.status_code == 201
     new = r.json()
     nid = new["id"]
-    assert new["label"] == "116 學年度第 1 學期"
-    # 各實體數量一致
+    assert new["label"] == "116 学年度第 1 学期"
+    # 各实体数量一致
     assert len(client.get(f"/api/subjects?semester_id={nid}").json()) == \
         len(client.get(f"/api/subjects?semester_id={sid}").json())
     assert len(client.get(f"/api/teachers?semester_id={nid}").json()) == 1
@@ -60,25 +60,25 @@ def test_copy_all_and_counts(populated):
 
 
 def test_copy_is_independent(populated):
-    """驗收:改來源學期教師不影響新學期。"""
+    """验收:改来源学期教师不影响新学期。"""
     client, sid = populated
     nid = _copy(client, sid, grade_promotion=False).json()["id"]
     src_teacher = client.get(f"/api/teachers?semester_id={sid}").json()[0]
-    # 改來源教師姓名
+    # 改来源教师姓名
     client.patch(f"/api/teachers/{src_teacher['id']}", json={"name": "改名了"})
-    # 新學期教師不受影響
+    # 新学期教师不受影响
     new_teacher = client.get(f"/api/teachers?semester_id={nid}").json()[0]
-    assert new_teacher["name"] == "王老師"
+    assert new_teacher["name"] == "王老师"
     assert new_teacher["id"] != src_teacher["id"]
 
 
 def test_grade_promotion_and_graduation(populated):
-    """驗收:年級進位正確,畢業年級(國中三年級)移除。"""
+    """验收:年级进位正确,毕业年级(初中三年级)移除。"""
     client, sid = populated
     nid = _copy(client, sid, grade_promotion=True).json()["id"]
     classes = client.get(f"/api/class-units?semester_id={nid}").json()
     grades = sorted(c["grade"] for c in classes)
-    # 原 1,2,3 → 進位 2,3,(4 畢業移除)
+    # 原 1,2,3 → 进位 2,3,(4 毕业移除)
     assert grades == [2, 3]
 
 
@@ -99,7 +99,7 @@ def test_teacher_subjects_and_rules_copied(populated):
 
 
 def test_class_relations_remapped_to_new_semester(populated):
-    """複製後班級的導師/節次表指向新學期的實體,非來源學期。"""
+    """复制后班级的导师/节次表指向新学期的实体,非来源学期。"""
     client, sid = populated
     nid = _copy(client, sid, grade_promotion=False).json()["id"]
     new_teacher_ids = {t["id"] for t in client.get(f"/api/teachers?semester_id={nid}").json()}
@@ -123,11 +123,11 @@ def test_copy_to_existing_target_409(populated):
     assert _copy(client, sid, grade_promotion=False).status_code == 409  # 116/1 已存在
 
 
-# ── M6-4:起訖日與排課偏好設定要跟著複製 ─────────────────────
+# ── M6-4:起讫日与排课偏好设置要跟著复制 ─────────────────────
 def test_copy_carries_the_new_semester_dates(populated):
-    """新學期的起訖日由呼叫端明確給(不能沿用來源:那是上學期的日期)。
+    """新学期的起讫日由呼叫端明确给(不能沿用来源:那是上学期的日期)。
 
-    漏了它,請假展開、今日看板、代課的「已上過」判定全部失準,而且畫面上看不出哪裡不對。
+    漏了它,请假展开、今日看板、代课的「已上过」判定全部失准,而且界面上看不出哪里不对。
     """
     client, sid = populated
     r = _copy(client, sid, grade_promotion=False,
@@ -146,7 +146,7 @@ def test_copy_rejects_reversed_dates(populated):
 
 
 def test_copy_carries_the_constraint_config(populated):
-    """軟約束權重跟著走:不帶的話新學期悄悄回到預設值,上學期調好的偏好就白調了。"""
+    """软约束权重跟著走:不带的话新学期悄悄回到默认值,上学期调好的偏好就白调了。"""
     client, sid = populated
     client.put(f"/api/solver/config?semester_id={sid}",
                json={"daily_subject_cap": 3, "weights": {"S2": 40}})
@@ -161,12 +161,12 @@ def test_copy_carries_the_constraint_config(populated):
 
 
 def test_copy_can_skip_the_constraint_config(populated):
-    """明確不勾選時,新學期回到預設值(而不是靜默地總是如此)。"""
+    """明确不勾选时,新学期回到默认值(而不是静默地总是如此)。"""
     client, sid = populated
     client.put(f"/api/solver/config?semester_id={sid}",
                json={"daily_subject_cap": 3, "weights": {"S2": 40}})
 
     nid = _copy(client, sid, grade_promotion=False, constraint_config=False).json()["id"]
     cfg = client.get(f"/api/solver/config?semester_id={nid}").json()
-    assert cfg["daily_subject_cap"] == 2  # 預設值
+    assert cfg["daily_subject_cap"] == 2  # 默认值
     assert cfg["weights"]["S2"] != 40

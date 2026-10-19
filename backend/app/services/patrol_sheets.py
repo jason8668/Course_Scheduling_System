@@ -1,21 +1,21 @@
-"""巡堂表(巡堂紀錄)的資料組裝(v1.2.12)。
+"""巡堂表(巡堂纪录)的资料组装(v1.2.12)。
 
-巡堂人員拿著這張紙逐班走:每一節、每一班「現在應該是誰在上什麼課、在哪裡」。
-週課表答不了這個問題——調代課之後,那一天的老師、科目可能都換了。這裡把
-「已發布的週課表」與「那一天的調代課處置」疊起來,印出當天真正的樣子。
+巡堂人员拿著这张纸逐班走:每一节、每一班「现在应该是谁在上什么课、在哪里」。
+周课表答不了这个问题——调代课之后,那一天的老师、科目可能都换了。这里把
+「已发布的周课表」与「那一天的调代课处置」叠起来,印出当天真正的样子。
 
-版面照使用學校的紙本:
+版面照使用学校的纸本:
 
-- **巡堂紀錄**:班級為欄、節次為列,一天分上午/下午各一張(以午休為界;早自習、
-  午休等非一般課的時段不列)。每格印科目、教師、教室與備註(代課/調課/…);
-  授課情形、學生學習、巡堂簽名留白手寫。班級多的學校自動分頁。
-- **分組巡堂單**:社團、多元選修這類「一個時段全校拆成很多組」的跑班群組,
-  十幾組塞不進一個格子,另外列成清單(一列一組:名稱、教師、地點)。
-  主表那一格只寫群組名稱與組數。
+- **巡堂纪录**:班级为栏、节次为列,一天分上午/下午各一张(以午休为界;早自习、
+  午休等非一般课的时段不列)。每格印科目、教师、教室与备注(代课/调课/…);
+  授课情形、学生学习、巡堂签名留白手写。班级多的学校自动分页。
+- **分组巡堂单**:社团、多元选修这类「一个时段全校拆成很多组」的跑班群组,
+  十几组塞不进一个格子,另外列成清单(一列一组:名称、教师、地点)。
+  主表那一格只写群组名称与组数。
 
-**巡堂人員不在表上。** 紙本是簽名欄,由巡堂的人自己簽;系統不管巡堂輪值。
+**巡堂人员不在表上。** 纸本是签名栏,由巡堂的人自己签;系统不管巡堂轮值。
 
-本模組只讀,不寫資料庫。
+本模组只读,不写资料库。
 """
 
 from collections.abc import Iterator
@@ -37,22 +37,22 @@ from app.services import settings as app_settings
 from app.services.availability import published_timetable
 from app.services.slip_layout import school_title
 
-# dataclass 欄位名 date 會遮蔽同名型別(mypy 判為變數),故型別一律用別名
+# dataclass 栏位名 date 会遮蔽同名型别(mypy 判为变数),故型别一律用别名
 _Date = date
 
-CLASSES_PER_PAGE = 12       # A4 橫式一頁放得下的班級欄數(照使用學校的紙本)
-GROUP_LIST_MIN = 4          # 群組在同一節有幾門課以上,就改列成分組巡堂單
-MAX_DAYS = 14               # 一次最多印幾天
+CLASSES_PER_PAGE = 12       # A4 横式一页放得下的班级栏数(照使用学校的纸本)
+GROUP_LIST_MIN = 4          # 群组在同一节有几门课以上,就改列成分组巡堂单
+MAX_DAYS = 14               # 一次最多印几天
 _NOON = time(12, 0)
 
 _NOTE = {
-    SubstitutionType.substitute.value: "代課",
-    SubstitutionType.swap.value: "調課",
-    SubstitutionType.merge.value: "併班",
-    SubstitutionType.self_study.value: "自習",
-    SubstitutionType.cancel.value: "停課",
+    SubstitutionType.substitute.value: "代课",
+    SubstitutionType.swap.value: "调课",
+    SubstitutionType.merge.value: "并班",
+    SubstitutionType.self_study.value: "自习",
+    SubstitutionType.cancel.value: "停课",
 }
-_PENDING = "請假待處理"
+_PENDING = "请假待处理"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,16 +65,16 @@ class PatrolCell:
 
 @dataclass
 class PatrolRow:
-    ordinal: int              # 第幾節(只數一般課)
-    name: str                 # 節次名稱「第一節」
-    cells: list[PatrolCell] = field(default_factory=list)   # 與 PatrolPage.classes 一一對應
+    ordinal: int              # 第几节(只数一般课)
+    name: str                 # 节次名称「第一节」
+    cells: list[PatrolCell] = field(default_factory=list)   # 与 PatrolPage.classes 一一对应
 
 
 @dataclass
 class PatrolPage:
     date: _Date
-    table_name: str           # 全校只有一套節次表時為空字串
-    first_ordinal: int        # 抬頭的「第 1~4 節」
+    table_name: str           # 全校只有一套节次表时为空字串
+    first_ordinal: int        # 抬头的「第 1~4 节」
     last_ordinal: int
     classes: list[str] = field(default_factory=list)
     rows: list[PatrolRow] = field(default_factory=list)
@@ -99,19 +99,19 @@ class GroupList:
 
 @dataclass
 class PatrolSheets:
-    title: str                # 「示範國中115學年第一學期」
-    legend: str               # 紙本下方的記錄說明(各校代碼不同,可在系統管理修改)
+    title: str                # 「示范初中115学年第一学期」
+    legend: str               # 纸本下方的记录说明(各校代码不同,可在系统管理修改)
     pages: list[PatrolPage] = field(default_factory=list)
     group_lists: list[GroupList] = field(default_factory=list)
 
 
 class PatrolError(Exception):
-    """印不出巡堂表(呼叫端轉 404/400)。"""
+    """印不出巡堂表(呼叫端转 404/400)。"""
 
 
 @dataclass(frozen=True, slots=True)
 class _Lesson:
-    """某一班某一節實際上的一門課(已套用當天的調代課)。"""
+    """某一班某一节实际上的一门课(已套用当天的调代课)。"""
 
     unit_id: int
     unit_name: str
@@ -130,9 +130,9 @@ def _days(date_from: date, date_to: date) -> Iterator[date]:
 
 
 def _halves(periods: list[Period]) -> list[list[tuple[int, Period]]]:
-    """把一天的一般課切成上午/下午,並編上「第幾節」。
+    """把一天的一般课切成上午/下午,并编上「第几节」。
 
-    以午休為界;節次表沒有午休時改以 12:00 為界;兩者都判斷不出來就整天一張。
+    以午休为界;节次表没有午休时改以 12:00 为界;两者都判断不出来就整天一张。
     """
     ordered = sorted(periods, key=lambda p: p.period_no)
     lunch = next((p.period_no for p in ordered if p.type == PeriodType.lunch.value), None)
@@ -154,7 +154,7 @@ def _same_class(ap: AffectedPeriod, sub: Substitution) -> bool:
 
 
 class _Day:
-    """某一天的實際課表:週課表格位 + 當天的請假與調代課。"""
+    """某一天的实际课表:周课表格位 + 当天的请假与调代课。"""
 
     def __init__(self, db: Session, semester_id: int, timetable_id: int, on: date) -> None:
         self.db = db
@@ -167,7 +167,7 @@ class _Day:
                 select(ScheduleEntry).where(
                     ScheduleEntry.timetable_id == timetable_id, ScheduleEntry.weekday == weekday)
             )
-            # 單雙週的課只在對應的那一週出現在巡堂表上(v1.3.0)
+            # 单双周的课只在对应的那一周出现在巡堂表上(v1.3.0)
             if runs_in_week(e.assignment.week_parity, week)
         ]
         live = (
@@ -175,7 +175,7 @@ class _Day:
             AffectedPeriod.status != AffectedStatus.cancelled.value,
             AffectedPeriod.semester_id == semester_id,
         )
-        # 當天請假的節次:(配課, 節次) → (受影響節次, 處置或 None)
+        # 当天请假的节次:(配课, 节次) → (受影响节次, 处置或 None)
         absent = db.scalars(
             select(AffectedPeriod)
             .join(LeaveRequest, AffectedPeriod.leave_request_id == LeaveRequest.id)
@@ -189,7 +189,7 @@ class _Day:
         self.absent: dict[tuple[int | None, int], tuple[AffectedPeriod, Substitution | None]] = {
             (a.course_assignment_id, a.period_no): (a, subs.get(a.id)) for a in absent
         }
-        # 當天因調課回來補課的節次:(格位, 節次) → (請假那一節, 調課處置)
+        # 当天因调课回来补课的节次:(格位, 节次) → (请假那一节, 调课处置)
         self.makeup: dict[tuple[int | None, int | None], tuple[AffectedPeriod, Substitution]] = {}
         for sub in db.scalars(
             select(Substitution)
@@ -211,7 +211,7 @@ class _Day:
         subject, note = a.subject.name, ""
 
         def replace(absent_name: str, by: str) -> None:
-            """只換掉請假的那一位;協同教學的另一位老師照常上課。"""
+            """只换掉请假的那一位;协同教学的另一位老师照常上课。"""
             if absent_name in names:
                 names[names.index(absent_name)] = by
             else:
@@ -226,10 +226,10 @@ class _Day:
                 note = _NOTE.get(sub.type, "")
                 if sub.handler is not None:
                     replace(absent_name, sub.handler.name)
-                elif absent_name in names:      # 自習、停課:沒有人接手,請假的那位不會來
+                elif absent_name in names:      # 自习、停课:没有人接手,请假的那位不会来
                     names.remove(absent_name)
                 if sub.type == SubstitutionType.swap.value and _same_class(ap, sub):
-                    subject = sub.swap_subject_name or subject   # 同班互調:科目跟著老師走
+                    subject = sub.swap_subject_name or subject   # 同班互调:科目跟著老师走
         elif (entry.id, period_no) in self.makeup:
             ap, sub = self.makeup[(entry.id, period_no)]
             note = _NOTE[SubstitutionType.swap.value]
@@ -245,10 +245,10 @@ class _Day:
         )
 
     def lessons(self, class_id: int, period_no: int) -> list[_Lesson]:
-        """這一班這一節的課;跑班時會有好幾門(每一組一門),依配課建立的順序排列。
+        """这一班这一节的课;跑班时会有好几门(每一组一门),依配课建立的顺序排列。
 
-        順序不能看格位:群組的格位是一次整批寫入的,寫入順序取決於資料庫怎麼回傳配課,
-        PostgreSQL 並不保證。分組巡堂單的編號要每次都對到同一個社團,故以配課 id 為準。
+        顺序不能看格位:群组的格位是一次整批写入的,写入顺序取决于资料库怎么回传配课,
+        PostgreSQL 并不保证。分组巡堂单的编号要每次都对到同一个社团,故以配课 id 为准。
         """
         out = []
         for e in self.entries:
@@ -268,7 +268,7 @@ def _cell(lessons: list[_Lesson]) -> PatrolCell:
         return PatrolCell()
     if lessons[0].is_group and len(lessons) >= GROUP_LIST_MIN:
         return PatrolCell(
-            subject=lessons[0].unit_name, teacher=f"共 {len(lessons)} 組", note="見分組巡堂單")
+            subject=lessons[0].unit_name, teacher=f"共 {len(lessons)} 组", note="见分组巡堂单")
     return PatrolCell(
         subject=_join([x.subject for x in lessons]),
         teacher=_join([x.teacher for x in lessons]),
@@ -282,14 +282,14 @@ def legend(db: Session) -> str:
 
 
 def build(db: Session, semester_id: int, date_from: date, date_to: date) -> PatrolSheets:
-    """把一段期間的每一天組成巡堂表;沒有課的日子(假日)自動略過。"""
+    """把一段期间的每一天组成巡堂表;没有课的日子(假日)自动略过。"""
     if date_to < date_from:
-        raise PatrolError("結束日期不可早於開始日期")
+        raise PatrolError("结束日期不可早于开始日期")
     if (date_to - date_from).days >= MAX_DAYS:
-        raise PatrolError(f"一次最多列印 {MAX_DAYS} 天")
+        raise PatrolError(f"一次最多打印 {MAX_DAYS} 天")
     timetable = published_timetable(db, semester_id)
     if timetable is None:
-        raise PatrolError("此學期尚無已發布的課表")
+        raise PatrolError("此学期尚无已发布的课表")
 
     classes = list(db.scalars(
         select(ClassUnit).where(ClassUnit.semester_id == semester_id)
@@ -307,7 +307,7 @@ def build(db: Session, semester_id: int, date_from: date, date_to: date) -> Patr
         day = _Day(db, semester_id, timetable.id, on)
         if not day.entries:
             continue
-        listed: set[tuple[int, int]] = set()      # 已出過分組單的 (群組, 節次)
+        listed: set[tuple[int, int]] = set()      # 已出过分组单的 (群组, 节次)
         for table, members in by_table.values():
             periods = [p for p in table.periods if p.weekday == on.isoweekday()]
             for half in _halves(periods):
@@ -336,5 +336,5 @@ def build(db: Session, semester_id: int, date_from: date, date_to: date) -> Patr
                         page.rows.append(row)
                     result.pages.append(page)
     if not result.pages:
-        raise PatrolError("這段期間沒有任何課(可能是假日,或課表尚未排入)")
+        raise PatrolError("这段期间没有任何课(可能是假日,或课表尚未排入)")
     return result

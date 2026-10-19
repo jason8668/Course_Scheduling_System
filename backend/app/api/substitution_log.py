@@ -1,6 +1,6 @@
-"""今日調代課看板與調代課日誌(M4-4)。
+"""今日调代课看板与调代课日志(M4-4)。
 
-看板/日誌是行政的當日排課與歷史查詢工具,限教學組長/教務主任。
+看板/日志是行政的当日排课与历史查询工具,限教学组长/教务主任。
 """
 
 from dataclasses import asdict
@@ -31,18 +31,18 @@ def _entry_out(e: log_service.LogEntry) -> LogEntryOut:
 def _get_semester(db: Session, semester_id: int) -> Semester:
     sem = db.get(Semester, semester_id)
     if sem is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     return sem
 
 
 @router.get("/daily-board", response_model=DailyBoardOut)
 def daily_board(
     semester_id: int = Query(...),
-    on: date | None = Query(default=None, description="看板日期,預設為學校時區的今天"),
+    on: date | None = Query(default=None, description="看板日期,默认为学校时区的今天"),
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """某一天全校的調代課異動(預設今天);無異動則 entries 為空。"""
+    """某一天全校的调代课异动(默认今天);无异动则 entries 为空。"""
     sem = _get_semester(db, semester_id)
     day = on or log_service.school_today()
     entries = log_service.daily_board(db, semester_id, day)
@@ -58,12 +58,12 @@ def daily_board(
 @router.get("/patrol-sheets", response_model=PatrolSheetsOut)
 def get_patrol_sheets(
     semester_id: int = Query(...),
-    date_from: date | None = Query(default=None, description="預設為學校時區的今天"),
-    date_to: date | None = Query(default=None, description="預設同 date_from(只印一天)"),
+    date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
+    date_to: date | None = Query(default=None, description="默认同 date_from(只印一天)"),
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """巡堂表的列印資料:已發布課表疊上當天的調代課,一天分上午/下午各一張。"""
+    """巡堂表的打印资料:已发布课表叠上当天的调代课,一天分上午/下午各一张。"""
     _get_semester(db, semester_id)
     start = date_from or log_service.school_today()
     try:
@@ -76,12 +76,12 @@ def get_patrol_sheets(
 @router.get("/patrol-sheets.xlsx")
 def export_patrol_sheets(
     semester_id: int = Query(...),
-    date_from: date | None = Query(default=None, description="預設為學校時區的今天"),
-    date_to: date | None = Query(default=None, description="預設同 date_from(只匯出一天)"),
+    date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
+    date_to: date | None = Query(default=None, description="默认同 date_from(只导出一天)"),
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ) -> Response:
-    """巡堂表的 Excel 版:內容與列印頁相同,給學校下載後自行增減欄位、填巡堂人員。"""
+    """巡堂表的 Excel 版:内容与打印页相同,给学校下载后自行增减栏位、填巡堂人员。"""
     _get_semester(db, semester_id)
     start = date_from or log_service.school_today()
     end = date_to or start
@@ -90,7 +90,7 @@ def export_patrol_sheets(
     except patrol_sheets.PatrolError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     name = f"巡堂表_{start:%Y-%m-%d}" + (f"_{end:%m-%d}" if end != start else "")
-    # 中文檔名以 RFC 5987 filename* 表達;filename 提供 ASCII 後備(與課表匯出一致)
+    # 中文档名以 RFC 5987 filename* 表达;filename 提供 ASCII 后备(与课表导出一致)
     disposition = f"attachment; filename=\"patrol.xlsx\"; filename*=UTF-8''{quote(name)}.xlsx"
     return Response(
         content=patrol_xlsx.to_xlsx(sheets),
@@ -109,7 +109,7 @@ def substitution_log(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """調代課歷史查詢:依教師(缺課或代課)、日期區間、假別篩選。"""
+    """调代课历史查询:依教师(缺课或代课)、日期区间、假别筛选。"""
     _get_semester(db, semester_id)
     entries = log_service.query(
         db, semester_id,

@@ -1,4 +1,4 @@
-"""配課領域:scheduling_units / members / course_assignments / assignment_teachers / block_rules
+"""配课领域:scheduling_units / members / course_assignments / assignment_teachers / block_rules
 
 Revision ID: 0008_assignments
 Revises: 0007_teacher_account_contact

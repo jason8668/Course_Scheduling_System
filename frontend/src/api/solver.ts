@@ -1,4 +1,4 @@
-// 排課引擎 API:pre-flight 檢查、軟約束設定、自動排課任務與進度。
+// 排课引擎 API:pre-flight 检查、软约束设置、自动排课任务与进度。
 
 import { apiGet, apiPost, apiPut } from '@/api/client'
 
@@ -41,7 +41,7 @@ export interface SoftReport {
 export type JobStatus = 'queued' | 'running' | 'finished' | 'failed' | 'cancelled'
 export type JobPhase = 'solving' | 'explaining'
 
-/** 無解時的一條原因:message 說發生什麼事,suggestion 說可以怎麼辦。 */
+/** 无解时的一条原因:message 说发生什么事,suggestion 说可以怎么办。 */
 export interface ConflictCause {
   code: string
   scope_type: string
@@ -63,12 +63,12 @@ export interface ConflictReport {
 }
 
 export interface UnscheduledCourse {
-  // 一筆 = 一個排課單位(跑班群組含多筆成員配課),未排節數只算一次
+  // 一笔 = 一个排课单位(跑班群组含多笔成员配课),未排节数只算一次
   assignment_ids: number[]
   subject_name: string
   class_names: string[]
   periods: number
-  reason: string  // 完全排不下的原因;solver 自行取捨掉的則為空字串
+  reason: string  // 完全排不下的原因;solver 自行取舍掉的则为空字串
 }
 
 export interface RelaxableOption {

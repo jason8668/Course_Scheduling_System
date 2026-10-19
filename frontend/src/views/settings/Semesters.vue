@@ -20,27 +20,27 @@ const semesters = ref<Semester[]>([])
 const templates = ref<Template[]>([])
 const loading = ref(false)
 
-// 建立學期表單。起訖日期是請假展開、今日看板、調代課判定的依據——少了它請假會被擋,
-// 而先前畫面上沒有任何地方填得了(使用者回報 #15)
+// 建立学期表单。起讫日期是请假展开、今日看板、调代课判定的依据——少了它请假会被挡,
+// 而先前界面上没有任何地方填得了(用户回报 #15)
 const emptyForm = () => ({
   academic_year: 115, term: 1, template_key: null as string | null,
   start_date: null as string | null, end_date: null as string | null,
 })
 const form = ref(emptyForm())
 const templateOptions = computed(() => [
-  { label: '空白(不帶入節次表)', value: '' },
-  ...templates.value.map((t) => ({ label: `${t.name}(${t.minutes_per_period} 分/節)`, value: t.key })),
+  { label: '空白(不带入节次表)', value: '' },
+  ...templates.value.map((t) => ({ label: `${t.name}(${t.minutes_per_period} 分/节)`, value: t.key })),
 ])
 const termOptions = [
-  { label: '第 1 學期', value: 1 },
-  { label: '第 2 學期', value: 2 },
+  { label: '第 1 学期', value: 1 },
+  { label: '第 2 学期', value: 2 },
 ]
 
 async function reload() {
   loading.value = true
   try {
     const items = await listSemesters()
-    // 逐一取回含節次表的完整資料
+    // 逐一取回含节次表的完整资料
     semesters.value = await Promise.all(items.map((s: SemesterListItem) => getSemester(s.id)))
   } finally {
     loading.value = false
@@ -54,7 +54,7 @@ onMounted(async () => {
 
 async function onCreateSemester() {
   if (!form.value.start_date || !form.value.end_date) {
-    message.warning('請填學期起訖日期(請假與調代課需要)')
+    message.warning('请填学期起讫日期(请假与调代课需要)')
     return
   }
   try {
@@ -65,15 +65,15 @@ async function onCreateSemester() {
       start_date: form.value.start_date,
       end_date: form.value.end_date,
     })
-    message.success('學期已建立')
+    message.success('学期已建立')
     form.value = emptyForm()
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '建立失敗')
+    message.error((e as ApiError).detail || '建立失败')
   }
 }
 
-// 編輯學期:已經建好、但沒有起訖日期的學期靠這裡補(先前只能重建或改資料庫)
+// 编辑学期:已经建好、但没有起讫日期的学期靠这里补(先前只能重建或改资料库)
 const showEdit = ref(false)
 const editing = ref<Semester | null>(null)
 const editForm = ref({ start_date: null as string | null, end_date: null as string | null })
@@ -87,7 +87,7 @@ function openEdit(sem: Semester) {
 async function onSaveEdit() {
   if (!editing.value) return
   if (!editForm.value.start_date || !editForm.value.end_date) {
-    message.warning('請填學期起訖日期')
+    message.warning('请填学期起讫日期')
     return
   }
   try {
@@ -95,21 +95,21 @@ async function onSaveEdit() {
       start_date: editForm.value.start_date,
       end_date: editForm.value.end_date,
     })
-    message.success('學期已更新')
+    message.success('学期已更新')
     showEdit.value = false
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '更新失敗')
+    message.error((e as ApiError).detail || '更新失败')
   }
 }
 
 async function onDeleteSemester(id: number) {
   await deleteSemester(id)
-  message.success('學期已刪除')
+  message.success('学期已删除')
   await reload()
 }
 
-// 新增節次表 modal
+// 新增节次表 modal
 const showAddTable = ref(false)
 const addTableTarget = ref<number | null>(null)
 const addTableForm = ref({ name: '', template_key: null as string | null, is_default: false })
@@ -122,7 +122,7 @@ function openAddTable(semesterId: number) {
 
 async function onAddTable() {
   if (!addTableForm.value.name) {
-    message.warning('請輸入節次表名稱')
+    message.warning('请输入节次表名称')
     return
   }
   try {
@@ -132,16 +132,16 @@ async function onAddTable() {
       is_default: addTableForm.value.is_default,
     })
     showAddTable.value = false
-    message.success('節次表已新增')
+    message.success('节次表已新增')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '新增失敗')
+    message.error((e as ApiError).detail || '新增失败')
   }
 }
 
 async function onDeleteTable(id: number) {
   await deletePeriodTable(id)
-  message.success('節次表已刪除')
+  message.success('节次表已删除')
   await reload()
 }
 
@@ -149,11 +149,11 @@ function editTable(id: number) {
   router.push({ name: 'period-table-editor', params: { id } })
 }
 
-// 複製到新學期
+// 复制到新学期
 const showCopy = ref(false)
 const copySource = ref<Semester | null>(null)
 
-/** 來源日期往後推半年,作為新學期的預設值(使用者仍須依實際校曆確認)。 */
+/** 来源日期往后推半年,作为新学期的默认值(用户仍须依实际校历确认)。 */
 function halfYearLater(day: string | null): string | null {
   if (!day) return null
   const d = new Date(day)
@@ -176,7 +176,7 @@ function openCopy(sem: Semester) {
     ...emptyCopyForm(),
     academic_year: sem.academic_year + 1,
     term: sem.term,
-    // 起訖日不可沿用來源(那是上學期的日期);往後推半年帶個起點,讓組長改而不是從零填
+    // 起讫日不可沿用来源(那是上学期的日期);往后推半年带个起点,让组长改而不是从零填
     start_date: halfYearLater(sem.start_date),
     end_date: halfYearLater(sem.end_date),
   }
@@ -188,10 +188,10 @@ async function onCopy() {
   try {
     await copySemester(copySource.value.id, copyForm.value)
     showCopy.value = false
-    message.success('已複製到新學期')
+    message.success('已复制到新学期')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '複製失敗')
+    message.error((e as ApiError).detail || '复制失败')
   }
 }
 
@@ -205,38 +205,38 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
 <template>
   <div>
     <n-space vertical size="large">
-      <h1 style="margin: 0">學期與節次表</h1>
+      <h1 style="margin: 0">学期与节次表</h1>
 
-      <n-card title="建立學期">
+      <n-card title="建立学期">
         <n-space align="center" :wrap="true">
-          <n-text>學年度</n-text>
+          <n-text>学年度</n-text>
           <n-input-number v-model:value="form.academic_year" :min="100" :max="200" style="width: 120px" />
           <n-select v-model:value="form.term" :options="termOptions" style="width: 130px" />
-          <n-text>學制範本</n-text>
+          <n-text>学制范本</n-text>
           <n-select
             v-model:value="form.template_key"
             :options="templateOptions"
-            placeholder="選擇學制範本"
+            placeholder="选择学制范本"
             style="width: 220px"
           />
-          <n-text>起訖日期</n-text>
+          <n-text>起讫日期</n-text>
           <n-date-picker
             v-model:formatted-value="form.start_date" value-format="yyyy-MM-dd"
-            type="date" placeholder="開學日" style="width: 150px" data-testid="sem-start"
+            type="date" placeholder="开学日" style="width: 150px" data-testid="sem-start"
           />
           <n-text>~</n-text>
           <n-date-picker
             v-model:formatted-value="form.end_date" value-format="yyyy-MM-dd"
-            type="date" placeholder="結業日" style="width: 150px" data-testid="sem-end"
+            type="date" placeholder="结业日" style="width: 150px" data-testid="sem-end"
           />
           <n-button type="primary" data-testid="sem-create" @click="onCreateSemester">建立</n-button>
         </n-space>
         <n-text depth="3" style="font-size: 13px">
-          起訖日期依貴校校曆填寫;請假展開節次、今日看板與調代課都以它為準。
+          起讫日期依贵校校历填写;请假展开节次、今日看板与调代课都以它为准。
         </n-text>
       </n-card>
 
-      <n-empty v-if="!loading && semesters.length === 0" description="尚未建立任何學期" />
+      <n-empty v-if="!loading && semesters.length === 0" description="尚未建立任何学期" />
 
       <n-card v-for="sem in semesters" :key="sem.id">
         <n-space justify="space-between" align="center">
@@ -247,19 +247,19 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
               {{ sem.start_date }} ~ {{ sem.end_date }}
             </n-text>
             <n-tag v-else type="warning" size="small" data-testid="sem-no-range">
-              尚未設定起訖日期(無法登記請假)
+              尚未设置起讫日期(无法登记请假)
             </n-tag>
           </n-space>
           <n-space>
-            <n-button size="tiny" data-testid="sem-edit" @click="openEdit(sem)">編輯學期</n-button>
+            <n-button size="tiny" data-testid="sem-edit" @click="openEdit(sem)">编辑学期</n-button>
             <n-button size="tiny" data-testid="copy-semester" @click="openCopy(sem)">
-              複製到新學期
+              复制到新学期
             </n-button>
             <n-popconfirm @positive-click="onDeleteSemester(sem.id)">
               <template #trigger>
-                <n-button size="tiny" type="error" ghost>刪除學期</n-button>
+                <n-button size="tiny" type="error" ghost>删除学期</n-button>
               </template>
-              確定刪除此學期?其節次表將一併移除。
+              确定删除此学期?其节次表将一并移除。
             </n-popconfirm>
           </n-space>
         </n-space>
@@ -275,74 +275,74 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
           >
             <n-space align="center">
               <n-text>{{ table.name }}</n-text>
-              <n-tag v-if="table.is_default" type="success" size="tiny">預設</n-tag>
+              <n-tag v-if="table.is_default" type="success" size="tiny">默认</n-tag>
               <n-text depth="3">共 {{ table.periods.length }} 格</n-text>
             </n-space>
             <n-space>
-              <n-button size="tiny" @click="editTable(table.id)">編輯節次表</n-button>
+              <n-button size="tiny" @click="editTable(table.id)">编辑节次表</n-button>
               <n-popconfirm @positive-click="onDeleteTable(table.id)">
                 <template #trigger>
-                  <n-button size="tiny" type="error" ghost>刪除</n-button>
+                  <n-button size="tiny" type="error" ghost>删除</n-button>
                 </template>
-                確定刪除此節次表?
+                确定删除此节次表?
               </n-popconfirm>
             </n-space>
           </n-space>
-          <n-button size="small" dashed @click="openAddTable(sem.id)">+ 新增節次表</n-button>
+          <n-button size="small" dashed @click="openAddTable(sem.id)">+ 新增节次表</n-button>
         </n-space>
       </n-card>
     </n-space>
 
-    <!-- 視窗放在排版容器外面:n-space 會把每個子節點包一層沒有 key 的 div,
-         學期卡片數量一變(載入完成、新增、刪除)視窗就跟著換位置重掛,
-         正式建置下會變成關不掉(X、Esc、點視窗外都沒反應)。 -->
+    <!-- 视窗放在排版容器外面:n-space 会把每个子节点包一层没有 key 的 div,
+         学期卡片数量一变(载入完成、新增、删除)视窗就跟著换位置重挂,
+         正式建置下会变成关不掉(X、Esc、点视窗外都没反应)。 -->
     <n-modal
       v-model:show="showEdit" preset="card" style="max-width: 420px"
-      :title="`編輯學期:${editing?.label ?? ''}`"
+      :title="`编辑学期:${editing?.label ?? ''}`"
     >
       <n-space vertical size="small">
-        <n-text>學期起訖日期</n-text>
+        <n-text>学期起讫日期</n-text>
         <n-space align="center">
           <n-date-picker
             v-model:formatted-value="editForm.start_date" value-format="yyyy-MM-dd"
-            type="date" placeholder="開學日" style="width: 150px" data-testid="sem-edit-start"
+            type="date" placeholder="开学日" style="width: 150px" data-testid="sem-edit-start"
           />
           <n-text>~</n-text>
           <n-date-picker
             v-model:formatted-value="editForm.end_date" value-format="yyyy-MM-dd"
-            type="date" placeholder="結業日" style="width: 150px" data-testid="sem-edit-end"
+            type="date" placeholder="结业日" style="width: 150px" data-testid="sem-edit-end"
           />
         </n-space>
         <n-text depth="3" style="font-size: 13px">
-          請假只能登記在這個範圍內;改動不影響已排好的課表。
+          请假只能登记在这个范围内;改动不影响已排好的课表。
         </n-text>
-        <n-button type="primary" data-testid="sem-edit-save" @click="onSaveEdit">儲存</n-button>
+        <n-button type="primary" data-testid="sem-edit-save" @click="onSaveEdit">储存</n-button>
       </n-space>
     </n-modal>
 
     <n-modal
       v-model:show="showAddTable"
       preset="card"
-      title="新增節次表"
+      title="新增节次表"
       style="max-width: 440px"
     >
       <n-space vertical>
-        <n-text>名稱</n-text>
+        <n-text>名称</n-text>
         <n-select
           v-model:value="addTableForm.name"
           filterable
           tag
           :options="[
-            { label: '高中部節次表', value: '高中部節次表' },
-            { label: '國中部節次表', value: '國中部節次表' },
+            { label: '高中部节次表', value: '高中部节次表' },
+            { label: '初中部节次表', value: '初中部节次表' },
           ]"
-          placeholder="輸入或選擇名稱"
+          placeholder="输入或选择名称"
         />
-        <n-text>帶入學制範本(選填)</n-text>
+        <n-text>带入学制范本(选填)</n-text>
         <n-select
           v-model:value="addTableForm.template_key"
           :options="templateOptions"
-          placeholder="不帶入則建立空表"
+          placeholder="不带入则建立空表"
         />
         <n-button type="primary" @click="onAddTable">建立</n-button>
       </n-space>
@@ -351,18 +351,18 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
     <n-modal
       v-model:show="showCopy"
       preset="card"
-      :title="`複製「${copySource?.label}」到新學期`"
+      :title="`复制「${copySource?.label}」到新学期`"
       style="max-width: 460px"
     >
       <n-space vertical>
         <n-space align="center">
-          <n-text>目標學年度</n-text>
+          <n-text>目标学年度</n-text>
           <n-input-number v-model:value="copyForm.academic_year" :min="100" :max="200" style="width: 120px" />
           <n-select v-model:value="copyForm.term" :options="termOptions" style="width: 130px" />
         </n-space>
-        <!-- 起訖日必填:請假展開、今日看板、代課的「已上過」判定都吃它,漏填不會報錯但整個算錯 -->
+        <!-- 起讫日必填:请假展开、今日看板、代课的「已上过」判定都吃它,漏填不会报错但整个算错 -->
         <n-space align="center">
-          <n-text>學期起訖</n-text>
+          <n-text>学期起讫</n-text>
           <n-date-picker
             v-model:formatted-value="copyForm.start_date" value-format="yyyy-MM-dd"
             type="date" data-testid="copy-start" style="width: 150px"
@@ -374,28 +374,28 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
           />
         </n-space>
         <n-text depth="3" style="font-size: 12px">
-          已依來源學期往後推半年帶入預設值,請確認實際校曆後修改。
+          已依来源学期往后推半年带入默认值,请确认实际校历后修改。
         </n-text>
-        <n-text strong>複製項目</n-text>
+        <n-text strong>复制项目</n-text>
         <n-space>
-          <n-checkbox v-model:checked="copyForm.period_tables">節次表</n-checkbox>
+          <n-checkbox v-model:checked="copyForm.period_tables">节次表</n-checkbox>
           <n-checkbox v-model:checked="copyForm.subjects">科目</n-checkbox>
-          <n-checkbox v-model:checked="copyForm.teachers">教師</n-checkbox>
-          <n-checkbox v-model:checked="copyForm.rooms">場地</n-checkbox>
-          <n-checkbox v-model:checked="copyForm.classes">班級</n-checkbox>
+          <n-checkbox v-model:checked="copyForm.teachers">教师</n-checkbox>
+          <n-checkbox v-model:checked="copyForm.rooms">场地</n-checkbox>
+          <n-checkbox v-model:checked="copyForm.classes">班级</n-checkbox>
           <n-checkbox v-model:checked="copyForm.constraint_config" data-testid="copy-config">
-            排課偏好設定
+            排课偏好设置
           </n-checkbox>
         </n-space>
         <n-space align="center">
           <n-switch v-model:value="copyForm.grade_promotion" />
-          <n-text>班級年級自動進位(畢業年級不複製)</n-text>
+          <n-text>班级年级自动进位(毕业年级不复制)</n-text>
         </n-space>
         <n-button
           type="primary" data-testid="copy-confirm"
           :disabled="!copyForm.start_date || !copyForm.end_date" @click="onCopy"
         >
-          建立新學期
+          建立新学期
         </n-button>
       </n-space>
     </n-modal>

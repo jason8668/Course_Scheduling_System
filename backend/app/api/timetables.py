@@ -1,7 +1,7 @@
-"""課表 API:草稿 CRUD、格位放入/移動/刪除、鎖定、即時衝突檢查。
+"""课表 API:草稿 CRUD、格位放入/移动/删除、锁定、即时冲突检查。
 
-放入/移動時以 conflict_checker 驗證硬約束,違反則回 409 並附人話衝突清單。
-跑班群組:放入/移動/刪除/鎖定皆連動同群組全部配課(H7 同時段)。
+放入/移动时以 conflict_checker 验证硬约束,违反则回 409 并附人话冲突清单。
+跑班群组:放入/移动/删除/锁定皆连动同群组全部配课(H7 同时段)。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -49,16 +49,16 @@ editor = require_roles(Role.scheduler)
 def _get_timetable(db: Session, timetable_id: int) -> Timetable:
     tt = db.get(Timetable, timetable_id)
     if tt is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到課表")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到课表")
     return tt
 
 
 def _require_draft(tt: Timetable) -> Timetable:
-    """已發布/已封存的課表是快照,不得再改格位(architecture.md D4)。"""
+    """已发布/已封存的课表是快照,不得再改格位(architecture.md D4)。"""
     if tt.status != TimetableStatus.draft.value:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "此課表已發布或已封存,不可編輯;請複製為新草稿後修改",
+            "此课表已发布或已封存,不可编辑;请复制为新草稿后修改",
         )
     return tt
 
@@ -66,14 +66,14 @@ def _require_draft(tt: Timetable) -> Timetable:
 def _get_assignment(db: Session, semester_id: int, assignment_id: int) -> CourseAssignment:
     a = db.get(CourseAssignment, assignment_id)
     if a is None or a.semester_id != semester_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "配課無效或不屬於本課表學期")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "配课无效或不属于本课表学期")
     return a
 
 
 def _serialize_entry(e: ScheduleEntry) -> ScheduleEntryOut:
     a = e.assignment
     su = a.scheduling_unit
-    # 格位場地優先於配課場地(引擎逐格指派、調代課教室異動皆寫在格位上)
+    # 格位场地优先于配课场地(引擎逐格指派、调代课教室异动皆写在格位上)
     room = e.room if e.room is not None else a.room
     return ScheduleEntryOut(
         id=e.id, course_assignment_id=e.course_assignment_id,
@@ -94,7 +94,7 @@ def _conflict_409(conflicts: list[cc.Conflict]) -> HTTPException:
     return HTTPException(
         status.HTTP_409_CONFLICT,
         detail={
-            "message": "與硬約束衝突,無法排入",
+            "message": "与硬约束冲突,无法排入",
             "conflicts": [{"code": c.code, "message": c.message} for c in conflicts],
         },
     )
@@ -103,10 +103,10 @@ def _conflict_409(conflicts: list[cc.Conflict]) -> HTTPException:
 def _slot_siblings(
     db: Session, timetable_id: int, unit_id: int, weekday: int, period_no: int
 ) -> list[ScheduleEntry]:
-    """同一排課單位在「同一格位」的全部格位。
+    """同一排课单位在「同一格位」的全部格位。
 
-    跑班群組:該時段開的多門課(H7 須同進同出);單班:即該格本身。
-    以格位為範圍而非整個排課單位,否則同班其他科目的格位會被誤連動。
+    跑班群组:该时段开的多门课(H7 须同进同出);单班:即该格本身。
+    以格位为范围而非整个排课单位,否则同班其他科目的格位会被误连动。
     """
     return list(
         db.scalars(
@@ -123,7 +123,7 @@ def _slot_siblings(
 
 
 def _placed_periods(db: Session, timetable_id: int, assignment_id: int) -> int:
-    """該配課在此課表已排入的節數(連堂以 span 計)。"""
+    """该配课在此课表已排入的节数(连堂以 span 计)。"""
     total = db.scalar(
         select(func.coalesce(func.sum(ScheduleEntry.span), 0)).where(
             ScheduleEntry.timetable_id == timetable_id,
@@ -133,7 +133,7 @@ def _placed_periods(db: Session, timetable_id: int, assignment_id: int) -> int:
     return int(total or 0)
 
 
-# ── 課表草稿 ──────────────────────────
+# ── 课表草稿 ──────────────────────────
 @router.get("/timetables", response_model=list[TimetableBrief])
 def list_timetables(
     semester_id: int = Query(...), db: Session = Depends(get_db), _: object = Depends(viewer)
@@ -163,7 +163,7 @@ def create_timetable(
     _: object = Depends(editor),
 ):
     if db.get(Semester, semester_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     tt = Timetable(semester_id=semester_id, name=body.name)
     db.add(tt)
     db.commit()
@@ -212,7 +212,7 @@ def duplicate_timetable(
     db: Session = Depends(get_db),
     _: object = Depends(editor),
 ):
-    """複製為新草稿(含全部格位);兩份草稿互不影響。"""
+    """复制为新草稿(含全部格位);两份草稿互不影响。"""
     src = _get_timetable(db, timetable_id)
     new = pub.duplicate(db, src, body.name)
     db.commit()
@@ -223,7 +223,7 @@ def duplicate_timetable(
 def timetable_completeness(
     timetable_id: int, db: Session = Depends(get_db), _: object = Depends(viewer)
 ):
-    """發布前完整性檢查:列出尚未排完的課務。"""
+    """发布前完整性检查:列出尚未排完的课务。"""
     tt = _get_timetable(db, timetable_id)
     return pub.completeness(db, tt)
 
@@ -232,7 +232,7 @@ def timetable_completeness(
 def timetable_check_all(
     timetable_id: int, db: Session = Depends(get_db), _: object = Depends(viewer)
 ):
-    """檢查課表:衝堂等硬約束違規 + 未排完的課務。草稿、已發布、已封存皆可檢查,不改狀態。"""
+    """检查课表:冲堂等硬约束违规 + 未排完的课务。草稿、已发布、已封存皆可检查,不改状态。"""
     tt = _get_timetable(db, timetable_id)
     report = pub.completeness(db, tt)
     issues = timetable_check.check(db, tt)
@@ -250,9 +250,9 @@ def publish_timetable(
     db: Session = Depends(get_db),
     user: User = Depends(editor),
 ):
-    """draft → published;同學期原 published 轉 archived。
+    """draft → published;同学期原 published 转 archived。
 
-    未排完、或課表有衝堂等違規時,需 force=true 才可發布(列出來讓使用者自己決定)。
+    未排完、或课表有冲堂等违规时,需 force=true 才可发布(列出来让用户自己决定)。
     """
     tt = _require_draft(_get_timetable(db, timetable_id))
     report = pub.completeness(db, tt)
@@ -260,11 +260,11 @@ def publish_timetable(
     blocked = not report["complete"] or bool(issues)
     if blocked and not force:
         if issues and not report["complete"]:
-            text = "課表有衝突,且尚有課務未排完;確認後可強制發布"
+            text = "课表有冲突,且尚有课务未排完;确认后可强制发布"
         elif issues:
-            text = "課表有衝突,確認後可強制發布"
+            text = "课表有冲突,确认后可强制发布"
         else:
-            text = "尚有課務未排完,確認後可強制發布"
+            text = "尚有课务未排完,确认后可强制发布"
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail={
@@ -278,7 +278,7 @@ def publish_timetable(
         )
     pub.publish(db, tt, user, forced=blocked)
     db.commit()
-    # 條件 D:重新發布後,提醒仍有多少「今日之後」的調代課是依舊課表展開的
+    # 条件 D:重新发布后,提醒仍有多少「今日之后」的调代课是依旧课表展开的
     out = get_timetable(timetable_id, db, None)
     out.stale_affected = pub.stale_future_affected_count(db, tt.semester_id)
     return out
@@ -293,10 +293,10 @@ def delete_timetable(
     db.commit()
 
 
-# ── 全員唯讀課表查詢(含 teacher 角色)────
+# ── 全员唯读课表查询(含 teacher 角色)────
 @router.get("/published/semesters", response_model=list[PublicSemester])
 def published_semesters(db: Session = Depends(get_db), _: User = Depends(get_active_user)):
-    """有已發布課表的學期。"""
+    """有已发布课表的学期。"""
     rows = db.scalars(
         select(Semester)
         .join(Timetable, Timetable.semester_id == Semester.id)
@@ -312,7 +312,7 @@ def published_my_teacher(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """登入者在該學期綁定的教師主檔(無綁定回 null),供教師端預設顯示本人課表。"""
+    """登录者在该学期绑定的教师主档(无绑定回 null),供教师端默认显示本人课表。"""
     t = current_teacher(db, user, semester_id)
     return NamedBrief(id=t.id, name=t.name) if t else None
 
@@ -323,7 +323,7 @@ def published_timetable(
     db: Session = Depends(get_db),
     _: User = Depends(get_active_user),
 ):
-    """該學期的已發布課表 + 查詢頁所需選項與節次表(教師端只需這一支)。"""
+    """该学期的已发布课表 + 查询页所需选项与节次表(教师端只需这一支)。"""
     tt = db.scalar(
         select(Timetable).where(
             Timetable.semester_id == semester_id,
@@ -367,7 +367,7 @@ def published_timetable(
     )
 
 
-# ── 衝突檢查(不寫入)────────────────
+# ── 冲突检查(不写入)────────────────
 @router.post("/timetables/{timetable_id}/check-conflict", response_model=CheckResponse)
 def check_conflict(
     timetable_id: int,
@@ -381,7 +381,7 @@ def check_conflict(
     if body.ignore_entry_id is not None:
         e = db.get(ScheduleEntry, body.ignore_entry_id)
         if e is not None and e.timetable_id == tt.id:
-            # 移動:忽略被搬動的那一格(群組則含同格的兄弟課)
+            # 移动:忽略被搬动的那一格(群组则含同格的兄弟课)
             ignore_ids = {
                 s.id for s in _slot_siblings(
                     db, tt.id, e.assignment.scheduling_unit_id, e.weekday, e.period_no
@@ -396,7 +396,7 @@ def check_conflict(
     )
 
 
-# ── 格位放入/移動/刪除/鎖定 ──────────
+# ── 格位放入/移动/删除/锁定 ──────────
 @router.post("/timetables/{timetable_id}/entries", response_model=TimetableOut,
              status_code=status.HTTP_201_CREATED)
 def place_entry(
@@ -410,16 +410,16 @@ def place_entry(
     if body.room_id is not None:
         room = db.get(Room, body.room_id)
         if room is None or room.semester_id != tt.semester_id:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "場地無效或不屬於本課表學期")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "场地无效或不属于本课表学期")
     placements = cc.placements_for(db, a, body.weekday, body.period_no, body.span, body.room_id)
-    # H8 守恆(放入面):不得超過該配課的每週節數
+    # H8 守恒(放入面):不得超过该配课的每周节数
     for pl in placements:
         placed = _placed_periods(db, tt.id, pl.assignment.id)
         if placed + pl.span > pl.assignment.periods_per_week:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
-                f"「{pl.assignment.subject.name}」已排 {placed} 節,"
-                f"再排 {pl.span} 節將超過每週 {pl.assignment.periods_per_week} 節",
+                f"「{pl.assignment.subject.name}」已排 {placed} 节,"
+                f"再排 {pl.span} 节将超过每周 {pl.assignment.periods_per_week} 节",
             )
     conflicts = cc.check_conflict(
         db, tt, a, body.weekday, body.period_no, body.span, room_id=body.room_id
@@ -446,14 +446,14 @@ def move_entry(
     if e is None or e.timetable_id != tt.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到格位")
     if e.locked:
-        raise HTTPException(status.HTTP_409_CONFLICT, "格位已鎖定,請先解鎖再移動")
+        raise HTTPException(status.HTTP_409_CONFLICT, "格位已锁定,请先解锁再移动")
     a = e.assignment
-    # 同格兄弟(群組同時段的多門課)一起搬;檢查時忽略自己這幾格
+    # 同格兄弟(群组同时段的多门课)一起搬;检查时忽略自己这几格
     moving = _slot_siblings(db, tt.id, a.scheduling_unit_id, e.weekday, e.period_no)
     conflicts = cc.check_conflict(
         db, tt, a, body.weekday, body.period_no, e.span,
         ignore_entry_ids={s.id for s in moving},
-        room_id=e.room_id,  # 搬動時沿用格位既有的場地
+        room_id=e.room_id,  # 搬动时沿用格位既有的场地
     )
     if conflicts:
         raise _conflict_409(conflicts)
@@ -494,7 +494,7 @@ def delete_entry(
     if e is None or e.timetable_id != tt.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到格位")
     if e.locked:
-        raise HTTPException(status.HTTP_409_CONFLICT, "格位已鎖定,請先解鎖再移除")
+        raise HTTPException(status.HTTP_409_CONFLICT, "格位已锁定,请先解锁再移除")
     for sib in _slot_siblings(db, tt.id, e.assignment.scheduling_unit_id, e.weekday, e.period_no):
         db.delete(sib)
     db.commit()

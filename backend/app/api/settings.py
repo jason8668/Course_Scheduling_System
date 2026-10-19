@@ -1,4 +1,4 @@
-"""全域系統設定:SMTP 寄信(M4-3)、排課相關規則。管理員專用。"""
+"""全域系统设置:SMTP 寄信(M4-3)、排课相关规则。管理员专用。"""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -24,13 +24,13 @@ class SchoolSettings(BaseModel):
 class SchedulingSettings(BaseModel):
     max_overtime: int = Field(
         ge=0, le=20,
-        description="超鐘點上限(節):教師配課最多可超出應授節數幾節。0 = 不限制",
+        description="超课时上限(节):教师配课最多可超出应授节数几节。0 = 不限制",
     )
 
 
 class PatrolSettings(BaseModel):
-    # app_settings.value 欄位長度 500
-    legend: str = Field(max_length=500, description="巡堂表下方的記錄說明;留空則恢復預設")
+    # app_settings.value 栏位长度 500
+    legend: str = Field(max_length=500, description="巡堂表下方的记录说明;留空则恢复默认")
 
 
 def _smtp_out(db: Session) -> SmtpSettingsOut:
@@ -43,7 +43,7 @@ def _smtp_out(db: Session) -> SmtpSettingsOut:
 
 @router.get("/settings/smtp", response_model=SmtpSettingsOut)
 def get_smtp(db: Session = Depends(get_db), _: User = Depends(admin_only)):
-    """SMTP 設定(不回傳密碼明文)。"""
+    """SMTP 设置(不回传密码明文)。"""
     return _smtp_out(db)
 
 
@@ -58,7 +58,7 @@ def put_smtp(
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_smtp",
         target_type="app_setting", target_id=None,
-        detail=f"SMTP 設定更新:{body.host}:{body.port}"[:500],
+        detail=f"SMTP 设置更新:{body.host}:{body.port}"[:500],
     ))
     db.commit()
     return _smtp_out(db)
@@ -73,12 +73,12 @@ def get_school(db: Session = Depends(get_db), _: User = Depends(admin_only)):
 def put_school(
     body: SchoolSettings, db: Session = Depends(get_db), user: User = Depends(admin_only)
 ):
-    """校名會即時反映在介面、匯出課表與通知信,不需重啟容器。"""
+    """校名会即时反映在介面、导出课表与通知信,不需重启容器。"""
     app_settings.save_school_name(db, body.school_name)
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_school_name",
         target_type="app_setting", target_id=None,
-        detail=f"校名改為「{body.school_name}」"[:500],
+        detail=f"校名改为「{body.school_name}」"[:500],
     ))
     db.commit()
     return SchoolSettings(school_name=app_settings.school_name(db))
@@ -97,7 +97,7 @@ def put_scheduling(
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_scheduling_settings",
         target_type="app_setting", target_id=None,
-        detail=f"超鐘點上限設為 {body.max_overtime} 節",
+        detail=f"超课时上限设为 {body.max_overtime} 节",
     ))
     db.commit()
     return SchedulingSettings(max_overtime=app_settings.max_overtime(db))
@@ -115,7 +115,7 @@ def put_patrol(
     app_settings.save_patrol_legend(db, body.legend)
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_patrol_settings",
-        target_type="app_setting", target_id=None, detail="修改巡堂表的記錄說明",
+        target_type="app_setting", target_id=None, detail="修改巡堂表的记录说明",
     ))
     db.commit()
     return PatrolSettings(legend=app_settings.patrol_legend(db))
@@ -125,15 +125,15 @@ def put_patrol(
 def test_smtp(
     to: str, db: Session = Depends(get_db), _: User = Depends(admin_only)
 ):
-    """寄一封測試信,當場回報成功或錯誤(不走 RQ,好讓管理員立刻看到結果)。"""
+    """寄一封测试信,当场回报成功或错误(不走 RQ,好让管理员立刻看到结果)。"""
     cfg = app_settings.smtp_config(db)
     if not cfg.configured:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "尚未設定 SMTP 主機與寄件人")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "尚未设置 SMTP 主机与寄件人")
     try:
         sent = email_service.send(
-            db, to=to, subject="排課系統測試信",
-            body="這是一封測試信,收到代表 SMTP 設定正確。",
+            db, to=to, subject="排课系统测试信",
+            body="这是一封测试信,收到代表 SMTP 设置正确。",
         )
-    except Exception as exc:  # noqa: BLE001 - 把 SMTP 錯誤原文回給管理員
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"寄送失敗:{exc}") from exc
+    except Exception as exc:  # noqa: BLE001 - 把 SMTP 错误原文回给管理员
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"寄送失败:{exc}") from exc
     return {"sent": sent, "to": to}

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="備份與還原 — 排課與調代課系統部署與維運文件">
-<title>備份與還原 · 排課與調代課系統</title>
+<meta name="description" content="备份与还原 — 排课与调代课系统部署与维运文件">
+<title>备份与还原 · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📗</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/deploy/backup.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/deploy/backup.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,109 +151,109 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="../index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="../index.html">教學組長操作手冊</a>
+<a class="brand" href="../index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="../index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc" href="README.html">總覽:從哪開始</a>
-<a class="doc" href="install.html">安裝指南</a>
-<a class="doc" href="upgrade.html">升級指南</a>
-<a class="doc here" href="backup.html">備份與還原</a>
-<a class="doc" href="https.html">網域與 HTTPS</a>
-<a class="doc" href="faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc" href="README.html">总览:从哪开始</a>
+<a class="doc" href="install.html">安装指南</a>
+<a class="doc" href="upgrade.html">升级指南</a>
+<a class="doc here" href="backup.html">备份与还原</a>
+<a class="doc" href="https.html">网域与 HTTPS</a>
+<a class="doc" href="faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="../architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc" href="../roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="../tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="../architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc" href="../roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="../tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#一每日自動備份預設已開">一、每日自動備份(預設已開)</a><a class="lv2" href="#二手動備份與還原系統管理介面">二、手動備份與還原(系統管理介面)</a><a class="lv3" href="#還原會發生什麼">還原會發生什麼</a><a class="lv2" href="#三異地備援強烈建議">三、異地備援(強烈建議)</a><a class="lv3" href="#做法-1定期下載備份檔最簡單">做法 1:定期下載備份檔(最簡單)</a><a class="lv3" href="#做法-2把-backups-volume-同步到外部可排程">做法 2:把 backups volume 同步到外部(可排程)</a><a class="lv2" href="#四手動用命令備份-還原進階">四、手動用命令備份 / 還原(進階)</a><a class="lv2" href="#常見疑問">常見疑問</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#一每日自动备份默认已开">一、每日自动备份(默认已开)</a><a class="lv2" href="#二手动备份与还原系统管理介面">二、手动备份与还原(系统管理介面)</a><a class="lv3" href="#还原会发生什么">还原会发生什么</a><a class="lv2" href="#三异地备援强烈建议">三、异地备援(强烈建议)</a><a class="lv3" href="#做法-1定期下载备份档最简单">做法 1:定期下载备份档(最简单)</a><a class="lv3" href="#做法-2把-backups-volume-同步到外部可排程">做法 2:把 backups volume 同步到外部(可排程)</a><a class="lv2" href="#四手动用命令备份-还原进阶">四、手动用命令备份 / 还原(进阶)</a><a class="lv2" href="#常见疑问">常见疑问</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEPLOYMENT GUIDE</div>
-        <h1>備份與還原</h1>
-        <div class="src">原始檔 <code>docs/deploy/backup.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/backup.md">在 GitHub 上檢視</a></div>
+        <h1>备份与还原</h1>
+        <div class="src">原始档 <code>docs/deploy/backup.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/backup.md">在 GitHub 上查看</a></div>
       </header>
-      <p>你的所有資料都在 PostgreSQL。系統提供三道保障:<strong>每日自動備份</strong>、<strong>隨時手動備份</strong>、<strong>還原(含還原前自動保護)</strong>。備份檔為 PostgreSQL 原生 custom 格式(<code>.dump</code>),存於 Docker volume <code>backups</code>。</p>
+      <p>你的所有资料都在 PostgreSQL。系统提供三道保障:<strong>每日自动备份</strong>、<strong>随时手动备份</strong>、<strong>还原(含还原前自动保护)</strong>。备份档为 PostgreSQL 原生 custom 格式(<code>.dump</code>),存于 Docker volume <code>backups</code>。</p>
       <hr />
-      <h2 id="一每日自動備份預設已開">一、每日自動備份(預設已開)</h2>
+      <h2 id="一每日自动备份默认已开">一、每日自动备份(默认已开)</h2>
       <ul>
-      <li><code>worker-ops</code> 容器每天 <strong>02:00</strong>(以 <code>.env</code> 的 <code>TZ</code> 時區為準,預設 Asia/Taipei)自動 <code>pg_dump</code> 一份。</li>
-      <li>預設保留最新 <strong>30 份</strong>,超出者由舊到新自動輪替刪除。</li>
-      <li>可在 <code>.env</code> 調整:</li>
+      <li><code>worker-ops</code> 容器每天 <strong>02:00</strong>(以 <code>.env</code> 的 <code>TZ</code> 时区为准,默认 Asia/Taipei)自动 <code>pg_dump</code> 一份。</li>
+      <li>默认保留最新 <strong>30 份</strong>,超出者由旧到新自动轮替删除。</li>
+      <li>可在 <code>.env</code> 调整:</li>
       </ul>
       <p><code>ini
-        # 這幾項為進階設定,一般維持預設即可;如需調整可加入 .env
-        # BACKUP_HOUR=2      # 每日自動備份的時(0–23)
-        # BACKUP_KEEP=30     # 保留份數
+        # 这几项为进阶设置,一般维持默认即可;如需调整可加入 .env
+        # BACKUP_HOUR=2      # 每日自动备份的时(0–23)
+        # BACKUP_KEEP=30     # 保留份数
         # BACKUP_DIR=/backups</code></p>
       <p>改完 <code>docker compose up -d</code> 生效。</p>
-      <p>自動備份的檔名形如 <code>backup_20260711_020000_daily.dump</code>。</p>
+      <p>自动备份的档名形如 <code>backup_20260711_020000_daily.dump</code>。</p>
       <hr />
-      <h2 id="二手動備份與還原系統管理介面">二、手動備份與還原(系統管理介面)</h2>
-      <p>登入後到 <strong>系統管理 → 資料備份與還原</strong>(限系統管理員):</p>
+      <h2 id="二手动备份与还原系统管理介面">二、手动备份与还原(系统管理介面)</h2>
+      <p>登录后到 <strong>系统管理 → 资料备份与还原</strong>(限系统管理员):</p>
       <ul>
-      <li><strong>立即備份</strong>:當場產生一份手動備份(檔名 <code>..._manual.dump</code>)。重大操作(升級、大量匯入、學期切換)前建議先按一次。</li>
-      <li><strong>備份清單</strong>:列出所有備份(來源標為「自動 / 手動 / 還原前保護 / 上傳」),可<strong>下載</strong>、<strong>還原</strong>、<strong>刪除</strong>。</li>
-      <li><strong>上傳還原</strong>:把先前下載的 <code>.dump</code> 檔上傳並還原(用於換主機、異地備援回復)。非備份格式的檔案會被直接拒絕,不影響現有資料。</li>
+      <li><strong>立即备份</strong>:当场产生一份手动备份(档名 <code>..._manual.dump</code>)。重大操作(升级、大量导入、学期切换)前建议先按一次。</li>
+      <li><strong>备份清单</strong>:列出所有备份(来源标为「自动 / 手动 / 还原前保护 / 上传」),可<strong>下载</strong>、<strong>还原</strong>、<strong>删除</strong>。</li>
+      <li><strong>上传还原</strong>:把先前下载的 <code>.dump</code> 档上传并还原(用于换主机、异地备援回复)。非备份格式的档案会被直接拒绝,不影响现有资料。</li>
       </ul>
-      <h3 id="還原會發生什麼">還原會發生什麼</h3>
+      <h3 id="还原会发生什么">还原会发生什么</h3>
       <ol>
-      <li>系統<strong>先自動備份現狀</strong>(來源標「還原前保護」),萬一還原的內容不對可再退回。</li>
-      <li>以該備份<strong>覆蓋整個資料庫</strong>。</li>
-      <li>還原完成後<strong>強制所有人重新登入</strong>(因為使用者資料已被替換)。你會被導回登入頁,以還原時點的帳密登入。</li>
+      <li>系统<strong>先自动备份现状</strong>(来源标「还原前保护」),万一还原的内容不对可再退回。</li>
+      <li>以该备份<strong>覆盖整个资料库</strong>。</li>
+      <li>还原完成后<strong>强制所有人重新登录</strong>(因为用户资料已被替换)。你会被导回登录页,以还原时点的帐密登录。</li>
       </ol>
       <blockquote>
-      <p>還原是覆蓋性操作,請確認選對備份檔再執行。有「還原前保護」這道自動備份墊底,誤操作仍可救回。</p>
+      <p>还原是覆盖性操作,请确认选对备份档再执行。有「还原前保护」这道自动备份垫底,误操作仍可救回。</p>
       </blockquote>
       <hr />
-      <h2 id="三異地備援強烈建議">三、異地備援(強烈建議)</h2>
-      <p>Docker volume 存在同一台主機。<strong>若主機硬碟壞掉,volume 一起沒了。</strong> 真正安全的備份要放到另一個地方:</p>
-      <h3 id="做法-1定期下載備份檔最簡單">做法 1:定期下載備份檔(最簡單)</h3>
-      <p>到「資料備份與還原」按「立即備份」→「下載」,把 <code>.dump</code> 檔存到另一台電腦、外接硬碟或雲端硬碟。要復原時在新主機上「上傳還原」。</p>
+      <h2 id="三异地备援强烈建议">三、异地备援(强烈建议)</h2>
+      <p>Docker volume 存在同一台主机。<strong>若主机硬碟坏掉,volume 一起没了。</strong> 真正安全的备份要放到另一个地方:</p>
+      <h3 id="做法-1定期下载备份档最简单">做法 1:定期下载备份档(最简单)</h3>
+      <p>到「资料备份与还原」按「立即备份」→「下载」,把 <code>.dump</code> 档存到另一台电脑、外接硬碟或云端硬碟。要复原时在新主机上「上传还原」。</p>
       <blockquote>
-      <p><strong>超大資料庫的還原走這裡,不要用網頁上傳。</strong> 系統對網頁上傳有 200MB 的請求體上限(避免超大上傳打爆主機記憶體)。若貴校資料庫的 <code>.dump</code> 超過此上限,請改用下方「做法 2」的 volume 複製法把備份檔放回容器,再從系統介面「還原」。</p>
+      <p><strong>超大资料库的还原走这里,不要用网页上传。</strong> 系统对网页上传有 200MB 的请求体上限(避免超大上传打爆主机记忆体)。若贵校资料库的 <code>.dump</code> 超过此上限,请改用下方「做法 2」的 volume 复制法把备份档放回容器,再从系统介面「还原」。</p>
       </blockquote>
       <h3 id="做法-2把-backups-volume-同步到外部可排程">做法 2:把 backups volume 同步到外部(可排程)</h3>
-      <p>備份檔實際存在 volume <code>backups</code>。可用命令把整個備份目錄複製到主機檔案系統,再由你既有的異地備份機制(rsync、NAS 排程、雲端同步)接手:</p>
-      <pre><code class="language-bash"># 把容器內 /backups 複製到主機當前目錄的 ./backups-export
+      <p>备份档实际存在 volume <code>backups</code>。可用命令把整个备份目录复制到主机档案系统,再由你既有的异地备份机制(rsync、NAS 排程、云端同步)接手:</p>
+      <pre><code class="language-bash"># 把容器内 /backups 复制到主机当前目录的 ./backups-export
       docker compose cp worker:/backups ./backups-export
       </code></pre>
-      <p>反向(把外部備份檔放回系統以便還原):</p>
+      <p>反向(把外部备份档放回系统以便还原):</p>
       <pre><code class="language-bash">docker compose cp ./某份.dump worker:/backups/
       </code></pre>
-      <p>放回後即會出現在「備份清單」中,可直接還原。</p>
+      <p>放回后即会出现在「备份清单」中,可直接还原。</p>
       <hr />
-      <h2 id="四手動用命令備份-還原進階">四、手動用命令備份 / 還原(進階)</h2>
-      <p>若你偏好在命令列操作(例如寫進自己的排程腳本):</p>
-      <pre><code class="language-bash"># 備份(pg_dump 在 worker 容器內執行,worker 才裝了 postgresql-client)
+      <h2 id="四手动用命令备份-还原进阶">四、手动用命令备份 / 还原(进阶)</h2>
+      <p>若你偏好在命令列操作(例如写进自己的排程脚本):</p>
+      <pre><code class="language-bash"># 备份(pg_dump 在 worker 容器内执行,worker 才装了 postgresql-client)
       docker compose exec worker pg_dump -Fc -h postgres -U scheduler -d scheduler \
         -f /backups/manual_$(date +%Y%m%d_%H%M%S).dump
       
-      # 還原(會覆蓋現有資料;跨版本可能出現可忽略的警告,資料仍正確)
+      # 还原(会覆盖现有资料;跨版本可能出现可忽略的警告,资料仍正确)
       docker compose exec worker pg_restore --clean --if-exists --no-owner --no-privileges \
         -h postgres -U scheduler -d scheduler /backups/某份.dump
       </code></pre>
       <blockquote>
-      <p><code>PGPASSWORD</code> 於容器內已由 <code>.env</code> 提供,通常無需另外指定。透過系統介面操作會多做「還原前自動備份 + 強制重新登入」,命令列方式不會,請自行留意。</p>
+      <p><code>PGPASSWORD</code> 于容器内已由 <code>.env</code> 提供,通常无需另外指定。通过系统介面操作会多做「还原前自动备份 + 强制重新登录」,命令列方式不会,请自行留意。</p>
       </blockquote>
       <hr />
-      <h2 id="常見疑問">常見疑問</h2>
-      <p><strong>Q:備份含哪些資料?</strong> 全部業務資料(學期、教師、班級、課表、請假、代課、通知、稽核紀錄、系統設定與帳號)。不含 Redis(僅佇列與 session 時效,可重建)與上傳檔暫存。</p>
-      <p><strong>Q:換一台新主機怎麼搬?</strong> 新主機照<a href="install.html">安裝指南</a>裝好、起好空系統 → 系統管理上傳舊主機下載的 <code>.dump</code> 還原,即完成搬遷。</p>
-      <p><strong>Q:備份會不會拖慢系統?</strong> <code>pg_dump</code> 對線上資料庫影響很小,且自動備份排在凌晨。手動備份亦為秒級(視資料量)。</p>
+      <h2 id="常见疑问">常见疑问</h2>
+      <p><strong>Q:备份含哪些资料?</strong> 全部业务资料(学期、教师、班级、课表、请假、代课、通知、稽核纪录、系统设置与帐号)。不含 Redis(仅伫列与 session 时效,可重建)与上传档暂存。</p>
+      <p><strong>Q:换一台新主机怎么搬?</strong> 新主机照<a href="install.html">安装指南</a>装好、起好空系统 → 系统管理上传旧主机下载的 <code>.dump</code> 还原,即完成搬迁。</p>
+      <p><strong>Q:备份会不会拖慢系统?</strong> <code>pg_dump</code> 对线上资料库影响很小,且自动备份排在凌晨。手动备份亦为秒级(视资料量)。</p>
       <div class="foot">
-        本頁由 <code>docs/deploy/backup.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/deploy/backup.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -261,7 +261,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

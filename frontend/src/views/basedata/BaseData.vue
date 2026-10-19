@@ -25,33 +25,33 @@ onMounted(async () => {
 <template>
   <n-space vertical size="large">
     <n-space align="center">
-      <h1 style="margin: 0">基礎資料</h1>
+      <h1 style="margin: 0">基础资料</h1>
       <n-select
         v-model:value="currentId"
         :options="semesterOptions"
-        placeholder="選擇學期"
+        placeholder="选择学期"
         style="width: 240px"
       />
     </n-space>
 
     <n-alert v-if="!currentId" type="info">
-      請先於「學期與節次表」建立學期,再回此頁維護教師、班級、科目與場地。
+      请先于「学期与节次表」建立学期,再回此页维护教师、班级、科目与场地。
     </n-alert>
 
     <n-tabs v-else type="line" animated>
-      <n-tab-pane name="teachers" tab="教師">
+      <n-tab-pane name="teachers" tab="教师">
         <TeachersTab :key="`t-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
-      <n-tab-pane name="classes" tab="班級">
+      <n-tab-pane name="classes" tab="班级">
         <ClassesTab :key="`c-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
       <n-tab-pane name="subjects" tab="科目">
         <SubjectsTab :key="`s-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
-      <n-tab-pane name="rooms" tab="場地">
+      <n-tab-pane name="rooms" tab="场地">
         <RoomsTab :key="`r-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
-      <n-tab-pane name="import" tab="批次匯入">
+      <n-tab-pane name="import" tab="批次导入">
         <ImportTab :key="`i-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
     </n-tabs>

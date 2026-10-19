@@ -1,19 +1,19 @@
-"""系統版本與新版本提醒(v1.2.3)。
+"""系统版本与新版本提醒(v1.2.3)。
 
-**為什麼要做。** 系統是各校自己架設的,新版發布後學校不會知道——只能靠作者一間間通知,
-或學校自己去 GitHub 看。管理員登入「系統管理」就能看到「有新版本 vX.Y.Z」,並直接連到
-更新內容與升級步驟。
+**为什么要做。** 系统是各校自己架设的,新版发布后学校不会知道——只能靠作者一间间通知,
+或学校自己去 GitHub 看。管理员登录「系统管理」就能看到「有新版本 vX.Y.Z」,并直接连到
+更新内容与升级步骤。
 
-**只提醒,不自動升級。** 升級要學校自己決定、先備份,這裡不碰容器也不拉映像。
+**只提醒,不自动升级。** 升级要学校自己决定、先备份,这里不碰容器也不拉映像。
 
-**對外連線的界線:**
-- 只送出一個讀取 GitHub 公開 Release 資訊的 GET,不帶任何學校資料。
-- 結果快取在資料庫(`app_settings`),最多一天查一次;失敗(例如校內主機不能連外)也快取,
-  不會每次開頁面都卡著等逾時。
-- `.env` 設 `UPDATE_CHECK_ENABLED=false` 即完全不連外。
+**对外连线的界线:**
+- 只送出一个读取 GitHub 公开 Release 信息的 GET,不带任何学校资料。
+- 结果快取在资料库(`app_settings`),最多一天查一次;失败(例如校内主机不能连外)也快取,
+  不会每次开页面都卡著等逾时。
+- `.env` 设 `UPDATE_CHECK_ENABLED=false` 即完全不连外。
 
-版本號由建置映像時的 `APP_VERSION` 注入(CI 在打版本標籤時帶入,如 `v1.2.3`);
-自行從原始碼建置而沒帶時為 `dev`,此時照樣顯示最新版,但不判斷「是否較新」。
+版本号由建置映像时的 `APP_VERSION` 注入(CI 在打版本标签时带入,如 `v1.2.3`);
+自行从原始码建置而没带时为 `dev`,此时照样显示最新版,但不判断「是否较新」。
 """
 
 import json
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_KEY = "update_check"
 CHECK_INTERVAL = timedelta(hours=24)
-# 「立即檢查」的最短間隔:避免連點把 GitHub 未登入 API 的額度(每小時 60 次)用光
+# 「立即检查」的最短间隔:避免连点把 GitHub 未登录 API 的额度(每小时 60 次)用光
 MIN_FORCE_INTERVAL = timedelta(seconds=60)
 TIMEOUT_SECONDS = 5
 
@@ -40,7 +40,7 @@ _VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
 
 def parse_version(tag: str) -> tuple[int, int, int] | None:
-    """「v1.2.3」→ (1, 2, 3)。預發布(v1.3.0-rc1)、dev、main-xxxx 等一律視為無法比較。"""
+    """「v1.2.3」→ (1, 2, 3)。预发布(v1.3.0-rc1)、dev、main-xxxx 等一律视为无法比较。"""
     m = _VERSION_RE.match(tag.strip())
     return (int(m[1]), int(m[2]), int(m[3])) if m else None
 
@@ -58,7 +58,7 @@ class UpdateStatus:
     published_at: str = ""
     checked_at: str = ""
     update_available: bool = False
-    error: str = ""  # 最近一次查詢失敗的原因(給人看的);成功時為空
+    error: str = ""  # 最近一次查询失败的原因(给人看的);成功时为空
 
 
 def _now() -> datetime:
@@ -96,9 +96,9 @@ def _checked_at(cache: dict) -> datetime | None:
 
 
 def status(db: Session, *, refresh: bool = False) -> UpdateStatus:
-    """目前版本與最新版本。快取過期(或 `refresh` 且距上次超過一分鐘)才真的連外查詢。
+    """目前版本与最新版本。快取过期(或 `refresh` 且距上次超过一分钟)才真的连外查询。
 
-    呼叫端負責 commit(查詢結果寫入快取)。
+    呼叫端负责 commit(查询结果写入快取)。
     """
     settings = get_settings()
     current = current_version()
@@ -115,14 +115,14 @@ def status(db: Session, *, refresh: bool = False) -> UpdateStatus:
         try:
             fresh.update(_fetch_latest(settings.update_check_url))
             fresh["error"] = ""
-        except Exception as exc:  # noqa: BLE001 - 連不上外網是常態,不能讓系統管理頁壞掉
-            logger.info("檢查新版本失敗:%s", exc)
-            # 保留上次成功查到的版本,只更新失敗原因與時間
+        except Exception as exc:  # noqa: BLE001 - 连不上外网是常态,不能让系统管理页坏掉
+            logger.info("检查新版本失败:%s", exc)
+            # 保留上次成功查到的版本,只更新失败原因与时间
             fresh.update({k: cache.get(k, "") for k in ("latest", "latest_url", "published_at")})
-            fresh["error"] = "無法連線到 GitHub 查詢最新版本(學校主機可能無法連外)"
+            fresh["error"] = "无法连线到 GitHub 查询最新版本(学校主机可能无法连外)"
         cache = fresh
         app_settings.set_value(db, CACHE_KEY, json.dumps(cache, ensure_ascii=False))
-        db.flush()  # 同一個 session 內再讀快取要讀得到(否則會重複連外)
+        db.flush()  # 同一个 session 内再读快取要读得到(否则会重复连外)
 
     latest = str(cache.get("latest", ""))
     cur_v, latest_v = parse_version(current), parse_version(latest)

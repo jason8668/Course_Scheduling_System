@@ -1,7 +1,7 @@
-# 開發設定(前後端熱重載)。使用方式:
+# 开发设置(前后端热重载)。使用方式:
 #   cp .env.example .env
 #   docker compose -f docker-compose.dev.yml up
-#   前端(熱重載):http://localhost:5173   API 文件:http://localhost:8000/api/docs
+#   前端(热重载):http://localhost:5173   API 文件:http://localhost:8000/api/docs
 name: scheduling-dev
 
 services:
@@ -13,18 +13,18 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules # 保留容器內安裝的相依,不被掛載覆蓋
+      - /app/node_modules # 保留容器内安装的相依,不被挂载覆盖
     depends_on:
       - api
 
   api:
     build:
       context: ./backend
-    # dev:遷移後以 --reload 啟動,原始碼變更即時生效
+    # dev:迁移后以 --reload 启动,原始码变更即时生效
     entrypoint: ["bash", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
     env_file: .env
     environment:
-      # 開發時打開互動式 API 文件(http://localhost:8000/api/docs);正式部署預設關閉
+      # 开发时打开互动式 API 文件(http://localhost:8000/api/docs);正式部署默认关闭
       API_DOCS_ENABLED: "true"
     ports:
       - "8000:8000"
@@ -39,9 +39,9 @@ services:
   worker:
     build:
       context: ./backend
-    # dev 用單一行程守兩條佇列:ops 在前(匯出/備份/寄信是秒級,先撈先做),default 在後。
-    # 正式環境拆成 worker + worker-ops 兩個容器,排課才不會堵住匯出(見 docker-compose.yml)。
-    # 這裡若只寫 ["worker"],dev 就沒有任何行程在守 ops——匯出、備份、寄信、定時任務全失效。
+    # dev 用单一行程守两条伫列:ops 在前(导出/备份/寄信是秒级,先捞先做),default 在后。
+    # 正式环境拆成 worker + worker-ops 两个容器,排课才不会堵住导出(见 docker-compose.yml)。
+    # 这里若只写 ["worker"],dev 就没有任何行程在守 ops——导出、备份、寄信、定时任务全失效。
     command: ["worker", "ops", "default"]
     env_file: .env
     volumes:

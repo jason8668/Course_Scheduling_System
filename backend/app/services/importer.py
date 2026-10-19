@@ -1,8 +1,8 @@
-"""Excel 匯入:範本產生、逐列驗證、交易式入庫。
+"""Excel 导入:范本产生、逐列验证、交易式入库。
 
-範本固定三列表頭:第 1 列欄名、第 2 列說明、第 3 列範例;
-匯入時自第 4 列起讀取資料(前三列自動略過)。
-驗證採「全對才寫入」:任一列有誤即回報所有錯誤,資料庫零寫入。
+范本固定三列表头:第 1 列栏名、第 2 列说明、第 3 列范例;
+导入时自第 4 列起读取资料(前三列自动略过)。
+验证采「全对才写入」:任一列有误即回报所有错误,资料库零写入。
 """
 
 import io
@@ -32,71 +32,71 @@ from app.services.assignments import (
     get_or_create_single_unit,
 )
 
-HEADER_ROWS = 3  # 欄名 + 說明 + 範例
+HEADER_ROWS = 3  # 栏名 + 说明 + 范例
 
 ROOM_TYPE_BY_LABEL = {
     "普通教室": RoomType.normal,
-    "專科教室": RoomType.special,
-    "實習工場": RoomType.workshop,
-    "戶外": RoomType.outdoor,
+    "专科教室": RoomType.special,
+    "实习工场": RoomType.workshop,
+    "户外": RoomType.outdoor,
 }
 TRACK_BY_LABEL = {
-    "國小": ClassTrack.elementary,
-    "國中": ClassTrack.junior_high,
+    "小学": ClassTrack.elementary,
+    "初中": ClassTrack.junior_high,
     "普通型高中": ClassTrack.senior_high,
-    "綜合型高中": ClassTrack.comprehensive,
-    "技術型高中": ClassTrack.vocational,
+    "综合型高中": ClassTrack.comprehensive,
+    "技术型高中": ClassTrack.vocational,
 }
 
-# 每個實體的範本欄位:(欄名, 說明, 範例)
+# 每个实体的范本栏位:(栏名, 说明, 范例)
 TEMPLATE_DEFS: dict[str, dict] = {
     "subjects": {
         "sheet": "科目",
         "columns": [
-            ("名稱", "必填", "數學"),
-            ("領域/群別", "選填", "數學領域"),
-            ("需要場地類型", "選填:普通教室/專科教室/實習工場/戶外", "普通教室"),
-            ("預設連堂", "選填,數字 1-8,預設 1", "1"),
+            ("名称", "必填", "数学"),
+            ("领域/群别", "选填", "数学领域"),
+            ("需要场地类型", "选填:普通教室/专科教室/实习工场/户外", "普通教室"),
+            ("默认连堂", "选填,数字 1-8,默认 1", "1"),
         ],
     },
     "teachers": {
-        "sheet": "教師",
+        "sheet": "教师",
         "columns": [
             ("姓名", "必填", "王小明"),
-            ("身分末四碼", "選填,4 碼,用於辨識同名教師;更新既有教師時以姓名＋末四碼比對", "1234"),
-            ("任教科目", "選填,多科以、分隔;需為已建立的科目", "數學、物理"),
-            ("基本鐘點", "選填,數字", "20"),
-            ("行政職稱", "選填;更新時填「無」代表卸任", "教學組長"),
-            ("行政減課", "選填,數字", "4"),
-            ("外聘", "選填:是/否,預設否", "否"),
-            ("登入帳號", "選填,勾選建立帳號時使用", "wang001"),
-            ("Email", "選填,調代課通知寄送用", "wang@example.edu.tw"),
-            ("手機", "選填,人工聯絡用", "0912345678"),
-            ("LINE ID", "選填,人工聯絡用", "wang_line"),
+            ("身分末四码", "选填,4 码,用于辨识同名教师;更新既有教师时以姓名＋末四码比对", "1234"),
+            ("任教科目", "选填,多科以、分隔;需为已建立的科目", "数学、物理"),
+            ("基本课时", "选填,数字", "20"),
+            ("行政职称", "选填;更新时填「无」代表卸任", "教学组长"),
+            ("行政减课", "选填,数字", "4"),
+            ("外聘", "选填:是/否,默认否", "否"),
+            ("登录帐号", "选填,勾选建立帐号时使用", "wang001"),
+            ("Email", "选填,调代课通知寄送用", "wang@example.edu.tw"),
+            ("手机", "选填,人工联络用", "0912345678"),
+            ("LINE ID", "选填,人工联络用", "wang_line"),
         ],
     },
     "classes": {
-        "sheet": "班級",
+        "sheet": "班级",
         "columns": [
-            ("年級", "必填,數字 1-12", "1"),
+            ("年级", "必填,数字 1-12", "1"),
             ("班名", "必填", "甲"),
-            ("學制", "必填:國小/國中/普通型高中/綜合型高中/技術型高中", "技術型高中"),
-            ("群科", "選填(技高填寫)", "機械科"),
-            ("導師", "選填,需為已建立的教師姓名", "王小明"),
-            ("人數", "選填,數字", "35"),
-            ("節次表", "選填,需為已建立的節次表名稱;空白則用學期預設", "高中部節次表"),
+            ("学制", "必填:小学/初中/普通型高中/综合型高中/技术型高中", "技术型高中"),
+            ("群科", "选填(技高填写)", "机械科"),
+            ("导师", "选填,需为已建立的教师姓名", "王小明"),
+            ("人数", "选填,数字", "35"),
+            ("节次表", "选填,需为已建立的节次表名称;空白则用学期默认", "高中部节次表"),
         ],
     },
     "assignments": {
-        "sheet": "配課",
+        "sheet": "配课",
         "columns": [
-            ("班級", "必填,需為已建立的班名(單班配課;跑班群組請於畫面建立)", "甲"),
-            ("科目", "必填,需為已建立的科目", "國文"),
-            ("教師", "必填,多位以、分隔,第一位為主教", "王小明、李協同"),
-            ("每週節數", "必填,數字", "5"),
-            ("連堂長度", "選填,2-4;與連堂次數成對填寫", "2"),
-            ("連堂次數", "選填,數字", "1"),
-            ("場地類型", "選填:普通教室/專科教室/實習工場/戶外", "專科教室"),
+            ("班级", "必填,需为已建立的班名(单班配课;跑班群组请于界面建立)", "甲"),
+            ("科目", "必填,需为已建立的科目", "国文"),
+            ("教师", "必填,多位以、分隔,第一位为主教", "王小明、李协同"),
+            ("每周节数", "必填,数字", "5"),
+            ("连堂长度", "选填,2-4;与连堂次数成对填写", "2"),
+            ("连堂次数", "选填,数字", "1"),
+            ("场地类型", "选填:普通教室/专科教室/实习工场/户外", "专科教室"),
         ],
     },
 }
@@ -105,7 +105,7 @@ TEMPLATE_DEFS: dict[str, dict] = {
 @dataclass
 class ImportResult:
     imported: int = 0
-    updated: int = 0          # 更新既有資料的筆數(目前只有教師匯入會用到)
+    updated: int = 0          # 更新既有资料的笔数(目前只有教师导入会用到)
     errors: list[str] = field(default_factory=list)
 
 
@@ -133,17 +133,17 @@ def _cell(row: tuple, i: int) -> str | None:
     return text or None
 
 
-# 更新模式下,這些值代表「清空這一欄」(例如卸任行政職)
-_CLEAR_TOKENS = {"無", "-", "—", "none", "None"}
+# 更新模式下,这些值代表「清空这一栏」(例如卸任行政职)
+_CLEAR_TOKENS = {"无", "-", "—", "none", "None"}
 
 
 def _parse_int(value: str | None) -> int | None:
     if value is None:
         return None
     try:
-        return int(float(value))  # 容忍 Excel 把數字讀成 20.0
+        return int(float(value))  # 容忍 Excel 把数字读成 20.0
     except ValueError as err:
-        raise ValueError(f"「{value}」不是有效數字") from err
+        raise ValueError(f"「{value}」不是有效数字") from err
 
 
 def _data_rows(file_bytes: bytes):
@@ -157,26 +157,26 @@ def _data_rows(file_bytes: bytes):
         yield idx, row
 
 
-# ── 各實體匯入 ────────────────────────
+# ── 各实体导入 ────────────────────────
 def _import_subjects(db: Session, semester_id: int, file_bytes: bytes) -> ImportResult:
     result = ImportResult()
     pending: list[Subject] = []
     for idx, row in _data_rows(file_bytes):
         name = _cell(row, 0)
         if not name:
-            result.errors.append(f"第 {idx} 列:名稱必填")
+            result.errors.append(f"第 {idx} 列:名称必填")
             continue
         room_label = _cell(row, 2)
         room_type = None
         if room_label:
             if room_label not in ROOM_TYPE_BY_LABEL:
-                result.errors.append(f"第 {idx} 列:場地類型「{room_label}」無效")
+                result.errors.append(f"第 {idx} 列:场地类型「{room_label}」无效")
                 continue
             room_type = ROOM_TYPE_BY_LABEL[room_label].value
         try:
             block = _parse_int(_cell(row, 3)) or 1
         except ValueError as e:
-            result.errors.append(f"第 {idx} 列:預設連堂 {e}")
+            result.errors.append(f"第 {idx} 列:默认连堂 {e}")
             continue
         pending.append(
             Subject(
@@ -204,8 +204,8 @@ def _import_classes(db: Session, semester_id: int, file_bytes: bytes) -> ImportR
             select(PeriodTable).where(PeriodTable.semester_id == semester_id)
         )
     }
-    # 同學期班名唯一(M6-5)。檔案內重複、或與既有班級重複,都要當場說是哪一列,
-    # 不能讓它撞上 DB 約束變成一句看不懂的錯誤。
+    # 同学期班名唯一(M6-5)。档案内重复、或与既有班级重复,都要当场说是哪一列,
+    # 不能让它撞上 DB 约束变成一句看不懂的错误。
     existing_names = set(
         db.scalars(
             select(ClassUnit.name).where(ClassUnit.semester_id == semester_id)
@@ -216,38 +216,38 @@ def _import_classes(db: Session, semester_id: int, file_bytes: bytes) -> ImportR
         try:
             grade = _parse_int(_cell(row, 0))
         except ValueError as e:
-            result.errors.append(f"第 {idx} 列:年級 {e}")
+            result.errors.append(f"第 {idx} 列:年级 {e}")
             continue
         name = _cell(row, 1)
         track_label = _cell(row, 2)
         if not grade or not name or not track_label:
-            result.errors.append(f"第 {idx} 列:年級、班名、學制皆必填")
+            result.errors.append(f"第 {idx} 列:年级、班名、学制皆必填")
             continue
         if name in existing_names:
-            result.errors.append(f"第 {idx} 列:班名「{name}」在本學期重複")
+            result.errors.append(f"第 {idx} 列:班名「{name}」在本学期重复")
             continue
         existing_names.add(name)
         if track_label not in TRACK_BY_LABEL:
-            result.errors.append(f"第 {idx} 列:學制「{track_label}」無效")
+            result.errors.append(f"第 {idx} 列:学制「{track_label}」无效")
             continue
         homeroom_name = _cell(row, 4)
         homeroom_id = None
         if homeroom_name:
             if homeroom_name not in teachers:
-                result.errors.append(f"第 {idx} 列:導師「{homeroom_name}」不存在")
+                result.errors.append(f"第 {idx} 列:导师「{homeroom_name}」不存在")
                 continue
             homeroom_id = teachers[homeroom_name]
         table_name = _cell(row, 6)
         table_id = None
         if table_name:
             if table_name not in period_tables:
-                result.errors.append(f"第 {idx} 列:節次表「{table_name}」不存在")
+                result.errors.append(f"第 {idx} 列:节次表「{table_name}」不存在")
                 continue
             table_id = period_tables[table_name]
         try:
             count = _parse_int(_cell(row, 5))
         except ValueError as e:
-            result.errors.append(f"第 {idx} 列:人數 {e}")
+            result.errors.append(f"第 {idx} 列:人数 {e}")
             continue
         pending.append(
             ClassUnit(
@@ -272,13 +272,13 @@ def _import_teachers(
     create_accounts: bool,
     update_existing: bool = False,
 ) -> ImportResult:
-    """教師匯入。
+    """教师导入。
 
-    `update_existing` 為真時,檔案裡已存在的教師(姓名＋身分末四碼相同)改為更新而非報錯——
-    每學年職務異動要改幾十位老師,逐筆手改不切實際(使用者回報 #18)。
-    更新時**只覆蓋有填的欄位**,空白保留原值;要清掉行政職稱請填「無」或「-」,
-    數字欄要歸零請填 0。既有教師的登入帳號一律不在這裡處理(避免誤建),
-    請改用教師編輯畫面的「建立登入帳號」。
+    `update_existing` 为真时,档案里已存在的教师(姓名＋身分末四码相同)改为更新而非报错——
+    每学年职务异动要改几十位老师,逐笔手改不切实际(用户回报 #18)。
+    更新时**只覆盖有填的栏位**,空白保留原值;要清掉行政职称请填「无」或「-」,
+    数字栏要归零请填 0。既有教师的登录帐号一律不在这里处理(避免误建),
+    请改用教师编辑界面的「建立登录帐号」。
     """
     result = ImportResult()
     subjects = {
@@ -294,7 +294,7 @@ def _import_teachers(
     seen_keys: set[tuple[str, str]] = set()
     seen_usernames: set[str] = set()
     pending: list[tuple[Teacher, str | None]] = []   # 新增:(teacher, username or None)
-    updates: list[tuple[Teacher, dict, list[Subject] | None]] = []  # 更新:(教師, 欄位, 科目)
+    updates: list[tuple[Teacher, dict, list[Subject] | None]] = []  # 更新:(教师, 栏位, 科目)
 
     for idx, row in _data_rows(file_bytes):
         name = _cell(row, 0)
@@ -305,7 +305,7 @@ def _import_teachers(
         key = (name, id_last4 or "")
         current = existing.get(key)
         if key in seen_keys or (current is not None and not update_existing):
-            result.errors.append(f"第 {idx} 列:教師「{name}」(末四碼 {id_last4 or '無'})重複")
+            result.errors.append(f"第 {idx} 列:教师「{name}」(末四码 {id_last4 or '无'})重复")
             continue
         seen_keys.add(key)
 
@@ -333,17 +333,17 @@ def _import_teachers(
         username = _cell(row, 7)
         if create_accounts and username and current is None:
             if username in existing_usernames or username in seen_usernames:
-                result.errors.append(f"第 {idx} 列:登入帳號「{username}」重複")
+                result.errors.append(f"第 {idx} 列:登录帐号「{username}」重复")
                 continue
             seen_usernames.add(username)
 
         email = _cell(row, 8)
         if email and not is_valid_email(email):
-            result.errors.append(f"第 {idx} 列:Email「{email}」格式不正確")
+            result.errors.append(f"第 {idx} 列:Email「{email}」格式不正确")
             continue
 
         if current is not None:
-            # 更新:只動有填的欄位。行政職稱填「無」/「-」視為卸任(清空)
+            # 更新:只动有填的栏位。行政职称填「无」/「-」视为卸任(清空)
             fields: dict = {}
             title = _cell(row, 4)
             if title is not None:
@@ -377,7 +377,7 @@ def _import_teachers(
     for teacher, username in pending:
         db.add(teacher)
         if username:
-            # 綁定新建帳號:teacher.user 賦值於 flush 時寫入 teachers.user_id
+            # 绑定新建帐号:teacher.user 赋值于 flush 时写入 teachers.user_id
             teacher.user = User(
                 username=username,
                 password_hash=hash_password(settings.default_import_password),
@@ -397,7 +397,7 @@ def _import_teachers(
 
 
 def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> ImportResult:
-    """單班配課匯入(班級×科目×教師×週節數,可含一組連堂)。跑班群組於畫面建立。"""
+    """单班配课导入(班级×科目×教师×周节数,可含一组连堂)。跑班群组于界面建立。"""
     result = ImportResult()
     classes = {
         c.name: c
@@ -418,10 +418,10 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
         subj_name = _cell(row, 1)
         teacher_field = _cell(row, 2)
         if not class_name or not subj_name or not teacher_field:
-            result.errors.append(f"第 {idx} 列:班級、科目、教師皆必填")
+            result.errors.append(f"第 {idx} 列:班级、科目、教师皆必填")
             continue
         if class_name not in classes:
-            result.errors.append(f"第 {idx} 列:班級「{class_name}」不存在")
+            result.errors.append(f"第 {idx} 列:班级「{class_name}」不存在")
             continue
         if subj_name not in subjects:
             result.errors.append(f"第 {idx} 列:科目「{subj_name}」不存在")
@@ -431,7 +431,7 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
         t_error = False
         for tname in names:
             if tname not in teachers:
-                result.errors.append(f"第 {idx} 列:教師「{tname}」不存在")
+                result.errors.append(f"第 {idx} 列:教师「{tname}」不存在")
                 t_error = True
                 break
             teacher_objs.append(teachers[tname])
@@ -440,35 +440,35 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
         try:
             periods = _parse_int(_cell(row, 3))
         except ValueError as e:
-            result.errors.append(f"第 {idx} 列:每週節數 {e}")
+            result.errors.append(f"第 {idx} 列:每周节数 {e}")
             continue
         if not periods or periods < 1:
-            result.errors.append(f"第 {idx} 列:每週節數必填且需大於 0")
+            result.errors.append(f"第 {idx} 列:每周节数必填且需大于 0")
             continue
-        # 連堂(選填,長度與次數需成對)
+        # 连堂(选填,长度与次数需成对)
         try:
             block_size = _parse_int(_cell(row, 4))
             block_count = _parse_int(_cell(row, 5))
         except ValueError as e:
-            result.errors.append(f"第 {idx} 列:連堂 {e}")
+            result.errors.append(f"第 {idx} 列:连堂 {e}")
             continue
         block: tuple[int, int] | None = None
         if block_size is not None or block_count is not None:
             if block_size is None or block_count is None:
-                result.errors.append(f"第 {idx} 列:連堂長度與連堂次數需成對填寫")
+                result.errors.append(f"第 {idx} 列:连堂长度与连堂次数需成对填写")
                 continue
             if not 2 <= block_size <= 4 or block_count < 1:
-                result.errors.append(f"第 {idx} 列:連堂長度需為 2-4、次數需大於 0")
+                result.errors.append(f"第 {idx} 列:连堂长度需为 2-4、次数需大于 0")
                 continue
             if block_size * block_count > periods:
-                result.errors.append(f"第 {idx} 列:連堂總節數超過每週節數")
+                result.errors.append(f"第 {idx} 列:连堂总节数超过每周节数")
                 continue
             block = (block_size, block_count)
         room_label = _cell(row, 6)
         room_type = None
         if room_label:
             if room_label not in ROOM_TYPE_BY_LABEL:
-                result.errors.append(f"第 {idx} 列:場地類型「{room_label}」無效")
+                result.errors.append(f"第 {idx} 列:场地类型「{room_label}」无效")
                 continue
             room_type = ROOM_TYPE_BY_LABEL[room_label].value
         pending.append((classes[class_name], subjects[subj_name], teacher_objs, periods, block,
@@ -494,8 +494,8 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
                 BlockRule(block_size=block[0], count_per_week=block[1])
             )
 
-    # 超鐘點上限:整批一起檢核。匯入是「一次幾百筆」的操作,
-    # 逐列擋下只會讓使用者改一次匯一次;這裡一次把所有超標的人列出來。
+    # 超课时上限:整批一起检核。导入是「一次几百笔」的操作,
+    # 逐列挡下只会让用户改一次汇一次;这里一次把所有超标的人列出来。
     db.flush()
     touched = {t.id for _, _, teacher_objs, _, _, _ in pending for t in teacher_objs}
     try:
@@ -527,4 +527,4 @@ def run_import(
         return _import_teachers(db, semester_id, file_bytes, create_accounts, update_existing)
     if entity == "assignments":
         return _import_assignments(db, semester_id, file_bytes)
-    raise ValueError(f"未知的匯入類型:{entity}")
+    raise ValueError(f"未知的导入类型:{entity}")

@@ -23,13 +23,13 @@ const trackOptions = (Object.keys(TRACK_LABELS) as ClassTrack[]).map((t) => ({
   label: TRACK_LABELS[t], value: t,
 }))
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
-// 僅當該學期有 ≥2 套節次表時才需要讓使用者為班級指定(混合學制)
+// 仅当该学期有 ≥2 套节次表时才需要让用户为班级指定(混合学制)
 const showPeriodTable = computed(() => periodTables.value.length >= 2)
 const periodTableOptions = computed(() =>
-  periodTables.value.map((t) => ({ label: t.name + (t.is_default ? '(預設)' : ''), value: t.id })),
+  periodTables.value.map((t) => ({ label: t.name + (t.is_default ? '(默认)' : ''), value: t.id })),
 )
 function tableName(id: number | null): string {
-  if (id === null) return '預設'
+  if (id === null) return '默认'
   return periodTables.value.find((t) => t.id === id)?.name ?? '—'
 }
 
@@ -52,7 +52,7 @@ const form = ref<{
   student_count: null, homeroom_teacher_id: null, period_table_id: null,
 })
 
-// 技高才顯示群科欄位
+// 技高才显示群科栏位
 const showDepartment = computed(() => form.value.track === 'vocational')
 
 function openCreate() {
@@ -75,7 +75,7 @@ function openEdit(c: ClassUnit) {
 
 async function save() {
   if (!form.value.name) {
-    message.warning('請輸入班名')
+    message.warning('请输入班名')
     return
   }
   const body = {
@@ -91,20 +91,20 @@ async function save() {
     if (editingId.value) await updateClassUnit(editingId.value, body)
     else await createClassUnit(props.semesterId, body)
     show.value = false
-    message.success('已儲存')
+    message.success('已储存')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   }
 }
 
 async function remove(c: ClassUnit) {
   try {
     await deleteClassUnit(c.id)
-    message.success('已刪除')
+    message.success('已删除')
     await reload()
   } catch (e) {
-    message.error((e as ApiError).detail || '刪除失敗')
+    message.error((e as ApiError).detail || '删除失败')
   }
 }
 </script>
@@ -112,15 +112,15 @@ async function remove(c: ClassUnit) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜尋班名" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" data-testid="class-add" @click="openCreate">新增班級</n-button>
+      <n-input v-model:value="search" placeholder="搜寻班名" clearable style="width: 200px" @input="reload" />
+      <n-button type="primary" data-testid="class-add" @click="openCreate">新增班级</n-button>
     </n-space>
 
     <table class="data-table">
       <thead>
         <tr>
-          <th>年級</th><th>班名</th><th>學制</th><th>群科</th><th>導師</th>
-          <th v-if="showPeriodTable">節次表</th><th>人數</th><th>操作</th>
+          <th>年级</th><th>班名</th><th>学制</th><th>群科</th><th>导师</th>
+          <th v-if="showPeriodTable">节次表</th><th>人数</th><th>操作</th>
         </tr>
       </thead>
       <tbody>
@@ -134,25 +134,25 @@ async function remove(c: ClassUnit) {
           <td>{{ c.student_count ?? '—' }}</td>
           <td>
             <n-space>
-              <n-button size="tiny" @click="openEdit(c)">編輯</n-button>
+              <n-button size="tiny" @click="openEdit(c)">编辑</n-button>
               <n-popconfirm @positive-click="remove(c)">
-                <template #trigger><n-button size="tiny" type="error" ghost>刪除</n-button></template>
-                確定刪除此班級?
+                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
+                确定删除此班级?
               </n-popconfirm>
             </n-space>
           </td>
         </tr>
         <tr v-if="items.length === 0">
-          <td :colspan="showPeriodTable ? 8 : 7"><n-text depth="3">尚無班級</n-text></td>
+          <td :colspan="showPeriodTable ? 8 : 7"><n-text depth="3">尚无班级</n-text></td>
         </tr>
       </tbody>
     </table>
 
-    <n-modal v-model:show="show" preset="card" :title="editingId ? '編輯班級' : '新增班級'" style="max-width: 440px">
+    <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑班级' : '新增班级'" style="max-width: 440px">
       <n-space vertical>
         <n-space>
           <n-space vertical>
-            <n-text>年級</n-text>
+            <n-text>年级</n-text>
             <n-input-number v-model:value="form.grade" :min="1" :max="12" style="width: 120px" />
           </n-space>
           <n-space vertical style="flex: 1">
@@ -160,13 +160,13 @@ async function remove(c: ClassUnit) {
             <n-input v-model:value="form.name" data-testid="class-name" placeholder="如:忠、甲、301" />
           </n-space>
         </n-space>
-        <n-text>學制</n-text>
+        <n-text>学制</n-text>
         <n-select v-model:value="form.track" :options="trackOptions" />
         <template v-if="showDepartment">
           <n-text>群科(技高)</n-text>
-          <n-input v-model:value="form.department" placeholder="如:機械科" />
+          <n-input v-model:value="form.department" placeholder="如:机械科" />
         </template>
-        <n-text>導師(選填)</n-text>
+        <n-text>导师(选填)</n-text>
         <n-select
           v-model:value="form.homeroom_teacher_id"
           :options="teacherOptions"
@@ -174,18 +174,18 @@ async function remove(c: ClassUnit) {
           placeholder="（未指定）"
         />
         <template v-if="showPeriodTable">
-          <n-text>節次表</n-text>
+          <n-text>节次表</n-text>
           <n-select
             v-model:value="form.period_table_id"
             data-testid="class-period-table"
             :options="periodTableOptions"
             clearable
-            placeholder="使用學期預設"
+            placeholder="使用学期默认"
           />
         </template>
-        <n-text>人數(選填)</n-text>
+        <n-text>人数(选填)</n-text>
         <n-input-number v-model:value="form.student_count" :min="0" />
-        <n-button type="primary" data-testid="class-save" @click="save">儲存</n-button>
+        <n-button type="primary" data-testid="class-save" @click="save">储存</n-button>
       </n-space>
     </n-modal>
   </n-space>

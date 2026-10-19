@@ -49,7 +49,7 @@ const classOptions = computed(() =>
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
 
-// 拖拉排課僅在班級視角進行;教師/場地視角為唯讀檢視(避免跨節次表的節次號對不齊)
+// 拖拉排课仅在班级视角进行;教师/场地视角为唯读查看(避免跨节次表的节次号对不齐)
 const readonly = computed(() => view.value !== 'class')
 
 async function loadSemester(id: number) {
@@ -118,14 +118,14 @@ async function onDraftChange(id: number) {
   await refreshTimetable()
 }
 
-// ── 格位 → 元件資料 ──
+// ── 格位 → 元件资料 ──
 const shownEntries = computed(() => {
   const all = tt.value?.entries ?? []
   if (view.value === 'class') return classId.value ? all.filter((e) => e.class_ids.includes(classId.value!)) : []
   if (view.value === 'teacher') return teacherId.value ? all.filter((e) => e.teacher_ids.includes(teacherId.value!)) : []
   return roomId.value ? all.filter((e) => e.room_id === roomId.value) : []
 })
-/** 教師/場地視角:預設表沒有、但這位老師(這間場地)用得到的節次列要補上(如高中部的第八節)。 */
+/** 教师/场地视角:默认表没有、但这位老师(这间场地)用得到的节次列要补上(如高中部的第八节)。 */
 const gridPeriods = computed<PeriodCell[]>(() => {
   if (view.value === 'class') return periods.value
   return [...periods.value, ...extraRows(
@@ -137,18 +137,18 @@ const visibleEntries = computed<GridEntry[]>(() => {
     subject: e.subject,
     teacher: view.value === 'class' ? e.teachers.join('、') : e.classes.join('、'),
     room: e.room ?? undefined,
-    // 教師/場地視角照預設節次表畫格線;另一套節次表的課要標出實際時間
+    // 教师/场地视角照默认节次表画格线;另一套节次表的课要标出实际时间
     note: view.value === 'class' ? undefined
       : crossTableNote(e, classes.value, allTables.value, defaultTable.value),
     week: weekTag(e.week_parity),
   }))
 })
 
-function weekTag(p?: 'odd' | 'even' | null): '單' | '雙' | undefined {
-  return p === 'odd' ? '單' : p === 'even' ? '雙' : undefined
+function weekTag(p?: 'odd' | 'even' | null): '单' | '双' | undefined {
+  return p === 'odd' ? '单' : p === 'even' ? '双' : undefined
 }
 
-// ── 未排課務(班級視角)──
+// ── 未排课务(班级视角)──
 const placedByAssignment = computed(() => {
   const m = new Map<number, number>()
   for (const e of tt.value?.entries ?? []) {
@@ -156,7 +156,7 @@ const placedByAssignment = computed(() => {
   }
   return m
 })
-// pair:單雙週組的另一週那筆。兩筆一起排進同一格,清單上合成一張卡片(v1.3.0)
+// pair:单双周组的另一周那笔。两笔一起排进同一格,清单上合成一张卡片(v1.3.0)
 interface TrayItem { a: Assignment; remaining: number; span: number; pair?: Assignment }
 const trayItems = computed<TrayItem[]>(() => {
   if (view.value !== 'class' || !classId.value) return []
@@ -177,8 +177,8 @@ const trayItems = computed<TrayItem[]>(() => {
   return items.filter((x) => x.remaining > 0)
 })
 function trayTitle(item: TrayItem): string {
-  if (item.a.week_parity && item.pair) return `單 ${item.a.subject.name}/雙 ${item.pair.subject.name}`
-  if (item.a.week_parity) return `${item.a.week_parity === 'odd' ? '單' : '雙'} ${item.a.subject.name}`
+  if (item.a.week_parity && item.pair) return `单 ${item.a.subject.name}/双 ${item.pair.subject.name}`
+  if (item.a.week_parity) return `${item.a.week_parity === 'odd' ? '单' : '双'} ${item.a.subject.name}`
   return item.a.subject.name
 }
 function trayTeachers(item: TrayItem): string {
@@ -187,7 +187,7 @@ function trayTeachers(item: TrayItem): string {
 }
 const totalRemaining = computed(() => trayItems.value.reduce((n, x) => n + x.remaining, 0))
 
-// ── 拖拉與衝突檢查 ──
+// ── 拖拉与冲突检查 ──
 interface WbDrag extends DragData { assignmentId: number; span: number }
 const dragging = ref<WbDrag | null>(null)
 const feedback = ref<DropFeedback | null>(null)
@@ -216,7 +216,7 @@ async function onCheck(p: { weekday: number; period_no: number }) {
   const d = dragging.value
   if (!d || !ttId.value) return
   const key = `${p.weekday}-${p.period_no}`
-  if (key === lastKey) return // dragover 會連續觸發,同格只查一次
+  if (key === lastKey) return // dragover 会连续触发,同格只查一次
   lastKey = key
   const token = ++checkToken
   try {
@@ -224,12 +224,12 @@ async function onCheck(p: { weekday: number; period_no: number }) {
       course_assignment_id: d.assignmentId, weekday: p.weekday, period_no: p.period_no,
       span: d.span, ...(d.source === 'grid' ? { ignore_entry_id: d.entryId as number } : {}),
     })
-    if (token !== checkToken) return // 丟棄過期回應
+    if (token !== checkToken) return // 丢弃过期回应
     feedback.value = {
       weekday: p.weekday, period_no: p.period_no,
       ok: res.ok, reason: res.conflicts[0]?.message,
     }
-  } catch { /* 檢查失敗不阻擋 UI */ }
+  } catch { /* 检查失败不阻挡 UI */ }
 }
 
 async function onDrop(p: { weekday: number; period_no: number }) {
@@ -281,7 +281,7 @@ async function onTrayDrop(ev: DragEvent) {
   const id = ttId.value
   const e = tt.value?.entries.find((x) => x.id === d.entryId)
   if (!e) return
-  if (e.locked) { message.warning('鎖定格位不可移除,請先解鎖'); return }
+  if (e.locked) { message.warning('锁定格位不可移除,请先解锁'); return }
   const snap = { aid: e.course_assignment_id, weekday: e.weekday, period_no: e.period_no, span: e.span }
   let curId = e.id
   try {
@@ -313,14 +313,14 @@ async function onSelect(g: GridEntry) {
   if (!e) return
   const next = !e.locked
   tt.value = await lockEntry(id, e.id, next)
-  message.info(next ? `已鎖定「${e.subject}」` : `已解鎖「${e.subject}」`)
+  message.info(next ? `已锁定「${e.subject}」` : `已解锁「${e.subject}」`)
   pushUndo({
     undo: async () => { tt.value = await lockEntry(id, e.id, !next) },
     redo: async () => { tt.value = await lockEntry(id, e.id, next) },
   })
 }
 
-// ── 復原 / 重做(command stack,上限 20 步)──
+// ── 复原 / 重做(command stack,上限 20 步)──
 interface Cmd { undo: () => Promise<void>; redo: () => Promise<void> }
 const UNDO_LIMIT = 20
 const undoStack = ref<Cmd[]>([])
@@ -336,13 +336,13 @@ async function doUndo() {
   const c = undoStack.value.pop()
   if (!c || busy.value) return
   busy.value = true
-  try { await c.undo(); redoStack.value.push(c) } catch { message.error('復原失敗') } finally { busy.value = false }
+  try { await c.undo(); redoStack.value.push(c) } catch { message.error('复原失败') } finally { busy.value = false }
 }
 async function doRedo() {
   const c = redoStack.value.pop()
   if (!c || busy.value) return
   busy.value = true
-  try { await c.redo(); undoStack.value.push(c) } catch { message.error('重做失敗') } finally { busy.value = false }
+  try { await c.redo(); undoStack.value.push(c) } catch { message.error('重做失败') } finally { busy.value = false }
 }
 function onKey(ev: KeyboardEvent) {
   if (!(ev.ctrlKey || ev.metaKey)) return
@@ -355,9 +355,9 @@ function onKey(ev: KeyboardEvent) {
 <template>
   <n-space vertical size="large">
     <n-space align="center" :wrap="true">
-      <h1 style="margin: 0">排課工作台</h1>
+      <h1 style="margin: 0">排课工作台</h1>
       <n-select
-        :value="sid" :options="semesterOptions" placeholder="選擇學期"
+        :value="sid" :options="semesterOptions" placeholder="选择学期"
         style="width: 200px" @update:value="loadSemester"
       />
       <n-select
@@ -365,22 +365,22 @@ function onKey(ev: KeyboardEvent) {
         style="width: 140px" @update:value="onDraftChange"
       />
       <n-button size="small" data-testid="wb-undo" :disabled="!undoStack.length" @click="doUndo">
-        復原 (Ctrl+Z)
+        复原 (Ctrl+Z)
       </n-button>
       <n-button size="small" data-testid="wb-redo" :disabled="!redoStack.length" @click="doRedo">
         重做
       </n-button>
-      <n-text depth="3" style="font-size: 12px">變更即時儲存</n-text>
+      <n-text depth="3" style="font-size: 12px">变更即时储存</n-text>
     </n-space>
 
-    <n-alert v-if="!sid" type="info">請先建立學期並完成配課,再回此頁排課。</n-alert>
+    <n-alert v-if="!sid" type="info">请先建立学期并完成配课,再回此页排课。</n-alert>
 
     <template v-else>
       <n-space align="center">
         <n-radio-group :value="view" @update:value="(v: 'class'|'teacher'|'room') => { view = v; onViewChange() }">
-          <n-radio-button value="class" data-testid="wb-view-class">班級視角</n-radio-button>
-          <n-radio-button value="teacher" data-testid="wb-view-teacher">教師視角</n-radio-button>
-          <n-radio-button value="room" data-testid="wb-view-room">場地視角</n-radio-button>
+          <n-radio-button value="class" data-testid="wb-view-class">班级视角</n-radio-button>
+          <n-radio-button value="teacher" data-testid="wb-view-teacher">教师视角</n-radio-button>
+          <n-radio-button value="room" data-testid="wb-view-room">场地视角</n-radio-button>
         </n-radio-group>
         <n-select
           v-if="view === 'class'" :value="classId" data-testid="wb-class"
@@ -394,12 +394,12 @@ function onKey(ev: KeyboardEvent) {
           v-else v-model:value="roomId" data-testid="wb-room"
           :options="roomOptions" style="width: 180px" filterable
         />
-        <n-tag v-if="readonly" size="small" type="warning">唯讀檢視(排課請切回班級視角)</n-tag>
+        <n-tag v-if="readonly" size="small" type="warning">唯读查看(排课请切回班级视角)</n-tag>
       </n-space>
 
       <div class="wb-layout">
         <n-card size="small" style="flex: 1; min-width: 0">
-          <n-empty v-if="periods.length === 0" description="此學期尚無節次表" />
+          <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />
           <TimetableGrid
             v-else
             :periods="gridPeriods" :num-weekdays="numWeekdays" :entries="visibleEntries"
@@ -415,17 +415,17 @@ function onKey(ev: KeyboardEvent) {
         >
           <template #header>
             <n-space align="center" size="small">
-              <span>未排課務</span>
+              <span>未排课务</span>
               <n-tag size="small" :type="totalRemaining === 0 ? 'success' : 'info'" data-testid="wb-remaining">
-                剩 {{ totalRemaining }} 節
+                剩 {{ totalRemaining }} 节
               </n-tag>
             </n-space>
           </template>
-          <!-- 清單自己捲動:課務多時整頁會被撐長,捲到底部拖卡片時左邊課表格已經捲出畫面,
-               等於沒有可以放開的目標(#8)。清單限高自捲 + 整張卡片 sticky,兩邊永遠同時看得到。 -->
+          <!-- 清单自己卷动:课务多时整页会被撑长,卷到底部拖卡片时左边课表格已经卷出界面,
+               等于没有可以放开的目标(#8)。清单限高自卷 + 整张卡片 sticky,两边永远同时看得到。 -->
           <n-space vertical size="small" class="tray-list" data-testid="wb-tray-list">
             <n-text v-if="trayItems.length === 0" depth="3" data-testid="wb-tray-empty">
-              本班課務已全部排入 🎉
+              本班课务已全部排入 🎉
             </n-text>
             <div
               v-for="item in trayItems" :key="item.a.id"
@@ -434,15 +434,15 @@ function onKey(ev: KeyboardEvent) {
             >
               <div class="tray-subject">
                 {{ trayTitle(item) }}
-                <n-tag v-if="item.a.week_parity" size="tiny" type="info">單雙週</n-tag>
-                <n-tag v-if="item.span > 1" size="tiny" type="warning">{{ item.span }}連堂</n-tag>
+                <n-tag v-if="item.a.week_parity" size="tiny" type="info">单双周</n-tag>
+                <n-tag v-if="item.span > 1" size="tiny" type="warning">{{ item.span }}连堂</n-tag>
               </div>
               <div class="tray-meta">
-                {{ trayTeachers(item) }} · 剩 {{ item.remaining }} 節
+                {{ trayTeachers(item) }} · 剩 {{ item.remaining }} 节
               </div>
             </div>
             <n-text depth="3" style="font-size: 12px">
-              拖曳到左側格子排課;拖回此處移除;點格內卡片可鎖定/解鎖。
+              拖曳到左侧格子排课;拖回此处移除;点格内卡片可锁定/解锁。
             </n-text>
           </n-space>
         </n-card>
@@ -463,7 +463,7 @@ function onKey(ev: KeyboardEvent) {
 .tray-meta { font-size: 12px; opacity: 0.75; }
 @media (max-width: 900px) {
   .wb-layout { flex-direction: column; }
-  /* 直式排列時課表格在上方,清單再限高就只是多一層捲軸,交給整頁捲動即可 */
+  /* 直式排列时课表格在上方,清单再限高就只是多一层卷轴,交给整页卷动即可 */
   .wb-tray { width: 100%; position: static; }
   .tray-list { max-height: none; overflow-y: visible; }
 }

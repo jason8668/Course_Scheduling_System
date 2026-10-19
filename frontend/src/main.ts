@@ -12,7 +12,7 @@ app.use(createPinia())
 app.use(router)
 app.use(naive)
 
-// session 過期/被撤銷時,清除登入狀態並導回登入頁
+// session 过期/被撤销时,清除登录状态并导回登录页
 setUnauthorizedHandler(() => {
   useAuthStore().reset()
   if (router.currentRoute.value.name !== 'login') {

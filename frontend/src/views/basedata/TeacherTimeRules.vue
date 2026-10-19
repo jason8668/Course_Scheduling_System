@@ -15,9 +15,9 @@ const message = useMessage()
 
 const loading = ref(true)
 const saving = ref(false)
-// 儲存後:這位老師已經排在「不可排」時段的課(規則常在課表排好後才改,兩邊會矛盾)
+// 储存后:这位老师已经排在「不可排」时段的课(规则常在课表排好后才改,两边会矛盾)
 const conflicts = ref<TimeRuleConflict[]>([])
-const STATUS: Record<string, string> = { draft: '草稿', published: '已發布' }
+const STATUS: Record<string, string> = { draft: '草稿', published: '已发布' }
 const conflictGroups = computed(() => {
   const groups: { id: number; title: string; items: string[] }[] = []
   for (const c of conflicts.value) {
@@ -33,11 +33,11 @@ const conflictGroups = computed(() => {
 })
 const slots = ref<AvailableSlot[]>([])
 const noTable = ref(false)
-// (weekday_period_no) → 規則;無 key 表示無規則
+// (weekday_period_no) → 规则;无 key 表示无规则
 const ruleMap = ref<Record<string, TeacherRuleType>>({})
 
 const WEEKDAY_NAMES = ['一', '二', '三', '四', '五', '六', '日']
-// 循環順序:無 → 不可排 → 盡量避開 → 偏好 → 無
+// 循环顺序:无 → 不可排 → 尽量避开 → 偏好 → 无
 const CYCLE: (TeacherRuleType | null)[] = ['unavailable', 'avoid', 'prefer', null]
 const COLORS: Record<TeacherRuleType, string> = {
   unavailable: '#ffcdd2',
@@ -93,12 +93,12 @@ async function save() {
       return { weekday, period_no, rule_type }
     })
     await replaceTimeRules(props.teacherId, rules)
-    message.success('時段規則已儲存')
-    // 規則已經存好了;查衝突只是提醒,查不到(例如網路問題)不該讓使用者以為沒存成功
+    message.success('时段规则已储存')
+    // 规则已经存好了;查冲突只是提醒,查不到(例如网路问题)不该让用户以为没存成功
     conflicts.value = await getTimeRuleConflicts(props.teacherId).catch(() => [])
     if (conflicts.value.length === 0) emit('saved')
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   } finally {
     saving.value = false
   }
@@ -109,21 +109,21 @@ async function save() {
   <n-spin :show="loading">
     <n-space vertical>
       <n-text v-if="noTable" depth="3">
-        此學期尚未建立節次表,請先於「學期與節次表」建立預設節次表後再設定時段規則。
+        此学期尚未建立节次表,请先于「学期与节次表」建立默认节次表后再设置时段规则。
       </n-text>
       <template v-else>
         <n-space size="small" align="center">
-          <n-text depth="3">點格循環:</n-text>
+          <n-text depth="3">点格循环:</n-text>
           <span class="legend" :style="{ background: COLORS.unavailable }">不可排</span>
-          <span class="legend" :style="{ background: COLORS.avoid }">盡量避開</span>
+          <span class="legend" :style="{ background: COLORS.avoid }">尽量避开</span>
           <span class="legend" :style="{ background: COLORS.prefer }">偏好</span>
         </n-space>
         <div style="overflow-x: auto">
           <table class="rule-grid">
             <thead>
               <tr>
-                <th>節次</th>
-                <th v-for="wd in weekdays" :key="wd">週{{ WEEKDAY_NAMES[wd - 1] }}</th>
+                <th>节次</th>
+                <th v-for="wd in weekdays" :key="wd">周{{ WEEKDAY_NAMES[wd - 1] }}</th>
               </tr>
             </thead>
             <tbody>
@@ -145,7 +145,7 @@ async function save() {
         </div>
         <n-alert
           v-if="conflicts.length" type="warning" :show-icon="true"
-          title="規則已儲存,但目前課表有課排在「不可排」時段" data-testid="tr-conflicts"
+          title="规则已储存,但目前课表有课排在「不可排」时段" data-testid="tr-conflicts"
         >
           <div v-for="g in conflictGroups" :key="g.id" class="conflict-group">
             <b>{{ g.title }}</b>
@@ -153,14 +153,14 @@ async function save() {
               <li v-for="(t, k) in g.items" :key="k" data-testid="tr-conflict">{{ t }}</li>
             </ul>
           </div>
-          系統不會自動調動這些課;請到「排課工作台」調整,或回來修改規則。
+          系统不会自动调动这些课;请到「排课工作台」调整,或回来修改规则。
         </n-alert>
         <n-space justify="end">
           <n-button v-if="conflicts.length" data-testid="tr-close" @click="emit('saved')">
             知道了
           </n-button>
           <n-button type="primary" :loading="saving" data-testid="tr-save" @click="save">
-            儲存規則
+            储存规则
           </n-button>
         </n-space>
       </template>

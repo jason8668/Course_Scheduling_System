@@ -16,10 +16,10 @@ const get = async (page: Page, url: string) => (await page.request.get(url)).jso
 
 async function selectSemester(page: Page, year: number) {
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${year} 學年度第 1 學期` }).click()
+  await page.locator('.n-base-select-option', { hasText: `${year} 学年度第 1 学期` }).click()
 }
 
-/** 建立/取得綁定 e2e_teacher 帳號的教師「陳老師」。回傳 teacherId。 */
+/** 建立/取得绑定 e2e_teacher 帐号的教师「陈老师」。回传 teacherId。 */
 async function bindTeacher(page: Page, sid: number): Promise<number> {
   const file = fileURLToPath(new URL('./fixtures/teachers_with_account.xlsx', import.meta.url))
   const imp = await (await page.request.post(
@@ -28,13 +28,13 @@ async function bindTeacher(page: Page, sid: number): Promise<number> {
   )).json()
   if (imp.imported === 1) {
     const list = await get(page, `/api/teachers?semester_id=${sid}`)
-    return list.find((x: { name: string }) => x.name === '陳老師').id
+    return list.find((x: { name: string }) => x.name === '陈老师').id
   }
-  const created = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陳老師' })
+  const created = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陈老师' })
   const accounts = await get(page, `/api/teachers/bindable-accounts?semester_id=${sid}`)
   const acc = accounts.find((x: { username: string }) => x.username === TEACHER_USER)
   await page.request.patch(`/api/teachers/${created.id}`,
-    { data: { name: '陳老師', user_id: acc.id } })
+    { data: { name: '陈老师', user_id: acc.id } })
   return created.id
 }
 
@@ -50,13 +50,13 @@ async function ensureTeacherPassword(page: Page) {
 }
 
 /**
- * 王師(無帳號)請假,指派陳老師(有帳號)代課 → 陳老師收到通知。
- * 回傳 { sid, notificationId }。
+ * 王师(无帐号)请假,指派陈老师(有帐号)代课 → 陈老师收到通知。
+ * 回传 { sid, notificationId }。
  */
 async function seedAssignment(page: Page, sid: number, chenId: number) {
-  const guo = (await post(page, `/api/subjects?semester_id=${sid}`, { name: '國文' })).id
+  const guo = (await post(page, `/api/subjects?semester_id=${sid}`, { name: '国文' })).id
   const wang = (await post(page, `/api/teachers?semester_id=${sid}`,
-    { name: '王師', base_periods: 20 })).id
+    { name: '王师', base_periods: 20 })).id
   const c701 = (await post(page, `/api/class-units?semester_id=${sid}`,
     { grade: 7, name: '701', track: 'junior_high' })).id
   const tt = (await post(page, `/api/timetables?semester_id=${sid}`, { name: '草稿A' })).id
@@ -77,19 +77,19 @@ async function seedAssignment(page: Page, sid: number, chenId: number) {
     { data: { type: 'substitute', handler_teacher_id: chenId } })
 }
 
-// ── 驗收①②:教師端鈴鐺確認(手機) + 組長看板再次提醒 ──
-// 這些測試共用 e2e_teacher 帳號並發布課表;留下的學期會蓋掉別的測試的「最近學期」
-// 預設,故一律以 afterEach 兜底清理(即使測試中途失敗也刪掉)。
+// ── 验收①②:教师端铃铛确认(手机) + 组长看板再次提醒 ──
+// 这些测试共用 e2e_teacher 帐号并发布课表;留下的学期会盖掉别的测试的「最近学期」
+// 默认,故一律以 afterEach 兜底清理(即使测试中途失败也删掉)。
 const YEARS = [142, 143]
 
-test.describe('通知系統', () => {
+test.describe('通知系统', () => {
   test.afterEach(async ({ page }) => {
     await page.request.post('/api/auth/logout')
     await login(page)
     for (const y of YEARS) await deleteSemesterByYearTerm(page, y, 1)
   })
 
-  test('組長指派代課後,教師手機收到通知並確認;組長看板可再次提醒', async ({ page }) => {
+  test('组长指派代课后,教师手机收到通知并确认;组长看板可再次提醒', async ({ page }) => {
     test.setTimeout(180_000)
     const YEAR = 142
     await login(page)
@@ -104,24 +104,24 @@ test.describe('通知系統', () => {
     await seedAssignment(page, sem.id, chenId)
     await ensureTeacherPassword(page)
 
-    // ── 組長看板:陳老師的代課通知未確認,可再次提醒 ──
+    // ── 组长看板:陈老师的代课通知未确认,可再次提醒 ──
     await login(page)
     await page.goto('/notification-board')
     await selectSemester(page, YEAR)
-    const row = page.getByTestId('board-row').filter({ hasText: '陳老師' }).first()
-    await expect(row).toContainText('代課通知')
-    await expect(row).toContainText('未讀')
+    const row = page.getByTestId('board-row').filter({ hasText: '陈老师' }).first()
+    await expect(row).toContainText('代课通知')
+    await expect(row).toContainText('未读')
     await row.getByTestId('board-remind').click()
-    await expect(page.getByText('已再次提醒 陳老師')).toBeVisible()
+    await expect(page.getByText('已再次提醒 陈老师')).toBeVisible()
     await page.screenshot({ path: `${SHOTS}/notif-1-board.png` })
     await deleteSemesterByYearTerm(page, YEAR, 1)
     await page.request.post('/api/auth/logout')
   })
 
-  test.describe('教師手機端', () => {
+  test.describe('教师手机端', () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    test('教師登入手機看到鈴鐺未讀數,點開確認收到', async ({ page }) => {
+    test('教师登录手机看到铃铛未读数,点开确认收到', async ({ page }) => {
       test.setTimeout(180_000)
       const YEAR = 143
       await login(page)
@@ -135,27 +135,27 @@ test.describe('通知系統', () => {
       await seedAssignment(page, sem.id, chenId)
       await ensureTeacherPassword(page)
 
-      // 陳老師手機登入 → 鈴鐺有未讀
+      // 陈老师手机登录 → 铃铛有未读
       await login(page, TEACHER_USER, TEACHER_PASS)
       const badge = page.getByTestId('notif-badge')
       await expect(badge).toContainText('1')
 
       await page.getByTestId('notif-bell').click()
       const item = page.getByTestId('notif-item').first()
-      await expect(item).toContainText('代課通知')
-      await expect(item).toContainText('王師')
+      await expect(item).toContainText('代课通知')
+      await expect(item).toContainText('王师')
       await page.screenshot({ path: `${SHOTS}/notif-2-teacher-mobile.png` })
 
-      // 一鍵確認收到
+      // 一键确认收到
       await item.getByTestId('notif-ack').click()
-      await expect(page.getByText('已送出確認回覆')).toBeVisible()
-      await expect(item).toContainText('已確認收到')
+      await expect(page.getByText('已送出确认回复')).toBeVisible()
+      await expect(item).toContainText('已确认收到')
 
-      // 未讀數歸零(重開鈴鐺 badge 消失)
+      // 未读数归零(重开铃铛 badge 消失)
       await page.keyboard.press('Escape')
       await expect(page.getByTestId('notif-badge')).not.toContainText('1')
 
-      // 清理:留下的已發布學期會蓋掉其他測試的「最近學期」預設,務必刪除
+      // 清理:留下的已发布学期会盖掉其他测试的「最近学期」默认,务必删除
       await page.request.post('/api/auth/logout')
       await login(page)
       await deleteSemesterByYearTerm(page, YEAR, 1)

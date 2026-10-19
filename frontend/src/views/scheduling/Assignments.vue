@@ -42,7 +42,7 @@ const roomTypeOptions = Object.entries(ROOM_TYPE_LABELS).map(([value, label]) =>
 const groupOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })))
 const alternateOptions = computed(() =>
   alternates.value.map((g) => ({ label: g.name, value: g.id })))
-/** 單雙週組已經配了哪幾週(引導組長補齊另一筆) */
+/** 单双周组已经配了哪几周(引导组长补齐另一笔) */
 function weeksOf(u: SchedulingUnit): { odd?: Assignment; even?: Assignment } {
   const out: { odd?: Assignment; even?: Assignment } = {}
   for (const a of assignments.value) {
@@ -74,8 +74,8 @@ onMounted(async () => {
 })
 
 const overCapacity = computed(() => classLoads.value.filter((c) => c.over_capacity))
-// 超鐘點本身是合法的(超出的節數另計鐘點費),只有超過上限才是問題。
-// 舊版把任何 delta>0 都標紅,會讓正常配課看起來像出錯。
+// 超课时本身是合法的(超出的节数另计课时费),只有超过上限才是问题。
+// 旧版把任何 delta>0 都标红,会让正常配课看起来像出错。
 function loadTagType(l: TeacherLoad): 'success' | 'error' | 'warning' | 'info' {
   if (l.over_limit) return 'error'
   if (l.delta > 0) return 'warning'
@@ -83,7 +83,7 @@ function loadTagType(l: TeacherLoad): 'success' | 'error' | 'warning' | 'info' {
   return 'success'
 }
 
-// 單雙週的課鐘點算一半,可能出現 .5
+// 单双周的课课时算一半,可能出现 .5
 function num(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
@@ -91,13 +91,13 @@ function num(n: number): string {
 function loadTagText(l: TeacherLoad): string {
   if (l.delta > 0) {
     return l.over_limit
-      ? `+${num(l.delta)} 超過上限 ${l.max_overtime}`
-      : `+${num(l.delta)} 超鐘點`
+      ? `+${num(l.delta)} 超过上限 ${l.max_overtime}`
+      : `+${num(l.delta)} 超课时`
   }
-  return l.delta < 0 ? `${num(l.delta)} 不足` : '剛好'
+  return l.delta < 0 ? `${num(l.delta)} 不足` : '刚好'
 }
 
-// ── 配課 modal ──
+// ── 配课 modal ──
 const show = ref(false)
 const editingId = ref<number | null>(null)
 interface AForm {
@@ -131,12 +131,12 @@ function openCreate() {
   form.value = emptyForm()
   show.value = true
 }
-/** 從單雙週組卡片直接新增那一組缺的那一週 */
+/** 从单双周组卡片直接新增那一组缺的那一周 */
 function openCreateWeek(u: SchedulingUnit, week: WeekParity, from?: Assignment) {
   editingId.value = null
   form.value = {
     ...emptyForm(), target: 'alternate', scheduling_unit_id: u.id, week_parity: week,
-    // 另一週的節數與連堂要相同,先帶入
+    // 另一周的节数与连堂要相同,先带入
     periods_per_week: from?.periods_per_week ?? 1,
     block_rules: from?.block_rules.map((b) => ({ ...b })) ?? [],
   }
@@ -171,12 +171,12 @@ function removeBlock(i: number) {
 
 async function save() {
   const f = form.value
-  if (f.target === 'single' && !f.class_id) return message.warning('請選擇班級')
-  if (f.target === 'group' && !f.scheduling_unit_id) return message.warning('請選擇跑班群組')
-  if (f.target === 'alternate' && !f.scheduling_unit_id) return message.warning('請選擇單雙週組')
-  if (f.target === 'alternate' && !f.week_parity) return message.warning('請選擇單週或雙週')
-  if (!f.subject_id) return message.warning('請選擇科目')
-  if (f.teacher_ids.length === 0) return message.warning('請至少指定一位教師')
+  if (f.target === 'single' && !f.class_id) return message.warning('请选择班级')
+  if (f.target === 'group' && !f.scheduling_unit_id) return message.warning('请选择跑班群组')
+  if (f.target === 'alternate' && !f.scheduling_unit_id) return message.warning('请选择单双周组')
+  if (f.target === 'alternate' && !f.week_parity) return message.warning('请选择单周或双周')
+  if (!f.subject_id) return message.warning('请选择科目')
+  if (f.teacher_ids.length === 0) return message.warning('请至少指定一位教师')
   const lead = f.lead_teacher_id && f.teacher_ids.includes(f.lead_teacher_id)
     ? f.lead_teacher_id : f.teacher_ids[0]
   const payload: AssignmentPayload = {
@@ -195,19 +195,19 @@ async function save() {
     if (editingId.value) await updateAssignment(editingId.value, payload)
     else await createAssignment(sid.value!, payload)
     show.value = false
-    message.success('已儲存配課')
+    message.success('已储存配课')
     await reloadAll(sid.value!)
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   }
 }
 async function removeAssignment(a: Assignment) {
   await deleteAssignment(a.id)
-  message.success('已刪除')
+  message.success('已删除')
   await reloadAll(sid.value!)
 }
 
-// ── 跑班群組 modal ──
+// ── 跑班群组 modal ──
 const groupShow = ref(false)
 const groupForm = ref<{ name: string; class_ids: number[] }>({ name: '', class_ids: [] })
 function openGroup() {
@@ -215,28 +215,28 @@ function openGroup() {
   groupShow.value = true
 }
 async function saveGroup() {
-  if (!groupForm.value.name) return message.warning('請輸入群組名稱')
-  if (groupForm.value.class_ids.length < 2) return message.warning('跑班群組至少需 2 個班級')
+  if (!groupForm.value.name) return message.warning('请输入群组名称')
+  if (groupForm.value.class_ids.length < 2) return message.warning('跑班群组至少需 2 个班级')
   try {
     await createGroup(sid.value!, groupForm.value)
     groupShow.value = false
-    message.success('已建立跑班群組')
+    message.success('已建立跑班群组')
     await reloadAll(sid.value!)
   } catch (e) {
-    message.error((e as ApiError).detail || '建立失敗')
+    message.error((e as ApiError).detail || '建立失败')
   }
 }
 async function removeGroup(g: SchedulingUnit) {
   try {
     await deleteGroup(g.id)
-    message.success('已刪除群組')
+    message.success('已删除群组')
     await reloadAll(sid.value!)
   } catch (e) {
-    message.error((e as ApiError).detail || '刪除失敗(群組可能仍有配課)')
+    message.error((e as ApiError).detail || '删除失败(群组可能仍有配课)')
   }
 }
 
-// ── 單雙週組 modal ──
+// ── 单双周组 modal ──
 const altShow = ref(false)
 const altClass = ref<number | null>(null)
 function openAlternate() {
@@ -244,14 +244,14 @@ function openAlternate() {
   altShow.value = true
 }
 async function saveAlternate() {
-  if (!altClass.value) return message.warning('請選擇班級')
+  if (!altClass.value) return message.warning('请选择班级')
   try {
     const u = await createAlternate(sid.value!, { class_id: altClass.value })
     altShow.value = false
-    message.success(`已建立「${u.name}」,接著新增單週與雙週的課`)
+    message.success(`已建立「${u.name}」,接著新增单周与双周的课`)
     await reloadAll(sid.value!)
   } catch (e) {
-    message.error((e as ApiError).detail || '建立失敗')
+    message.error((e as ApiError).detail || '建立失败')
   }
 }
 
@@ -259,43 +259,43 @@ function unitLabel(a: Assignment): string {
   const u = a.scheduling_unit
   if (u.unit_type === 'group') return `${u.name}(跑班)`
   if (u.unit_type === 'alternate') {
-    return `${u.name}(${a.week_parity ? WEEK_LABELS[a.week_parity] : '未設週別'})`
+    return `${u.name}(${a.week_parity ? WEEK_LABELS[a.week_parity] : '未设周别'})`
   }
   const c = u.classes[0]
   return c ? `${c.grade}年${c.name}` : u.name
 }
 function blockLabel(a: Assignment): string {
   if (a.block_rules.length === 0) return '—'
-  return a.block_rules.map((b) => `${b.block_size}連堂×${b.count_per_week}`).join('、')
+  return a.block_rules.map((b) => `${b.block_size}连堂×${b.count_per_week}`).join('、')
 }
 </script>
 
 <template>
   <n-space vertical size="large">
     <n-space align="center">
-      <h1 style="margin: 0">配課管理</h1>
+      <h1 style="margin: 0">配课管理</h1>
       <n-select
-        :value="sid" :options="semesterOptions" placeholder="選擇學期"
+        :value="sid" :options="semesterOptions" placeholder="选择学期"
         style="width: 240px" @update:value="onSemesterChange"
       />
     </n-space>
 
-    <n-alert v-if="!sid" type="info">請先建立學期並於基礎資料建立班級、科目、教師。</n-alert>
+    <n-alert v-if="!sid" type="info">请先建立学期并于基础资料建立班级、科目、教师。</n-alert>
 
     <div v-else class="layout">
-      <!-- 主區:配課清單 -->
+      <!-- 主区:配课清单 -->
       <n-space vertical size="large" style="flex: 1; min-width: 0">
         <n-space>
-          <n-button type="primary" data-testid="assignment-add" @click="openCreate">新增配課</n-button>
-          <n-button data-testid="group-add" @click="openGroup">新增跑班群組</n-button>
-          <n-button data-testid="alt-add" @click="openAlternate">新增單雙週組</n-button>
+          <n-button type="primary" data-testid="assignment-add" @click="openCreate">新增配课</n-button>
+          <n-button data-testid="group-add" @click="openGroup">新增跑班群组</n-button>
+          <n-button data-testid="alt-add" @click="openAlternate">新增单双周组</n-button>
         </n-space>
 
-        <n-card title="配課清單" size="small">
-          <n-empty v-if="assignments.length === 0" description="尚無配課" />
+        <n-card title="配课清单" size="small">
+          <n-empty v-if="assignments.length === 0" description="尚无配课" />
           <table v-else class="data-table">
             <thead>
-              <tr><th>排課單位</th><th>科目</th><th>教師</th><th>週節數</th><th>連堂</th><th>場地</th><th>操作</th></tr>
+              <tr><th>排课单位</th><th>科目</th><th>教师</th><th>周节数</th><th>连堂</th><th>场地</th><th>操作</th></tr>
             </thead>
             <tbody>
               <tr v-for="a in assignments" :key="a.id">
@@ -316,10 +316,10 @@ function blockLabel(a: Assignment): string {
                 <td>{{ a.required_room_type ? ROOM_TYPE_LABELS[a.required_room_type] : '—' }}</td>
                 <td>
                   <n-space>
-                    <n-button size="tiny" @click="openEdit(a)">編輯</n-button>
+                    <n-button size="tiny" @click="openEdit(a)">编辑</n-button>
                     <n-popconfirm @positive-click="removeAssignment(a)">
-                      <template #trigger><n-button size="tiny" type="error" ghost>刪除</n-button></template>
-                      確定刪除此配課?
+                      <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
+                      确定删除此配课?
                     </n-popconfirm>
                   </n-space>
                 </td>
@@ -328,9 +328,9 @@ function blockLabel(a: Assignment): string {
           </table>
         </n-card>
 
-        <n-card v-if="alternates.length" title="單雙週組" size="small" data-testid="alt-list">
+        <n-card v-if="alternates.length" title="单双周组" size="small" data-testid="alt-list">
           <n-text depth="3" style="display: block; margin-bottom: 8px">
-            同一格單週、雙週輪流上兩門課(學期第一週為單週)。單週、雙週各配一筆,節數與連堂要相同。
+            同一格单周、双周轮流上两门课(学期第一周为单周)。单周、双周各配一笔,节数与连堂要相同。
           </n-text>
           <n-space vertical size="small">
             <n-space
@@ -348,19 +348,19 @@ function blockLabel(a: Assignment): string {
                     v-else size="tiny" type="warning" dashed :data-testid="`alt-add-${w}`"
                     @click="openCreateWeek(u, w, weeksOf(u)[w === 'odd' ? 'even' : 'odd'])"
                   >
-                    + 新增{{ WEEK_LABELS[w] }}的課
+                    + 新增{{ WEEK_LABELS[w] }}的课
                   </n-button>
                 </template>
               </n-space>
               <n-popconfirm @positive-click="removeGroup(u)">
-                <template #trigger><n-button size="tiny" type="error" ghost>刪除</n-button></template>
-                刪除單雙週組將一併移除其配課,確定?
+                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
+                删除单双周组将一并移除其配课,确定?
               </n-popconfirm>
             </n-space>
           </n-space>
         </n-card>
 
-        <n-card v-if="groups.length" title="跑班群組" size="small">
+        <n-card v-if="groups.length" title="跑班群组" size="small">
           <n-space vertical size="small">
             <n-space v-for="g in groups" :key="g.id" align="center" justify="space-between">
               <n-text>
@@ -370,20 +370,20 @@ function blockLabel(a: Assignment): string {
                 </n-text>
               </n-text>
               <n-popconfirm @positive-click="removeGroup(g)">
-                <template #trigger><n-button size="tiny" type="error" ghost>刪除群組</n-button></template>
-                刪除群組將一併移除其配課,確定?
+                <template #trigger><n-button size="tiny" type="error" ghost>删除群组</n-button></template>
+                删除群组将一并移除其配课,确定?
               </n-popconfirm>
             </n-space>
           </n-space>
         </n-card>
       </n-space>
 
-      <!-- 側欄:鐘點統計 -->
+      <!-- 侧栏:课时统计 -->
       <div class="sidebar">
-        <n-card title="教師鐘點" size="small" data-testid="teacher-load">
-          <n-empty v-if="loads.length === 0" description="尚無教師" size="small" />
+        <n-card title="教师课时" size="small" data-testid="teacher-load">
+          <n-empty v-if="loads.length === 0" description="尚无教师" size="small" />
           <table v-else class="data-table compact">
-            <thead><tr><th>教師</th><th>已配/應授</th><th>狀態</th></tr></thead>
+            <thead><tr><th>教师</th><th>已配/应授</th><th>状态</th></tr></thead>
             <tbody>
               <tr v-for="l in loads" :key="l.teacher_id">
                 <td>{{ l.name }}</td>
@@ -398,119 +398,119 @@ function blockLabel(a: Assignment): string {
           </table>
         </n-card>
 
-        <n-card title="班級節數警告" size="small" style="margin-top: 16px">
-          <n-empty v-if="overCapacity.length === 0" description="各班配課未超出可排節次" size="small" />
+        <n-card title="班级节数警告" size="small" style="margin-top: 16px">
+          <n-empty v-if="overCapacity.length === 0" description="各班配课未超出可排节次" size="small" />
           <n-space v-else vertical size="small" data-testid="class-warning">
             <n-alert v-for="c in overCapacity" :key="c.class_id" type="warning" :show-icon="false">
-              {{ c.grade }}年{{ c.name }}:配課 {{ c.assigned }} 節 &gt; 可排 {{ c.capacity }} 節
+              {{ c.grade }}年{{ c.name }}:配课 {{ c.assigned }} 节 &gt; 可排 {{ c.capacity }} 节
             </n-alert>
           </n-space>
         </n-card>
       </div>
     </div>
 
-    <!-- 配課 modal -->
-    <n-modal v-model:show="show" preset="card" :title="editingId ? '編輯配課' : '新增配課'" style="max-width: 520px">
+    <!-- 配课 modal -->
+    <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑配课' : '新增配课'" style="max-width: 520px">
       <n-space vertical>
-        <n-text>排課對象</n-text>
+        <n-text>排课对象</n-text>
         <n-radio-group v-model:value="form.target">
-          <n-radio-button value="single">單一班級</n-radio-button>
-          <n-radio-button value="group">跑班群組</n-radio-button>
-          <n-radio-button value="alternate" data-testid="a-target-alt">單雙週組</n-radio-button>
+          <n-radio-button value="single">单一班级</n-radio-button>
+          <n-radio-button value="group">跑班群组</n-radio-button>
+          <n-radio-button value="alternate" data-testid="a-target-alt">单双周组</n-radio-button>
         </n-radio-group>
         <n-select
           v-if="form.target === 'single'" v-model:value="form.class_id"
-          data-testid="a-class" :options="classOptions" placeholder="選擇班級" filterable
+          data-testid="a-class" :options="classOptions" placeholder="选择班级" filterable
         />
         <n-select
           v-else-if="form.target === 'group'" v-model:value="form.scheduling_unit_id"
-          :options="groupOptions" placeholder="選擇跑班群組(需先建立)"
+          :options="groupOptions" placeholder="选择跑班群组(需先建立)"
         />
         <template v-else>
           <n-select
             v-model:value="form.scheduling_unit_id" data-testid="a-alt-unit"
-            :options="alternateOptions" placeholder="選擇單雙週組(需先建立)"
+            :options="alternateOptions" placeholder="选择单双周组(需先建立)"
           />
           <n-radio-group v-model:value="form.week_parity" data-testid="a-week">
-            <n-radio-button value="odd">單週</n-radio-button>
-            <n-radio-button value="even">雙週</n-radio-button>
+            <n-radio-button value="odd">单周</n-radio-button>
+            <n-radio-button value="even">双周</n-radio-button>
           </n-radio-group>
         </template>
 
         <n-text>科目</n-text>
-        <n-select v-model:value="form.subject_id" data-testid="a-subject" :options="subjectOptions" filterable placeholder="選擇科目" />
+        <n-select v-model:value="form.subject_id" data-testid="a-subject" :options="subjectOptions" filterable placeholder="选择科目" />
 
-        <n-text>授課教師(可多位協同,第一位預設主教)</n-text>
-        <n-select v-model:value="form.teacher_ids" data-testid="a-teachers" multiple :options="teacherOptions" filterable placeholder="選擇教師" />
+        <n-text>授课教师(可多位协同,第一位默认主教)</n-text>
+        <n-select v-model:value="form.teacher_ids" data-testid="a-teachers" multiple :options="teacherOptions" filterable placeholder="选择教师" />
         <n-select
           v-if="form.teacher_ids.length > 1" v-model:value="form.lead_teacher_id"
-          :options="leadOptions" placeholder="指定主教教師"
+          :options="leadOptions" placeholder="指定主教教师"
         />
 
         <n-space>
           <n-space vertical style="flex: 1">
-            <n-text>每週節數</n-text>
+            <n-text>每周节数</n-text>
             <n-input-number v-model:value="form.periods_per_week" data-testid="a-periods" :min="1" :max="40" />
           </n-space>
         </n-space>
 
         <n-space align="center" justify="space-between">
-          <n-text>連堂規則</n-text>
-          <n-button size="tiny" dashed data-testid="a-add-block" @click="addBlock">+ 新增連堂</n-button>
+          <n-text>连堂规则</n-text>
+          <n-button size="tiny" dashed data-testid="a-add-block" @click="addBlock">+ 新增连堂</n-button>
         </n-space>
         <n-space v-for="(b, i) in form.block_rules" :key="i" align="center">
           <n-input-number
             v-model:value="b.block_size" :data-testid="`a-block-size-${i}`"
             :min="2" :max="4" style="width: 110px"
           />
-          <n-text>連堂 ×</n-text>
+          <n-text>连堂 ×</n-text>
           <n-input-number
             v-model:value="b.count_per_week" :data-testid="`a-block-count-${i}`"
             :min="1" style="width: 110px"
           />
-          <n-text>次/週</n-text>
+          <n-text>次/周</n-text>
           <n-button size="tiny" type="error" ghost @click="removeBlock(i)">移除</n-button>
         </n-space>
 
         <n-divider style="margin: 4px 0" />
-        <n-text>場地需求(選填)</n-text>
+        <n-text>场地需求(选填)</n-text>
         <n-space>
-          <n-select v-model:value="form.required_room_type" :options="roomTypeOptions" clearable placeholder="場地類型" style="flex: 1" />
-          <n-select v-model:value="form.room_id" :options="roomOptions" clearable placeholder="指定場地" style="flex: 1" />
+          <n-select v-model:value="form.required_room_type" :options="roomTypeOptions" clearable placeholder="场地类型" style="flex: 1" />
+          <n-select v-model:value="form.room_id" :options="roomOptions" clearable placeholder="指定场地" style="flex: 1" />
         </n-space>
-        <n-checkbox v-model:checked="form.lock_room">鎖定場地(排課不得更動)</n-checkbox>
+        <n-checkbox v-model:checked="form.lock_room">锁定场地(排课不得更动)</n-checkbox>
 
-        <n-button type="primary" data-testid="a-save" @click="save">儲存</n-button>
+        <n-button type="primary" data-testid="a-save" @click="save">储存</n-button>
       </n-space>
     </n-modal>
 
-    <!-- 單雙週組 modal -->
-    <n-modal v-model:show="altShow" preset="card" title="新增單雙週組" style="max-width: 460px">
+    <!-- 单双周组 modal -->
+    <n-modal v-model:show="altShow" preset="card" title="新增单双周组" style="max-width: 460px">
       <n-space vertical>
         <n-text depth="3">
-          同一格單週、雙週輪流上兩門課,例如週一三、四節單週生科、雙週資科。
-          一組放一個班;建好後再新增單週、雙週各一筆配課。
+          同一格单周、双周轮流上两门课,例如周一三、四节单周生科、双周资科。
+          一组放一个班;建好后再新增单周、双周各一笔配课。
         </n-text>
-        <n-text>班級</n-text>
+        <n-text>班级</n-text>
         <n-select
           v-model:value="altClass" data-testid="alt-class" :options="classOptions"
-          filterable placeholder="選擇班級"
+          filterable placeholder="选择班级"
         />
         <n-button type="primary" data-testid="alt-save" @click="saveAlternate">建立</n-button>
       </n-space>
     </n-modal>
 
-    <!-- 跑班群組 modal -->
-    <n-modal v-model:show="groupShow" preset="card" title="新增跑班群組" style="max-width: 460px">
+    <!-- 跑班群组 modal -->
+    <n-modal v-model:show="groupShow" preset="card" title="新增跑班群组" style="max-width: 460px">
       <n-space vertical>
-        <n-text>群組名稱</n-text>
+        <n-text>群组名称</n-text>
         <n-select
           v-model:value="groupForm.name" data-testid="group-name" filterable tag
-          :options="[{ label: '高二多元選修', value: '高二多元選修' }, { label: '綜高學程', value: '綜高學程' }]"
-          placeholder="輸入或選擇群組名稱"
+          :options="[{ label: '高二多元选修', value: '高二多元选修' }, { label: '综高学程', value: '综高学程' }]"
+          placeholder="输入或选择群组名称"
         />
-        <n-text>成員班級(至少 2 班,須使用同一節次表)</n-text>
-        <n-select v-model:value="groupForm.class_ids" data-testid="group-classes" multiple :options="classOptions" filterable placeholder="選擇班級" />
+        <n-text>成员班级(至少 2 班,须使用同一节次表)</n-text>
+        <n-select v-model:value="groupForm.class_ids" data-testid="group-classes" multiple :options="classOptions" filterable placeholder="选择班级" />
         <n-button type="primary" data-testid="group-save" @click="saveGroup">建立</n-button>
       </n-space>
     </n-modal>

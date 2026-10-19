@@ -4,7 +4,7 @@ import { E2E_PASS, E2E_USER } from './helpers'
 
 const SHOTS = 'e2e/screenshots'
 
-// ── WCAG 相對亮度與對比度(1.4.3 / 1.4.11)──────────────────
+// ── WCAG 相对亮度与对比度(1.4.3 / 1.4.11)──────────────────
 function relLuminance([r, g, b]: number[]): number {
   const lin = (c: number) => {
     const s = c / 255
@@ -25,7 +25,7 @@ function parseRgb(s: string): number[] {
   return [nums[0] || 0, nums[1] || 0, nums[2] || 0]
 }
 
-/** 取元素的前景色與有效背景色(往上找到第一個非透明背景)。 */
+/** 取元素的前景色与有效背景色(往上找到第一个非透明背景)。 */
 async function colorsOf(page: Page, selector: string) {
   return page.locator(selector).first().evaluate((el) => {
     const fg = getComputedStyle(el as Element).color
@@ -41,12 +41,12 @@ async function colorsOf(page: Page, selector: string) {
   })
 }
 
-// ── 驗收:鍵盤可操作 ────────────────────────────────
-test('無障礙:僅用鍵盤即可登入(不觸碰滑鼠)', async ({ page }) => {
+// ── 验收:键盘可操作 ────────────────────────────────
+test('无障碍:仅用键盘即可登录(不触碰滑鼠)', async ({ page }) => {
   await page.goto('/login')
 
-  // 只用 Tab/輸入/Enter:聚焦帳號欄 → 輸入 → Tab 到密碼 → 輸入 → Enter 送出
-  await page.getByPlaceholder('請輸入帳號').focus()
+  // 只用 Tab/输入/Enter:聚焦帐号栏 → 输入 → Tab 到密码 → 输入 → Enter 送出
+  await page.getByPlaceholder('请输入帐号').focus()
   await page.keyboard.type(E2E_USER)
   await page.keyboard.press('Tab')
   await page.keyboard.type(E2E_PASS)
@@ -57,14 +57,14 @@ test('無障礙:僅用鍵盤即可登入(不觸碰滑鼠)', async ({ page }) => 
   await page.screenshot({ path: `${SHOTS}/a11y-1-keyboard-login.png` })
 })
 
-test('無障礙:主要導覽以 Tab 可達且有可見焦點', async ({ page }) => {
+test('无障碍:主要导览以 Tab 可达且有可见焦点', async ({ page }) => {
   await page.goto('/login')
-  await page.getByPlaceholder('請輸入帳號').fill(E2E_USER)
-  await page.getByPlaceholder('請輸入密碼').fill(E2E_PASS)
-  await page.getByRole('button', { name: '登入' }).click()
+  await page.getByPlaceholder('请输入帐号').fill(E2E_USER)
+  await page.getByPlaceholder('请输入密码').fill(E2E_PASS)
+  await page.getByRole('button', { name: '登录' }).click()
   await page.waitForURL((url) => !url.pathname.startsWith('/login'))
 
-  // 連續 Tab 應能落在某個可互動元素上(連結/按鈕/輸入),且該元素確實獲得焦點
+  // 连续 Tab 应能落在某个可互动元素上(连结/按钮/输入),且该元素确实获得焦点
   let reachedInteractive = false
   for (let i = 0; i < 15; i += 1) {
     await page.keyboard.press('Tab')
@@ -77,29 +77,29 @@ test('無障礙:主要導覽以 Tab 可達且有可見焦點', async ({ page }) 
       break
     }
   }
-  expect(reachedInteractive, 'Tab 應可將焦點移到可互動元素').toBe(true)
+  expect(reachedInteractive, 'Tab 应可将焦点移到可互动元素').toBe(true)
 })
 
-// ── 驗收:對比度(WCAG AA)────────────────────────────
-test('無障礙:內文與主要按鈕對比度符合 WCAG AA 基本門檻', async ({ page }) => {
+// ── 验收:对比度(WCAG AA)────────────────────────────
+test('无障碍:内文与主要按钮对比度符合 WCAG AA 基本门槛', async ({ page }) => {
   await page.goto('/login')
-  await page.getByPlaceholder('請輸入帳號').fill(E2E_USER)
-  await page.getByPlaceholder('請輸入密碼').fill(E2E_PASS)
-  await page.getByRole('button', { name: '登入' }).click()
+  await page.getByPlaceholder('请输入帐号').fill(E2E_USER)
+  await page.getByPlaceholder('请输入密码').fill(E2E_PASS)
+  await page.getByRole('button', { name: '登录' }).click()
   await page.waitForURL((url) => !url.pathname.startsWith('/login'))
   await page.waitForLoadState('networkidle')
 
-  // 一般內文:深字白底,應遠高於 AA 正常文字門檻 4.5:1
+  // 一般内文:深字白底,应远高于 AA 正常文字门槛 4.5:1
   const body = await colorsOf(page, 'body')
   const bodyRatio = contrastRatio(parseRgb(body.fg), parseRgb(body.bg))
-  expect(bodyRatio, `內文對比 ${bodyRatio.toFixed(2)}(fg=${body.fg} bg=${body.bg})`)
+  expect(bodyRatio, `内文对比 ${bodyRatio.toFixed(2)}(fg=${body.fg} bg=${body.bg})`)
     .toBeGreaterThanOrEqual(4.5)
 
-  // 主要按鈕:按鈕標籤是「文字」,適用 WCAG 1.4.3 的 4.5:1,不是 1.4.11 非文字元件的 3:1。
-  // Naive 預設的 #18a058 配白字只有 ~3.4:1;M6-5 把主色壓深到 #0d7a43(5.41:1)後真的達標,
-  // 門檻因此從權宜的 3:1 提到 AA 的 4.5:1(見 src/theme.ts)。
+  // 主要按钮:按钮标签是「文字」,适用 WCAG 1.4.3 的 4.5:1,不是 1.4.11 非文字元件的 3:1。
+  // Naive 默认的 #18a058 配白字只有 ~3.4:1;M6-5 把主色压深到 #0d7a43(5.41:1)后真的达标,
+  // 门槛因此从权宜的 3:1 提到 AA 的 4.5:1(见 src/theme.ts)。
   const btn = await colorsOf(page, '.n-button--primary-type')
   const btnRatio = contrastRatio(parseRgb(btn.fg), parseRgb(btn.bg))
-  expect(btnRatio, `主要按鈕對比 ${btnRatio.toFixed(2)}(fg=${btn.fg} bg=${btn.bg})`)
+  expect(btnRatio, `主要按钮对比 ${btnRatio.toFixed(2)}(fg=${btn.fg} bg=${btn.bg})`)
     .toBeGreaterThanOrEqual(4.5)
 })

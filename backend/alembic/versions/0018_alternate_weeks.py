@@ -1,11 +1,11 @@
-"""v1.3.0:單雙週課程。
+"""v1.3.0:单双周课程。
 
-配課多一欄 `week_parity`:空 = 每週都上(既有的所有配課都是這個值,行為完全不變);
-odd/even = 只在單週/雙週上。單雙週的兩筆配課放在同一個「單雙週組」
-(scheduling_units.unit_type = 'alternate',沿用既有欄位,不需改表)。
+配课多一栏 `week_parity`:空 = 每周都上(既有的所有配课都是这个值,行为完全不变);
+odd/even = 只在单周/双周上。单双周的两笔配课放在同一个「单双周组」
+(scheduling_units.unit_type = 'alternate',沿用既有栏位,不需改表)。
 
-只新增一個可為空的欄位,不改既有資料:從任何 v1.2.x 升上來,所有課表、請假、
-代課紀錄都照舊。
+只新增一个可为空的栏位,不改既有资料:从任何 v1.2.x 升上来,所有课表、请假、
+代课纪录都照旧。
 
 Revision ID: 0018_alternate_weeks
 Revises: 0017_class_name_unique

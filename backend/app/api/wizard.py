@@ -1,4 +1,4 @@
-"""設定精靈 API:進度狀態讀寫、重新啟動。"""
+"""设置精灵 API:进度状态读写、重新启动。"""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select

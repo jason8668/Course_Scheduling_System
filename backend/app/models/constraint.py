@@ -1,8 +1,8 @@
-"""排課約束設定(architecture.md §3.2 軟約束權重與可調參數)。
+"""排课约束设置(architecture.md §3.2 软约束权重与可调参数)。
 
-以 key/value 存放而非固定欄位:軟約束會隨版本增減,加一條約束不該要一次遷移。
-未設定的 key 一律回退 `app.solver.problem.SolverConfig` 的預設值。
-權重 0 = 關閉該項軟約束。設定 UI 於 v2 才做(tasks.md M3-3)。
+以 key/value 存放而非固定栏位:软约束会随版本增减,加一条约束不该要一次迁移。
+未设置的 key 一律回退 `app.solver.problem.SolverConfig` 的默认值。
+权重 0 = 关闭该项软约束。设置 UI 于 v2 才做(tasks.md M3-3)。
 """
 
 from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint

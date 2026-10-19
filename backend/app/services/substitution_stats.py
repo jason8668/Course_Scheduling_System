@@ -1,21 +1,21 @@
-"""代課鐘點月結統計(M4-5,architecture.md §5.4)。
+"""代课课时月结统计(M4-5,architecture.md §5.4)。
 
-回答「這個月每位老師代了幾節、其中幾節要計鐘點費」。真相仍是 `substitution` 列
-(處置決定)+ `affected_period`(受影響節次快照),這裡依教師彙總。
+回答「这个月每位老师代了几节、其中几节要计课时费」。真相仍是 `substitution` 列
+(处置决定)+ `affected_period`(受影响节次快照),这里依教师汇总。
 
-**幾個數字**:
-- 代課節數:該教師接手的所有處置(代課/調課/併班),即他實際處理了幾節。
-- 計費節數(鐘點):其中 `counts_toward_hours` 為真、且不是日薪者。併班/自習預設不計、
-  代課預設計(可覆寫)。
-- 日薪天數:計費方式為「日薪代課」的代課,按日計酬——算的是「有幾天」不是「幾節」,
-  所以這些節次不進鐘點(#36)。同一位請假教師同一天若由兩位以上日薪代課分擔,
-  每位各算一天並標示出來,怎麼給付由學校決定(各縣市規定不同,系統不代為判斷)。
+**几个数字**:
+- 代课节数:该教师接手的所有处置(代课/调课/并班),即他实际处理了几节。
+- 计费节数(课时):其中 `counts_toward_hours` 为真、且不是日薪者。并班/自习默认不计、
+  代课默认计(可覆写)。
+- 日薪天数:计费方式为「日薪代课」的代课,按日计酬——算的是「有几天」不是「几节」,
+  所以这些节次不进课时(#36)。同一位请假教师同一天若由两位以上日薪代课分担,
+  每位各算一天并标示出来,怎么给付由学校决定(各县市规定不同,系统不代为判断)。
 
-**跨月假單自動拆月**:以每一個 `affected_period` 自己的日期分月,不是以假單分月。
-王師請 1/30~2/2 的假,1 月的節次進 1 月報表、2 月的進 2 月——不必特別處理。
+**跨月假单自动拆月**:以每一个 `affected_period` 自己的日期分月,不是以假单分月。
+王师请 1/30~2/2 的假,1 月的节次进 1 月报表、2 月的进 2 月——不必特别处理。
 
-**銷假的節次不計**:銷假會把未完成的節次轉為 `cancelled`(那堂課沒上),故排除;
-已完成(completed)的節次即使事後銷假仍保留(課上過了,鐘點照算)。
+**销假的节次不计**:销假会把未完成的节次转为 `cancelled`(那堂课没上),故排除;
+已完成(completed)的节次即使事后销假仍保留(课上过了,课时照算)。
 """
 
 import io
@@ -40,7 +40,7 @@ _Date = date
 
 @dataclass(frozen=True, slots=True)
 class StatDetail:
-    """一列代課明細:某教師某節的處置。"""
+    """一列代课明细:某教师某节的处置。"""
 
     handler_teacher_id: int
     handler_name: str
@@ -56,11 +56,11 @@ class StatDetail:
     sub_type_label: str
     counts_toward_hours: bool
     funding_source: str
-    pay_kind: str = "none"       # hourly 鐘點 / daily 日薪 / none 不計
-    daily_shared: bool = False   # 日薪:這一天同一位請假教師的課由兩位以上日薪代課分擔
+    pay_kind: str = "none"       # hourly 课时 / daily 日薪 / none 不计
+    daily_shared: bool = False   # 日薪:这一天同一位请假教师的课由两位以上日薪代课分担
 
 
-PAY_KIND_CN = {"hourly": "鐘點", "daily": "日薪", "none": "不計"}
+PAY_KIND_CN = {"hourly": "课时", "daily": "日薪", "none": "不计"}
 
 
 def pay_kind(sub: Substitution) -> str:
@@ -73,11 +73,11 @@ def pay_kind(sub: Substitution) -> str:
 class TeacherSummary:
     teacher_id: int
     teacher_name: str
-    handled_count: int = 0   # 代課節數(所有接手處置)
-    billable_count: int = 0  # 鐘點計費節數(counts_toward_hours 為真,不含日薪)
-    daily_days: int = 0      # 日薪天數
-    daily_periods: int = 0   # 日薪那幾天共代了幾節(供核對)
-    daily_shared_days: int = 0  # 其中幾天是與其他日薪代課老師分擔的
+    handled_count: int = 0   # 代课节数(所有接手处置)
+    billable_count: int = 0  # 课时计费节数(counts_toward_hours 为真,不含日薪)
+    daily_days: int = 0      # 日薪天数
+    daily_periods: int = 0   # 日薪那几天共代了几节(供核对)
+    daily_shared_days: int = 0  # 其中几天是与其他日薪代课老师分担的
 
 
 @dataclass
@@ -100,7 +100,7 @@ def monthly_report(
     *,
     teacher_id: int | None = None,
 ) -> MonthlyReport:
-    """某月的代課鐘點統計。指定 teacher_id 則只統計該教師(教師個人查詢用)。"""
+    """某月的代课课时统计。指定 teacher_id 则只统计该教师(教师个人查询用)。"""
     month_start = date(year, month, 1)
     month_end = _next_month(year, month)
 
@@ -126,7 +126,7 @@ def monthly_report(
 
     for sub, ap in rows:
         handler = sub.handler
-        if handler is None:  # handler 已被移除(SET NULL 尚未反映在關聯)
+        if handler is None:  # handler 已被移除(SET NULL 尚未反映在关联)
             continue
         leave = ap.leave_request
         kind = pay_kind(sub)
@@ -173,9 +173,9 @@ def monthly_report(
 def _shared_daily_days(
     db: Session, semester_id: int, month_start: date, month_end: date
 ) -> set[tuple[int, date]]:
-    """(請假教師, 日期):那一天他的課由兩位以上「日薪代課」老師分擔。
+    """(请假教师, 日期):那一天他的课由两位以上「日薪代课」老师分担。
 
-    一律看全校,不受 teacher_id 篩選影響——教師個人查詢時也要看得到「這天是分擔的」。
+    一律看全校,不受 teacher_id 筛选影响——教师个人查询时也要看得到「这天是分担的」。
     """
     handlers: dict[tuple[int, date], set[int]] = {}
     for sub, ap in db.execute(
@@ -199,28 +199,28 @@ def _shared_daily_days(
 
 
 _DETAIL_HEADERS = (
-    "教師", "日期", "節次", "班級", "科目", "原任教師", "假別", "處置", "計費", "經費來源",
-    "計酬", "備註",
+    "教师", "日期", "节次", "班级", "科目", "原任教师", "假别", "处置", "计费", "经费来源",
+    "计酬", "备注",
 )
-_SUMMARY_HEADERS = ("教師", "代課節數", "鐘點計費節數", "日薪天數", "日薪節數", "備註")
-_SHARED_NOTE = "當日與其他日薪代課分擔"
+_SUMMARY_HEADERS = ("教师", "代课节数", "课时计费节数", "日薪天数", "日薪节数", "备注")
+_SHARED_NOTE = "当日与其他日薪代课分担"
 
 
 def build_workbook(report: MonthlyReport) -> bytes:
-    """匯出兩張表:彙總(每位教師)+ 明細(逐節)。回傳 xlsx bytes。"""
+    """导出两张表:汇总(每位教师)+ 明细(逐节)。回传 xlsx bytes。"""
     wb = Workbook()
 
     ws_sum = wb.active
-    ws_sum.title = "彙總"
+    ws_sum.title = "汇总"
     ws_sum.append(list(_SUMMARY_HEADERS))
     for s in report.summaries:
-        note = f"其中 {s.daily_shared_days} 天與其他日薪代課分擔" if s.daily_shared_days else ""
+        note = f"其中 {s.daily_shared_days} 天与其他日薪代课分担" if s.daily_shared_days else ""
         ws_sum.append([
             s.teacher_name, s.handled_count, s.billable_count,
             s.daily_days, s.daily_periods, note,
         ])
 
-    ws_detail = wb.create_sheet("明細")
+    ws_detail = wb.create_sheet("明细")
     ws_detail.append(list(_DETAIL_HEADERS))
     for d in report.details:
         ws_detail.append([

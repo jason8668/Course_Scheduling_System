@@ -1,133 +1,133 @@
-# 貢獻指南
+# 贡献指南
 
-歡迎回報問題與貢獻程式。本專案為 MIT 授權、單校自架的排課與調代課系統,面向台灣中小學教學組長。
+欢迎回报问题与贡献程序。本专案为 MIT 授权、单校自架的排课与调代课系统,面向台湾中小学教学组长。
 
-## 回報問題
+## 回报问题
 
-到 GitHub 開 Issue,請盡量附上:
+到 GitHub 开 Issue,请尽量附上:
 
-- 復現步驟、預期行為與實際行為。
-- 環境:部署方式(拉映像 / 原始碼)、`IMAGE_TAG` 或 commit、作業系統。
-- 相關 log:`docker compose logs --tail=100 api`(或 worker/web)。**請先移除機密**(密碼、`SECRET_KEY`)。
+- 复现步骤、预期行为与实际行为。
+- 环境:部署方式(拉映像 / 原始码)、`IMAGE_TAG` 或 commit、作业系统。
+- 相关 log:`docker compose logs --tail=100 api`(或 worker/web)。**请先移除机密**(密码、`SECRET_KEY`)。
 
-## 開發環境
+## 开发环境
 
-### 熱重載全棧
+### 热重载全栈
 
 ```bash
 cp .env.example .env
 docker compose -f docker-compose.dev.yml up
 ```
 
-- 前端(熱重載):<http://localhost:5173>
-- API 互動文件:<http://localhost:8000/api/docs>
+- 前端(热重载):<http://localhost:5173>
+- API 互动文件:<http://localhost:8000/api/docs>
 
-前後端原始碼掛載進容器,存檔即時生效。含 `mailhog`(攔截外送信,Web UI <http://localhost:8025>)須以 `--profile dev` 啟動。
+前后端原始码挂载进容器,存档即时生效。含 `mailhog`(拦截外送信,Web UI <http://localhost:8025>)须以 `--profile dev` 启动。
 
-### 各自本機測試
+### 各自本机测试
 
 ```bash
-# 後端
+# 后端
 cd backend && pip install -e ".[dev]" && pytest
 # 前端
 cd frontend && npm install && npm run test
 ```
 
-## 程式風格與品質門檻
+## 程序风格与质量门槛
 
-送 PR 前請確保各項通過(CI 也會擋):
+送 PR 前请确保各项通过(CI 也会挡):
 
-| 範圍 | 指令 | 要求 |
+| 范围 | 指令 | 要求 |
 |---|---|---|
-| 後端 lint/格式 | `ruff check .` | 零錯誤 |
-| 後端型別 | `mypy app` | 零錯誤 |
-| 後端測試 | `pytest` | 全綠,且不使既有測試退步 |
-| 前端 lint | `npm run lint` | 零錯誤 |
-| 前端建置+型別 | `npm run build`(含 vue-tsc) | 通過 |
-| 前端單元測試 | `npm run test` | 全綠 |
+| 后端 lint/格式 | `ruff check .` | 零错误 |
+| 后端型别 | `mypy app` | 零错误 |
+| 后端测试 | `pytest` | 全绿,且不使既有测试退步 |
+| 前端 lint | `npm run lint` | 零错误 |
+| 前端建置+型别 | `npm run build`(含 vue-tsc) | 通过 |
+| 前端单元测试 | `npm run test` | 全绿 |
 
-其他約定:
+其他约定:
 
-- **UI 文案一律繁體中文、台灣教務用語**(節次、科任、配課、鐘點、跑班)。衝突/提示訊息用節次表中儲存的名稱(早自修/午休/第一節),不用內部 `period_no`。
-- **資料庫 schema 變更必附 Alembic 遷移**,且能從前一版順向升級。
-- solver 模組(`app/solver/`)不得 import `app.api` / `app.models`(以測試保證純度)。
-- **背景任務分兩條佇列**:`default` 只跑自動排課(可佔住 worker 數分鐘),`ops` 跑匯出/備份/還原/寄信與定時任務。新增背景任務時先問「這會不會跑很久」——會的話走 `default`,否則一律 `ops`,別讓秒級任務排在排課後面。正式環境由 `worker` 與 `worker-ops` 兩個容器分別守著(同一映像,見 `app/workers/worker.py`);開發用 compose 是單一行程同時守兩條(dev 不在乎排課堵住匯出)。
-- **新增後端相依請一併給主版號上限**(`fastapi>=0.115,<1` 這種寫法)。踩過:`redis` 只寫下限,某次重建映像裝到 redis-py 8,阻塞式取結果的行為變了,匯出與備份在新環境全數逾時失敗——而本機因為 pip 快取還是舊版,測不出來。映像每次發行都重新建置,不釘上限等於把使用者的部署交給上游的發版節奏。
-- 架構規格以 [docs/architecture.md](docs/architecture.md) 為準;與任務卡衝突時以架構文件為準並回報矛盾。
+- **UI 文案一律简体中文、大陆教务用语**(节次、科任、配课、课时、跑班)。冲突/提示讯息用节次表中储存的名称(早自修/午休/第一节),不用内部 `period_no`。
+- **资料库 schema 变更必附 Alembic 迁移**,且能从前一版顺向升级。
+- solver 模组(`app/solver/`)不得 import `app.api` / `app.models`(以测试保证纯度)。
+- **背景任务分两条伫列**:`default` 只跑自动排课(可占住 worker 数分钟),`ops` 跑导出/备份/还原/寄信与定时任务。新增背景任务时先问「这会不会跑很久」——会的话走 `default`,否则一律 `ops`,别让秒级任务排在排课后面。正式环境由 `worker` 与 `worker-ops` 两个容器分别守著(同一映像,见 `app/workers/worker.py`);开发用 compose 是单一行程同时守两条(dev 不在乎排课堵住导出)。
+- **新增后端相依请一并给主版号上限**(`fastapi>=0.115,<1` 这种写法)。踩过:`redis` 只写下限,某次重建映像装到 redis-py 8,阻塞式取结果的行为变了,导出与备份在新环境全数逾时失败——而本机因为 pip 快取还是旧版,测不出来。映像每次发行都重新建置,不钉上限等于把用户的部署交给上游的发版节奏。
+- 架构规格以 [docs/architecture.md](docs/architecture.md) 为准;与任务卡冲突时以架构文件为准并回报矛盾。
 
 ### E2E(Playwright)
 
-對「執行中的 Docker 全棧」驅動真實瀏覽器。需先 `docker compose up -d`,再建立測試帳號(`e2e_scheduler` / `e2e_teacher` / `e2e_admin` / `e2e_newuser`,並將設定精靈標記完成):
+对「执行中的 Docker 全栈」驱动真实浏览器。需先 `docker compose up -d`,再建立测试帐号(`e2e_scheduler` / `e2e_teacher` / `e2e_admin` / `e2e_newuser`,并将设置精灵标记完成):
 
 ```bash
 docker compose exec -T api python -m app.scripts.seed_e2e
 
 cd frontend
 npx playwright install chromium   # 首次
-npm run e2e            # 迴歸套件(無頭;CI 跑的就是這個)
-npm run e2e:headed     # 有頭 + 放慢,可在螢幕上觀看
-npm run e2e:perf       # 60 班壓測(執行久,非迴歸,CI 不跑)
-npm run e2e:manual     # 操作手冊截圖產生器(需一套空資料庫的站台,CI 不跑)
+npm run e2e            # 回归套件(无头;CI 跑的就是这个)
+npm run e2e:headed     # 有头 + 放慢,可在萤幕上观看
+npm run e2e:perf       # 60 班压测(执行久,非回归,CI 不跑)
+npm run e2e:manual     # 操作手册截图产生器(需一套空资料库的站台,CI 不跑)
 ```
 
-`seed_e2e` 是冪等的,**唯一例外是 `e2e_newuser`**:它每次都被重設回「首次登入待改密」狀態,因為 `change-password.spec.ts` 必然會把這個狀態用掉(那支測試就是去改密碼的)。本機連續重跑 e2e 前記得重新 seed。
+`seed_e2e` 是幂等的,**唯一例外是 `e2e_newuser`**:它每次都被重设回「首次登录待改密」状态,因为 `change-password.spec.ts` 必然会把这个状态用掉(那支测试就是去改密码的)。本机连续重跑 e2e 前记得重新 seed。
 
-CI 的 `e2e` job 會在 runner 上建置三個映像、起全棧、seed 帳號後跑迴歸套件;E2E 未過不會發布映像。
+CI 的 `e2e` job 会在 runner 上建置三个映像、起全栈、seed 帐号后跑回归套件;E2E 未过不会发布映像。
 
-**新增頁面時請一併加 e2e。** 這條不是形式要求:v1.0.0 曾有一整頁(系統管理)因為 setup 擲錯而完全渲染不出來,備份/還原/SMTP 全都點不進去,卻因為沒有任何測試覆蓋而溜過兩個版本。目前 20 個路由全數有 e2e 造訪,請維持這個狀態。
+**新增页面时请一并加 e2e。** 这条不是形式要求:v1.0.0 曾有一整页(系统管理)因为 setup 掷错而完全渲染不出来,备份/还原/SMTP 全都点不进去,却因为没有任何测试覆盖而溜过两个版本。目前 20 个路由全数有 e2e 造访,请维持这个状态。
 
-### 操作手冊截圖
+### 操作手册截图
 
-`npm run e2e:manual` 會產生 `docs/manual-img/` 的 14 張截圖。它**自備示範資料**(115 學年度、8 位教師、3 班、24 筆配課),所以只要給它一套空的站台即可:
+`npm run e2e:manual` 会产生 `docs/manual-img/` 的 14 张截图。它**自备示范资料**(115 学年度、8 位教师、3 班、24 笔配课),所以只要给它一套空的站台即可:
 
 ```bash
-# 另起一套獨立的棧(空資料庫),.env 設 ADMIN_PASSWORD=DemoSetup2026!
+# 另起一套独立的栈(空资料库),.env 设 ADMIN_PASSWORD=DemoSetup2026!
 docker compose -p manual --env-file <你的.env> up -d
 E2E_BASE_URL=http://localhost:<port> npm run e2e:manual
 ```
 
-介面改版(尤其是主題色、版面)後請重跑,別讓手冊停留在舊畫面。
+介面改版(尤其是主题色、版面)后请重跑,别让手册停留在旧界面。
 
-## 提交與 PR
+## 提交与 PR
 
-- 從 `main` 開分支開發;PR 對回 `main`。
-- Commit 訊息用祈使句、精簡描述「做了什麼、為什麼」。
-- PR 描述請逐條對照相關任務卡的驗收標準,說明驗證方式與結果。
-- 不 force-push 共用分支;不繞過 hook 或簽章(除非明確需要)。
+- 从 `main` 开分支开发;PR 对回 `main`。
+- Commit 讯息用祈使句、精简描述「做了什么、为什么」。
+- PR 描述请逐条对照相关任务卡的验收标准,说明验证方式与结果。
+- 不 force-push 共用分支;不绕过 hook 或签章(除非明确需要)。
 
-## 開發流程(任務卡制)
+## 开发流程(任务卡制)
 
-本專案以 [docs/tasks.md](docs/tasks.md) 的 Milestone 任務卡推進:一次一張卡,實作 → 依卡上「驗收標準」自我驗證 → 回報 → 驗收後才進下一張。完成後更新該卡核取方塊為 `[x]` 並補「實作後」紀錄。臨時冒出的點子記入 tasks.md 末尾的 Backlog,不順手實作。
+本专案以 [docs/tasks.md](docs/tasks.md) 的 Milestone 任务卡推进:一次一张卡,实作 → 依卡上「验收标准」自我验证 → 回报 → 验收后才进下一张。完成后更新该卡核取方块为 `[x]` 并补「实作后」纪录。临时冒出的点子记入 tasks.md 末尾的 Backlog,不顺手实作。
 
-## 發布新版本(維護者)
+## 发布新版本(维护者)
 
-映像建置與發布已由 CI 自動化(見 [.github/workflows/ci.yml](.github/workflows/ci.yml)):
+映像建置与发布已由 CI 自动化(见 [.github/workflows/ci.yml](.github/workflows/ci.yml)):
 
-1. 確認 `main` 綠燈——**五個 job 全過**:backend / frontend / migrations / e2e / images。
-2. 更新 `CHANGELOG.md`:把 `[Unreleased]` 內容整理到新版本標題下並註明日期,標註破壞性變更(⚠️)。同步更新 `README.md` 的專案狀態、`docs/deploy/upgrade.md` 的釘選版本範例。
-3. 打標籤並推送:
+1. 确认 `main` 绿灯——**五个 job 全过**:backend / frontend / migrations / e2e / images。
+2. 更新 `CHANGELOG.md`:把 `[Unreleased]` 内容整理到新版本标题下并注明日期,标注破坏性变更(⚠️)。同步更新 `README.md` 的专案状态、`docs/deploy/upgrade.md` 的钉选版本范例。
+3. 打标签并推送:
 
    ```bash
-   git tag -a v1.2.0 -m "v1.2.0(日期):一句話說明"
+   git tag -a v1.2.0 -m "v1.2.0(日期):一句话说明"
    git push origin v1.2.0
    ```
 
-4. `v*` 標籤觸發 CI 的 `images` job,建置並推送**雙架構(amd64 + arm64)**映像到 GHCR:
+4. `v*` 标签触发 CI 的 `images` job,建置并推送**双架构(amd64 + arm64)**映像到 GHCR:
    - `ghcr.io/begin0808/course_scheduling_system-api`
    - `ghcr.io/begin0808/course_scheduling_system-worker`
    - `ghcr.io/begin0808/course_scheduling_system-web`
 
-   每個映像會推 `:latest`、`:<版本標籤>`(即 `github.ref_name`)與 `:<commit sha>` 三個 tag。`main` push 僅建 amd64;**版本標籤才建雙架構**(arm64 走模擬,約需 20 分鐘)。
-5. **等映像真的上架再建 Release**——標籤推上去的當下映像還在建,太早公開連結會讓人 `docker compose pull` 撲空。確認方式:
+   每个映像会推 `:latest`、`:<版本标签>`(即 `github.ref_name`)与 `:<commit sha>` 三个 tag。`main` push 仅建 amd64;**版本标签才建双架构**(arm64 走模拟,约需 20 分钟)。
+5. **等映像真的上架再建 Release**——标签推上去的当下映像还在建,太早公开连结会让人 `docker compose pull` 扑空。确认方式:
 
    ```bash
    docker buildx imagetools inspect ghcr.io/begin0808/course_scheduling_system-api:<版本> | grep Platform
    ```
 
-6. 在 GitHub 建立 Release,關聯該標籤,貼上該版 CHANGELOG 內容,勾選 **Set as the latest release**。
-7. **發布前最後一道**:在乾淨環境拉**正式映像**跑一次(不是本機建的那份)——CI 驗的是從原始碼建的映像,使用者拉到的是 `images` job 產出的那份,兩者從未同時被驗證過。至少走到:六容器 healthy → 首次登入改密 → 設定精靈 → 系統管理頁(**「系統版本」顯示的目前版本須等於本次標籤**,確認 `APP_VERSION` 有注入)→ 立即備份。
-8. 使用者升級:`.env` 設 `IMAGE_TAG=<版本>` → `docker compose pull && docker compose up -d`(見 [docs/deploy/upgrade.md](docs/deploy/upgrade.md))。`IMAGE_TAG` 即對應此處推送的版本標籤。
+6. 在 GitHub 建立 Release,关联该标签,贴上该版 CHANGELOG 内容,勾选 **Set as the latest release**。
+7. **发布前最后一道**:在干净环境拉**正式映像**跑一次(不是本机建的那份)——CI 验的是从原始码建的映像,用户拉到的是 `images` job 产出的那份,两者从未同时被验证过。至少走到:六容器 healthy → 首次登录改密 → 设置精灵 → 系统管理页(**「系统版本」显示的目前版本须等于本次标签**,确认 `APP_VERSION` 有注入)→ 立即备份。
+8. 用户升级:`.env` 设 `IMAGE_TAG=<版本>` → `docker compose pull && docker compose up -d`(见 [docs/deploy/upgrade.md](docs/deploy/upgrade.md))。`IMAGE_TAG` 即对应此处推送的版本标签。
 
-## 授權
+## 授权
 
-貢獻即表示你同意以 [MIT](LICENSE) 授權釋出你的貢獻。
+贡献即表示你同意以 [MIT](LICENSE) 授权释出你的贡献。

@@ -1,4 +1,4 @@
-"""學期與節次表相關 schema。"""
+"""学期与节次表相关 schema。"""
 
 from datetime import date, time
 
@@ -15,7 +15,7 @@ class TemplateOut(BaseModel):
     subject_count: int
 
 
-# ── 節次 ──────────────────────────────
+# ── 节次 ──────────────────────────────
 class PeriodIn(BaseModel):
     weekday: int = Field(ge=1, le=6)
     period_no: int = Field(ge=1)
@@ -31,7 +31,7 @@ class PeriodOut(PeriodIn):
 
 
 class AvailableSlot(BaseModel):
-    """可排課時段(type=regular 的格位)。"""
+    """可排课时段(type=regular 的格位)。"""
 
     weekday: int
     period_no: int
@@ -40,7 +40,7 @@ class AvailableSlot(BaseModel):
     end_time: time | None = None
 
 
-# ── 節次表 ────────────────────────────
+# ── 节次表 ────────────────────────────
 class PeriodTableOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -54,7 +54,7 @@ class PeriodTableCreate(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     num_weekdays: int = Field(default=5, ge=5, le=6)
     is_default: bool = False
-    # 若指定,依此學制範本帶入節次;否則建立空表
+    # 若指定,依此学制范本带入节次;否则建立空表
     template_key: str | None = None
 
 
@@ -63,13 +63,13 @@ class PeriodTableUpdate(BaseModel):
     is_default: bool | None = None
 
 
-# ── 學期 ──────────────────────────────
+# ── 学期 ──────────────────────────────
 class SemesterCreate(BaseModel):
-    academic_year: int = Field(ge=100, le=200)  # 民國學年度
+    academic_year: int = Field(ge=100, le=200)  # 民国学年度
     term: int = Field(ge=1, le=2)
     start_date: date | None = None
     end_date: date | None = None
-    # 若指定,依此學制範本帶入預設節次表
+    # 若指定,依此学制范本带入默认节次表
     template_key: str | None = None
 
 
@@ -82,8 +82,8 @@ class SemesterUpdate(BaseModel):
 class SemesterCopyRequest(BaseModel):
     academic_year: int = Field(ge=100, le=200)
     term: int = Field(ge=1, le=2)
-    # 新學期的起訖日:不能沿用來源學期(那是上學期的日期)。少了它,請假展開、今日看板、
-    # 代課的「已上過」判定全部失準,而且畫面上看不出哪裡不對(M6-4)。
+    # 新学期的起讫日:不能沿用来源学期(那是上学期的日期)。少了它,请假展开、今日看板、
+    # 代课的「已上过」判定全部失准,而且界面上看不出哪里不对(M6-4)。
     start_date: date | None = None
     end_date: date | None = None
     period_tables: bool = True
@@ -92,12 +92,12 @@ class SemesterCopyRequest(BaseModel):
     rooms: bool = True
     classes: bool = True
     grade_promotion: bool = True
-    constraint_config: bool = True  # 軟約束權重(不帶則新學期悄悄回到預設值)
+    constraint_config: bool = True  # 软约束权重(不带则新学期悄悄回到默认值)
 
     @model_validator(mode="after")
     def _dates_in_order(self) -> "SemesterCopyRequest":
         if self.start_date and self.end_date and self.end_date < self.start_date:
-            raise ValueError("學期結束日不可早於開始日")
+            raise ValueError("学期结束日不可早于开始日")
         return self
 
 

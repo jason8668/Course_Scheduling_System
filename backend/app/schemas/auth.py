@@ -1,4 +1,4 @@
-"""認證相關的請求/回應 schema。"""
+"""认证相关的请求/回应 schema。"""
 
 from pydantic import BaseModel, Field
 

@@ -8,7 +8,7 @@ import Leaves from './Leaves.vue'
 const MAX_LEAVE_ROWS = 1000
 
 const leave = (id: number) => ({
-  id, semester_id: 1, teacher_id: 1, teacher_name: '王師', leave_type: 'sick',
+  id, semester_id: 1, teacher_id: 1, teacher_name: '王师', leave_type: 'sick',
   leave_type_label: '病假', start_date: '2026-09-02', start_time: null,
   end_date: '2026-09-02', end_time: null, reason: '', status: 'registered',
   created_by_name: 'admin', created_at: '2026-09-01T08:00:00',
@@ -20,7 +20,7 @@ function stubFetch(rows: number) {
     let body: unknown = Array.from({ length: rows }, (_, i) => leave(i + 1))
     if (url.includes('/leave-types')) body = { sick: '病假' }
     else if (url.includes('/teachers')) body = []
-    else if (url.includes('/semesters')) body = [{ id: 1, label: '149 學年度第 1 學期' }]
+    else if (url.includes('/semesters')) body = [{ id: 1, label: '149 学年度第 1 学期' }]
     return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) })
   }))
 }
@@ -33,14 +33,14 @@ async function mountLeaves(rows: number) {
   return wrapper
 }
 
-describe('Leaves 清單上限', () => {
-  it('取到上限筆數時提示被截斷', async () => {
+describe('Leaves 清单上限', () => {
+  it('取到上限笔数时提示被截断', async () => {
     const wrapper = await mountLeaves(MAX_LEAVE_ROWS)
     expect(wrapper.find('[data-testid="lv-truncated"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('只顯示最新的 1000 張假單')
+    expect(wrapper.text()).toContain('只显示最新的 1000 张假单')
   })
 
-  it('未達上限時不提示', async () => {
+  it('未达上限时不提示', async () => {
     const wrapper = await mountLeaves(2)
     expect(wrapper.find('[data-testid="lv-truncated"]').exists()).toBe(false)
   })

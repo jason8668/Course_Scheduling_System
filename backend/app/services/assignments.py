@@ -1,4 +1,4 @@
-"""配課領域服務:排課單位解析、跑班群組驗證、鐘點/負載統計、序列化。"""
+"""配课领域服务:排课单位解析、跑班群组验证、课时/负载统计、序列化。"""
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -18,7 +18,7 @@ from app.services import settings as settings_service
 
 
 class DomainError(Exception):
-    """商業規則違反(由 API 層轉為對應 HTTP 狀態)。"""
+    """商业规则违反(由 API 层转为对应 HTTP 状态)。"""
 
     def __init__(self, message: str, status_code: int = 400) -> None:
         super().__init__(message)
@@ -27,7 +27,7 @@ class DomainError(Exception):
 
 
 def get_or_create_single_unit(db: Session, class_unit: ClassUnit) -> SchedulingUnit:
-    """取得(或建立)某班級的單班排課單位。單班的所有配課共用同一 single unit。"""
+    """取得(或建立)某班级的单班排课单位。单班的所有配课共用同一 single unit。"""
     existing = db.scalar(
         select(SchedulingUnit)
         .join(SchedulingUnitMember, SchedulingUnitMember.scheduling_unit_id == SchedulingUnit.id)
@@ -53,7 +53,7 @@ def get_or_create_single_unit(db: Session, class_unit: ClassUnit) -> SchedulingU
 def create_group(
     db: Session, semester_id: int, name: str, class_ids: list[int]
 ) -> SchedulingUnit:
-    """建立跑班群組。驗證班級同屬本學期,且成員節次表一致(architecture.md D7 #4)。"""
+    """建立跑班群组。验证班级同属本学期,且成员节次表一致(architecture.md D7 #4)。"""
     classes = list(
         db.scalars(
             select(ClassUnit).where(
@@ -62,7 +62,7 @@ def create_group(
         )
     )
     if len(classes) != len(set(class_ids)):
-        raise DomainError("班級清單含無效或跨學期的班級")
+        raise DomainError("班级清单含无效或跨学期的班级")
     _require_same_period_table(db, classes)
     unit = SchedulingUnit(
         semester_id=semester_id, unit_type=SchedulingUnitType.group.value, name=name
@@ -77,14 +77,14 @@ def create_group(
 def create_alternate(
     db: Session, semester_id: int, class_id: int, name: str | None = None
 ) -> SchedulingUnit:
-    """建立單雙週組(v1.3.0):一個班,之後在組裡配單週、雙週各一筆課。
+    """建立单双周组(v1.3.0):一个班,之后在组里配单周、双周各一笔课。
 
-    一個班可以有好幾組(週一三四節生科/資科、週三第五節音樂/美術…)。
-    沒給名稱時用「701 單雙週」,同班第二組起加上編號。
+    一个班可以有好几组(周一三四节生科/资科、周三第五节音乐/美术…)。
+    没给名称时用「701 单双周」,同班第二组起加上编号。
     """
     cls = db.get(ClassUnit, class_id)
     if cls is None or cls.semester_id != semester_id:
-        raise DomainError("班級無效或不屬於本學期")
+        raise DomainError("班级无效或不属于本学期")
     if not name:
         taken = set(db.scalars(
             select(SchedulingUnit.name).where(
@@ -92,7 +92,7 @@ def create_alternate(
                 SchedulingUnit.unit_type == SchedulingUnitType.alternate.value,
             )
         ))
-        base = f"{cls.name} 單雙週"
+        base = f"{cls.name} 单双周"
         name, n = base, 2
         while name in taken:
             name = f"{base} {n}"
@@ -109,14 +109,14 @@ def create_alternate(
 def check_week_parity(
     db: Session, unit: SchedulingUnit, week_parity: str | None, assignment_id: int | None
 ) -> None:
-    """單雙週組的配課一定要標單週或雙週,而且同一組單週、雙週各只能一筆;
-    其他配課不可以標(跑班群組＋單雙週這次不支援)。"""
+    """单双周组的配课一定要标单周或双周,而且同一组单周、双周各只能一笔;
+    其他配课不可以标(跑班群组＋单双周这次不支援)。"""
     if unit.unit_type != SchedulingUnitType.alternate.value:
         if week_parity:
-            raise DomainError("只有單雙週組裡的配課可以設定單週或雙週")
+            raise DomainError("只有单双周组里的配课可以设置单周或双周")
         return
     if not week_parity:
-        raise DomainError("單雙週組的配課要選擇單週或雙週")
+        raise DomainError("单双周组的配课要选择单周或双周")
     clash = db.scalar(
         select(CourseAssignment).where(
             CourseAssignment.scheduling_unit_id == unit.id,
@@ -126,8 +126,8 @@ def check_week_parity(
     )
     if clash is not None:
         raise DomainError(
-            f"單雙週組「{unit.name}」已經有{PARITY_CN[week_parity]}的課"
-            f"({clash.subject.name}),每組單週、雙週各一筆",
+            f"单双周组「{unit.name}」已经有{PARITY_CN[week_parity]}的课"
+            f"({clash.subject.name}),每组单周、双周各一笔",
             status_code=409,
         )
 
@@ -139,15 +139,15 @@ def _require_same_period_table(db: Session, classes: list[ClassUnit]) -> None:
         table_ids.add(table.id if table is not None else None)
     if len(table_ids) > 1:
         raise DomainError(
-            "跑班群組的成員班級必須使用同一套節次表(否則無法同時段開課)", status_code=409
+            "跑班群组的成员班级必须使用同一套节次表(否则无法同时段开课)", status_code=409
         )
 
 
 def teacher_loads(db: Session, semester_id: int) -> list[dict]:
-    """每位教師的鐘點統計:應授(base-減課)vs 已配課,delta 正為超鐘點。
+    """每位教师的课时统计:应授(base-减课)vs 已配课,delta 正为超课时。
 
-    單雙週的課按實際上課量算一半(v1.3.0,使用者定案):單週在 701、雙週在 702 的老師
-    每週都上,合計是完整的節數;只有單週那筆的老師平均每週只有一半。
+    单双周的课按实际上课量算一半(v1.3.0,用户定案):单周在 701、双周在 702 的老师
+    每周都上,合计是完整的节数;只有单周那笔的老师平均每周只有一半。
     """
     rows = db.execute(
         select(
@@ -175,11 +175,11 @@ def teacher_loads(db: Session, semester_id: int) -> list[dict]:
             "base_periods": t.base_periods, "admin_reduction": t.admin_reduction,
             "target": target, "assigned": assigned, "delta": delta,
             "max_overtime": limit,
-            # 兩種情況不算違規:
-            #   limit=0  → 學校未設上限
-            #   base=0   → 這位教師沒填基本鐘點。「應授 0 節」不是真的不用上課,
-            #              而是資料還沒建;此時談超鐘點沒有意義,硬擋會讓沒有
-            #              維護基鐘的學校連一般配課都做不了。
+            # 两种情况不算违规:
+            #   limit=0  → 学校未设上限
+            #   base=0   → 这位教师没填基本课时。「应授 0 节」不是真的不用上课,
+            #              而是资料还没建;此时谈超课时没有意义,硬挡会让没有
+            #              维护基钟的学校连一般配课都做不了。
             "over_limit": limit > 0 and t.base_periods > 0 and delta > limit,
         })
     return out
@@ -188,10 +188,10 @@ def teacher_loads(db: Session, semester_id: int) -> list[dict]:
 def assert_within_overtime_limit(
     db: Session, semester_id: int, teacher_ids: set[int]
 ) -> None:
-    """配課異動後,檢查受影響的教師有沒有超出超鐘點上限。
+    """配课异动后,检查受影响的教师有没有超出超课时上限。
 
-    只檢查這次動到的教師:既有資料可能是在上限調低之前建立的,
-    全面檢查會讓使用者連「把某人的課調少」都做不到。
+    只检查这次动到的教师:既有资料可能是在上限调低之前建立的,
+    全面检查会让用户连「把某人的课调少」都做不到。
     """
     if not teacher_ids:
         return
@@ -202,20 +202,20 @@ def assert_within_overtime_limit(
         if row["teacher_id"] not in teacher_ids or not row["over_limit"]:
             continue
         raise DomainError(
-            f"{row['name']} 應授 {row['target']} 節,配課後為 {fmt_periods(row['assigned'])} 節,"
-            f"超出 {fmt_periods(row['delta'])} 節,已超過上限 {limit} 節。"
-            "請調整配課,或於「系統管理」修改超鐘點上限。",
+            f"{row['name']} 应授 {row['target']} 节,配课后为 {fmt_periods(row['assigned'])} 节,"
+            f"超出 {fmt_periods(row['delta'])} 节,已超过上限 {limit} 节。"
+            "请调整配课,或于「系统管理」修改超课时上限。",
             status_code=409,
         )
 
 
 def _unit_slot_consumption(db: Session, semester_id: int) -> dict[int, int]:
-    """每個排課單位佔用成員班級的節數。
+    """每个排课单位占用成员班级的节数。
 
-    single:單位內各筆配課的節數總和(同一班的不同科目依序上課)。
-    group(跑班):群組內的配課「同時段開課」(H7),學生分流到不同教室,
-    班級實際被佔用的是最長的那一筆,而非全部相加——5 門 3 節的選修同時開,
-    班級只被佔掉 3 節。
+    single:单位内各笔配课的节数总和(同一班的不同科目依序上课)。
+    group(跑班):群组内的配课「同时段开课」(H7),学生分流到不同教室,
+    班级实际被占用的是最长的那一笔,而非全部相加——5 门 3 节的选修同时开,
+    班级只被占掉 3 节。
     """
     rows = db.execute(
         select(
@@ -235,7 +235,7 @@ def _unit_slot_consumption(db: Session, semester_id: int) -> dict[int, int]:
 
 
 def class_loads(db: Session, semester_id: int) -> list[dict]:
-    """每班每週配課總節數 vs 可排節次數(超出即警告,對應驗收④)。"""
+    """每班每周配课总节数 vs 可排节次数(超出即警告,对应验收④)。"""
     consumption = _unit_slot_consumption(db, semester_id)
     assigned_by: dict[int, int] = {}
     if consumption:

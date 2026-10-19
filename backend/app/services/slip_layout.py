@@ -1,10 +1,10 @@
-"""通知單(調課單、代課單)共用的版面組裝。
+"""通知单(调课单、代课单)共用的版面组装。
 
-紙本一律是一張週課表,只在「有異動的格子」寫上日期、科目與一行說明;
-格線、節次列、下午粗線、跨週分頁都一樣。調課單(v1.2.2)與代課單(v1.2.5)
-差在表頭欄位與格子裡那一行字,故把相同的部分抽在這裡共用。
+纸本一律是一张周课表,只在「有异动的格子」写上日期、科目与一行说明;
+格线、节次列、下午粗线、跨周分页都一样。调课单(v1.2.2)与代课单(v1.2.5)
+差在表头栏位与格子里那一行字,故把相同的部分抽在这里共用。
 
-本模組只讀,不寫資料庫;資料全部來自處置的快照欄位與節次表。
+本模组只读,不写资料库;资料全部来自处置的快照栏位与节次表。
 """
 
 from collections.abc import Callable
@@ -20,7 +20,7 @@ from app.models.semester import Semester
 from app.services import period_tables as pt_service
 from app.services import settings as app_settings
 
-# dataclass 欄位名 date 會遮蔽同名型別(mypy 判為變數),故型別一律用別名
+# dataclass 栏位名 date 会遮蔽同名型别(mypy 判为变数),故型别一律用别名
 _Date = date
 
 _TERM_CN = {1: "一", 2: "二", 3: "三"}
@@ -29,10 +29,10 @@ _AFTERNOON = time(12, 0)
 
 @dataclass(frozen=True, slots=True)
 class SlipRow:
-    ordinal: int              # 第幾節(只數一般課,早自習/午休不算)
+    ordinal: int              # 第几节(只数一般课,早自习/午休不算)
     start_time: time | None
     end_time: time | None
-    afternoon_starts: bool    # 這一列是下午的第一節(紙本在這裡畫粗線)
+    afternoon_starts: bool    # 这一列是下午的第一节(纸本在这里画粗线)
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,9 +41,9 @@ class SlipCell:
     weekday: int
     ordinal: int
     subject_name: str
-    actor: str                # 第三行:調課單寫實際上課的老師;代課單寫「班級[代]」或「老師[代]」
-    code: str                 # 調課單的「調09-15_25」(與 9/15 星期二第 5 節對調);代課單沒有
-    time_note: str = ""       # 這一格屬於另一套節次表、時間與所在列不同時,寫實際時間
+    actor: str                # 第三行:调课单写实际上课的老师;代课单写「班级[代]」或「老师[代]」
+    code: str                 # 调课单的「调09-15_25」(与 9/15 星期二第 5 节对调);代课单没有
+    time_note: str = ""       # 这一格属于另一套节次表、时间与所在列不同时,写实际时间
 
 
 @dataclass
@@ -56,27 +56,27 @@ class SlipWeek:
 @dataclass
 class Slip:
     kind: str                 # teacher / class
-    teacher_name: str         # 教師單的主角:調課教師 / 代課教師
+    teacher_name: str         # 教师单的主角:调课教师 / 代课教师
     class_names: str
     date_from: _Date
     date_to: _Date
-    absent_teacher_name: str = ""   # 代課單才有:請假教師
-    leave_type_name: str = ""       # 代課單才有:假別
-    funding_label: str = ""         # 代課單才有:計費方式
+    absent_teacher_name: str = ""   # 代课单才有:请假教师
+    leave_type_name: str = ""       # 代课单才有:假别
+    funding_label: str = ""         # 代课单才有:计费方式
     rows: list[SlipRow] = field(default_factory=list)
     weeks: list[SlipWeek] = field(default_factory=list)
 
 
 @dataclass
 class Slips:
-    title: str                # 調課單「示範國中115學年第一學期」;代課單只有校名
-    kind: str = "swap"        # swap / substitute:決定紙本抬頭
+    title: str                # 调课单「示范初中115学年第一学期」;代课单只有校名
+    kind: str = "swap"        # swap / substitute:决定纸本抬头
     slips: list[Slip] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
 class Move:
-    """一個異動格:某天某節,某班改由某老師上某科。"""
+    """一个异动格:某天某节,某班改由某老师上某科。"""
 
     date: _Date
     period_no: int
@@ -85,16 +85,16 @@ class Move:
     teacher_id: int
     teacher_name: str
     table_id: int | None
-    code: str = ""            # 調課單的對調代碼
-    mark: str = ""            # 接在人名/班級後的標記,如「[代]」「[併]」
+    code: str = ""            # 调课单的对调代码
+    mark: str = ""            # 接在人名/班级后的标记,如「[代]」「[并]」
 
 
 class SlipError(Exception):
-    """要印的不是有效的處置(呼叫端轉 404/409)。"""
+    """要印的不是有效的处置(呼叫端转 404/409)。"""
 
 
 class Tables:
-    """節次表快取:算「第幾節」與列出一般課的列。"""
+    """节次表快取:算「第几节」与列出一般课的列。"""
 
     def __init__(self, db: Session) -> None:
         self.db = db
@@ -121,13 +121,13 @@ class Tables:
         for i, p in enumerate(self.regular(table_id, weekday), start=1):
             if p.period_no == period_no:
                 return i
-        return period_no  # 節次表查不到:退回內部節次號,至少不會印空白
+        return period_no  # 节次表查不到:退回内部节次号,至少不会印空白
 
     def time_note(self, shown: int | None, own: int | None, weekday: int, period_no: int) -> str:
-        """`own` 節次表的這一節,若與 `shown`(紙本格線用的那套)同一列的時間不同,回實際時間。
+        """`own` 节次表的这一节,若与 `shown`(纸本格线用的那套)同一列的时间不同,回实际时间。
 
-        國中小、完全中學的老師可能同一張單子上有兩部的課;格線只能照一套畫,
-        另一部的課不標時間的話,老師會照格線上的時間去上課。
+        初中小、完全中学的老师可能同一张单子上有两部的课;格线只能照一套画,
+        另一部的课不标时间的话,老师会照格线上的时间去上课。
         """
         if shown is None or own is None or shown == own:
             return ""
@@ -161,21 +161,21 @@ class Tables:
 
 
 def school_title(db: Session, semester_id: int | None = None) -> str:
-    """校名;給了學期就再接「115學年第一學期」(調課單紙本有,代課單沒有)。"""
+    """校名;给了学期就再接「115学年第一学期」(调课单纸本有,代课单没有)。"""
     school = app_settings.school_name(db)
     sem = db.get(Semester, semester_id) if semester_id else None
     if sem is None:
         return school
-    return f"{school}{sem.academic_year}學年第{_TERM_CN.get(sem.term, str(sem.term))}學期"
+    return f"{school}{sem.academic_year}学年第{_TERM_CN.get(sem.term, str(sem.term))}学期"
 
 
 def assemble(
     tables: Tables, kind: str, teacher_name: str, moves: list[Move],
     actor_of: Callable[[Move], str],
 ) -> Slip:
-    """把異動格排進週課表:跨週會產生多個 `SlipWeek`(列印頁一週一頁)。"""
-    # 格線照「節數最多」的那套節次表畫:國中七節、高中八節的完全中學,
-    # 跨部老師的單子若照國中畫,高中第八節那一格會沒有列可以放、印不出來。
+    """把异动格排进周课表:跨周会产生多个 `SlipWeek`(打印页一周一页)。"""
+    # 格线照「节数最多」的那套节次表画:初中七节、高中八节的完全中学,
+    # 跨部老师的单子若照初中画,高中第八节那一格会没有列可以放、印不出来。
     table_id = max(
         dict.fromkeys(m.table_id for m in moves), key=lambda t: len(tables.rows(t)))
     n_days = tables.weekdays(table_id)

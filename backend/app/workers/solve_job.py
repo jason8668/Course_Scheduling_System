@@ -1,15 +1,15 @@
-"""自動排課的背景任務(RQ)。
+"""自动排课的背景任务(RQ)。
 
-**輸入輸出流**(tasks.md M3-4 補遺):
-- 以「來源草稿」為輸入:其 `locked` 格位是硬約束(H9),未鎖定的格位餵成求解提示,
-  讓重排時盡量少動已排好的課。
-- 結果寫成**新草稿**「{來源名} 自排結果」,來源草稿完全不動——排壞了隨時可以丟掉。
-- 鎖定狀態隨結果一起複製。
+**输入输出流**(tasks.md M3-4 补遗):
+- 以「来源草稿」为输入:其 `locked` 格位是硬约束(H9),未锁定的格位喂成求解提示,
+  让重排时尽量少动已排好的课。
+- 结果写成**新草稿**「{来源名} 自排结果」,来源草稿完全不动——排坏了随时可以丢掉。
+- 锁定状态随结果一起复制。
 
-**無解時**(M3-5)不只回一句「排不出來」:接著跑衝突定位,告訴教學組長是哪幾件事
-湊在一起、鬆開哪一個就好了。定位本身也要送心跳,否則會被誤判成 worker 死掉。
+**无解时**(M3-5)不只回一句「排不出来」:接著跑冲突定位,告诉教学组长是哪几件事
+凑在一起、松开哪一个就好了。定位本身也要送心跳,否则会被误判成 worker 死掉。
 
-求解跑在獨立的 worker 容器,不阻塞 Web(architecture.md §3.3)。
+求解跑在独立的 worker 容器,不阻塞 Web(architecture.md §3.3)。
 """
 
 import threading
@@ -44,10 +44,10 @@ from app.workers.progress import (
     RedisProgressStore,
 )
 
-RESULT_SUFFIX = "自排結果"
-PARTIAL_SUFFIX = "部分排課結果"
+RESULT_SUFFIX = "自排结果"
+PARTIAL_SUFFIX = "部分排课结果"
 HEARTBEAT_SECONDS = 2.0
-# 衝突定位的時間預算。使用者已經等過一輪求解,不能再讓他等十分鐘才知道原因。
+# 冲突定位的时间预算。用户已经等过一轮求解,不能再让他等十分钟才知道原因。
 EXPLAIN_SECONDS = 60.0
 
 
@@ -61,7 +61,7 @@ def run_auto_schedule(
     allow_partial: bool = False,
     relax: Sequence[str] = (),
 ) -> None:
-    """RQ 進入點。任何例外都必須落到 job 狀態上,否則前端只會看到永遠的轉圈。"""
+    """RQ 进入点。任何例外都必须落到 job 状态上,否则前端只会看到永远的转圈。"""
     from app.core.db import SessionLocal
     from app.workers.queue import redis_conn
 
@@ -70,11 +70,11 @@ def run_auto_schedule(
     try:
         execute(db, store, job_id, timetable_id, max_seconds, seed, user_id, username,
                 allow_partial, relax)
-    except Exception as exc:  # noqa: BLE001 - worker 邊界:一律轉為可見的失敗狀態
+    except Exception as exc:  # noqa: BLE001 - worker 边界:一律转为可见的失败状态
         db.rollback()
         store.update(
             job_id, status=JobStatus.failed.value,
-            error=f"排課過程發生錯誤:{exc}"[:300], heartbeat=time.time(),
+            error=f"排课过程发生错误:{exc}"[:300], heartbeat=time.time(),
         )
     finally:
         db.close()
@@ -92,10 +92,10 @@ def execute(
     allow_partial: bool = False,
     relax: Sequence[str] = (),
 ) -> None:
-    """實際流程。與 RQ 解耦,測試可直接呼叫(記憶體版 store + 測試 session)。"""
+    """实际流程。与 RQ 解耦,测试可直接呼叫(记忆体版 store + 测试 session)。"""
     source = db.get(Timetable, timetable_id)
     if source is None:
-        store.update(job_id, status=JobStatus.failed.value, error="找不到來源課表",
+        store.update(job_id, status=JobStatus.failed.value, error="找不到来源课表",
                      heartbeat=time.time())
         return
 
@@ -126,7 +126,7 @@ def execute(
             relax=relaxation,
         )
     except SolverInputError as exc:
-        # 建模階段就攔下來(某門課完全沒有可排的位置)。這也是一種無解,要說得出原因。
+        # 建模阶段就拦下来(某门课完全没有可排的位置)。这也是一种无解,要说得出原因。
         _fail_with_conflict(store, job_id, problem, config, str(exc), should_stop)
         return
 
@@ -136,9 +136,9 @@ def execute(
         return
 
     if not result.solved:
-        # 逾時而一個解都沒有,往往其實是無解——只是帶著軟約束目標函數時,CP-SAT 很難
-        # 證明這件事(實測:同一份資料純硬約束 1 秒證完,加上目標函數 60 秒證不完)。
-        # 一律跑一次衝突定位:它以純硬約束求解,能分辨「不可能」與「只是慢」。
+        # 逾时而一个解都没有,往往其实是无解——只是带著软约束目标函数时,CP-SAT 很难
+        # 证明这件事(实测:同一份资料纯硬约束 1 秒证完,加上目标函数 60 秒证不完)。
+        # 一律跑一次冲突定位:它以纯硬约束求解,能分辨「不可能」与「只是慢」。
         _fail_with_conflict(store, job_id, problem, config,
                             _failure_message(result.status), should_stop)
         return
@@ -160,10 +160,10 @@ def execute(
 
 @contextmanager
 def _heartbeat(store: ProgressStore, job_id: str) -> Generator[None]:
-    """在一段沒有進度回報的長工作期間持續送心跳。
+    """在一段没有进度回报的长工作期间持续送心跳。
 
-    衝突定位可能跑上一分鐘。少了心跳,API 會在 30 秒後判定 worker 已死,
-    使用者就永遠看不到那份好不容易算出來的原因報告。
+    冲突定位可能跑上一分钟。少了心跳,API 会在 30 秒后判定 worker 已死,
+    用户就永远看不到那份好不容易算出来的原因报告。
     """
     done = threading.Event()
 
@@ -191,14 +191,14 @@ def _fail_with_conflict(
                 problem, config=config, max_seconds=EXPLAIN_SECONDS, should_stop=should_stop,
             )
     except conflict_explainer.Cancelled:
-        # 使用者在定位期間按了取消。他已經說不要了,就不該再收到一份 failed 報告(M6-5)
+        # 用户在定位期间按了取消。他已经说不要了,就不该再收到一份 failed 报告(M6-5)
         store.update(job_id, status=JobStatus.cancelled.value, heartbeat=time.time(),
                      phase=JobPhase.solving.value, error=None)
         return
 
     if report.status == "feasible":
-        # 硬約束其實排得出來,是軟約束的最佳化太慢。這兩件事的處置完全不同。
-        error = "排課時間內沒找到解,但這份資料確實排得出來。請延長排課時間,或降低軟約束權重。"
+        # 硬约束其实排得出来,是软约束的最佳化太慢。这两件事的处置完全不同。
+        error = "排课时间内没找到解,但这份资料确实排得出来。请延长排课时间,或降低软约束权重。"
     else:
         error = report.headline or message
 
@@ -212,10 +212,10 @@ def _fail_with_conflict(
 
 def _failure_message(status: str) -> str:
     if status == "infeasible":
-        return "在現有條件下無解。"
+        return "在现有条件下无解。"
     if status == "unknown":
-        return "時間內找不到任何可行解。請延長排課時間,或改用部分排課。"
-    return f"求解失敗({status})"
+        return "时间内找不到任何可行解。请延长排课时间,或改用部分排课。"
+    return f"求解失败({status})"
 
 
 def _serialize_conflict(rep: conflict_explainer.ConflictReport) -> dict:
@@ -273,10 +273,10 @@ def write_result(
     unplaced: int = 0,
     unscheduled: tuple[UnscheduledCourse, ...] = (),
 ) -> Timetable:
-    """把求解結果寫成新草稿。來源草稿不動。呼叫端負責 commit。
+    """把求解结果写成新草稿。来源草稿不动。呼叫端负责 commit。
 
-    未排清單隨草稿存進 DB(M6-3):它先前只活在 Redis 24h,草稿一旦被 force 發布,
-    solver 講的「為什麼排不下」就永遠遺失。
+    未排清单随草稿存进 DB(M6-3):它先前只活在 Redis 24h,草稿一旦被 force 发布,
+    solver 讲的「为什么排不下」就永远遗失。
     """
     suffix = PARTIAL_SUFFIX if partial else RESULT_SUFFIX
     name = _unique_name(db, source.semester_id, f"{source.name} {suffix}")
@@ -296,9 +296,9 @@ def write_result(
         user_id=user_id, username=username, action="auto_schedule",
         target_type="timetable", target_id=new.id,
         detail=(
-            f"{'部分排課' if partial else '自動排課'}由「{source.name}」產出「{name}」"
-            f",共 {len(entries)} 格,軟約束目標值 {objective:.0f}"
-            + (f",未排入 {unplaced} 節" if unplaced else "")
+            f"{'部分排课' if partial else '自动排课'}由「{source.name}」产出「{name}」"
+            f",共 {len(entries)} 格,软约束目标值 {objective:.0f}"
+            + (f",未排入 {unplaced} 节" if unplaced else "")
         )[:500],
     ))
     db.flush()

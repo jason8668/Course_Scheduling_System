@@ -1,7 +1,7 @@
-# 後端映像:兩個 target。
-#   base   → api 服務(精簡)
-#   worker → 背景任務(額外裝 WeasyPrint 系統依賴/中文字型與 PostgreSQL client)
-# 明確鎖 trixie:其 main 內含 postgresql-client(17),pg_dump 可備份 v16 伺服器。
+# 后端映像:两个 target。
+#   base   → api 服务(精简)
+#   worker → 背景任务(额外装 WeasyPrint 系统依赖/中文字型与 PostgreSQL client)
+# 明确锁 trixie:其 main 内含 postgresql-client(17),pg_dump 可备份 v16 服务器。
 FROM python:3.12-slim-trixie AS base
 
 ENV PYTHONUNBUFFERED=1 \
@@ -10,24 +10,24 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# curl 供 healthcheck 使用;postgresql-client 供「結構升級前自動備份」(v1.3.0)——
-# 遷移在 api 容器啟動時執行,備份必須在同一個容器、遷移之前完成。
+# curl 供 healthcheck 使用;postgresql-client 供「结构升级前自动备份」(v1.3.0)——
+# 迁移在 api 容器启动时执行,备份必须在同一个容器、迁移之前完成。
 RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# 先裝相依(利用 layer 快取)
+# 先装相依(利用 layer 快取)
 COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install .
 
-# 應用程式原始碼
+# 应用程序原始码
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
-# 系統版本(v1.2.3):CI 打版本標籤時以 --build-arg APP_VERSION=v1.2.3 注入,
-# 系統管理頁據此顯示目前版本並判斷是否有新版。放在最後,改版號不會讓前面的層失效。
+# 系统版本(v1.2.3):CI 打版本标签时以 --build-arg APP_VERSION=v1.2.3 注入,
+# 系统管理页据此显示目前版本并判断是否有新版。放在最后,改版号不会让前面的层失效。
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
 
@@ -36,14 +36,14 @@ EXPOSE 8000
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["api"]
 
-# ── worker:PDF 匯出的重量級原生依賴只裝在這裡,api 映像維持精簡 ──
-# WeasyPrint 需 Pango/Cairo/gdk-pixbuf;中文內嵌字型用 Noto CJK;
-# poppler-utils 供匯出 PNG 與驗證用(PDF→影像)。
+# ── worker:PDF 导出的重量级原生依赖只装在这里,api 映像维持精简 ──
+# WeasyPrint 需 Pango/Cairo/gdk-pixbuf;中文内嵌字型用 Noto CJK;
+# poppler-utils 供导出 PNG 与验证用(PDF→影像)。
 FROM base AS worker
 
-# PDF/PNG(WeasyPrint + poppler + 中文字型)+ 備份(postgresql-client,M5-2)。
-# trixie 的 postgresql-client 為 17,可 pg_dump/pg_restore 對上 postgres:16 伺服器
-# (client ≥ server 允許;server 較新才是不支援的方向)。
+# PDF/PNG(WeasyPrint + poppler + 中文字型)+ 备份(postgresql-client,M5-2)。
+# trixie 的 postgresql-client 为 17,可 pg_dump/pg_restore 对上 postgres:16 服务器
+# (client ≥ server 允许;server 较新才是不支援的方向)。
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpango-1.0-0 \
         libpangocairo-1.0-0 \

@@ -1,7 +1,7 @@
-"""帳號與角色 model。
+"""帐号与角色 model。
 
-一個 User 可有多個角色(RBAC);admin 為超級使用者,通過所有角色檢查。
-teacher 角色的帳號日後(M1)以 nullable 的 teacher_id 綁定教師主檔。
+一个 User 可有多个角色(RBAC);admin 为超级用户,通过所有角色检查。
+teacher 角色的帐号日后(M1)以 nullable 的 teacher_id 绑定教师主档。
 """
 
 import enum
@@ -22,12 +22,12 @@ from app.core.db import Base
 
 
 class Role(enum.StrEnum):
-    """系統角色。值即為資料庫與 API 使用的字串。"""
+    """系统角色。值即为资料库与 API 使用的字串。"""
 
-    admin = "admin"          # 系統管理員(超級使用者)
-    director = "director"    # 教務主任
-    scheduler = "scheduler"  # 教學組長
-    teacher = "teacher"      # 教師
+    admin = "admin"          # 系统管理员(超级用户)
+    director = "director"    # 教务主任
+    scheduler = "scheduler"  # 教学组长
+    teacher = "teacher"      # 教师
 
 
 class User(Base):
@@ -38,11 +38,11 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(128))
     display_name: Mapped[str] = mapped_column(String(64), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    # 首次登入或被重設密碼後為 True,強制使用者改密碼後才能使用其他功能
+    # 首次登录或被重设密码后为 True,强制用户改密码后才能使用其他功能
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
-    # 認證來源:local(本地帳密)或未來的 oidc(教育雲端帳號)
+    # 认证来源:local(本地帐密)或未来的 oidc(教育云端帐号)
     auth_provider: Mapped[str] = mapped_column(String(20), default="local")
-    # 登入失敗鎖定機制
+    # 登录失败锁定机制
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

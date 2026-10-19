@@ -52,10 +52,10 @@ function buildRows(periods: Period[], nWeekdays: number) {
       byNo.set(p.period_no, row)
     }
     row.cells[p.weekday] = p.type
-    // 以最早出現的名稱/時間為該列代表值
+    // 以最早出现的名称/时间为该列代表值
   }
   const result = [...byNo.values()].sort((a, b) => a.period_no - b.period_no)
-  // 補齊缺漏格位為 regular
+  // 补齐缺漏格位为 regular
   for (const row of result) {
     for (let wd = 1; wd <= nWeekdays; wd++) {
       if (!(wd in row.cells)) row.cells[wd] = 'regular'
@@ -88,7 +88,7 @@ function removeRow(period_no: number) {
   rows.value = rows.value.filter((r) => r.period_no !== period_no)
 }
 
-// 將整列套用同一類型(方便一鍵設定午休等)
+// 将整列套用同一类型(方便一键设置午休等)
 function applyRowType(row: Row, type: PeriodType) {
   for (const wd of weekdays.value) row.cells[wd] = type
 }
@@ -110,9 +110,9 @@ async function save() {
       }
     }
     await replacePeriods(tableId, periods)
-    message.success('節次表已儲存')
+    message.success('节次表已储存')
   } catch (e) {
-    message.error((e as ApiError).detail || '儲存失敗')
+    message.error((e as ApiError).detail || '储存失败')
   } finally {
     saving.value = false
   }
@@ -122,15 +122,15 @@ async function save() {
 <template>
   <n-space vertical size="large">
     <n-space align="center" justify="space-between">
-      <h1 style="margin: 0">節次表:{{ tableName }}</h1>
+      <h1 style="margin: 0">节次表:{{ tableName }}</h1>
       <n-space>
         <n-button @click="router.back()">返回</n-button>
-        <n-button type="primary" :loading="saving" @click="save">儲存</n-button>
+        <n-button type="primary" :loading="saving" @click="save">储存</n-button>
       </n-space>
     </n-space>
 
     <n-text depth="3">
-      點選格子可變更節次類型。只有「一般課」的格位會參與排課;週三下午等不排課時段請設為「固定用途」。
+      点击格子可变更节次类型。只有「一般课」的格位会参与排课;周三下午等不排课时段请设为「固定用途」。
     </n-text>
 
     <n-spin :show="loading">
@@ -139,8 +139,8 @@ async function save() {
           <table class="period-grid">
             <thead>
               <tr>
-                <th style="min-width: 200px">節次 / 時間</th>
-                <th v-for="wd in weekdays" :key="wd">週{{ WEEKDAY_NAMES[wd - 1] }}</th>
+                <th style="min-width: 200px">节次 / 时间</th>
+                <th v-for="wd in weekdays" :key="wd">周{{ WEEKDAY_NAMES[wd - 1] }}</th>
                 <th />
               </tr>
             </thead>
@@ -148,15 +148,15 @@ async function save() {
               <tr v-for="row in rows" :key="row.period_no">
                 <td>
                   <n-space vertical size="small">
-                    <n-input v-model:value="row.name" size="small" placeholder="名稱" />
+                    <n-input v-model:value="row.name" size="small" placeholder="名称" />
                     <n-space size="small" :wrap="false">
                       <n-input v-model:value="row.start_time" size="small" placeholder="08:00" style="width: 78px" />
                       <n-text depth="3">~</n-text>
                       <n-input v-model:value="row.end_time" size="small" placeholder="08:40" style="width: 78px" />
                     </n-space>
                     <n-space size="small">
-                      <n-button text size="tiny" @click="applyRowType(row, 'regular')">整列設一般</n-button>
-                      <n-button text size="tiny" @click="applyRowType(row, 'reserved')">整列設固定</n-button>
+                      <n-button text size="tiny" @click="applyRowType(row, 'regular')">整列设一般</n-button>
+                      <n-button text size="tiny" @click="applyRowType(row, 'reserved')">整列设固定</n-button>
                     </n-space>
                   </n-space>
                 </td>
@@ -170,16 +170,16 @@ async function save() {
                 <td>
                   <n-popconfirm @positive-click="removeRow(row.period_no)">
                     <template #trigger>
-                      <n-button size="tiny" type="error" ghost>刪列</n-button>
+                      <n-button size="tiny" type="error" ghost>删列</n-button>
                     </template>
-                    刪除此節次列?
+                    删除此节次列?
                   </n-popconfirm>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <n-button size="small" dashed style="margin-top: 12px" @click="addRow">+ 新增節次列</n-button>
+        <n-button size="small" dashed style="margin-top: 12px" @click="addRow">+ 新增节次列</n-button>
       </n-card>
     </n-spin>
   </n-space>

@@ -1,4 +1,4 @@
-"""認證 API:登入、登出、目前使用者、變更密碼。"""
+"""认证 API:登录、登出、目前用户、变更密码。"""
 
 from datetime import UTC, datetime, timedelta
 
@@ -40,20 +40,20 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
     now = datetime.now(UTC)
 
     if user is None:
-        # 不透露帳號是否存在
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "帳號或密碼錯誤")
+        # 不透露帐号是否存在
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "帐号或密码错误")
 
-    # 部分資料庫(如 SQLite)回傳 naive datetime,統一視為 UTC 再比較
+    # 部分资料库(如 SQLite)回传 naive datetime,统一视为 UTC 再比较
     locked_until = user.locked_until
     if locked_until is not None and locked_until.tzinfo is None:
         locked_until = locked_until.replace(tzinfo=UTC)
 
     if locked_until is not None and locked_until > now:
         remaining = int((locked_until - now).total_seconds() // 60) + 1
-        raise HTTPException(status.HTTP_423_LOCKED, f"帳號已鎖定,請於約 {remaining} 分鐘後再試")
+        raise HTTPException(status.HTTP_423_LOCKED, f"帐号已锁定,请于约 {remaining} 分钟后再试")
 
     if not user.is_active:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "帳號已停用,請洽系統管理員")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "帐号已停用,请洽系统管理员")
 
     if not verify_password(body.password, user.password_hash):
         user.failed_login_attempts += 1
@@ -63,12 +63,12 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
             db.commit()
             raise HTTPException(
                 status.HTTP_423_LOCKED,
-                f"連續登入失敗,帳號已鎖定 {settings.lockout_minutes} 分鐘",
+                f"连续登录失败,帐号已锁定 {settings.lockout_minutes} 分钟",
             )
         db.commit()
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "帳號或密碼錯誤")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "帐号或密码错误")
 
-    # 登入成功:清除失敗計數與鎖定
+    # 登录成功:清除失败计数与锁定
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
@@ -95,16 +95,16 @@ def change_password(
     db: Session = Depends(get_db),
 ) -> UserOut:
     if not verify_password(body.old_password, user.password_hash):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "原密碼錯誤")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "原密码错误")
     if len(body.new_password) < settings.min_password_length:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, f"新密碼至少需 {settings.min_password_length} 個字元"
+            status.HTTP_400_BAD_REQUEST, f"新密码至少需 {settings.min_password_length} 个字元"
         )
     if body.new_password == body.old_password:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "新密碼不可與原密碼相同")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "新密码不可与原密码相同")
 
     user.password_hash = hash_password(body.new_password)
     user.must_change_password = False
     db.commit()
-    _set_session_cookie(response, user)  # 以新密碼指紋重新簽發,舊 session 全數失效
+    _set_session_cookie(response, user)  # 以新密码指纹重新签发,旧 session 全数失效
     return UserOut.from_model(user)

@@ -1,4 +1,4 @@
-// 課表(草稿、格位、衝突檢查)API 型別與呼叫封裝。
+// 课表(草稿、格位、冲突检查)API 型别与呼叫封装。
 
 import { apiGet, apiPost, request } from '@/api/client'
 import type { PeriodTable } from '@/api/semesters'
@@ -19,7 +19,7 @@ export interface ScheduleEntry {
   teacher_ids: number[]
   class_ids: number[]
   room_id: number | null
-  week_parity?: 'odd' | 'even' | null // 單雙週(v1.3.0)
+  week_parity?: 'odd' | 'even' | null // 单双周(v1.3.0)
 }
 export interface TimetableBrief {
   id: number
@@ -34,7 +34,7 @@ export interface Timetable {
   name: string
   status: string
   entries: ScheduleEntry[]
-  stale_affected?: number // 發布後:依舊課表展開、今日之後的調代課數(>0 需重新檢視)
+  stale_affected?: number // 发布后:依旧课表展开、今日之后的调代课数(>0 需重新查看)
 }
 export interface Conflict {
   code: string
@@ -45,7 +45,7 @@ export interface CheckResponse {
   conflicts: Conflict[]
 }
 
-// ── 版本管理與發布 ──
+// ── 版本管理与发布 ──
 export interface UnplacedItem {
   course_assignment_id: number
   subject: string
@@ -54,7 +54,7 @@ export interface UnplacedItem {
   required: number
   placed: number
   remaining: number
-  reason: string  // 自動排課當時 solver 說的「為什麼排不下」;手動未排完則為空
+  reason: string  // 自动排课当时 solver 说的「为什么排不下」;手动未排完则为空
 }
 export interface Completeness {
   required: number
@@ -64,7 +64,7 @@ export interface Completeness {
   unplaced: UnplacedItem[]
 }
 
-/** 課表檢查出來的一項硬約束違規(教師衝堂、落在不可排時段…)。未排完不在此列。 */
+/** 课表检查出来的一项硬约束违规(教师冲堂、落在不可排时段…)。未排完不在此列。 */
 export interface CheckIssue {
   code: string
   label: string
@@ -76,7 +76,7 @@ export interface TimetableCheck {
   completeness: Completeness
 }
 
-// ── 全員唯讀查詢 ──
+// ── 全员唯读查询 ──
 export interface PublicSemester { id: number; label: string }
 export interface NamedBrief { id: number; name: string }
 export interface PublicClass {
@@ -100,7 +100,7 @@ export interface PublishedTimetable {
 
 export const STATUS_LABELS: Record<string, string> = {
   draft: '草稿',
-  published: '已發布',
+  published: '已发布',
   archived: '已封存',
 }
 
@@ -158,7 +158,7 @@ export const getPublishedTimetable = (semesterId: number) =>
 export const getMyTeacher = (semesterId: number) =>
   apiGet<NamedBrief | null>(`/published/my-teacher?semester_id=${semesterId}`)
 
-/** 發布被擋(409)時,detail 內含完整性報告。 */
+/** 发布被挡(409)时,detail 内含完整性报告。 */
 export function publishReport(detail: unknown): Completeness | null {
   if (detail && typeof detail === 'object' && 'completeness' in detail) {
     return (detail as { completeness: Completeness }).completeness
@@ -166,7 +166,7 @@ export function publishReport(detail: unknown): Completeness | null {
   return null
 }
 
-/** 發布被擋(409)時,detail 內的違規清單(沒有違規、只是未排完時為空陣列)。 */
+/** 发布被挡(409)时,detail 内的违规清单(没有违规、只是未排完时为空阵列)。 */
 export function publishIssues(detail: unknown): CheckIssue[] {
   if (detail && typeof detail === 'object' && 'issues' in detail) {
     return (detail as { issues: CheckIssue[] }).issues ?? []
@@ -174,13 +174,13 @@ export function publishIssues(detail: unknown): CheckIssue[] {
   return []
 }
 
-/** place/move 失敗時後端回 409,detail 可能是字串或 { message, conflicts }。 */
+/** place/move 失败时后端回 409,detail 可能是字串或 { message, conflicts }。 */
 export function conflictText(detail: unknown): string {
   if (typeof detail === 'string') return detail
   if (detail && typeof detail === 'object' && 'conflicts' in detail) {
     const d = detail as { message?: string; conflicts?: Conflict[] }
     const first = d.conflicts?.[0]?.message
-    return first ? first : (d.message ?? '無法排入')
+    return first ? first : (d.message ?? '无法排入')
   }
-  return '無法排入'
+  return '无法排入'
 }

@@ -1,4 +1,4 @@
-// 代課鐘點月結統計(M4-5)。
+// 代课课时月结统计(M4-5)。
 
 import { apiGet } from '@/api/client'
 
@@ -16,18 +16,18 @@ export interface StatDetail {
   sub_type_label: string
   counts_toward_hours: boolean
   funding_source: string
-  pay_kind: 'hourly' | 'daily' | 'none' // 鐘點 / 日薪 / 不計
-  daily_shared: boolean // 日薪:當日與其他日薪代課老師分擔
+  pay_kind: 'hourly' | 'daily' | 'none' // 课时 / 日薪 / 不计
+  daily_shared: boolean // 日薪:当日与其他日薪代课老师分担
 }
 
 export interface TeacherSummary {
   teacher_id: number
   teacher_name: string
   handled_count: number
-  billable_count: number // 鐘點計費節數(不含日薪)
-  daily_days: number // 日薪天數
-  daily_periods: number // 日薪那幾天共代了幾節
-  daily_shared_days: number // 其中幾天與其他日薪代課老師分擔
+  billable_count: number // 课时计费节数(不含日薪)
+  daily_days: number // 日薪天数
+  daily_periods: number // 日薪那几天共代了几节
+  daily_shared_days: number // 其中几天与其他日薪代课老师分担
 }
 
 export interface MonthlyReport {

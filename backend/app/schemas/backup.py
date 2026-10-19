@@ -1,15 +1,15 @@
-"""備份與還原 schema(M5-2)。"""
+"""备份与还原 schema(M5-2)。"""
 
 from datetime import datetime
 
 from pydantic import BaseModel
 
 _REASON_CN = {
-    "manual": "手動",
-    "auto": "每日自動",
-    "presafe": "還原前保護",
-    "preupgrade": "升級前自動備份",
-    "upload": "上傳",
+    "manual": "手动",
+    "auto": "每日自动",
+    "presafe": "还原前保护",
+    "preupgrade": "升级前自动备份",
+    "upload": "上传",
 }
 
 
@@ -30,5 +30,5 @@ class BackupOut(BaseModel):
 
 class RestoreResult(BaseModel):
     restored_from: str
-    presafe_backup: str  # 還原前自動建立的現狀備份(可反悔)
-    warnings: list[str] = []  # pg_restore 可忽略的警告(如跨版本 GUC),顯示給管理員
+    presafe_backup: str  # 还原前自动建立的现状备份(可反悔)
+    warnings: list[str] = []  # pg_restore 可忽略的警告(如跨版本 GUC),显示给管理员

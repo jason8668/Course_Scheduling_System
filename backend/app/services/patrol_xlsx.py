@@ -1,16 +1,16 @@
-"""巡堂表匯出 Excel(v1.2.14)。
+"""巡堂表导出 Excel(v1.2.14)。
 
-列印頁印出來就不能改了;學校實務上常要在發出去之前再調整——加欄位、填巡堂人員或
-值日、併進自己既有的巡堂紀錄檔(使用者建議)。這裡把同一份資料(`patrol_sheets.build`)
-寫成可編輯的活頁簿,版面比照列印頁:
+打印页印出来就不能改了;学校实务上常要在发出去之前再调整——加栏位、填巡堂人员或
+值日、并进自己既有的巡堂纪录档(用户建议)。这里把同一份资料(`patrol_sheets.build`)
+写成可编辑的活页簿,版面比照打印页:
 
-- 每張巡堂紀錄一個分頁(每天的上午、下午;班級多時再分頁),班級為欄、節次為列,
-  每節五列:科目/教師、教室、授課情形、學生學習、備註;最右邊是巡堂簽名欄。
-- 每張分組巡堂單(社團等)一個分頁。
-- 已設成 A4 橫向、縮成一頁寬,下載後不改也能直接印。
+- 每张巡堂纪录一个分页(每天的上午、下午;班级多时再分页),班级为栏、节次为列,
+  每节五列:科目/教师、教室、授课情形、学生学习、备注;最右边是巡堂签名栏。
+- 每张分组巡堂单(社团等)一个分页。
+- 已设成 A4 横向、缩成一页宽,下载后不改也能直接印。
 
-定位是「拿來改」而不是取代列印頁:字型與格線不會和列印頁一模一樣。
-匯出之後若又有新的調代課,檔案不會跟著變,要重新匯出。
+定位是「拿来改」而不是取代打印页:字型与格线不会和打印页一模一样。
+导出之后若又有新的调代课,档案不会跟著变,要重新导出。
 """
 
 import io
@@ -24,7 +24,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from app.services.patrol_sheets import GroupList, PatrolPage, PatrolSheets
 
 _WEEKDAYS = "一二三四五六日"
-_ROW_LABELS = ("科目\n教師", "教室", "授課情形", "學生學習", "備註")
+_ROW_LABELS = ("科目\n教师", "教室", "授课情形", "学生学习", "备注")
 
 _THIN = Side(style="thin", color="000000")
 _MEDIUM = Side(style="medium", color="000000")
@@ -34,16 +34,16 @@ _LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
 
 def _date_label(day: date) -> str:
-    """「115年10月13日 星期二」:紙本用民國年。"""
+    """「115年10月13日 星期二」:纸本用民国年。"""
     return f"{day.year - 1911}年{day.month}月{day.day}日　星期{_WEEKDAYS[day.isoweekday() - 1]}"
 
 
 def _range(first: int, last: int) -> str:
-    return f"第 {first} 節" if first == last else f"第 {first}~{last} 節"
+    return f"第 {first} 节" if first == last else f"第 {first}~{last} 节"
 
 
 def _sheet_name(base: str, used: set[str]) -> str:
-    # Excel 分頁名 ≤31 字、不可含 : \ / ? * [ ];重複時加流水號
+    # Excel 分页名 ≤31 字、不可含 : \ / ? * [ ];重复时加流水号
     clean = base
     for ch in ":\\/?*[]":
         clean = clean.replace(ch, " ")
@@ -57,7 +57,7 @@ def _sheet_name(base: str, used: set[str]) -> str:
 
 
 def _box(ws: Worksheet, first_row: int, last_row: int, last_col: int) -> None:
-    """整塊畫細格線,並把這一節的上緣加粗(紙本每一節之間是粗線)。"""
+    """整块画细格线,并把这一节的上缘加粗(纸本每一节之间是粗线)。"""
     for row in ws.iter_rows(min_row=first_row, max_row=last_row, min_col=1, max_col=last_col):
         for cell in row:
             cell.border = Border(
@@ -79,21 +79,21 @@ def _landscape(ws: Worksheet) -> None:
 
 def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> None:
     n = len(page.classes)
-    last_col = n + 3                      # 節次 | 列名 | 各班… | 巡堂簽名
+    last_col = n + 3                      # 节次 | 列名 | 各班… | 巡堂签名
     sign_col = last_col
 
     periods = _range(page.first_ordinal, page.last_ordinal)
-    heading = f"{title}巡堂紀錄　{_date_label(page.date)}　{periods}"
+    heading = f"{title}巡堂纪录　{_date_label(page.date)}　{periods}"
     if page.table_name:
         heading += f"　({page.table_name})"
     ws.cell(row=1, column=1, value=heading).font = Font(bold=True, size=14)
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
     ws.row_dimensions[1].height = 26
 
-    ws.cell(row=2, column=1, value="節次")
+    ws.cell(row=2, column=1, value="节次")
     for k, name in enumerate(page.classes):
         ws.cell(row=2, column=3 + k, value=name)
-    ws.cell(row=2, column=sign_col, value="巡堂\n簽名")
+    ws.cell(row=2, column=sign_col, value="巡堂\n签名")
     for cell in ws[2]:
         cell.alignment = _CENTER
         cell.font = Font(bold=True)
@@ -122,12 +122,12 @@ def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> Non
                 ws.cell(row=r + offset, column=c).alignment = _CENTER
         r += 5
 
-    # 記錄說明 + 註記事項:各佔一半寬度
+    # 记录说明 + 注记事项:各占一半宽度
     lines = [line for line in legend.split("\n") if line]
     half = max(2, (last_col + 1) // 2)
-    ws.cell(row=r, column=1, value="記錄\n說明")
+    ws.cell(row=r, column=1, value="记录\n说明")
     ws.cell(row=r, column=2, value="\n".join(lines))
-    ws.cell(row=r, column=half + 1, value="註記事項")
+    ws.cell(row=r, column=half + 1, value="注记事项")
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=half)
     if half + 2 <= last_col:
         ws.merge_cells(start_row=r, start_column=half + 2, end_row=r, end_column=last_col)
@@ -149,12 +149,12 @@ def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> Non
 def _write_list(ws: Worksheet, title: str, lst: GroupList) -> None:
     ws.cell(row=1, column=1, value=title)
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
-    heading = f"{lst.group_name}巡堂單　{_date_label(lst.date)}　{lst.period_name}"
+    heading = f"{lst.group_name}巡堂单　{_date_label(lst.date)}　{lst.period_name}"
     ws.cell(row=2, column=1, value=heading).font = Font(bold=True, size=14)
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=6)
     ws.row_dimensions[2].height = 26
 
-    for c, name in enumerate(("編號", "名稱", "教師", "地點", "上課狀況", "學生表現"), start=1):
+    for c, name in enumerate(("编号", "名称", "教师", "地点", "上课状况", "学生表现"), start=1):
         cell = ws.cell(row=3, column=c, value=name)
         cell.font = Font(bold=True)
         cell.alignment = _CENTER
@@ -171,11 +171,11 @@ def _write_list(ws: Worksheet, title: str, lst: GroupList) -> None:
         ws.column_dimensions[letter].width = width
     ws.freeze_panes = "A4"
     _landscape(ws)
-    ws.page_setup.orientation = "portrait"      # 清單一份直印剛好一頁
+    ws.page_setup.orientation = "portrait"      # 清单一份直印刚好一页
 
 
 def to_xlsx(sheets: PatrolSheets) -> bytes:
-    """巡堂紀錄與分組巡堂單各自成頁的活頁簿。分頁依日期排,同一天先主表、後分組單。"""
+    """巡堂纪录与分组巡堂单各自成页的活页簿。分页依日期排,同一天先主表、后分组单。"""
     wb = Workbook()
     wb.remove(wb.active)
     used: set[str] = set()

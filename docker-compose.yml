@@ -1,17 +1,17 @@
-# 正式部署設定。使用方式:
-#   cp .env.example .env   # 修改管理員密碼與校名
+# 正式部署设置。使用方式:
+#   cp .env.example .env   # 修改管理员密码与校名
 #   docker compose up -d
-#   瀏覽器開 http://<主機IP>
+#   浏览器开 http://<主机IP>
 #
-# 六個容器:web(Caddy+前端)、api、worker(排課)、worker-ops(匯出/備份/定時)、postgres、redis
+# 六个容器:web(Caddy+前端)、api、worker(排课)、worker-ops(导出/备份/定时)、postgres、redis
 #
-# 兩種部署方式,同一份檔案:
-#   從原始碼建置:docker compose up -d           (git clone 本專案後,首次會建置映像)
-#   拉取預建映像:docker compose pull && up -d    (只需本檔+.env,免建置;升級亦同)
+# 两种部署方式,同一份档案:
+#   从原始码建置:docker compose up -d           (git clone 本专案后,首次会建置映像)
+#   拉取预建映像:docker compose pull && up -d    (只需本档+.env,免建置;升级亦同)
 #
-# worker 與 worker-ops 是同一個映像的兩個行程:前者專跑自動排課(會佔住好幾分鐘),
-# 後者跑匯出/備份/還原/寄信與定時任務,兩條佇列互不堵塞(M6-2)。
-# 映像版本由 .env 的 IMAGE_TAG 決定(預設 latest;正式部署建議釘選版本如 v1.0.0)。
+# worker 与 worker-ops 是同一个映像的两个行程:前者专跑自动排课(会占住好几分钟),
+# 后者跑导出/备份/还原/寄信与定时任务,两条伫列互不堵塞(M6-2)。
+# 映像版本由 .env 的 IMAGE_TAG 决定(默认 latest;正式部署建议钉选版本如 v1.0.0)。
 name: scheduling
 
 services:
@@ -22,13 +22,13 @@ services:
       dockerfile: Dockerfile.web
     restart: unless-stopped
     environment:
-      # 預設 :80(內網 HTTP)。於 .env 設 SITE_ADDRESS=網域名 即啟用自動 HTTPS(見 docs/deploy/https.md)
+      # 默认 :80(内网 HTTP)。于 .env 设 SITE_ADDRESS=网域名 即启用自动 HTTPS(见 docs/deploy/https.md)
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     ports:
       - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"   # 僅在設定網域啟用 HTTPS 時使用;未用亦無妨
+      - "${HTTPS_PORT:-443}:443"   # 仅在设置网域启用 HTTPS 时使用;未用亦无妨
     volumes:
-      - caddydata:/data            # 保存 HTTPS 憑證,重啟不必重新申請(避免觸發 Let's Encrypt 速率限制)
+      - caddydata:/data            # 保存 HTTPS 凭证,重启不必重新申请(避免触发 Let's Encrypt 速率限制)
     depends_on:
       - api
     healthcheck:
@@ -47,10 +47,10 @@ services:
     env_file: .env
     environment:
       TZ: ${TZ:-Asia/Taipei}
-      # 讓 api 也知道站台位址:設了網域(HTTPS)時自動開啟 cookie Secure 旗標
+      # 让 api 也知道站台位址:设了网域(HTTPS)时自动开启 cookie Secure 旗标
       SITE_ADDRESS: ${SITE_ADDRESS:-}
     volumes:
-      - backups:/backups   # 清單/下載/上傳(實際 pg_dump 在 worker)
+      - backups:/backups   # 清单/下载/上传(实际 pg_dump 在 worker)
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,7 +63,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # 排課 worker:守 default 佇列。一次自動排課可佔住它好幾分鐘,這是預期行為。
+  # 排课 worker:守 default 伫列。一次自动排课可占住它好几分钟,这是预期行为。
   worker:
     image: ghcr.io/begin0808/course_scheduling_system-worker:${IMAGE_TAG:-latest}
     build:
@@ -75,15 +75,15 @@ services:
     environment:
       TZ: ${TZ:-Asia/Taipei}
     volumes:
-      - backups:/backups   # 與 worker-ops 共用(還原前的 presafe 備份等)
+      - backups:/backups   # 与 worker-ops 共用(还原前的 presafe 备份等)
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
 
-  # 維運 worker:守 ops 佇列(匯出/備份/還原/寄信),並兼任定時任務排程器。
-  # 存在的理由:排課那幾分鐘,正是組長最常按「匯出課表」的時候——不該排在排課後面等。
+  # 维运 worker:守 ops 伫列(导出/备份/还原/寄信),并兼任定时任务排程器。
+  # 存在的理由:排课那几分钟,正是组长最常按「导出课表」的时候——不该排在排课后面等。
   worker-ops:
     image: ghcr.io/begin0808/course_scheduling_system-worker:${IMAGE_TAG:-latest}
     build:
@@ -95,7 +95,7 @@ services:
     environment:
       TZ: ${TZ:-Asia/Taipei}
     volumes:
-      - backups:/backups   # pg_dump 寫入、pg_restore 讀取
+      - backups:/backups   # pg_dump 写入、pg_restore 读取
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,8 +129,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # 開發/測試用假 SMTP:攔截外送信件,不真正寄出。正式部署不需要此服務
-  # (將 SMTP 指向學校實際的郵件主機即可)。Web UI:http://localhost:8025
+  # 开发/测试用假 SMTP:拦截外送信件,不真正寄出。正式部署不需要此服务
+  # (将 SMTP 指向学校实际的邮件主机即可)。Web UI:http://localhost:8025
   mailhog:
     image: mailhog/mailhog:latest
     restart: unless-stopped

@@ -1,10 +1,10 @@
-"""自動排課任務的進度與控制狀態。
+"""自动排课任务的进度与控制状态。
 
-進度不放在 RQ 的 job meta 裡:RQ 只知道「執行中/失敗」,說不出「已找到 12 個解、
-目前目標值 148」。這裡用一個獨立的 Redis hash 承載,worker 寫、API 讀。
+进度不放在 RQ 的 job meta 里:RQ 只知道「执行中/失败」,说不出「已找到 12 个解、
+目前目标值 148」。这里用一个独立的 Redis hash 承载,worker 写、API 读。
 
-**心跳**:worker 每 tick 更新 `heartbeat`。若 API 讀到 `running` 但心跳超過
-`STALE_SECONDS` 沒更新,即判定 worker 已死——前端得到明確錯誤,而不是永遠轉圈。
+**心跳**:worker 每 tick 更新 `heartbeat`。若 API 读到 `running` 但心跳超过
+`STALE_SECONDS` 没更新,即判定 worker 已死——前端得到明确错误,而不是永远转圈。
 """
 
 import enum
@@ -17,8 +17,8 @@ from redis import Redis
 
 KEY_PREFIX = "solve:"
 TTL_SECONDS = 24 * 60 * 60
-STALE_SECONDS = 30.0  # 心跳逾時;worker 的 tick 為 2 秒
-QUEUED_STALE_SECONDS = 15 * 60.0  # 排隊等待另一個任務時不算失敗
+STALE_SECONDS = 30.0  # 心跳逾时;worker 的 tick 为 2 秒
+QUEUED_STALE_SECONDS = 15 * 60.0  # 排队等待另一个任务时不算失败
 
 
 class JobStatus(enum.StrEnum):
@@ -30,13 +30,13 @@ class JobStatus(enum.StrEnum):
 
 
 class ControlAction(enum.StrEnum):
-    stop = "stop"      # 提前結束,保留當下最佳解
-    cancel = "cancel"  # 取消,丟棄結果
+    stop = "stop"      # 提前结束,保留当下最佳解
+    cancel = "cancel"  # 取消,丢弃结果
 
 
 class JobPhase(enum.StrEnum):
     solving = "solving"
-    explaining = "explaining"  # 求解證明無解,正在定位是哪幾件事湊在一起
+    explaining = "explaining"  # 求解证明无解,正在定位是哪几件事凑在一起
 
 
 @dataclass
@@ -56,9 +56,9 @@ class JobState:
     error: str | None = None
     report: dict | None = None
     phase: str = JobPhase.solving.value
-    partial: bool = False           # 是否為部分排課
-    conflict: dict | None = None    # 無解時的衝突定位報告(M3-5)
-    unscheduled: list | None = None  # 部分排課下未排入的課務
+    partial: bool = False           # 是否为部分排课
+    conflict: dict | None = None    # 无解时的冲突定位报告(M3-5)
+    unscheduled: list | None = None  # 部分排课下未排入的课务
 
     @property
     def done(self) -> bool:
@@ -124,7 +124,7 @@ class RedisProgressStore:
 
 
 class InMemoryProgressStore:
-    """測試用。與 Redis 版行為一致,但不需要外部服務。"""
+    """测试用。与 Redis 版行为一致,但不需要外部服务。"""
 
     def __init__(self) -> None:
         self.states: dict[str, JobState] = {}
@@ -151,7 +151,7 @@ class InMemoryProgressStore:
 
 
 def is_stale(state: JobState, now: float | None = None) -> bool:
-    """worker 是否已失聯。排隊中的任務可能只是在等前一個排課跑完,給長一點的寬限。"""
+    """worker 是否已失联。排队中的任务可能只是在等前一个排课跑完,给长一点的宽限。"""
     now = now if now is not None else time.time()
     if state.done:
         return False

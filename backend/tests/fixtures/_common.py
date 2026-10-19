@@ -1,11 +1,11 @@
-"""三套學制驗證資料集的共用 builder。
+"""三套学制验证资料集的共用 builder。
 
-測試策略總則(tasks.md)要求全案共用三套 fixtures(國小/國中/技高),作為排課引擎
-(M3)與 E2E 總驗收(M5-4)的基準資料。
+测试策略总则(tasks.md)要求全案共用三套 fixtures(小学/初中/技高),作为排课引擎
+(M3)与 E2E 总验收(M5-4)的基准资料。
 
-以 Python builder 而非靜態 JSON 表達,因為資料之間有數值相依:
-教師配課數 ≤ 可排格數、連堂節數 ≤ 每週節數、跑班群組成員須同節次表(D7#4)。
-用程式建構才能在改動時一起維護,並直接複用 app.services 既有的驗證邏輯。
+以 Python builder 而非静态 JSON 表达,因为资料之间有数值相依:
+教师配课数 ≤ 可排格数、连堂节数 ≤ 每周节数、跑班群组成员须同节次表(D7#4)。
+用程序建构才能在改动时一起维护,并直接复用 app.services 既有的验证逻辑。
 """
 
 from dataclasses import dataclass, field
@@ -36,7 +36,7 @@ from app.services.templates import create_semester_from_template
 
 @dataclass
 class Fixture:
-    """一套建置完成的學期資料集。以名稱索引,測試可直接取用實體。"""
+    """一套建置完成的学期资料集。以名称索引,测试可直接取用实体。"""
 
     semester: Semester
     table: PeriodTable
@@ -53,7 +53,7 @@ class Fixture:
 
 
 class Builder:
-    """以學制範本開一個學期,再逐步疊上教師/班級/場地/配課。"""
+    """以学制范本开一个学期,再逐步叠上教师/班级/场地/配课。"""
 
     def __init__(self, db: Session, academic_year: int, term: int, template_key: str) -> None:
         self.db = db
@@ -69,7 +69,7 @@ class Builder:
         self.groups: dict[str, SchedulingUnit] = {}
         self.assignments: list[CourseAssignment] = []
 
-    # ── 節次表 ────────────────────────
+    # ── 节次表 ────────────────────────
     def set_period(self, weekday: int, period_no: int, ptype: PeriodType, name: str) -> None:
         p = self.db.scalar(
             select(Period).where(
@@ -78,7 +78,7 @@ class Builder:
                 Period.period_no == period_no,
             )
         )
-        assert p is not None, f"節次表無此格位:週{weekday} 第{period_no}格"
+        assert p is not None, f"节次表无此格位:周{weekday} 第{period_no}格"
         p.type = ptype.value
         p.name = name
         self.db.flush()
@@ -95,7 +95,7 @@ class Builder:
             )
         )
 
-    # ── 實體 ──────────────────────────
+    # ── 实体 ──────────────────────────
     def subject(
         self,
         name: str,
@@ -145,7 +145,7 @@ class Builder:
         return t
 
     def unavailable_days(self, teacher_name: str, weekdays: list[int]) -> None:
-        """該教師在指定星期的所有一般課節次皆不可排(業界師資只有特定到校日)。"""
+        """该教师在指定星期的所有一般课节次皆不可排(业界师资只有特定到校日)。"""
         t = self.teachers[teacher_name]
         for p in self.regular_slots():
             if p.weekday in weekdays:
@@ -205,7 +205,7 @@ class Builder:
         return c
 
     def group(self, name: str, class_names: list[str]) -> SchedulingUnit:
-        """跑班群組。create_group 會驗證成員班級同節次表(D7#4)。"""
+        """跑班群组。create_group 会验证成员班级同节次表(D7#4)。"""
         g = create_group(
             self.db,
             self.semester.id,
@@ -215,7 +215,7 @@ class Builder:
         self.groups[name] = g
         return g
 
-    # ── 配課 ──────────────────────────
+    # ── 配课 ──────────────────────────
     def assign(
         self,
         *,
@@ -229,12 +229,12 @@ class Builder:
         blocks: tuple[int, int] | None = None,
         lock_room: bool = False,
     ) -> list[CourseAssignment]:
-        """建立配課。classes → 每班一筆(single unit);group → 群組一筆。
+        """建立配课。classes → 每班一笔(single unit);group → 群组一笔。
 
-        teachers 第一位為主教,其餘為協同。blocks=(連堂長度, 每週次數)。
+        teachers 第一位为主教,其余为协同。blocks=(连堂长度, 每周次数)。
         """
         if (classes is None) == (group is None):
-            raise ValueError("classes 與 group 擇一")
+            raise ValueError("classes 与 group 择一")
         units = (
             [get_or_create_single_unit(self.db, self.classes[n]) for n in classes]
             if classes
@@ -278,12 +278,12 @@ class Builder:
         )
 
 
-# ── 分析 helper(供煙霧測試與日後 pre-flight 對照)────────────────
+# ── 分析 helper(供烟雾测试与日后 pre-flight 对照)────────────────
 def teacher_available_slots(db: Session, fx: Fixture, teacher: Teacher) -> int:
-    """教師可排格數 = 一般課格數 − 其 unavailable 規則落在一般課格位的數量。
+    """教师可排格数 = 一般课格数 − 其 unavailable 规则落在一般课格位的数量。
 
-    單一節次表(絕大多數學校)的定義;跨表任教的教師以牆鐘區間聯集去重,
-    留待 M3-1 pre-flight 實作。
+    单一节次表(绝大多数学校)的定义;跨表任教的教师以墙钟区间联集去重,
+    留待 M3-1 pre-flight 实作。
     """
     regular = {
         (p.weekday, p.period_no)
@@ -303,7 +303,7 @@ def teacher_available_slots(db: Session, fx: Fixture, teacher: Teacher) -> int:
 
 
 def room_demand(fx: Fixture) -> dict[int, int]:
-    """每個「已指定場地」的配課節數需求(room_id → 節數)。"""
+    """每个「已指定场地」的配课节数需求(room_id → 节数)。"""
     demand: dict[int, int] = {}
     for a in fx.assignments:
         if a.room_id:

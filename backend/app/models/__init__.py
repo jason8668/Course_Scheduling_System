@@ -1,6 +1,6 @@
-"""ORM models 匯總。
+"""ORM models 汇总。
 
-新增 model 時在此 import,Alembic 的 autogenerate 與 env.py 才能偵測到 metadata。
+新增 model 时在此 import,Alembic 的 autogenerate 与 env.py 才能侦测到 metadata。
 """
 
 from app.models.app_setting import AppSetting

@@ -1,10 +1,10 @@
-"""今日看板與調代課日誌 schema(M4-4)。"""
+"""今日看板与调代课日志 schema(M4-4)。"""
 
 from datetime import date, time
 
 from pydantic import BaseModel
 
-# 欄位名 date/start_time 會遮蔽同名型別,故以別名標註型別
+# 栏位名 date/start_time 会遮蔽同名型别,故以别名标注型别
 _Date = date
 _Time = time
 
@@ -37,7 +37,7 @@ class LogEntryOut(BaseModel):
     swap_class_names: str = ""
     swap_subject_name: str = ""
     note: str = ""
-    row_kind: str = "leave"  # leave / swap_makeup(調課補課日被換來的那一節)
+    row_kind: str = "leave"  # leave / swap_makeup(调课补课日被换来的那一节)
 
 
 class PatrolCellOut(BaseModel):
@@ -78,7 +78,7 @@ class PatrolGroupListOut(BaseModel):
 
 
 class PatrolSheetsOut(BaseModel):
-    """巡堂表列印資料:巡堂紀錄(班級為欄)+ 分組巡堂單(社團等大型跑班群組)。"""
+    """巡堂表打印资料:巡堂纪录(班级为栏)+ 分组巡堂单(社团等大型跑班群组)。"""
 
     title: str
     legend: str
@@ -87,7 +87,7 @@ class PatrolSheetsOut(BaseModel):
 
 
 class DailyBoardOut(BaseModel):
-    """今日看板:表頭(校名/日期/學期)供列印通知單直接使用。"""
+    """今日看板:表头(校名/日期/学期)供打印通知单直接使用。"""
 
     date: _Date
     weekday: int

@@ -1,4 +1,4 @@
-"""semesters、period_tables、periods 資料表
+"""semesters、period_tables、periods 资料表
 
 Revision ID: 0002_semester_period
 Revises: 0001_users

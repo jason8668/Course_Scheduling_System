@@ -1,4 +1,4 @@
-"""M3-3:軟約束權重設定(GET/PUT /api/solver/config)。"""
+"""M3-3:软约束权重设置(GET/PUT /api/solver/config)。"""
 
 import pytest
 
@@ -33,7 +33,7 @@ def test_get_returns_defaults_for_untouched_semester(env):
     assert body["daily_subject_cap"] == 2
     assert body["teacher_daily_max"] == 6
     assert body["teacher_consecutive_max"] == 3
-    assert body["weight_names"]["S2"] == "同班同科目分散於不同日"
+    assert body["weight_names"]["S2"] == "同班同科目分散于不同日"
 
 
 def test_put_persists_and_zero_weight_disables(env):
@@ -48,7 +48,7 @@ def test_put_persists_and_zero_weight_disables(env):
     assert r.status_code == 200
     body = r.json()
     assert body["weights"]["S2"] == 0 and body["weights"]["S5"] == 10
-    assert body["weights"]["S1"] == DEFAULT_WEIGHTS["S1"]  # 未指定者維持預設
+    assert body["weights"]["S1"] == DEFAULT_WEIGHTS["S1"]  # 未指定者维持默认
 
     again = client.get(f"/api/solver/config?semester_id={sid}").json()
     assert again["daily_subject_cap"] == 3
@@ -87,7 +87,7 @@ def test_put_rejects_unknown_code_and_negative_weight(env):
 def test_config_requires_scheduler_to_write(env):
     client, db = env
     _login(client, db, username="d", roles=(Role.director,))
-    # director 不能建學期,借用 admin 建好的?此處僅驗權限:director 可讀不可寫
+    # director 不能建学期,借用 admin 建好的?此处仅验权限:director 可读不可写
     assert client.get("/api/solver/config?semester_id=1").status_code in (403, 404)
     assert client.put("/api/solver/config?semester_id=1", json={"weights": {}}).status_code == 403
 
@@ -100,7 +100,7 @@ def test_unknown_semester_404(env):
                       json={"weights": {}}).status_code == 404
 
 
-# ── 權重上限是部分排課的正確性前提,不是美觀限制 ──────────────
+# ── 权重上限是部分排课的正确性前提,不是美观限制 ──────────────
 def _put(client, sid, weights):
     return client.put(f"/api/solver/config?semester_id={sid}", json={
         "daily_subject_cap": 2, "teacher_daily_max": 6,
@@ -108,19 +108,19 @@ def _put(client, sid, weights):
 
 
 def test_weight_above_max_is_rejected(env):
-    """權重若能設到 20000,solver 會理性地丟掉一節課去換分散度。"""
+    """权重若能设到 20000,solver 会理性地丢掉一节课去换分散度。"""
     client, db = env
     _login(client, db)
     sid = _semester(client)
 
     r = _put(client, sid, {"S2": 20000})
     assert r.status_code == 400
-    assert "丟課" in r.json()["detail"]
+    assert "丢课" in r.json()["detail"]
     assert _put(client, sid, {"S2": MAX_WEIGHT}).status_code == 200
 
 
 def test_stored_weight_over_max_is_clamped_on_read(env):
-    """舊資料可能存過超大權重;讀出來一定要夾回上限,否則 worker 仍會寧可丟課。"""
+    """旧资料可能存过超大权重;读出来一定要夹回上限,否则 worker 仍会宁可丢课。"""
     client, db = env
     _login(client, db)
     sid = _semester(client)
@@ -132,9 +132,9 @@ def test_stored_weight_over_max_is_clamped_on_read(env):
 
 
 def test_relaxation_penalties_must_stay_ordered():
-    """未排入 > 放寬的硬約束 > 軟約束的最大總和。順序反了就會用丟課換軟約束分數。"""
-    with pytest.raises(SolverInputError, match="懲罰量級"):
+    """未排入 > 放宽的硬约束 > 软约束的最大总和。顺序反了就会用丢课换软约束分数。"""
+    with pytest.raises(SolverInputError, match="惩罚量级"):
         Relaxation(unplaced_penalty=500, violation_penalty=1000)
-    with pytest.raises(SolverInputError, match="懲罰量級"):
-        Relaxation(violation_penalty=10)  # 小於 MAX_WEIGHT × 8
-    Relaxation()  # 預設值必須合法
+    with pytest.raises(SolverInputError, match="惩罚量级"):
+        Relaxation(violation_penalty=10)  # 小于 MAX_WEIGHT × 8
+    Relaxation()  # 默认值必须合法

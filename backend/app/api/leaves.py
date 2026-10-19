@@ -1,7 +1,7 @@
-"""請假登記與受影響節次(M4-1)。
+"""请假登记与受影响节次(M4-1)。
 
-RBAC:教師只能登記/銷自己的假、只看得到自己的假單;
-教學組長與教務主任可代登、可看全校、可代銷。
+RBAC:教师只能登记/销自己的假、只看得到自己的假单;
+教学组长与教务主任可代登、可看全校、可代销。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -25,21 +25,21 @@ from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["leaves"])
 
-# 假單清單的保護性上限(M6-5);完整分頁 UI 留 v1.2
+# 假单清单的保护性上限(M6-5);完整分页 UI 留 v1.2
 MAX_LEAVE_ROWS = 1000
 
-registrar = require_roles(Role.scheduler, Role.director)  # 可代登/代銷
+registrar = require_roles(Role.scheduler, Role.director)  # 可代登/代销
 
 
 def _is_registrar(user: User) -> bool:
-    """可代登/代銷/看全校。admin 一律通過(與 require_roles 一致)。"""
+    """可代登/代销/看全校。admin 一律通过(与 require_roles 一致)。"""
     return bool(user.role_names & {Role.scheduler.value, Role.director.value, Role.admin.value})
 
 
 def _get_semester(db: Session, semester_id: int) -> Semester:
     sem = db.get(Semester, semester_id)
     if sem is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到學期")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
     return sem
 
 
@@ -75,20 +75,20 @@ def _serialize(leave: LeaveRequest) -> LeaveRequestOut:
 
 
 def _resolve_target_teacher(db: Session, semester_id: int, body_teacher_id: int | None, user: User):
-    """代登指定教師;自登則解析登入者綁定的教師主檔。"""
+    """代登指定教师;自登则解析登录者绑定的教师主档。"""
     if body_teacher_id is not None:
         if not _is_registrar(user):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "只有教學組長或教務主任可代為登記")
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "只有教学组长或教务主任可代为登记")
         teacher = leave_service.find_teacher(db, semester_id, body_teacher_id)
         if teacher is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到教師")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到教师")
         return teacher
 
     teacher = current_teacher(db, user, semester_id)
     if teacher is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "您的帳號尚未綁定本學期的教師主檔,無法登記請假;請洽教學組長",
+            "您的帐号尚未绑定本学期的教师主档,无法登记请假;请洽教学组长",
         )
     return teacher
 
@@ -100,10 +100,10 @@ def create_leave(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """登記請假,並依已發布課表展開受影響節次。"""
+    """登记请假,并依已发布课表展开受影响节次。"""
     sem = _get_semester(db, semester_id)
     if body.leave_type not in set(LeaveType):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"未知的假別:{body.leave_type}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"未知的假别:{body.leave_type}")
 
     teacher = _resolve_target_teacher(db, semester_id, body.teacher_id, user)
     on_behalf = teacher.user_id != user.id
@@ -127,7 +127,7 @@ def create_leave(
         detail=(
             f"{teacher.name} {leave_service.range_text(leave)}"
             f" {LEAVE_TYPE_CN.get(leave.leave_type, '')},"
-            f"受影響 {len(leave.affected_periods)} 節"
+            f"受影响 {len(leave.affected_periods)} 节"
         )[:500],
     ))
     db.commit()
@@ -142,7 +142,7 @@ def list_leaves(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """組長看全校;教師只看得到自己的假單(即使指定了別人的 teacher_id)。"""
+    """组长看全校;教师只看得到自己的假单(即使指定了别人的 teacher_id)。"""
     _get_semester(db, semester_id)
     stmt = select(LeaveRequest).where(LeaveRequest.semester_id == semester_id)
 
@@ -154,8 +154,8 @@ def list_leaves(
     elif teacher_id is not None:
         stmt = stmt.where(LeaveRequest.teacher_id == teacher_id)
 
-    # 保護性上限(M6-5):整學期的假單會越積越多,不設限就會一次全部拉進記憶體。
-    # 取最新的 MAX_LEAVE_ROWS 筆;完整分頁 UI 留 v1.2。
+    # 保护性上限(M6-5):整学期的假单会越积越多,不设限就会一次全部拉进记忆体。
+    # 取最新的 MAX_LEAVE_ROWS 笔;完整分页 UI 留 v1.2。
     rows = db.scalars(
         stmt.order_by(LeaveRequest.start_date.desc(), LeaveRequest.id.desc())
         .limit(MAX_LEAVE_ROWS)
@@ -166,11 +166,11 @@ def list_leaves(
 def _get_leave(db: Session, leave_id: int, user: User) -> LeaveRequest:
     leave = db.get(LeaveRequest, leave_id)
     if leave is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到假單")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到假单")
     if not _is_registrar(user):
         me = current_teacher(db, user, leave.semester_id)
         if me is None or me.id != leave.teacher_id:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "只能存取自己的假單")
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "只能存取自己的假单")
     return leave
 
 
@@ -183,9 +183,9 @@ def get_leave(leave_id: int, db: Session = Depends(get_db), user: User = Depends
 def cancel_leave(
     leave_id: int, db: Session = Depends(get_db), user: User = Depends(get_active_user)
 ):
-    """銷假:級聯取消所有受影響節次,已被指派的代課教師會收到取消通知。
+    """销假:级联取消所有受影响节次,已被指派的代课教师会收到取消通知。
 
-    已完成的節次不動——那堂課已經上過了,事後銷假不能把歷史抹掉。
+    已完成的节次不动——那堂课已经上过了,事后销假不能把历史抹掉。
     """
     leave = _get_leave(db, leave_id, user)
     try:
@@ -197,7 +197,7 @@ def cancel_leave(
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="cancel_leave",
         target_type="leave_request", target_id=leave.id,
-        detail=f"{leave.teacher.name} 銷假,取消 {len(revoked)} 節已指派代課"[:500],
+        detail=f"{leave.teacher.name} 销假,取消 {len(revoked)} 节已指派代课"[:500],
     ))
     db.commit()
     return LeaveCancelled(

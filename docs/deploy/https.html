@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="網域與 HTTPS(選配) — 排課與調代課系統部署與維運文件">
-<title>網域與 HTTPS(選配) · 排課與調代課系統</title>
+<meta name="description" content="网域与 HTTPS(选配) — 排课与调代课系统部署与维运文件">
+<title>网域与 HTTPS(选配) · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📗</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/deploy/https.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/deploy/https.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,94 +151,94 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="../index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="../index.html">教學組長操作手冊</a>
+<a class="brand" href="../index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="../index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc" href="README.html">總覽:從哪開始</a>
-<a class="doc" href="install.html">安裝指南</a>
-<a class="doc" href="upgrade.html">升級指南</a>
-<a class="doc" href="backup.html">備份與還原</a>
-<a class="doc here" href="https.html">網域與 HTTPS</a>
-<a class="doc" href="faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc" href="README.html">总览:从哪开始</a>
+<a class="doc" href="install.html">安装指南</a>
+<a class="doc" href="upgrade.html">升级指南</a>
+<a class="doc" href="backup.html">备份与还原</a>
+<a class="doc here" href="https.html">网域与 HTTPS</a>
+<a class="doc" href="faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="../architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc" href="../roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="../tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="../architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc" href="../roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="../tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#你需要先具備">你需要先具備</a><a class="lv2" href="#設定步驟">設定步驟</a><a class="lv3" href="#1-dns-指向主機">1. DNS 指向主機</a><a class="lv3" href="#2-在-env-設定網域">2. 在 .env 設定網域</a><a class="lv3" href="#3-重啟">3. 重啟</a><a class="lv2" href="#在雲端-vps-上部署校內無法對外時">在雲端 VPS 上部署(校內無法對外時)</a><a class="lv2" href="#常見狀況">常見狀況</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#你需要先具备">你需要先具备</a><a class="lv2" href="#设置步骤">设置步骤</a><a class="lv3" href="#1-dns-指向主机">1. DNS 指向主机</a><a class="lv3" href="#2-在-env-设置网域">2. 在 .env 设置网域</a><a class="lv3" href="#3-重启">3. 重启</a><a class="lv2" href="#在云端-vps-上部署校内无法对外时">在云端 VPS 上部署(校内无法对外时)</a><a class="lv2" href="#常见状况">常见状况</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEPLOYMENT GUIDE</div>
-        <h1>網域與 HTTPS(選配)</h1>
-        <div class="src">原始檔 <code>docs/deploy/https.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/https.md">在 GitHub 上檢視</a></div>
+        <h1>网域与 HTTPS(选配)</h1>
+        <div class="src">原始档 <code>docs/deploy/https.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/https.md">在 GitHub 上查看</a></div>
       </header>
-      <p><strong>校內網路使用不需要這篇</strong> —— 用 <code>http://&lt;主機IP&gt;</code> 即可,免設定。</p>
-      <p>本篇適用於:要讓<strong>校外</strong>(在家、手機行動網路)也能連,並使用網域 + HTTPS 加密。系統的 web 容器用 Caddy,設定網域後會<strong>自動申請並續期 Let's Encrypt 憑證</strong>,你不必手動處理憑證。</p>
+      <p><strong>校内网路使用不需要这篇</strong> —— 用 <code>http://&lt;主机IP&gt;</code> 即可,免设置。</p>
+      <p>本篇适用于:要让<strong>校外</strong>(在家、手机行动网路)也能连,并使用网域 + HTTPS 加密。系统的 web 容器用 Caddy,设置网域后会<strong>自动申请并续期 Let's Encrypt 凭证</strong>,你不必手动处理凭证。</p>
       <hr />
-      <h2 id="你需要先具備">你需要先具備</h2>
+      <h2 id="你需要先具备">你需要先具备</h2>
       <ol>
-      <li><strong>一個網域名</strong>(例如 <code>school.example.edu.tw</code>,或自備的網域)。</li>
-      <li>一台<strong>具公開 IP 的主機</strong>(校內對外伺服器,或雲端 VPS)。</li>
-      <li>能編輯該網域的 <strong>DNS</strong>,把網域指向主機 IP。</li>
-      <li>主機的 <strong>80 與 443 埠可從外網連入</strong>(防火牆/資安設備放行;Let's Encrypt 簽發需要 80 埠)。</li>
+      <li><strong>一个网域名</strong>(例如 <code>school.example.edu.tw</code>,或自备的网域)。</li>
+      <li>一台<strong>具公开 IP 的主机</strong>(校内对外服务器,或云端 VPS)。</li>
+      <li>能编辑该网域的 <strong>DNS</strong>,把网域指向主机 IP。</li>
+      <li>主机的 <strong>80 与 443 埠可从外网连入</strong>(防火墙/资安设备放行;Let's Encrypt 签发需要 80 埠)。</li>
       </ol>
       <hr />
-      <h2 id="設定步驟">設定步驟</h2>
-      <h3 id="1-dns-指向主機">1. DNS 指向主機</h3>
-      <p>在網域管理處新增一筆 <strong>A 記錄</strong>:</p>
-      <pre><code>school.example.edu.tw   →   你的主機公開 IP
+      <h2 id="设置步骤">设置步骤</h2>
+      <h3 id="1-dns-指向主机">1. DNS 指向主机</h3>
+      <p>在网域管理处新增一笔 <strong>A 记录</strong>:</p>
+      <pre><code>school.example.edu.tw   →   你的主机公开 IP
       </code></pre>
-      <p>等 DNS 生效(數分鐘到數十分鐘)。可用 <code>nslookup school.example.edu.tw</code> 確認解析到正確 IP。</p>
-      <h3 id="2-在-env-設定網域">2. 在 <code>.env</code> 設定網域</h3>
+      <p>等 DNS 生效(数分钟到数十分钟)。可用 <code>nslookup school.example.edu.tw</code> 确认解析到正确 IP。</p>
+      <h3 id="2-在-env-设置网域">2. 在 <code>.env</code> 设置网域</h3>
       <pre><code class="language-ini">SITE_ADDRESS=school.example.edu.tw
       HTTPS_PORT=443
       </code></pre>
       <ul>
-      <li><code>SITE_ADDRESS</code> 一填成網域,Caddy 就會自動走 HTTPS 並把 HTTP 轉址到 HTTPS。</li>
-      <li>不填(或留 <code>:80</code>)則維持內網 HTTP 模式。</li>
+      <li><code>SITE_ADDRESS</code> 一填成网域,Caddy 就会自动走 HTTPS 并把 HTTP 转址到 HTTPS。</li>
+      <li>不填(或留 <code>:80</code>)则维持内网 HTTP 模式。</li>
       </ul>
-      <h3 id="3-重啟">3. 重啟</h3>
+      <h3 id="3-重启">3. 重启</h3>
       <pre><code class="language-bash">docker compose up -d
-      docker compose logs -f web     # 觀察憑證申請過程
+      docker compose logs -f web     # 观察凭证申请过程
       </code></pre>
-      <p>第一次啟動時 Caddy 會向 Let's Encrypt 申請憑證,log 出現 <code>certificate obtained successfully</code> 即成功。之後用 <code>https://school.example.edu.tw</code> 連線,瀏覽器顯示鎖頭。</p>
-      <p>憑證存放於 <code>caddydata</code> volume,重啟不會重新申請;續期由 Caddy 自動處理。</p>
+      <p>第一次启动时 Caddy 会向 Let's Encrypt 申请凭证,log 出现 <code>certificate obtained successfully</code> 即成功。之后用 <code>https://school.example.edu.tw</code> 连线,浏览器显示锁头。</p>
+      <p>凭证存放于 <code>caddydata</code> volume,重启不会重新申请;续期由 Caddy 自动处理。</p>
       <hr />
-      <h2 id="在雲端-vps-上部署校內無法對外時">在雲端 VPS 上部署(校內無法對外時)</h2>
-      <p>若學校網路無法對外開埠,可租一台小型 VPS(1–2 vCPU / 2–4GB RAM 即可跑基本功能,自動排課建議 4 核 8GB):</p>
+      <h2 id="在云端-vps-上部署校内无法对外时">在云端 VPS 上部署(校内无法对外时)</h2>
+      <p>若学校网路无法对外开埠,可租一台小型 VPS(1–2 vCPU / 2–4GB RAM 即可跑基本功能,自动排课建议 4 核 8GB):</p>
       <ol>
-      <li>依<a href="install.html">安裝指南</a>在 VPS 上裝好 Docker 並起好系統。</li>
-      <li>依本篇設定網域與 <code>SITE_ADDRESS</code>。</li>
-      <li>VPS 防火牆/安全群組放行 <strong>80、443</strong>;<strong>不要</strong>對外開放 5432(PostgreSQL)、6379(Redis)、8000(api)——這些只在容器內部網路互通,compose 預設也不對外映射它們。</li>
+      <li>依<a href="install.html">安装指南</a>在 VPS 上装好 Docker 并起好系统。</li>
+      <li>依本篇设置网域与 <code>SITE_ADDRESS</code>。</li>
+      <li>VPS 防火墙/安全群组放行 <strong>80、443</strong>;<strong>不要</strong>对外开放 5432(PostgreSQL)、6379(Redis)、8000(api)——这些只在容器内部网路互通,compose 默认也不对外映射它们。</li>
       </ol>
       <blockquote>
-      <p><strong>資料落在 VPS 上</strong>,務必依<a href="backup.html">備份指南</a>設好異地備援(定期下載 <code>.dump</code> 到校內或雲端硬碟)。VPS 若停租或損毀,只有異地備份能救回資料。</p>
+      <p><strong>资料落在 VPS 上</strong>,务必依<a href="backup.html">备份指南</a>设好异地备援(定期下载 <code>.dump</code> 到校内或云端硬碟)。VPS 若停租或损毁,只有异地备份能救回资料。</p>
       </blockquote>
       <hr />
-      <h2 id="常見狀況">常見狀況</h2>
-      <p><strong>憑證申請失敗(log 出現 challenge failed / timeout)</strong>
-      - 多半是 80/443 沒對外通,或 DNS 還沒指到這台主機。先確認外網能連到主機的 80 埠。
-      - 網域必須是<strong>真實可解析</strong>的公開網域;<code>localhost</code> 或純 IP 無法申請公開憑證。</p>
-      <p><strong>只想要 HTTPS 但用自簽/內部憑證(純內網)</strong>
-      - Caddy 對非公開網域可用其內部 CA。進階需求請參考 <a href="https://caddyserver.com/docs/">Caddy 官方文件</a>,或改用純 HTTP 內網部署。</p>
-      <p><strong>改了網域要換成另一個</strong>
-      - 改 <code>.env</code> 的 <code>SITE_ADDRESS</code> 後 <code>docker compose up -d</code>。舊憑證留在 <code>caddydata</code> 不影響。</p>
-      <p><strong>80 埠被學校既有網站占用</strong>
-      - HTTPS 自動簽發需要 80 埠做驗證,較難共用。建議此情境改用獨立 VPS,或與網管協調子網域與埠。</p>
+      <h2 id="常见状况">常见状况</h2>
+      <p><strong>凭证申请失败(log 出现 challenge failed / timeout)</strong>
+      - 多半是 80/443 没对外通,或 DNS 还没指到这台主机。先确认外网能连到主机的 80 埠。
+      - 网域必须是<strong>真实可解析</strong>的公开网域;<code>localhost</code> 或纯 IP 无法申请公开凭证。</p>
+      <p><strong>只想要 HTTPS 但用自签/内部凭证(纯内网)</strong>
+      - Caddy 对非公开网域可用其内部 CA。进阶需求请参考 <a href="https://caddyserver.com/docs/">Caddy 官方文件</a>,或改用纯 HTTP 内网部署。</p>
+      <p><strong>改了网域要换成另一个</strong>
+      - 改 <code>.env</code> 的 <code>SITE_ADDRESS</code> 后 <code>docker compose up -d</code>。旧凭证留在 <code>caddydata</code> 不影响。</p>
+      <p><strong>80 埠被学校既有网站占用</strong>
+      - HTTPS 自动签发需要 80 埠做验证,较难共用。建议此情境改用独立 VPS,或与网管协调子网域与埠。</p>
       <div class="foot">
-        本頁由 <code>docs/deploy/https.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/deploy/https.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -246,7 +246,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

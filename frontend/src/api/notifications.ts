@@ -1,4 +1,4 @@
-// 通知:教師端鈴鐺/確認,組長看板/再次提醒(M4-3)。
+// 通知:教师端铃铛/确认,组长看板/再次提醒(M4-3)。
 
 import { apiGet, apiPost, apiPut } from '@/api/client'
 

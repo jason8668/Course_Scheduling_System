@@ -1,4 +1,4 @@
-"""系統版本與新版本提醒(v1.2.3)。"""
+"""系统版本与新版本提醒(v1.2.3)。"""
 
 from dataclasses import asdict
 
@@ -33,22 +33,22 @@ class UpdateStatusOut(BaseModel):
 
 @router.get("/system/version", response_model=VersionOut)
 def get_version(_: User = Depends(get_active_user)):
-    """目前執行的系統版本(建置映像時注入)。登入者皆可看,回報問題時用得到。"""
+    """目前执行的系统版本(建置映像时注入)。登录者皆可看,回报问题时用得到。"""
     return VersionOut(version=update_check.current_version())
 
 
 class UpgradeNoticeOut(BaseModel):
-    """資料表結構升級後的一次性提示(v1.3.0)。"""
+    """资料表结构升级后的一次性提示(v1.3.0)。"""
 
     version: str = ""
     at: str = ""
-    backup: str = ""   # 升級前自動備份的檔名
-    error: str = ""    # 自動備份失敗的原因(系統仍照常升級)
+    backup: str = ""   # 升级前自动备份的档名
+    error: str = ""    # 自动备份失败的原因(系统仍照常升级)
 
 
 @router.get("/system/upgrade-notice", response_model=UpgradeNoticeOut | None)
 def get_upgrade_notice(db: Session = Depends(get_db), _: User = Depends(admin_only)):
-    """最近一次結構升級的提示;按過「知道了」或從未升級過時為 null。"""
+    """最近一次结构升级的提示;按过「知道了」或从未升级过时为 null。"""
     data = upgrade_notice.get(db)
     if data is None:
         return None
@@ -63,11 +63,11 @@ def dismiss_upgrade_notice(db: Session = Depends(get_db), _: User = Depends(admi
 
 @router.get("/system/update", response_model=UpdateStatusOut)
 def get_update_status(
-    refresh: bool = Query(default=False, description="立即重新查詢(至少間隔一分鐘)"),
+    refresh: bool = Query(default=False, description="立即重新查询(至少间隔一分钟)"),
     db: Session = Depends(get_db),
     _: User = Depends(admin_only),
 ):
-    """目前版本與 GitHub 上的最新正式版。最多一天連外查一次;只提醒,不會自動升級。"""
+    """目前版本与 GitHub 上的最新正式版。最多一天连外查一次;只提醒,不会自动升级。"""
     result = update_check.status(db, refresh=refresh)
     db.commit()
     return UpdateStatusOut(**asdict(result))

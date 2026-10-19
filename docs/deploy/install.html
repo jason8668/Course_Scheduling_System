@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="安裝指南 — 排課與調代課系統部署與維運文件">
-<title>安裝指南 · 排課與調代課系統</title>
+<meta name="description" content="安装指南 — 排课与调代课系统部署与维运文件">
+<title>安装指南 · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>📗</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/deploy/install.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/deploy/install.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,154 +151,154 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="../index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="../index.html">教學組長操作手冊</a>
+<a class="brand" href="../index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="../index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc" href="README.html">總覽:從哪開始</a>
-<a class="doc here" href="install.html">安裝指南</a>
-<a class="doc" href="upgrade.html">升級指南</a>
-<a class="doc" href="backup.html">備份與還原</a>
-<a class="doc" href="https.html">網域與 HTTPS</a>
-<a class="doc" href="faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc" href="README.html">总览:从哪开始</a>
+<a class="doc here" href="install.html">安装指南</a>
+<a class="doc" href="upgrade.html">升级指南</a>
+<a class="doc" href="backup.html">备份与还原</a>
+<a class="doc" href="https.html">网域与 HTTPS</a>
+<a class="doc" href="faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="../architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc" href="../roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="../tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="../architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc" href="../roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="../tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#一鍵安裝推薦">一鍵安裝(推薦)</a><a class="lv3" href="#步驟-a先裝好-docker">步驟 A:先裝好 Docker</a><a class="lv3" href="#步驟-b下載腳本看過再執行">步驟 B:下載腳本,看過再執行</a><a class="lv3" href="#腳本會做什麼">腳本會做什麼</a><a class="lv3" href="#常用選項">常用選項</a><a class="lv3" href="#想在同一台主機再裝一套測試環境">想在同一台主機再裝一套(測試環境)</a><a class="lv2" href="#手動安裝">手動安裝</a><a class="lv2" href="#步驟-0先裝好-docker">步驟 0:先裝好 Docker</a><a class="lv3" href="#windows">Windows</a><a class="lv3" href="#linuxubuntu-debian校內伺服器常見">Linux(Ubuntu / Debian,校內伺服器常見)</a><a class="lv3" href="#nassynology-qnap">NAS(Synology / QNAP)</a><a class="lv2" href="#步驟-1取得設定檔">步驟 1:取得設定檔</a><a class="lv3" href="#方式-a拉取官方預建映像推薦">方式 A:拉取官方預建映像(推薦)</a><a class="lv3" href="#方式-b從原始碼建置">方式 B:從原始碼建置</a><a class="lv2" href="#步驟-2修改-env至少改兩項">步驟 2:修改 .env(至少改兩項)</a><a class="lv2" href="#步驟-3啟動">步驟 3:啟動</a><a class="lv3" href="#方式-a拉取映像">方式 A(拉取映像)</a><a class="lv3" href="#方式-b從原始碼建置_1">方式 B(從原始碼建置)</a><a class="lv2" href="#驗證安裝成功">驗證安裝成功</a><a class="lv3" href="#想先試看看再決定載入示範資料">想先試看看再決定?載入示範資料</a><a class="lv2" href="#硬體最低需求">硬體最低需求</a><a class="lv2" href="#埠號被占用怎麼辦">埠號被占用怎麼辦?</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#一键安装推荐">一键安装(推荐)</a><a class="lv3" href="#步骤-a先装好-docker">步骤 A:先装好 Docker</a><a class="lv3" href="#步骤-b下载脚本看过再执行">步骤 B:下载脚本,看过再执行</a><a class="lv3" href="#脚本会做什么">脚本会做什么</a><a class="lv3" href="#常用选项">常用选项</a><a class="lv3" href="#想在同一台主机再装一套测试环境">想在同一台主机再装一套(测试环境)</a><a class="lv2" href="#手动安装">手动安装</a><a class="lv2" href="#步骤-0先装好-docker">步骤 0:先装好 Docker</a><a class="lv3" href="#windows">Windows</a><a class="lv3" href="#linuxubuntu-debian校内服务器常见">Linux(Ubuntu / Debian,校内服务器常见)</a><a class="lv3" href="#nassynology-qnap">NAS(Synology / QNAP)</a><a class="lv2" href="#步骤-1取得设置档">步骤 1:取得设置档</a><a class="lv3" href="#方式-a拉取官方预建映像推荐">方式 A:拉取官方预建映像(推荐)</a><a class="lv3" href="#方式-b从原始码建置">方式 B:从原始码建置</a><a class="lv2" href="#步骤-2修改-env至少改两项">步骤 2:修改 .env(至少改两项)</a><a class="lv2" href="#步骤-3启动">步骤 3:启动</a><a class="lv3" href="#方式-a拉取映像">方式 A(拉取映像)</a><a class="lv3" href="#方式-b从原始码建置_1">方式 B(从原始码建置)</a><a class="lv2" href="#验证安装成功">验证安装成功</a><a class="lv3" href="#想先试看看再决定载入示范资料">想先试看看再决定?载入示范资料</a><a class="lv2" href="#硬体最低需求">硬体最低需求</a><a class="lv2" href="#埠号被占用怎么办">埠号被占用怎么办?</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEPLOYMENT GUIDE</div>
-        <h1>安裝指南</h1>
-        <div class="src">原始檔 <code>docs/deploy/install.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/install.md">在 GitHub 上檢視</a></div>
+        <h1>安装指南</h1>
+        <div class="src">原始档 <code>docs/deploy/install.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/deploy/install.md">在 GitHub 上查看</a></div>
       </header>
-      <p>從零把系統架起來。整個過程約 15 分鐘(含下載映像)。</p>
-      <p><strong>有兩條路,選一條就好:</strong></p>
+      <p>从零把系统架起来。整个过程约 15 分钟(含下载映像)。</p>
+      <p><strong>有两条路,选一条就好:</strong></p>
       <div class="tw"><table>
       <thead>
       <tr>
       <th></th>
-      <th>適合誰</th>
+      <th>适合谁</th>
       <th>你要做的事</th>
       </tr>
       </thead>
       <tbody>
       <tr>
-      <td><strong><a href="#一鍵安裝推薦">一鍵安裝腳本</a></strong></td>
-      <td>絕大多數人</td>
-      <td>裝 Docker → 執行腳本 → 回答三個問題</td>
+      <td><strong><a href="#一键安装推荐">一键安装脚本</a></strong></td>
+      <td>绝大多数人</td>
+      <td>装 Docker → 执行脚本 → 回答三个问题</td>
       </tr>
       <tr>
-      <td><a href="#手動安裝">手動安裝</a></td>
-      <td>想完全掌握每一步、或環境特殊</td>
-      <td>下面的步驟 0～3</td>
+      <td><a href="#手动安装">手动安装</a></td>
+      <td>想完全掌握每一步、或环境特殊</td>
+      <td>下面的步骤 0～3</td>
       </tr>
       </tbody>
       </table></div>
-      <p>兩者做的事完全一樣,腳本只是把手動的步驟 1～3 自動化(含產生金鑰、閃開被占用的埠號)。</p>
+      <p>两者做的事完全一样,脚本只是把手动的步骤 1～3 自动化(含产生金钥、闪开被占用的埠号)。</p>
       <hr />
-      <h2 id="一鍵安裝推薦">一鍵安裝(推薦)</h2>
-      <h3 id="步驟-a先裝好-docker">步驟 A:先裝好 Docker</h3>
-      <p>同下方<a href="#步驟-0先裝好-docker">步驟 0</a>,裝完請確認 Docker 已啟動。</p>
-      <h3 id="步驟-b下載腳本看過再執行">步驟 B:下載腳本,看過再執行</h3>
-      <p>腳本刻意設計成「先下載、再執行」而不是一行指令直接跑——<strong>這是要進學校主機的東西,你應該能先打開看過內容</strong>。</p>
+      <h2 id="一键安装推荐">一键安装(推荐)</h2>
+      <h3 id="步骤-a先装好-docker">步骤 A:先装好 Docker</h3>
+      <p>同下方<a href="#步骤-0先装好-docker">步骤 0</a>,装完请确认 Docker 已启动。</p>
+      <h3 id="步骤-b下载脚本看过再执行">步骤 B:下载脚本,看过再执行</h3>
+      <p>脚本刻意设计成「先下载、再执行」而不是一行指令直接跑——<strong>这是要进学校主机的东西,你应该能先打开看过内容</strong>。</p>
       <p><strong>Windows(PowerShell)</strong>:</p>
       <pre><code class="language-powershell">cd $HOME\Downloads
       Invoke-WebRequest https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/install.ps1 -OutFile install.ps1
-      notepad install.ps1        # 先看過(可略)
+      notepad install.ps1        # 先看过(可略)
       .\install.ps1
       </code></pre>
       <blockquote>
-      <p>若出現「因為這個系統上停用指令碼執行」的訊息,先執行一次:
+      <p>若出现「因为这个系统上停用指令码执行」的讯息,先执行一次:
       <code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code>
-      (只對這個視窗有效,關掉就恢復原設定。)</p>
+      (只对这个视窗有效,关掉就恢复原设置。)</p>
       </blockquote>
       <p><strong>Linux / macOS / NAS</strong>:</p>
       <pre><code class="language-bash">curl -fLO https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/install.sh
-      less install.sh            # 先看過(可略)
+      less install.sh            # 先看过(可略)
       bash install.sh
       </code></pre>
-      <h3 id="腳本會做什麼">腳本會做什麼</h3>
+      <h3 id="脚本会做什么">脚本会做什么</h3>
       <ol>
-      <li>檢查 Docker 裝好沒、引擎有沒有在跑(沒有的話直接告訴你該怎麼辦)</li>
-      <li>建立安裝資料夾,下載 <code>docker-compose.yml</code></li>
-      <li><strong>問你三件事</strong>:校名、管理員密碼(輸入時不顯示)、對外埠號</li>
-      <li>自動產生 <code>SECRET_KEY</code>(不需要 openssl)</li>
-      <li>寫出 <code>.env</code>——你不必開文字編輯器</li>
-      <li>下載映像、啟動六個容器、確認系統回應</li>
-      <li>印出<strong>校內其他電腦要連的網址</strong>,並開啟瀏覽器</li>
+      <li>检查 Docker 装好没、引擎有没有在跑(没有的话直接告诉你该怎么办)</li>
+      <li>建立安装资料夹,下载 <code>docker-compose.yml</code></li>
+      <li><strong>问你三件事</strong>:校名、管理员密码(输入时不显示)、对外埠号</li>
+      <li>自动产生 <code>SECRET_KEY</code>(不需要 openssl)</li>
+      <li>写出 <code>.env</code>——你不必开文字编辑器</li>
+      <li>下载映像、启动六个容器、确认系统回应</li>
+      <li>印出<strong>校内其他电脑要连的网址</strong>,并开启浏览器</li>
       </ol>
-      <p>埠號 80 或 443 被其他服務占用時,腳本會自動改用可用的埠並告訴你。</p>
-      <h3 id="常用選項">常用選項</h3>
-      <pre><code class="language-bash">bash install.sh --path /opt/scheduling    # 指定安裝位置(Windows 用 -InstallPath)
-      bash install.sh --port 8080               # 指定埠號
-      bash install.sh --skip-start              # 只產生設定檔,先不啟動(想自己看過 .env)
-      bash install.sh --reconfigure             # 已裝過,要重新設定校名/密碼
+      <p>埠号 80 或 443 被其他服务占用时,脚本会自动改用可用的埠并告诉你。</p>
+      <h3 id="常用选项">常用选项</h3>
+      <pre><code class="language-bash">bash install.sh --path /opt/scheduling    # 指定安装位置(Windows 用 -InstallPath)
+      bash install.sh --port 8080               # 指定埠号
+      bash install.sh --skip-start              # 只产生设置档,先不启动(想自己看过 .env)
+      bash install.sh --reconfigure             # 已装过,要重新设置校名/密码
       </code></pre>
-      <p>裝好之後直接跳到<a href="#驗證安裝成功">驗證安裝成功</a>。</p>
-      <h3 id="想在同一台主機再裝一套測試環境">想在同一台主機再裝一套(測試環境)</h3>
-      <p><strong>這件事有陷阱,務必看一下。</strong> Docker 用「專案名稱」決定哪些容器與資料屬於同一套,本系統固定叫 <code>scheduling</code>。所以在同一台主機的另一個資料夾重跑安裝,<strong>不會產生第二套,而是會接管既有那一套</strong>——連資料庫也是同一份。</p>
-      <p>腳本會偵測到這個情況並擋下來,提示你改用不同的專案名稱:</p>
+      <p>装好之后直接跳到<a href="#验证安装成功">验证安装成功</a>。</p>
+      <h3 id="想在同一台主机再装一套测试环境">想在同一台主机再装一套(测试环境)</h3>
+      <p><strong>这件事有陷阱,务必看一下。</strong> Docker 用「专案名称」决定哪些容器与资料属于同一套,本系统固定叫 <code>scheduling</code>。所以在同一台主机的另一个资料夹重跑安装,<strong>不会产生第二套,而是会接管既有那一套</strong>——连资料库也是同一份。</p>
+      <p>脚本会侦测到这个情况并挡下来,提示你改用不同的专案名称:</p>
       <pre><code class="language-bash"># Linux / macOS / NAS
       bash install.sh --project-name scheduling-test --path ~/scheduling-test --port 8090
       
       # Windows PowerShell
       .\install.ps1 -ProjectName scheduling-test -InstallPath D:\scheduling-test -Port 8090
       </code></pre>
-      <p>這樣兩套會完全獨立:容器、資料庫、備份各走各的,可以同時執行(埠號要不同)。專案名稱會記在該資料夾的 <code>.env</code> 裡,之後在該目錄下 <code>docker compose</code> 各項指令都會自動沿用,不必每次加參數。</p>
+      <p>这样两套会完全独立:容器、资料库、备份各走各的,可以同时执行(埠号要不同)。专案名称会记在该资料夹的 <code>.env</code> 里,之后在该目录下 <code>docker compose</code> 各项指令都会自动沿用,不必每次加参数。</p>
       <blockquote>
-      <p>要移除測試環境:<code>cd</code> 到它的資料夾執行 <code>docker compose down -v</code>(<code>-v</code> 會一併刪掉資料)。
-      <strong>執行前務必確認自己在測試環境的資料夾</strong>,在正式環境的資料夾下這條指令會刪光你的排課資料。</p>
+      <p>要移除测试环境:<code>cd</code> 到它的资料夹执行 <code>docker compose down -v</code>(<code>-v</code> 会一并删掉资料)。
+      <strong>执行前务必确认自己在测试环境的资料夹</strong>,在正式环境的资料夹下这条指令会删光你的排课资料。</p>
       </blockquote>
       <hr />
-      <h2 id="手動安裝">手動安裝</h2>
-      <p>以下是腳本背後實際做的事。想自己一步步來、或環境特殊(例如需要走 Proxy)時看這段。</p>
+      <h2 id="手动安装">手动安装</h2>
+      <p>以下是脚本背后实际做的事。想自己一步步来、或环境特殊(例如需要走 Proxy)时看这段。</p>
       <hr />
-      <h2 id="步驟-0先裝好-docker">步驟 0:先裝好 Docker</h2>
-      <p>系統以 Docker Compose 運行,主機只需要裝 <strong>Docker</strong>(含 Docker Compose,現代版本已內建)。</p>
+      <h2 id="步骤-0先装好-docker">步骤 0:先装好 Docker</h2>
+      <p>系统以 Docker Compose 运行,主机只需要装 <strong>Docker</strong>(含 Docker Compose,现代版本已内建)。</p>
       <h3 id="windows">Windows</h3>
-      <p>最快的方式是用 Windows 內建的套件管理員,在 PowerShell 執行一行:</p>
+      <p>最快的方式是用 Windows 内建的套件管理员,在 PowerShell 执行一行:</p>
       <pre><code class="language-powershell">winget install Docker.DockerDesktop
       </code></pre>
-      <p>或到 <a href="https://docs.docker.com/desktop/install/windows-install/">Docker Desktop for Windows</a> 下載安裝檔。</p>
+      <p>或到 <a href="https://docs.docker.com/desktop/install/windows-install/">Docker Desktop for Windows</a> 下载安装档。</p>
       <p>接著:</p>
       <ol>
-      <li>安裝時若提示啟用 WSL 2,照著開啟即可。</li>
-      <li><strong>裝完請重新開機</strong>(WSL 2 需要)。</li>
-      <li>開啟 Docker Desktop,等左下角變綠燈(Engine running)。</li>
-      <li>開「終端機 / PowerShell」,執行 <code>docker --version</code> 有版本號即成功。</li>
+      <li>安装时若提示启用 WSL 2,照著开启即可。</li>
+      <li><strong>装完请重新开机</strong>(WSL 2 需要)。</li>
+      <li>开启 Docker Desktop,等左下角变绿灯(Engine running)。</li>
+      <li>开「终端机 / PowerShell」,执行 <code>docker --version</code> 有版本号即成功。</li>
       </ol>
-      <h3 id="linuxubuntu-debian校內伺服器常見">Linux(Ubuntu / Debian,校內伺服器常見)</h3>
+      <h3 id="linuxubuntu-debian校内服务器常见">Linux(Ubuntu / Debian,校内服务器常见)</h3>
       <pre><code class="language-bash">curl -fsSL https://get.docker.com | sudo sh
-      sudo usermod -aG docker $USER   # 讓目前使用者免 sudo 用 docker(需重新登入生效)
+      sudo usermod -aG docker $USER   # 让目前用户免 sudo 用 docker(需重新登录生效)
       </code></pre>
-      <p>重新登入後 <code>docker compose version</code> 有版本號即成功。</p>
+      <p>重新登录后 <code>docker compose version</code> 有版本号即成功。</p>
       <h3 id="nassynology-qnap">NAS(Synology / QNAP)</h3>
       <ul>
-      <li><strong>Synology</strong>:「套件中心」安裝 <strong>Container Manager</strong>(舊機型為 Docker)。DSM 7.2+ 的 Container Manager 內建 Compose,可直接在「專案」頁貼上 <code>docker-compose.yml</code>。</li>
-      <li><strong>QNAP</strong>:「App Center」安裝 <strong>Container Station</strong>,其中的「應用程式(Applications)」支援 docker-compose.yml。</li>
-      <li>NAS 記憶體建議 ≥ 4GB;自動排課較吃資源,尖峰時建議 8GB。</li>
+      <li><strong>Synology</strong>:「套件中心」安装 <strong>Container Manager</strong>(旧机型为 Docker)。DSM 7.2+ 的 Container Manager 内建 Compose,可直接在「专案」页贴上 <code>docker-compose.yml</code>。</li>
+      <li><strong>QNAP</strong>:「App Center」安装 <strong>Container Station</strong>,其中的「应用程序(Applications)」支援 docker-compose.yml。</li>
+      <li>NAS 记忆体建议 ≥ 4GB;自动排课较吃资源,尖峰时建议 8GB。</li>
       </ul>
       <blockquote>
-      <p>NAS 圖形介面的操作細節各機型略有差異,但核心都是「貼上 compose 設定 → 提供 .env 環境變數 → 建立專案」。以下命令列步驟同樣適用於在 NAS 上開 SSH 操作。</p>
+      <p>NAS 图形介面的操作细节各机型略有差异,但核心都是「贴上 compose 设置 → 提供 .env 环境变数 → 建立专案」。以下命令列步骤同样适用于在 NAS 上开 SSH 操作。</p>
       </blockquote>
       <hr />
-      <h2 id="步驟-1取得設定檔">步驟 1:取得設定檔</h2>
-      <h3 id="方式-a拉取官方預建映像推薦">方式 A:拉取官方預建映像(推薦)</h3>
-      <p>只需要兩個檔案:<code>docker-compose.yml</code> 與 <code>.env</code>。建立一個空資料夾(例如 <code>scheduling</code>),放入本專案的 <code>docker-compose.yml</code>,並在同層建立 <code>.env</code>(見步驟 2)。</p>
+      <h2 id="步骤-1取得设置档">步骤 1:取得设置档</h2>
+      <h3 id="方式-a拉取官方预建映像推荐">方式 A:拉取官方预建映像(推荐)</h3>
+      <p>只需要两个档案:<code>docker-compose.yml</code> 与 <code>.env</code>。建立一个空资料夹(例如 <code>scheduling</code>),放入本专案的 <code>docker-compose.yml</code>,并在同层建立 <code>.env</code>(见步骤 2)。</p>
       <p><strong>Linux / macOS / Git Bash</strong>:</p>
       <pre><code class="language-bash">mkdir scheduling &amp;&amp; cd scheduling
-      # 下載 docker-compose.yml 與 .env.example(從專案 Releases 頁或原始碼取得)
+      # 下载 docker-compose.yml 与 .env.example(从专案 Releases 页或原始码取得)
       curl -fLO https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/docker-compose.yml
       curl -fL  https://raw.githubusercontent.com/begin0808/Course_Scheduling_System/main/.env.example -o .env
       </code></pre>
@@ -309,72 +309,72 @@
       Invoke-WebRequest &quot;$base/.env.example&quot;       -OutFile .env
       </code></pre>
       <blockquote>
-      <p>Windows 請照上面這段,<strong>不要照抄 bash 那段的 <code>curl</code></strong>。PowerShell 的 <code>curl</code> 是
-      <code>Invoke-WebRequest</code> 的別名,吃不懂 <code>-fLO</code> 這種參數,會直接報錯。真要用內建的
-      curl 程式必須寫全名 <code>curl.exe</code>。</p>
+      <p>Windows 请照上面这段,<strong>不要照抄 bash 那段的 <code>curl</code></strong>。PowerShell 的 <code>curl</code> 是
+      <code>Invoke-WebRequest</code> 的别名,吃不懂 <code>-fLO</code> 这种参数,会直接报错。真要用内建的
+      curl 程序必须写全名 <code>curl.exe</code>。</p>
       </blockquote>
-      <h3 id="方式-b從原始碼建置">方式 B:從原始碼建置</h3>
+      <h3 id="方式-b从原始码建置">方式 B:从原始码建置</h3>
       <pre><code class="language-bash">git clone https://github.com/begin0808/Course_Scheduling_System.git
       cd Course_Scheduling_System
       cp .env.example .env
       </code></pre>
       <hr />
-      <h2 id="步驟-2修改-env至少改兩項">步驟 2:修改 <code>.env</code>(至少改兩項)</h2>
-      <p>用文字編輯器打開 <code>.env</code>,<strong>最少</strong>改這幾項:</p>
-      <pre><code class="language-ini">ADMIN_PASSWORD=改成你的管理員密碼      # 首次登入後系統會再要求你改一次
-      SCHOOL_NAME=○○國民中學                # 顯示在介面與匯出的課表上
-      SECRET_KEY=改成一長串隨機字元          # 見下方產生方式,務必更換
+      <h2 id="步骤-2修改-env至少改两项">步骤 2:修改 <code>.env</code>(至少改两项)</h2>
+      <p>用文字编辑器打开 <code>.env</code>,<strong>最少</strong>改这几项:</p>
+      <pre><code class="language-ini">ADMIN_PASSWORD=改成你的管理员密码      # 首次登录后系统会再要求你改一次
+      SCHOOL_NAME=○○国民中学                # 显示在介面与导出的课表上
+      SECRET_KEY=改成一长串随机字元          # 见下方产生方式,务必更换
       </code></pre>
-      <p><strong>產生隨機 <code>SECRET_KEY</code></strong>(session 簽章金鑰,關係到登入安全,一定要換掉預設值):</p>
+      <p><strong>产生随机 <code>SECRET_KEY</code></strong>(session 签章金钥,关系到登录安全,一定要换掉默认值):</p>
       <pre><code class="language-bash">openssl rand -hex 32        # Linux / macOS / Git Bash
       </code></pre>
-      <p>Windows 沒有內建 <code>openssl</code>(它是隨 Git for Windows 一起裝的),在 PowerShell 改用:</p>
+      <p>Windows 没有内建 <code>openssl</code>(它是随 Git for Windows 一起装的),在 PowerShell 改用:</p>
       <pre><code class="language-powershell">$b = New-Object byte[] 32
       [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
       ($b | ForEach-Object { $_.ToString('x2') }) -join ''
       </code></pre>
-      <p>把印出來的那 64 個字元貼到 <code>SECRET_KEY=</code> 後面即可。</p>
+      <p>把印出来的那 64 个字元贴到 <code>SECRET_KEY=</code> 后面即可。</p>
       <blockquote>
-      <p>沒改 <code>SECRET_KEY</code> 不會讓系統起不來——程式偵測到仍是範例值時會自動換一把隨機金鑰。
-      但那把金鑰只存在記憶體裡,<strong>容器一重啟所有人就被登出</strong>,所以還是設一個固定值為宜。</p>
+      <p>没改 <code>SECRET_KEY</code> 不会让系统起不来——程序侦测到仍是范例值时会自动换一把随机金钥。
+      但那把金钥只存在记忆体里,<strong>容器一重启所有人就被登出</strong>,所以还是设一个固定值为宜。</p>
       </blockquote>
-      <p>其餘設定(資料庫帳密、Redis、時區)維持預設即可。詳細每一項說明見 <code>.env.example</code> 內的註解。</p>
+      <p>其余设置(资料库帐密、Redis、时区)维持默认即可。详细每一项说明见 <code>.env.example</code> 内的注解。</p>
       <blockquote>
-      <p><strong><code>.env</code> 含機密,切勿上傳到 GitHub、雲端硬碟或任何公開處。</strong> 本專案的 <code>.gitignore</code> 已排除它。</p>
+      <p><strong><code>.env</code> 含机密,切勿上传到 GitHub、云端硬碟或任何公开处。</strong> 本专案的 <code>.gitignore</code> 已排除它。</p>
       </blockquote>
       <hr />
-      <h2 id="步驟-3啟動">步驟 3:啟動</h2>
+      <h2 id="步骤-3启动">步骤 3:启动</h2>
       <h3 id="方式-a拉取映像">方式 A(拉取映像)</h3>
-      <pre><code class="language-bash">docker compose pull      # 下載官方映像(首次較久)
-      docker compose up -d     # 背景啟動六個容器
+      <pre><code class="language-bash">docker compose pull      # 下载官方映像(首次较久)
+      docker compose up -d     # 背景启动六个容器
       </code></pre>
-      <h3 id="方式-b從原始碼建置_1">方式 B(從原始碼建置)</h3>
-      <pre><code class="language-bash">docker compose up -d     # 首次會自動建置映像,需數分鐘
+      <h3 id="方式-b从原始码建置_1">方式 B(从原始码建置)</h3>
+      <pre><code class="language-bash">docker compose up -d     # 首次会自动建置映像,需数分钟
       </code></pre>
-      <p>啟動後首次會<strong>自動執行資料庫遷移</strong>(建立所有資料表),你不需要手動做任何 SQL。</p>
+      <p>启动后首次会<strong>自动执行资料库迁移</strong>(建立所有资料表),你不需要手动做任何 SQL。</p>
       <hr />
-      <h2 id="驗證安裝成功">驗證安裝成功</h2>
-      <pre><code class="language-bash">docker compose ps        # 六個容器應皆為 running / healthy
+      <h2 id="验证安装成功">验证安装成功</h2>
+      <pre><code class="language-bash">docker compose ps        # 六个容器应皆为 running / healthy
       curl http://localhost/api/health
-      # 預期回應:{&quot;status&quot;:&quot;ok&quot;}
+      # 预期回应:{&quot;status&quot;:&quot;ok&quot;}
       </code></pre>
-      <p>用瀏覽器開:</p>
+      <p>用浏览器开:</p>
       <ul>
-      <li>本機:<a href="http://localhost">http://localhost</a></li>
-      <li>校內其他電腦:<code>http://&lt;主機的區網IP&gt;</code>(例如 <code>http://192.168.1.50</code>,IP 用 <code>ipconfig</code> / <code>ip a</code> 查)</li>
+      <li>本机:<a href="http://localhost">http://localhost</a></li>
+      <li>校内其他电脑:<code>http://&lt;主机的区网IP&gt;</code>(例如 <code>http://192.168.1.50</code>,IP 用 <code>ipconfig</code> / <code>ip a</code> 查)</li>
       </ul>
-      <p>以 <code>.env</code> 設定的 <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code> 登入,系統會要求你<strong>首次改密碼</strong>,接著進入<strong>設定精靈</strong>,依畫面五步驟建立學期、教師、班級、科目即可開始使用。</p>
-      <h3 id="想先試看看再決定載入示範資料">想先試看看再決定?載入示範資料</h3>
-      <p>還沒建任何學期時,到「系統管理 → 示範資料」按一下,系統會建出一所完整的虛構國中(臺南市市立敦品國中:18 班、48 位教師、384 筆配課),十幾秒就能跑出一張全校課表。適合評估階段先把整套流程走過一遍,不必先手 key 幾百筆資料。</p>
-      <p><strong>只有在系統完全沒有學期時才能載入</strong>,以免蓋掉正式資料。試用完要正式啟用時,建議重新安裝一套乾淨的系統,不要把示範資料與真實資料混在一起。</p>
+      <p>以 <code>.env</code> 设置的 <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code> 登录,系统会要求你<strong>首次改密码</strong>,接著进入<strong>设置精灵</strong>,依界面五步骤建立学期、教师、班级、科目即可开始使用。</p>
+      <h3 id="想先试看看再决定载入示范资料">想先试看看再决定?载入示范资料</h3>
+      <p>还没建任何学期时,到「系统管理 → 示范资料」按一下,系统会建出一所完整的虚构初中(台南市市立敦品初中:18 班、48 位教师、384 笔配课),十几秒就能跑出一张全校课表。适合评估阶段先把整套流程走过一遍,不必先手 key 几百笔资料。</p>
+      <p><strong>只有在系统完全没有学期时才能载入</strong>,以免盖掉正式资料。试用完要正式启用时,建议重新安装一套干净的系统,不要把示范资料与真实资料混在一起。</p>
       <hr />
-      <h2 id="硬體最低需求">硬體最低需求</h2>
+      <h2 id="硬体最低需求">硬体最低需求</h2>
       <div class="tw"><table>
       <thead>
       <tr>
-      <th>項目</th>
+      <th>项目</th>
       <th>最低</th>
-      <th>建議(含自動排課)</th>
+      <th>建议(含自动排课)</th>
       </tr>
       </thead>
       <tbody>
@@ -384,42 +384,42 @@
       <td>4 核</td>
       </tr>
       <tr>
-      <td>記憶體</td>
+      <td>记忆体</td>
       <td>4 GB</td>
       <td>8 GB</td>
       </tr>
       <tr>
       <td>磁碟</td>
       <td>10 GB</td>
-      <td>20 GB(含備份保留 30 份)</td>
+      <td>20 GB(含备份保留 30 份)</td>
       </tr>
       <tr>
-      <td>架構</td>
-      <td>x86-64 或 ARM64(NAS/樹莓派可)</td>
+      <td>架构</td>
+      <td>x86-64 或 ARM64(NAS/树莓派可)</td>
       <td>—</td>
       </tr>
       </tbody>
       </table></div>
-      <p>官方映像同時提供 <code>linux/amd64</code> 與 <code>linux/arm64</code>,Docker 會自動挑選符合你主機的版本。</p>
+      <p>官方映像同时提供 <code>linux/amd64</code> 与 <code>linux/arm64</code>,Docker 会自动挑选符合你主机的版本。</p>
       <hr />
-      <h2 id="埠號被占用怎麼辦">埠號被占用怎麼辦?</h2>
-      <p>預設對外走 80 埠。若該埠已被其他服務使用,改 <code>.env</code>:</p>
+      <h2 id="埠号被占用怎么办">埠号被占用怎么办?</h2>
+      <p>默认对外走 80 埠。若该埠已被其他服务使用,改 <code>.env</code>:</p>
       <pre><code class="language-ini">HTTP_PORT=8080
       </code></pre>
-      <p>重新 <code>docker compose up -d</code>,改用 <code>http://&lt;主機IP&gt;:8080</code> 連線。</p>
-      <p><strong>另外要注意 443 埠</strong>:系統會<strong>無條件占用 443</strong>,即使你沒有啟用 HTTPS。若主機上已有其他服務(例如另一套網站系統)占著 443,啟動時會出現:</p>
+      <p>重新 <code>docker compose up -d</code>,改用 <code>http://&lt;主机IP&gt;:8080</code> 连线。</p>
+      <p><strong>另外要注意 443 埠</strong>:系统会<strong>无条件占用 443</strong>,即使你没有启用 HTTPS。若主机上已有其他服务(例如另一套网站系统)占著 443,启动时会出现:</p>
       <pre><code>Bind for 0.0.0.0:443 failed: port is already allocated
       </code></pre>
-      <p>這個訊息只提 443,很容易誤以為跟自己設的 80 埠有關。解法是在 <code>.env</code> 加一行改掉它:</p>
+      <p>这个讯息只提 443,很容易误以为跟自己设的 80 埠有关。解法是在 <code>.env</code> 加一行改掉它:</p>
       <pre><code class="language-ini">HTTPS_PORT=8443
       </code></pre>
-      <p>不影響內網以 HTTP 使用;日後真要啟用網域 HTTPS 時再調整即可。(一鍵安裝腳本會自動偵測並閃開。)</p>
+      <p>不影响内网以 HTTP 使用;日后真要启用网域 HTTPS 时再调整即可。(一键安装脚本会自动侦测并闪开。)</p>
       <hr />
-      <p>下一步:設定<a href="backup.html">每日自動備份與異地備援</a>;若要讓校外也能連,見<a href="https.html">網域與 HTTPS</a>。遇到問題見 <a href="faq.html">FAQ</a>。</p>
+      <p>下一步:设置<a href="backup.html">每日自动备份与异地备援</a>;若要让校外也能连,见<a href="https.html">网域与 HTTPS</a>。遇到问题见 <a href="faq.html">FAQ</a>。</p>
       <div class="foot">
-        本頁由 <code>docs/deploy/install.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/deploy/install.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -427,7 +427,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

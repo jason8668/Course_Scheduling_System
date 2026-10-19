@@ -1,4 +1,4 @@
-"""學制範本:載入 JSON、展開為節次表(PeriodTable + Period 格狀資料)。"""
+"""学制范本:载入 JSON、展开为节次表(PeriodTable + Period 格状资料)。"""
 
 import json
 from datetime import time
@@ -34,11 +34,11 @@ def _parse_time(value: str | None) -> time | None:
 def build_period_table_from_template(
     template: dict, name: str | None = None, is_default: bool = False
 ) -> PeriodTable:
-    """依範本建立一套節次表(含所有格位),尚未關聯 semester、未 commit。"""
+    """依范本建立一套节次表(含所有格位),尚未关联 semester、未 commit。"""
     pt_data = template["period_table"]
     num_weekdays = pt_data.get("num_weekdays", 5)
 
-    # 需強制為「固定用途/不排課」的格位(如國小週三下午)
+    # 需强制为「固定用途/不排课」的格位(如小学周三下午)
     blocked: set[tuple[int, int]] = set()
     for b in pt_data.get("blocked", []):
         for pno in b["period_no"]:
@@ -75,10 +75,10 @@ def create_semester_from_template(
     start_date=None,
     end_date=None,
 ) -> Semester:
-    """建立學期並依範本帶入預設節次表。呼叫端負責 commit。"""
+    """建立学期并依范本带入默认节次表。呼叫端负责 commit。"""
     template = get_template(template_key)
     if template is None:
-        raise ValueError(f"未知的學制範本:{template_key}")
+        raise ValueError(f"未知的学制范本:{template_key}")
 
     semester = Semester(
         academic_year=academic_year,
@@ -91,7 +91,7 @@ def create_semester_from_template(
     db.add(semester)
     db.flush()
 
-    # 依範本帶入科目清單(名稱),供後續配課使用
+    # 依范本带入科目清单(名称),供后续配课使用
     for name in template.get("subjects", []):
         db.add(Subject(semester_id=semester.id, name=name))
     db.flush()

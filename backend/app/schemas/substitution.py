@@ -1,10 +1,10 @@
-"""調代課處置與代課推薦 schema(M4-2)。"""
+"""调代课处置与代课推荐 schema(M4-2)。"""
 
 from datetime import date, time
 
 from pydantic import BaseModel, Field
 
-# 欄位名 date 會遮蔽同名型別,故以別名標註
+# 栏位名 date 会遮蔽同名型别,故以别名标注
 _Date = date
 
 
@@ -24,25 +24,25 @@ class RecommendationOut(BaseModel):
 
 
 class AssignRequest(BaseModel):
-    """指派處置。type=substitute/swap/merge 需 handler_teacher_id;swap 另需 swap_*。"""
+    """指派处置。type=substitute/swap/merge 需 handler_teacher_id;swap 另需 swap_*。"""
 
     type: str  # substitute / swap / merge / self_study / cancel
     handler_teacher_id: int | None = None
-    counts_toward_hours: bool | None = None  # 空=依處置預設(代課計、其餘不計)
+    counts_toward_hours: bool | None = None  # 空=依处置默认(代课计、其余不计)
     funding_source: str = Field(default="", max_length=32)
-    # 調課:乙的某節課(schedule_entry)與甲補課的日期
+    # 调课:乙的某节课(schedule_entry)与甲补课的日期
     swap_entry_id: int | None = None
     swap_date: date | None = None
-    swap_period_no: int | None = None  # 連堂格位換其中哪一節;空 = 第一節
+    swap_period_no: int | None = None  # 连堂格位换其中哪一节;空 = 第一节
 
 
 class BatchAssignRequest(BaseModel):
-    """整批指派代課:一張假單(或其中一天)還沒處理的節次,全部派給同一位老師。"""
+    """整批指派代课:一张假单(或其中一天)还没处理的节次,全部派给同一位老师。"""
 
     handler_teacher_id: int
     funding_source: str = Field(default="", max_length=32)
     counts_toward_hours: bool | None = None
-    date: _Date | None = None  # 空 = 整張假單
+    date: _Date | None = None  # 空 = 整张假单
 
 
 class BatchSkipOut(BaseModel):
@@ -96,7 +96,7 @@ class SwapPartnerOut(BaseModel):
 
 
 class SwapOptionsOut(BaseModel):
-    """可對調節次:請假那週起數週內,乙能來、甲能補的每一個組合。"""
+    """可对调节次:请假那周起数周内,乙能来、甲能补的每一个组合。"""
 
     affected_period_id: int
     date_from: date
@@ -117,9 +117,9 @@ class SlipCellOut(BaseModel):
     weekday: int
     ordinal: int
     subject_name: str
-    actor: str  # 第三行:調課單寫上課老師;代課單寫「班級[代]」或「老師[代]」
+    actor: str  # 第三行:调课单写上课老师;代课单写「班级[代]」或「老师[代]」
     code: str
-    time_note: str = ""  # 跨節次表的格子:實際上課時間(與格線那一列不同時才有)
+    time_note: str = ""  # 跨节次表的格子:实际上课时间(与格线那一列不同时才有)
 
 
 class SlipWeekOut(BaseModel):
@@ -134,16 +134,16 @@ class SlipOut(BaseModel):
     class_names: str
     date_from: _Date
     date_to: _Date
-    absent_teacher_name: str = ""  # 代課單:請假教師
-    leave_type_name: str = ""      # 代課單:假別
-    funding_label: str = ""        # 代課單:計費方式
+    absent_teacher_name: str = ""  # 代课单:请假教师
+    leave_type_name: str = ""      # 代课单:假别
+    funding_label: str = ""        # 代课单:计费方式
     rows: list[SlipRowOut] = []
     weeks: list[SlipWeekOut] = []
 
 
 class SlipsOut(BaseModel):
-    """通知單:先每位教師一張,再每個班一張。"""
+    """通知单:先每位教师一张,再每个班一张。"""
 
     title: str
-    kind: str = "swap"  # swap / substitute:決定紙本抬頭
+    kind: str = "swap"  # swap / substitute:决定纸本抬头
     slips: list[SlipOut] = []

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="路線圖(2026-09-17 更新) — 排課與調代課系統開發文件">
-<title>路線圖(2026-09-17 更新) · 排課與調代課系統</title>
+<meta name="description" content="路线图(2026-09-17 更新) — 排课与调代课系统开发文件">
+<title>路线图(2026-09-17 更新) · 排课与调代课系统</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛠</text></svg>">
-<!-- 本檔由 scripts/build_docs.py 從 docs/roadmap.md 自動產生,請勿直接編輯。 -->
+<!-- 本档由 scripts/build_docs.py 从 docs/roadmap.md 自动产生,请勿直接编辑。 -->
 <style>
   :root{
     --bg:#faf6f0; --surface:#fffdfa; --surface-2:#f4ece2; --surface-3:#ebe0d3;
@@ -65,7 +65,7 @@
   .side nav a .dev{font-size:.66rem;color:var(--text-faint);font-family:var(--font-mono);
     margin-left:6px;letter-spacing:.04em}
 
-  /* 本頁目錄 */
+  /* 本页目录 */
   .side .toc{margin-top:6px;display:flex;flex-direction:column;gap:0;
     border-left:1px solid var(--border);padding-left:2px}
   .side .toc a{font-size:.82rem;padding:4px 10px;color:var(--text-soft);border-radius:0 6px 6px 0}
@@ -121,7 +121,7 @@
   tbody tr:last-child td{border-bottom:none}
   td code{white-space:nowrap}
 
-  /* tasks.md 的任務卡核取方塊 */
+  /* tasks.md 的任务卡核取方块 */
   .tick{display:inline-block;width:1.15em;margin-right:.35em;font-family:var(--font-mono);font-weight:700}
   .tick.done{color:var(--good)}
   .tick.wip{color:var(--warn)}
@@ -151,259 +151,259 @@
 </style>
 </head>
 <body>
-<button class="navtoggle" id="navToggle" aria-label="開啟目錄">☰ 目錄</button>
+<button class="navtoggle" id="navToggle" aria-label="开启目录">☰ 目录</button>
 <div class="scrim" id="scrim"></div>
 <div class="shell">
   <aside class="side" id="side">
-<a class="brand" href="index.html"><span class="mark">排課與調代課系統</span><span class="sub">文件</span></a>
-<div class="grp">給使用者</div><nav>
-<a href="index.html">教學組長操作手冊</a>
+<a class="brand" href="index.html"><span class="mark">排课与调代课系统</span><span class="sub">文件</span></a>
+<div class="grp">给用户</div><nav>
+<a href="index.html">教学组长操作手册</a>
 </nav>
-<div class="grp">部署與維運手冊</div><nav>
-<a class="doc" href="deploy/README.html">總覽:從哪開始</a>
-<a class="doc" href="deploy/install.html">安裝指南</a>
-<a class="doc" href="deploy/upgrade.html">升級指南</a>
-<a class="doc" href="deploy/backup.html">備份與還原</a>
-<a class="doc" href="deploy/https.html">網域與 HTTPS</a>
-<a class="doc" href="deploy/faq.html">常見問題 FAQ</a>
+<div class="grp">部署与维运手册</div><nav>
+<a class="doc" href="deploy/README.html">总览:从哪开始</a>
+<a class="doc" href="deploy/install.html">安装指南</a>
+<a class="doc" href="deploy/upgrade.html">升级指南</a>
+<a class="doc" href="deploy/backup.html">备份与还原</a>
+<a class="doc" href="deploy/https.html">网域与 HTTPS</a>
+<a class="doc" href="deploy/faq.html">常见问题 FAQ</a>
 </nav>
-<div class="grp">專案技術文件</div><nav>
-<a class="doc" href="architecture.html">架構設計<span class="dev">開發用</span></a>
-<a class="doc here" href="roadmap.html">路線圖<span class="dev">開發用</span></a>
-<a class="doc" href="tasks.html">開發任務卡<span class="dev">開發用</span></a>
+<div class="grp">专案技术文件</div><nav>
+<a class="doc" href="architecture.html">架构设计<span class="dev">开发用</span></a>
+<a class="doc here" href="roadmap.html">路线图<span class="dev">开发用</span></a>
+<a class="doc" href="tasks.html">开发任务卡<span class="dev">开发用</span></a>
 </nav>
-<div class="grp">本頁目錄</div><div class="toc"><a class="lv2" href="#已出貨">已出貨</a><a class="lv2" href="#工程改善原v13-範圍v130-改做單雙週後順延內容與順序不變">工程改善(原「v1.3 範圍」;v1.3.0 改做單雙週後順延,內容與順序不變)</a><a class="lv3" href="#1-api-映像拆掉-ortools-m">1. api 映像拆掉 ortools —— M</a><a class="lv3" href="#2-前端改按需匯入-naive-ui-m">2. 前端改按需匯入 Naive UI —— M</a><a class="lv3" href="#3-科目匯入支援主科欄-s">3. 科目匯入支援「主科」欄 —— S</a><a class="lv3" href="#4-配課-api-直接擋群組節數不一致-s">4. 配課 API 直接擋群組節數不一致 —— S</a><a class="lv3" href="#5-還原上傳改串流落地-s">5. 還原上傳改串流落地 —— S</a><a class="lv3" href="#6-cors-設定文件化與格式驗證-s">6. CORS 設定文件化與格式驗證 —— S</a><a class="lv3" href="#7-工程衛生-s">7. 工程衛生 —— S</a><a class="lv2" href="#等使用學校回饋再決定">等使用學校回饋再決定</a><a class="lv2" href="#工程改善之後明確延後不是忘記">工程改善之後(明確延後,不是忘記)</a><a class="lv2" href="#單雙週的後續v130-刻意不做">單雙週的後續(v1.3.0 刻意不做)</a><a class="lv2" href="#v2需要外部條件">v2(需要外部條件)</a><a class="lv2" href="#刻意不做除非出現真實個案">刻意不做(除非出現真實個案)</a><a class="lv2" href="#工作流程每項照做">工作流程(每項照做)</a></div>
-    <button class="theme-btn" id="themeBtn">◐ 切換深色 / 淺色</button>
+<div class="grp">本页目录</div><div class="toc"><a class="lv2" href="#已出货">已出货</a><a class="lv2" href="#工程改善原v13-范围v130-改做单双周后顺延内容与顺序不变">工程改善(原「v1.3 范围」;v1.3.0 改做单双周后顺延,内容与顺序不变)</a><a class="lv3" href="#1-api-映像拆掉-ortools-m">1. api 映像拆掉 ortools —— M</a><a class="lv3" href="#2-前端改按需导入-naive-ui-m">2. 前端改按需导入 Naive UI —— M</a><a class="lv3" href="#3-科目导入支援主科栏-s">3. 科目导入支援「主科」栏 —— S</a><a class="lv3" href="#4-配课-api-直接挡群组节数不一致-s">4. 配课 API 直接挡群组节数不一致 —— S</a><a class="lv3" href="#5-还原上传改串流落地-s">5. 还原上传改串流落地 —— S</a><a class="lv3" href="#6-cors-设置文件化与格式验证-s">6. CORS 设置文件化与格式验证 —— S</a><a class="lv3" href="#7-工程卫生-s">7. 工程卫生 —— S</a><a class="lv2" href="#等使用学校回馈再决定">等使用学校回馈再决定</a><a class="lv2" href="#工程改善之后明确延后不是忘记">工程改善之后(明确延后,不是忘记)</a><a class="lv2" href="#单双周的后续v130-刻意不做">单双周的后续(v1.3.0 刻意不做)</a><a class="lv2" href="#v2需要外部条件">v2(需要外部条件)</a><a class="lv2" href="#刻意不做除非出现真实个案">刻意不做(除非出现真实个案)</a><a class="lv2" href="#工作流程每项照做">工作流程(每项照做)</a></div>
+    <button class="theme-btn" id="themeBtn">◐ 切换深色 / 浅色</button>
   </aside>
   <main>
     <div class="wrap">
       <header class="head">
         <div class="eyebrow">DEVELOPER DOCS</div>
-        <h1>路線圖(2026-09-17 更新)</h1>
-        <div class="src">原始檔 <code>docs/roadmap.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/roadmap.md">在 GitHub 上檢視</a></div>
+        <h1>路线图(2026-09-17 更新)</h1>
+        <div class="src">原始档 <code>docs/roadmap.md</code> · <a href="https://github.com/begin0808/Course_Scheduling_System/blob/main/docs/roadmap.md">在 GitHub 上查看</a></div>
       </header>
-      <p>本文件是接手者(人或模型)的邊界:<strong>已完成什麼、下一步做什麼、刻意不做什麼</strong>。
-      每一項的「現況」都在 2026-09-17 回頭查過程式碼,不是照抄舊 Backlog。</p>
-      <p>上一版路線圖(v1.1 範圍,2026-07-13 定案)已全部出貨,原文見 git 歷史。</p>
-      <p><strong>收錄標準不變</strong>:真實學校在一個學期內會實際踩到,或開源後會傷到採用信任。
-      <strong>新增的判斷依據</strong>:已有學校實際上線使用(國中,每週都有研習調課),他們的回饋優先於推測性的需求。</p>
+      <p>本文件是接手者(人或模型)的边界:<strong>已完成什么、下一步做什么、刻意不做什么</strong>。
+      每一项的「现况」都在 2026-09-17 回头查过程序码,不是照抄旧 Backlog。</p>
+      <p>上一版路线图(v1.1 范围,2026-07-13 定案)已全部出货,原文见 git 历史。</p>
+      <p><strong>收录标准不变</strong>:真实学校在一个学期内会实际踩到,或开源后会伤到采用信任。
+      <strong>新增的判断依据</strong>:已有学校实际上线使用(初中,每周都有研习调课),他们的回馈优先于推测性的需求。</p>
       <hr />
-      <h2 id="已出貨">已出貨</h2>
+      <h2 id="已出货">已出货</h2>
       <div class="tw"><table>
       <thead>
       <tr>
       <th>版本</th>
       <th>日期</th>
-      <th>重點</th>
+      <th>重点</th>
       </tr>
       </thead>
       <tbody>
       <tr>
       <td>v1.0.0</td>
       <td>2026-07-12</td>
-      <td>首次公開發行:基礎資料、配課、手動/自動排課、發布、調代課、匯出、備份</td>
+      <td>首次公开发行:基础资料、配课、手动/自动排课、发布、调代课、导出、备份</td>
       </tr>
       <tr>
       <td>v1.1.0–v1.1.2</td>
       <td>2026-07-14</td>
-      <td>背景任務拆兩條佇列、部分排課三合一、學期複製補全、小型加固批次、首次登入改密雙送修正</td>
+      <td>背景任务拆两条伫列、部分排课三合一、学期复制补全、小型加固批次、首次登录改密双送修正</td>
       </tr>
       <tr>
       <td>v1.2.0</td>
       <td>2026-08-02</td>
-      <td>一鍵示範資料、超鐘點上限、校名可在系統內設定</td>
+      <td>一键示范资料、超课时上限、校名可在系统内设置</td>
       </tr>
       <tr>
       <td>v1.2.1</td>
       <td>2026-09-17</td>
-      <td><strong>調課操作畫面</strong>(使用學校回饋:只能代課、找不到調課):可對調節次清單、範圍 1–4 週、連堂單節對調、補課日上看板</td>
+      <td><strong>调课操作界面</strong>(使用学校回馈:只能代课、找不到调课):可对调节次清单、范围 1–4 周、连堂单节对调、补课日上看板</td>
       </tr>
       <tr>
       <td>v1.2.2</td>
       <td>2026-09-17</td>
-      <td><strong>教師/班級調課通知單列印</strong>(照使用學校紙本格式)</td>
+      <td><strong>教师/班级调课通知单打印</strong>(照使用学校纸本格式)</td>
       </tr>
       <tr>
       <td>v1.2.3</td>
       <td>2026-09-17</td>
-      <td><strong>系統版本顯示與新版本提醒</strong>;調課單斜線列印修正</td>
+      <td><strong>系统版本显示与新版本提醒</strong>;调课单斜线打印修正</td>
       </tr>
       <tr>
       <td>v1.2.4</td>
       <td>2026-09-17</td>
-      <td>調代課處理寫出處置方式(代課/調課、哪天補課);手冊補調課通知單截圖</td>
+      <td>调代课处理写出处置方式(代课/调课、哪天补课);手册补调课通知单截图</td>
       </tr>
       <tr>
       <td>v1.2.5</td>
       <td>2026-09-26</td>
-      <td><strong>教師/班級代課通知單列印</strong>(照使用學校紙本格式);代課可選計費方式</td>
+      <td><strong>教师/班级代课通知单打印</strong>(照使用学校纸本格式);代课可选计费方式</td>
       </tr>
       <tr>
       <td>v1.2.6</td>
       <td>2026-10-01</td>
-      <td>外部使用者回報修正:教師帳號首次登入卡死、事後補開教師帳號與重設密碼、未排課務清單過長時拖不動</td>
+      <td>外部用户回报修正:教师帐号首次登录卡死、事后补开教师帐号与重设密码、未排课务清单过长时拖不动</td>
       </tr>
       <tr>
       <td>v1.2.7</td>
       <td>2026-10-02</td>
-      <td>學期起訖日期可在畫面上填寫與修改(先前無處可填,請假一律被擋)</td>
+      <td>学期起讫日期可在界面上填写与修改(先前无处可填,请假一律被挡)</td>
       </tr>
       <tr>
       <td>v1.2.8</td>
       <td>2026-10-02</td>
-      <td>匯入教師可批次更新既有教師;可停用/啟用教師登入帳號,刪除教師前說明後果</td>
+      <td>导入教师可批次更新既有教师;可停用/启用教师登录帐号,删除教师前说明后果</td>
       </tr>
       <tr>
       <td>v1.2.9</td>
       <td>2026-10-02</td>
-      <td>全校教師課表的總表與批次匯出(先前只有班級有)</td>
+      <td>全校教师课表的总表与批次导出(先前只有班级有)</td>
       </tr>
       <tr>
       <td>v1.2.10</td>
       <td>2026-10-04</td>
-      <td>國中小/完全中學:跨節次表教師的課表與通知單標出實際上課時間</td>
+      <td>初中小/完全中学:跨节次表教师的课表与通知单标出实际上课时间</td>
       </tr>
       <tr>
       <td>v1.2.11</td>
       <td>2026-10-04</td>
-      <td>完全中學:兩部節數不同時(國中七節、高中八節),跨部老師的課表與通知單補上缺的那一列</td>
+      <td>完全中学:两部节数不同时(初中七节、高中八节),跨部老师的课表与通知单补上缺的那一列</td>
       </tr>
       <tr>
       <td>v1.2.12</td>
       <td>2026-10-06</td>
-      <td><strong>巡堂表列印</strong>(使用者建議):依當天調代課結果產生巡堂紀錄;社團等大型跑班群組另出分組巡堂單</td>
+      <td><strong>巡堂表打印</strong>(用户建议):依当天调代课结果产生巡堂纪录;社团等大型跑班群组另出分组巡堂单</td>
       </tr>
       <tr>
       <td>v1.2.13</td>
       <td>2026-10-06</td>
-      <td>分組巡堂單的排列順序固定為配課建立的順序</td>
+      <td>分组巡堂单的排列顺序固定为配课建立的顺序</td>
       </tr>
       <tr>
       <td>v1.2.14</td>
       <td>2026-10-06</td>
-      <td>巡堂表可匯出 Excel(使用者建議);修正「學期與節次表」的視窗關不掉</td>
+      <td>巡堂表可导出 Excel(用户建议);修正「学期与节次表」的视窗关不掉</td>
       </tr>
       <tr>
       <td>v1.2.15</td>
       <td>2026-10-07</td>
-      <td>同一個跑班群組裡同一位老師重複配課時,排課前檢查與自動排課會擋下(先前會排出撞課的課表)</td>
+      <td>同一个跑班群组里同一位老师重复配课时,排课前检查与自动排课会挡下(先前会排出撞课的课表)</td>
       </tr>
       <tr>
       <td>v1.2.16</td>
       <td>2026-10-07</td>
-      <td>跑班群組同一格的多筆同科目配課,手動排課的每日上限只算一節(與自動排課一致)</td>
+      <td>跑班群组同一格的多笔同科目配课,手动排课的每日上限只算一节(与自动排课一致)</td>
       </tr>
       <tr>
       <td>v1.2.17</td>
       <td>2026-10-08</td>
-      <td>修正登入按一次送出兩筆請求,輸錯密碼約第 3 次就被鎖定(使用者回報)</td>
+      <td>修正登录按一次送出两笔请求,输错密码约第 3 次就被锁定(用户回报)</td>
       </tr>
       <tr>
       <td>v1.2.18</td>
       <td>2026-10-08</td>
-      <td><strong>檢查課表</strong>(使用者建議):發布前列出衝堂等衝突;修改教師不可排時段時提示已排的課</td>
+      <td><strong>检查课表</strong>(用户建议):发布前列出冲堂等冲突;修改教师不可排时段时提示已排的课</td>
       </tr>
       <tr>
       <td>v1.2.19</td>
       <td>2026-10-09</td>
-      <td><strong>日薪代課</strong>與<strong>整批指派代課</strong>(使用者建議):月結統計分列鐘點與日薪;整張假單一次指派</td>
+      <td><strong>日薪代课</strong>与<strong>整批指派代课</strong>(用户建议):月结统计分列课时与日薪;整张假单一次指派</td>
       </tr>
       <tr>
       <td>v1.3.0</td>
       <td>2026-10-18</td>
-      <td><strong>單雙週課程</strong>(兩所學校提出):同一節單週、雙週輪流上不同的課;首次資料表結構變更</td>
+      <td><strong>单双周课程</strong>(两所学校提出):同一节单周、双周轮流上不同的课;首次资料表结构变更</td>
       </tr>
       </tbody>
       </table></div>
-      <p>各版細節見 <a href="../CHANGELOG.html">CHANGELOG.md</a>。</p>
+      <p>各版细节见 <a href="../CHANGELOG.html">CHANGELOG.md</a>。</p>
       <hr />
-      <h2 id="工程改善原v13-範圍v130-改做單雙週後順延內容與順序不變">工程改善(原「v1.3 範圍」;v1.3.0 改做單雙週後順延,內容與順序不變)</h2>
-      <p>排序原則:<strong>學校裝得快、用得順的先做</strong>,純工程衛生的後做。全部不改資料表結構。</p>
-      <p><strong>開工時機</strong>:由專案負責人決定;先讓使用學校實際用 v1.3.0 幾天,沒有新的問題回報再動工。</p>
+      <h2 id="工程改善原v13-范围v130-改做单双周后顺延内容与顺序不变">工程改善(原「v1.3 范围」;v1.3.0 改做单双周后顺延,内容与顺序不变)</h2>
+      <p>排序原则:<strong>学校装得快、用得顺的先做</strong>,纯工程卫生的后做。全部不改资料表结构。</p>
+      <p><strong>开工时机</strong>:由专案负责人决定;先让使用学校实际用 v1.3.0 几天,没有新的问题回报再动工。</p>
       <h3 id="1-api-映像拆掉-ortools-m">1. api 映像拆掉 ortools —— M</h3>
       <ul>
-      <li><strong>現況</strong>:<code>ortools</code> 在 <code>pyproject.toml</code> 主依賴,api 映像 <strong>674MB</strong>;排課求解只在 worker 跑,api 容器用不到。</li>
-      <li><strong>影響誰</strong>:第一次安裝與每次升級的學校。校內網路或 NAS 拉映像慢,是「升級很麻煩」的主因之一。</li>
-      <li><strong>做法</strong>:移到 <code>[solver]</code> 之類的 extra 由 worker 安裝;確認 api 端沒有任何路徑匯入 <code>ortools</code>
-        (pre-flight 檢查若有用到要拆開)。預期 api 映像約 200MB。</li>
-      <li><strong>驗證</strong>:api 容器內 <code>python -c "import ortools"</code> 應失敗、全部 API 與 e2e 照常;worker 自動排課照常。</li>
+      <li><strong>现况</strong>:<code>ortools</code> 在 <code>pyproject.toml</code> 主依赖,api 映像 <strong>674MB</strong>;排课求解只在 worker 跑,api 容器用不到。</li>
+      <li><strong>影响谁</strong>:第一次安装与每次升级的学校。校内网路或 NAS 拉映像慢,是「升级很麻烦」的主因之一。</li>
+      <li><strong>做法</strong>:移到 <code>[solver]</code> 之类的 extra 由 worker 安装;确认 api 端没有任何路径导入 <code>ortools</code>
+        (pre-flight 检查若有用到要拆开)。预期 api 映像约 200MB。</li>
+      <li><strong>验证</strong>:api 容器内 <code>python -c "import ortools"</code> 应失败、全部 API 与 e2e 照常;worker 自动排课照常。</li>
       </ul>
-      <h3 id="2-前端改按需匯入-naive-ui-m">2. 前端改按需匯入 Naive UI —— M</h3>
+      <h3 id="2-前端改按需导入-naive-ui-m">2. 前端改按需导入 Naive UI —— M</h3>
       <ul>
-      <li><strong>現況</strong>:<code>main.ts</code> 以 <code>app.use(naive)</code> 全量註冊,主程式 <strong>1.4MB</strong>。校內網冷載約 1 秒,可接受但偏大。</li>
-      <li><strong>做法</strong>:移除全量註冊,改各頁自行匯入(多數頁面已經是具名匯入);檢查是否有模板直接用未匯入的元件。</li>
-      <li><strong>驗證</strong>:建置後主程式大小、冷載時間(<code>perf-page-load.spec.ts</code>);<strong>e2e 全跑</strong>——漏匯入的元件只會在執行時才壞。</li>
+      <li><strong>现况</strong>:<code>main.ts</code> 以 <code>app.use(naive)</code> 全量注册,主程序 <strong>1.4MB</strong>。校内网冷载约 1 秒,可接受但偏大。</li>
+      <li><strong>做法</strong>:移除全量注册,改各页自行导入(多数页面已经是具名导入);检查是否有模板直接用未导入的元件。</li>
+      <li><strong>验证</strong>:建置后主程序大小、冷载时间(<code>perf-page-load.spec.ts</code>);<strong>e2e 全跑</strong>——漏导入的元件只会在执行时才坏。</li>
       </ul>
-      <h3 id="3-科目匯入支援主科欄-s">3. 科目匯入支援「主科」欄 —— S</h3>
+      <h3 id="3-科目导入支援主科栏-s">3. 科目导入支援「主科」栏 —— S</h3>
       <ul>
-      <li><strong>現況</strong>:表單可勾「主科」(<code>is_major</code>,影響自動排課把主科排在上午),但 Excel 匯入沒有這一欄,
-        匯入後要一科科手動勾。</li>
-      <li><strong>做法</strong>:匯入範本加「主科」欄(是/否),匯入時寫入;舊範本沒有這欄照樣可匯入。</li>
+      <li><strong>现况</strong>:表单可勾「主科」(<code>is_major</code>,影响自动排课把主科排在上午),但 Excel 导入没有这一栏,
+        导入后要一科科手动勾。</li>
+      <li><strong>做法</strong>:导入范本加「主科」栏(是/否),导入时写入;旧范本没有这栏照样可导入。</li>
       </ul>
-      <h3 id="4-配課-api-直接擋群組節數不一致-s">4. 配課 API 直接擋群組節數不一致 —— S</h3>
+      <h3 id="4-配课-api-直接挡群组节数不一致-s">4. 配课 API 直接挡群组节数不一致 —— S</h3>
       <ul>
-      <li><strong>現況</strong>:跑班群組成員節數不一致時,要等到自動排課前的 pre-flight 才擋(<code>group_shape_mismatch</code>)。</li>
-      <li><strong>做法</strong>:建立/修改配課當下就回 409 並說明是哪幾門課不一致,錯誤提早出現在組長正在填的地方。</li>
+      <li><strong>现况</strong>:跑班群组成员节数不一致时,要等到自动排课前的 pre-flight 才挡(<code>group_shape_mismatch</code>)。</li>
+      <li><strong>做法</strong>:建立/修改配课当下就回 409 并说明是哪几门课不一致,错误提早出现在组长正在填的地方。</li>
       </ul>
-      <h3 id="5-還原上傳改串流落地-s">5. 還原上傳改串流落地 —— S</h3>
+      <h3 id="5-还原上传改串流落地-s">5. 还原上传改串流落地 —— S</h3>
       <ul>
-      <li><strong>現況</strong>:<code>restore-upload</code> 以 <code>await file.read()</code> 整包讀進記憶體;Caddy 200MB 上限與「超大資料庫走 volume 複製」
-        文件已緩解,但 4GB 主機上仍有風險。</li>
-      <li><strong>做法</strong>:分塊寫入暫存檔再驗魔數、交給 worker 還原。</li>
+      <li><strong>现况</strong>:<code>restore-upload</code> 以 <code>await file.read()</code> 整包读进记忆体;Caddy 200MB 上限与「超大资料库走 volume 复制」
+        文件已缓解,但 4GB 主机上仍有风险。</li>
+      <li><strong>做法</strong>:分块写入暂存档再验魔数、交给 worker 还原。</li>
       </ul>
-      <h3 id="6-cors-設定文件化與格式驗證-s">6. CORS 設定文件化與格式驗證 —— S</h3>
+      <h3 id="6-cors-设置文件化与格式验证-s">6. CORS 设置文件化与格式验证 —— S</h3>
       <ul>
-      <li><strong>現況</strong>:<code>cors_origins</code> 本來就能用環境變數(JSON 格式)覆寫,但沒有文件、格式錯了也不會提示。
-        同源部署(預設)下無實害。</li>
-      <li><strong>做法</strong>:部署文件補一段;設定格式錯誤時啟動即明確報錯。</li>
+      <li><strong>现况</strong>:<code>cors_origins</code> 本来就能用环境变数(JSON 格式)覆写,但没有文件、格式错了也不会提示。
+        同源部署(默认)下无实害。</li>
+      <li><strong>做法</strong>:部署文件补一段;设置格式错误时启动即明确报错。</li>
       </ul>
-      <h3 id="7-工程衛生-s">7. 工程衛生 —— S</h3>
+      <h3 id="7-工程卫生-s">7. 工程卫生 —— S</h3>
       <ul>
-      <li><code>tests/solver/test_purity.py</code> 目前只掃絕對匯入(<code>level == 0</code>),補相對匯入。</li>
-      <li><code>slots_overlap</code>、<code>course_key</code> 補邊界單元測試。</li>
+      <li><code>tests/solver/test_purity.py</code> 目前只扫绝对导入(<code>level == 0</code>),补相对导入。</li>
+      <li><code>slots_overlap</code>、<code>course_key</code> 补边界单元测试。</li>
       </ul>
       <hr />
-      <h2 id="等使用學校回饋再決定">等使用學校回饋再決定</h2>
+      <h2 id="等使用学校回馈再决定">等使用学校回馈再决定</h2>
       <ul>
-      <li><strong>教師端「我的課表」顯示調課</strong>:調課成立後,教師自己的課表不會反映這次變動(看板、通知、調課單都有)。
-        使用學校目前以紙本調課單通知,沒有提出需求。</li>
-      <li><strong>調代課處理頁的清單很長時</strong>:研習多的週,一張假單可能十幾節。目前逐節處理;若回饋操作太多,
-        再考慮「整張假單一次調課」。</li>
+      <li><strong>教师端「我的课表」显示调课</strong>:调课成立后,教师自己的课表不会反映这次变动(看板、通知、调课单都有)。
+        使用学校目前以纸本调课单通知,没有提出需求。</li>
+      <li><strong>调代课处理页的清单很长时</strong>:研习多的周,一张假单可能十几节。目前逐节处理;若回馈操作太多,
+        再考虑「整张假单一次调课」。</li>
       </ul>
-      <h2 id="工程改善之後明確延後不是忘記">工程改善之後(明確延後,不是忘記)</h2>
+      <h2 id="工程改善之后明确延后不是忘记">工程改善之后(明确延后,不是忘记)</h2>
       <ul>
-      <li><strong>完整清單分頁</strong>(UI + offset):調代課紀錄、請假清單目前取最新 1000 筆並明講被截斷;整年資料變慢時再做。</li>
-      <li><strong>還原溯源 <code>restore.log</code> + stale 警告持久徽章</strong>:presafe 檔名時戳暫可佐證。</li>
-      <li><strong>求解前 hard-only 探測 + warm start;部分排課獨立短時限</strong>:解品質/速度優化,獨立可做。</li>
+      <li><strong>完整清单分页</strong>(UI + offset):调代课纪录、请假清单目前取最新 1000 笔并明讲被截断;整年资料变慢时再做。</li>
+      <li><strong>还原溯源 <code>restore.log</code> + stale 警告持久徽章</strong>:presafe 档名时戳暂可佐证。</li>
+      <li><strong>求解前 hard-only 探测 + warm start;部分排课独立短时限</strong>:解质量/速度优化,独立可做。</li>
       </ul>
-      <h2 id="單雙週的後續v130-刻意不做">單雙週的後續(v1.3.0 刻意不做)</h2>
+      <h2 id="单双周的后续v130-刻意不做">单双周的后续(v1.3.0 刻意不做)</h2>
       <ul>
-      <li><strong>跑班群組＋單雙週</strong>(例如單週社團、雙週班會):兩種「綁在一起排」的機制疊加,複雜度與風險最高;
-        目前沒有學校提出,等有需求再評估。</li>
-      <li><strong>Excel 匯入配課支援單雙週</strong>:需要新的範本欄位(單週/雙週、配對),且要與舊範本相容;
-        單雙週課每校通常只有幾組,先在畫面上建。可排 v1.3.x。</li>
+      <li><strong>跑班群组＋单双周</strong>(例如单周社团、双周班会):两种「绑在一起排」的机制叠加,复杂度与风险最高;
+        目前没有学校提出,等有需求再评估。</li>
+      <li><strong>Excel 导入配课支援单双周</strong>:需要新的范本栏位(单周/双周、配对),且要与旧范本相容;
+        单双周课每校通常只有几组,先在界面上建。可排 v1.3.x。</li>
       </ul>
-      <h2 id="v2需要外部條件">v2(需要外部條件)</h2>
+      <h2 id="v2需要外部条件">v2(需要外部条件)</h2>
       <ul>
-      <li><strong>LINE 通知 adapter</strong>:走 LINE OA Messaging API,各校自申請 channel token + 綁定碼流程。
-        等有試用學校提出需求再做——沒有真實 OA 可測之前,寫了也驗不了。</li>
-      <li><strong>軟約束權重 UI</strong>:<code>GET/PUT /api/solver/config</code> 已在,滑桿是給進階使用者的;等有學校真的想調權重再開工。</li>
+      <li><strong>LINE 通知 adapter</strong>:走 LINE OA Messaging API,各校自申请 channel token + 绑定码流程。
+        等有试用学校提出需求再做——没有真实 OA 可测之前,写了也验不了。</li>
+      <li><strong>软约束权重 UI</strong>:<code>GET/PUT /api/solver/config</code> 已在,滑杆是给进阶用户的;等有学校真的想调权重再开工。</li>
       </ul>
-      <h2 id="刻意不做除非出現真實個案">刻意不做(除非出現真實個案)</h2>
+      <h2 id="刻意不做除非出现真实个案">刻意不做(除非出现真实个案)</h2>
       <ul>
-      <li><strong>「一門課逐節換教室」</strong>:現行一門課整學期一間教室,符合台灣中學實務;改成逐節換教室是為了不存在的需求付模型複雜度。</li>
-      <li><strong><code>teacher_time_rule</code> 牆鐘化(加節次表維度)</strong>:v1 已定案「以該配課班級的節次表解讀」,單節次表學校(絕大多數)無此問題。</li>
-      <li><strong>沒有請假的教師互調</strong>:使用學校的調課幾乎都由研習引起,研習登記為公假/進修後走既有調課流程即可(2026-09-17 確認)。</li>
-      <li><strong>自動升級</strong>:新版本提醒只提醒;升級必須由學校先備份、自己決定。</li>
+      <li><strong>「一门课逐节换教室」</strong>:现行一门课整学期一间教室,符合台湾中学实务;改成逐节换教室是为了不存在的需求付模型复杂度。</li>
+      <li><strong><code>teacher_time_rule</code> 墙钟化(加节次表维度)</strong>:v1 已定案「以该配课班级的节次表解读」,单节次表学校(绝大多数)无此问题。</li>
+      <li><strong>没有请假的教师互调</strong>:使用学校的调课几乎都由研习引起,研习登记为公假/进修后走既有调课流程即可(2026-09-17 确认)。</li>
+      <li><strong>自动升级</strong>:新版本提醒只提醒;升级必须由学校先备份、自己决定。</li>
       </ul>
       <hr />
-      <h2 id="工作流程每項照做">工作流程(每項照做)</h2>
-      <p>實作 → 全品質門檻(ruff/mypy/pytest;eslint/vue-tsc/build/vitest)→ Docker 重建 → E2E(CI 也會擋)→
-      真 PostgreSQL 實測、畫面截圖目視 → 開 PR(CI 全綠)→ 維護者合併 → 依 <a href="../CONTRIBUTING.html">CONTRIBUTING.md</a> 發布。</p>
+      <h2 id="工作流程每项照做">工作流程(每项照做)</h2>
+      <p>实作 → 全质量门槛(ruff/mypy/pytest;eslint/vue-tsc/build/vitest)→ Docker 重建 → E2E(CI 也会挡)→
+      真 PostgreSQL 实测、界面截图目视 → 开 PR(CI 全绿)→ 维护者合并 → 依 <a href="../CONTRIBUTING.html">CONTRIBUTING.md</a> 发布。</p>
       <div class="foot">
-        本頁由 <code>docs/roadmap.md</code> 自動產生(<code>scripts/build_docs.py</code>)。
-        要修改內容請改 Markdown 原始檔,不要直接編輯這份 HTML。<br>
-        排課與調代課系統 · MIT 授權 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
+        本页由 <code>docs/roadmap.md</code> 自动产生(<code>scripts/build_docs.py</code>)。
+        要修改内容请改 Markdown 原始档,不要直接编辑这份 HTML。<br>
+        排课与调代课系统 · MIT 授权 · <a href="https://github.com/begin0808/Course_Scheduling_System">GitHub</a>
       </div>
     </div>
   </main>
@@ -411,7 +411,7 @@
 <script>
   (function(){
     var root=document.documentElement, btn=document.getElementById('themeBtn');
-    // 跨頁記住深/淺色:讀者在部署手冊裡是會一頁一頁翻的
+    // 跨页记住深/浅色:读者在部署手册里是会一页一页翻的
     try{var s=localStorage.getItem('csDocsTheme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
     function cur(){var d=root.getAttribute('data-theme');if(d)return d;
       return matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}

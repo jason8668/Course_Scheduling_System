@@ -1,17 +1,17 @@
-"""課表檢查:對一份既有課表重跑硬約束(v1.2.18,使用者回報 #40、#41)。
+"""课表检查:对一份既有课表重跑硬约束(v1.2.18,用户回报 #40、#41)。
 
-手動排入每一步都有 `conflict_checker` 把關、自動排課的結果也合規,所以正常操作排出來的
-課表不會有衝堂。會出問題的是「課表排好之後,規則或資料又改了」——事後把某節設成教師
-不可排、改了配課的老師或場地、調低每日上限——這時課表與規則已經矛盾,畫面上卻沒有任何
-地方看得出來,發布也只檢查有沒有排完。
+手动排入每一步都有 `conflict_checker` 把关、自动排课的结果也合规,所以正常操作排出来的
+课表不会有冲堂。会出问题的是「课表排好之后,规则或资料又改了」——事后把某节设成教师
+不可排、改了配课的老师或场地、调低每日上限——这时课表与规则已经矛盾,界面上却没有任何
+地方看得出来,发布也只检查有没有排完。
 
-這裡直接沿用求解器的 `validator`(與自動排課同一套定義),再做三件事讓它適合給人看:
+这里直接沿用求解器的 `validator`(与自动排课同一套定义),再做三件事让它适合给人看:
 
-- **「還沒排完」不算違規**:那是 `timetable_publish.completeness` 的事,發布時本來就會列。
-  節數已經排滿、但連堂的切法與設定不同,才會留下來。
-- **不檢查鎖定(H9)**:那是「自動排課不可移動鎖定格位」,對一份靜態的課表沒有意義。
-- **「需要場地卻未指派」不算違規**:手動排課不會替「需要某類型場地」的課挑教室,
-  那只是還沒指定,不是衝突。排進了類型不符的教室才列出。
+- **「还没排完」不算违规**:那是 `timetable_publish.completeness` 的事,发布时本来就会列。
+  节数已经排满、但连堂的切法与设置不同,才会留下来。
+- **不检查锁定(H9)**:那是「自动排课不可移动锁定格位」,对一份静态的课表没有意义。
+- **「需要场地却未指派」不算违规**:手动排课不会替「需要某类型场地」的课挑教室,
+  那只是还没指定,不是冲突。排进了类型不符的教室才列出。
 """
 
 from dataclasses import dataclass
@@ -26,19 +26,19 @@ from app.services.solver_data import load_config, load_problem
 from app.solver.problem import AssignmentSpec, Problem, SolvedEntry
 from app.solver.validator import Violation, validate
 
-# 給畫面分組用的標題;順序即顯示順序
+# 给界面分组用的标题;顺序即显示顺序
 CODE_LABELS: dict[str, str] = {
-    "H1": "班級衝堂",
-    "H2": "教師衝堂",
-    "H3": "場地衝堂",
-    "H4": "教師不可排時段",
-    "H5": "排在非上課節次",
-    "H6": "連堂跨越午休",
-    "H7": "跑班群組未同時段",
-    "H8": "節數或連堂與配課不符",
-    "H10": "超過每日上限",
-    "room_type": "場地類型不符",
-    "input": "資料不一致",
+    "H1": "班级冲堂",
+    "H2": "教师冲堂",
+    "H3": "场地冲堂",
+    "H4": "教师不可排时段",
+    "H5": "排在非上课节次",
+    "H6": "连堂跨越午休",
+    "H7": "跑班群组未同时段",
+    "H8": "节数或连堂与配课不符",
+    "H10": "超过每日上限",
+    "room_type": "场地类型不符",
+    "input": "资料不一致",
 }
 
 _WEEKDAYS = "一二三四五六日"
@@ -55,28 +55,28 @@ def _keep(v: Violation) -> bool:
     if v.code == "H9":
         return False
     if v.code == "H8":
-        # 排入節數少於應排 = 還沒排完,交給完整性檢查;排滿或排超過才是這裡要講的
+        # 排入节数少于应排 = 还没排完,交给完整性检查;排满或排超过才是这里要讲的
         placed = sum(v.detail.get("placed", []))
         expected = sum(v.detail.get("expected", []))
         return placed >= expected
     if v.code == "room_type":
-        return "room_id" in v.detail  # 沒指派教室不算;排錯類型才算
+        return "room_id" in v.detail  # 没指派教室不算;排错类型才算
     return True
 
 
 def _shape(lengths: list[int]) -> str:
-    """[3, 3, 1] → 「3 連堂 2 次、單節 1 節」。"""
+    """[3, 3, 1] → 「3 连堂 2 次、单节 1 节」。"""
     parts = []
     for size in sorted({n for n in lengths if n > 1}, reverse=True):
-        parts.append(f"{size} 連堂 {lengths.count(size)} 次")
+        parts.append(f"{size} 连堂 {lengths.count(size)} 次")
     singles = lengths.count(1)
     if singles:
-        parts.append(f"單節 {singles} 節")
-    return "、".join(parts) or "無"
+        parts.append(f"单节 {singles} 节")
+    return "、".join(parts) or "无"
 
 
 def _message(problem: Problem, spec: AssignmentSpec | None, v: Violation) -> str:
-    """validator 的訊息是寫給開發者看的(只有科目、節長用串列);這裡補上班級、改成人話。"""
+    """validator 的讯息是写给开发者看的(只有科目、节长用串列);这里补上班级、改成人话。"""
     if spec is None:
         return v.message
     classes = "、".join(c.name for c in problem.classes_of(spec))
@@ -84,14 +84,14 @@ def _message(problem: Problem, spec: AssignmentSpec | None, v: Violation) -> str
     if v.code == "H8":
         placed, expected = v.detail.get("placed", []), v.detail.get("expected", [])
         if sum(placed) > sum(expected):
-            return f"{who}排了 {sum(placed)} 節,超過配課的每週 {sum(expected)} 節"
-        return f"{who}的連堂排法與配課不同:配課是{_shape(expected)},課表是{_shape(placed)}"
+            return f"{who}排了 {sum(placed)} 节,超过配课的每周 {sum(expected)} 节"
+        return f"{who}的连堂排法与配课不同:配课是{_shape(expected)},课表是{_shape(placed)}"
     head = f"「{spec.subject_name}」"
     return who + v.message[len(head):] if v.message.startswith(head) else v.message
 
 
 def check(db: Session, timetable: Timetable) -> list[CheckIssue]:
-    """這份課表目前違反的硬約束;空清單表示沒有問題。未排完不在此列。"""
+    """这份课表目前违反的硬约束;空清单表示没有问题。未排完不在此列。"""
     problem = load_problem(db, timetable.semester_id)
     cap = load_config(db, timetable.semester_id).daily_subject_cap
     rows = db.scalars(
@@ -121,7 +121,7 @@ def check(db: Session, timetable: Timetable) -> list[CheckIssue]:
 
 @dataclass(frozen=True, slots=True)
 class UnavailableHit:
-    """某位教師的一節課落在他的不可排時段。"""
+    """某位教师的一节课落在他的不可排时段。"""
 
     timetable_id: int
     timetable_name: str
@@ -135,14 +135,14 @@ class UnavailableHit:
     @property
     def text(self) -> str:
         day = _WEEKDAYS[self.weekday - 1] if 1 <= self.weekday <= 7 else str(self.weekday)
-        return f"週{day}{self.period_name} {self.classes} {self.subject}"
+        return f"周{day}{self.period_name} {self.classes} {self.subject}"
 
 
 def unavailable_hits(db: Session, teacher: Teacher) -> list[UnavailableHit]:
-    """這位教師在草稿與已發布課表中,落在「不可排」時段的課(#41)。
+    """这位教师在草稿与已发布课表中,落在「不可排」时段的课(#41)。
 
-    儲存時段規則之後呼叫:規則常是學期初憑印象設的,課表排好後再改,兩邊就可能矛盾。
-    封存的課表是歷史快照,不看。
+    储存时段规则之后呼叫:规则常是学期初凭印象设的,课表排好后再改,两边就可能矛盾。
+    封存的课表是历史快照,不看。
     """
     blocked = {
         (r.weekday, r.period_no)
@@ -165,7 +165,7 @@ def unavailable_hits(db: Session, teacher: Teacher) -> list[UnavailableHit]:
             ),
         )
         .order_by(
-            # 已發布的排前面:那是老師們正在照著上課的那一份
+            # 已发布的排前面:那是老师们正在照著上课的那一份
             Timetable.status.desc(), Timetable.id,
             ScheduleEntry.weekday, ScheduleEntry.period_no, ScheduleEntry.id,
         )

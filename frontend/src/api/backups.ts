@@ -1,4 +1,4 @@
-// 資料庫備份與還原(M5-2,管理員專用)。
+// 资料库备份与还原(M5-2,管理员专用)。
 
 import { apiDelete, apiGet, apiPost } from '@/api/client'
 
@@ -31,7 +31,7 @@ export async function restoreUpload(file: File): Promise<RestoreResult> {
   if (!resp.ok) {
     let detail: string | undefined
     try { detail = (await resp.json())?.detail } catch { detail = undefined }
-    throw new Error(detail || `還原失敗(${resp.status})`)
+    throw new Error(detail || `还原失败(${resp.status})`)
   }
   return resp.json()
 }
@@ -39,7 +39,7 @@ export async function restoreUpload(file: File): Promise<RestoreResult> {
 export async function downloadBackup(name: string): Promise<void> {
   const resp = await fetch(`/api/backups/${encodeURIComponent(name)}/download`,
     { credentials: 'include' })
-  if (!resp.ok) throw new Error(`下載失敗(${resp.status})`)
+  if (!resp.ok) throw new Error(`下载失败(${resp.status})`)
   const blob = await resp.blob()
   const href = URL.createObjectURL(blob)
   const a = document.createElement('a')

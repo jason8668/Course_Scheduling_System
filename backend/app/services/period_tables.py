@@ -1,7 +1,7 @@
-"""節次表解析與可排時段共用邏輯。
+"""节次表解析与可排时段共用逻辑。
 
-M2 起所有「某班/某節次表的合法時段」查詢一律經 resolve_period_table + regular_slots,
-排課引擎不需關心學校是單一或多套節次表(混合學制封裝於此)。
+M2 起所有「某班/某节次表的合法时段」查询一律经 resolve_period_table + regular_slots,
+排课引擎不需关心学校是单一或多套节次表(混合学制封装于此)。
 """
 
 from sqlalchemy import select
@@ -21,7 +21,7 @@ def semester_default_table(db: Session, semester_id: int) -> PeriodTable | None:
 
 
 def resolve_period_table(db: Session, class_unit: ClassUnit) -> PeriodTable | None:
-    """班級所屬節次表:有指定則用之,否則回退學期預設表。"""
+    """班级所属节次表:有指定则用之,否则回退学期默认表。"""
     if class_unit.period_table_id is not None:
         pt = db.get(PeriodTable, class_unit.period_table_id)
         if pt is not None:
@@ -30,7 +30,7 @@ def resolve_period_table(db: Session, class_unit: ClassUnit) -> PeriodTable | No
 
 
 def regular_slots(db: Session, period_table_id: int) -> list[Period]:
-    """節次表中可排課(type=regular)的格位,依星期、節次排序。"""
+    """节次表中可排课(type=regular)的格位,依星期、节次排序。"""
     return list(
         db.scalars(
             select(Period)

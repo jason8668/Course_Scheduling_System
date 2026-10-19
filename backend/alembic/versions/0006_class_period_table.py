@@ -1,4 +1,4 @@
-"""class_units 增加 period_table_id(所屬節次表)
+"""class_units 增加 period_table_id(所属节次表)
 
 Revision ID: 0006_class_period_table
 Revises: 0005_wizard_state

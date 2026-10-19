@@ -1,4 +1,4 @@
-"""設定精靈 schema。"""
+"""设置精灵 schema。"""
 
 from pydantic import BaseModel
 
@@ -8,7 +8,7 @@ class WizardStateOut(BaseModel):
     completed: bool
     semester_id: int | None
     total_steps: int
-    has_semesters: bool  # 系統是否已有任何學期(輔助前端判斷是否需引導)
+    has_semesters: bool  # 系统是否已有任何学期(辅助前端判断是否需引导)
 
 
 class WizardStateUpdate(BaseModel):

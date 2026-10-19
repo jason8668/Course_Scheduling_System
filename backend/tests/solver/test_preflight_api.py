@@ -1,4 +1,4 @@
-"""M3-1:pre-flight 檢查報告 API(GET /api/solver/preflight)。"""
+"""M3-1:pre-flight 检查报告 API(GET /api/solver/preflight)。"""
 
 from app.models.user import Role
 from tests.conftest import make_user
@@ -16,9 +16,9 @@ def _setup(client, sid, *, periods, base_periods=20):
         f"/api/class-units?semester_id={sid}",
         json={"grade": 3, "name": "301", "track": "junior_high"},
     ).json()
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "國文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
     t = client.post(
-        f"/api/teachers?semester_id={sid}", json={"name": "王師", "base_periods": base_periods}
+        f"/api/teachers?semester_id={sid}", json={"name": "王师", "base_periods": base_periods}
     ).json()
     client.post(f"/api/assignments?semester_id={sid}", json={
         "class_id": c["id"], "subject_id": s["id"], "periods_per_week": periods,
@@ -42,7 +42,7 @@ def test_preflight_ok(env):
     assert body["error_count"] == 0
     assert body["class_count"] == 1 and body["teacher_count"] == 1
     assert body["assignment_count"] == 1 and body["total_periods"] == 20
-    assert body["semester_label"] == "115 學年度第 1 學期"
+    assert body["semester_label"] == "115 学年度第 1 学期"
 
 
 def test_preflight_reports_class_overload(env):
@@ -51,16 +51,16 @@ def test_preflight_reports_class_overload(env):
     sid = client.post(
         "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
     ).json()["id"]
-    # 40 > 35 可排節次(物理性超載)。base_periods=0 代表學校未維護基鐘,
-    # 這類教師不受超鐘點上限管制——否則這筆配課在建立階段就會被擋下,
-    # 也就測不到 pre-flight 的超載偵測了。
+    # 40 > 35 可排节次(物理性超载)。base_periods=0 代表学校未维护基钟,
+    # 这类教师不受超课时上限管制——否则这笔配课在建立阶段就会被挡下,
+    # 也就测不到 pre-flight 的超载侦测了。
     _setup(client, sid, periods=40, base_periods=0)
 
     body = client.get(f"/api/solver/preflight?semester_id={sid}").json()
     assert body["ok"] is False
     codes = {i["code"] for i in body["issues"]}
     assert "class_overload" in codes
-    assert "teacher_overload" in codes  # 40 節 > 35 格
+    assert "teacher_overload" in codes  # 40 节 > 35 格
     assert "teacher_over_hours" in codes
     # error 排在 warning 之前
     assert body["issues"][0]["level"] == "error"
@@ -82,5 +82,5 @@ def test_preflight_requires_scheduler(env):
     sid = client.post(
         "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
     ).status_code
-    assert sid == 403  # teacher 連建學期都不行
+    assert sid == 403  # teacher 连建学期都不行
     assert client.get("/api/solver/preflight?semester_id=1").status_code == 403

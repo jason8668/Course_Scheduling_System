@@ -18,11 +18,11 @@ async function seed(page: Page, year: number): Promise<number> {
     start_date: SEM_START, end_date: SEM_END,
   })).id
   const q = `?semester_id=${sid}`
-  const guo = (await post(page, `/api/subjects${q}`, { name: '國文' })).id
-  const wang = (await post(page, `/api/teachers${q}`, { name: '王老師', base_periods: 20 })).id
+  const guo = (await post(page, `/api/subjects${q}`, { name: '国文' })).id
+  const wang = (await post(page, `/api/teachers${q}`, { name: '王老师', base_periods: 20 })).id
   const c701 = (await post(page, `/api/class-units${q}`,
     { grade: 7, name: '701', track: 'junior_high' })).id
-  const tt = (await post(page, `/api/timetables${q}`, { name: '正式課表' })).id
+  const tt = (await post(page, `/api/timetables${q}`, { name: '正式课表' })).id
   const wed = (await get(page, `/api/class-units/${c701}/period-table`)).periods
     .filter((p: { weekday: number; type: string }) => p.weekday === 3 && p.type === 'regular')
   const a = await post(page, `/api/assignments${q}`, {
@@ -35,14 +35,14 @@ async function seed(page: Page, year: number): Promise<number> {
   return sid
 }
 
-test.describe('課表匯出', () => {
+test.describe('课表导出', () => {
   test.afterEach(async ({ page }) => {
     await page.request.post('/api/auth/logout')
     await login(page)
     for (const y of YEARS) await deleteSemesterByYearTerm(page, y, 1)
   })
 
-  test('班級課表 Excel/PNG 下載,全校總表與批次 zip', async ({ page }) => {
+  test('班级课表 Excel/PNG 下载,全校总表与批次 zip', async ({ page }) => {
     test.setTimeout(180_000)
     await login(page)
     await seed(page, 147)
@@ -50,14 +50,14 @@ test.describe('課表匯出', () => {
     await page.goto('/timetable-query')
     await expect(page.getByTestId('tq-grid')).toBeVisible()
 
-    // Excel 下載(api 同步)
+    // Excel 下载(api 同步)
     const [xlsx] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('export-xlsx').click(),
     ])
     expect(xlsx.suggestedFilename()).toContain('.xlsx')
 
-    // PNG 下載(worker WeasyPrint 渲染)→ 存檔目視確認中文
+    // PNG 下载(worker WeasyPrint 渲染)→ 存档目视确认中文
     const [png] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('export-png').click(),
@@ -65,7 +65,7 @@ test.describe('課表匯出', () => {
     expect(png.suggestedFilename()).toContain('.png')
     await png.saveAs(`${SHOTS}/m51-class.png`)
 
-    // 全校總表 Excel + 批次 zip(管理者)
+    // 全校总表 Excel + 批次 zip(管理者)
     const [school] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('export-school').click(),
@@ -77,22 +77,22 @@ test.describe('課表匯出', () => {
     ])
     expect(zip.suggestedFilename()).toContain('.zip')
 
-    // #22:切到教師視角,全校匯出要跟著變成教師版(先前只有班級版)
+    // #22:切到教师视角,全校导出要跟著变成教师版(先前只有班级版)
     await page.getByTestId('tq-view-teacher').click()
     await expect(page.getByTestId('tq-teacher')).toBeVisible()
     const [teacherBook] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('export-school').click(),
     ])
-    expect(teacherBook.suggestedFilename()).toContain('全校教師課表總表')
+    expect(teacherBook.suggestedFilename()).toContain('全校教师课表总表')
     const [teacherZip] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('export-batch').click(),
     ])
-    expect(teacherZip.suggestedFilename()).toContain('全校教師課表')
+    expect(teacherZip.suggestedFilename()).toContain('全校教师课表')
     expect(teacherZip.suggestedFilename()).toContain('.zip')
 
-    // 場地視角沒有全校匯出
+    // 场地视角没有全校导出
     await page.getByTestId('tq-view-room').click()
     await expect(page.getByTestId('export-school')).toHaveCount(0)
   })

@@ -1,4 +1,4 @@
-// 學期與節次表 API 型別與呼叫封裝。
+// 学期与节次表 API 型别与呼叫封装。
 
 import { apiGet, apiPost, request } from '@/api/client'
 
@@ -44,16 +44,16 @@ export interface Template {
 }
 
 export const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
-  regular: '一般課',
-  morning: '早自習',
+  regular: '一般课',
+  morning: '早自习',
   lunch: '午休',
-  homeroom: '導師時間',
+  homeroom: '导师时间',
   reserved: '固定用途',
 }
 
 export const STATUS_LABELS: Record<SemesterListItem['status'], string> = {
-  preparing: '準備中',
-  active: '進行中',
+  preparing: '准备中',
+  active: '进行中',
   archived: '已封存',
 }
 
@@ -76,7 +76,7 @@ export const deleteSemester = (id: number) => request<void>('DELETE', `/semester
 export interface CopyOptions {
   academic_year: number
   term: number
-  // 新學期的起訖日:少了它,請假展開與今日看板的判定會失準,且畫面上看不出哪裡不對
+  // 新学期的起讫日:少了它,请假展开与今日看板的判定会失准,且界面上看不出哪里不对
   start_date: string | null
   end_date: string | null
   period_tables: boolean
@@ -85,7 +85,7 @@ export interface CopyOptions {
   rooms: boolean
   classes: boolean
   grade_promotion: boolean
-  constraint_config: boolean  // 軟約束權重(不帶則新學期回到預設值)
+  constraint_config: boolean  // 软约束权重(不带则新学期回到默认值)
 }
 export const copySemester = (id: number, body: CopyOptions) =>
   apiPost<Semester>(`/semesters/${id}/copy`, body)

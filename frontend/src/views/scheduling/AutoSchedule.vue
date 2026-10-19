@@ -26,7 +26,7 @@ const semesters = ref<SemesterListItem[]>([])
 const sid = ref<number | null>(null)
 const drafts = ref<TimetableBrief[]>([])
 const sourceId = ref<number | null>(null)
-const minutes = ref(10) // timeout 預設 10 分鐘
+const minutes = ref(10) // timeout 默认 10 分钟
 
 const check = ref<PreflightReport | null>(null)
 const job = ref<SolveJob | null>(null)
@@ -49,8 +49,8 @@ const conflict = computed(() => job.value?.conflict ?? null)
 const conflictCauses = computed(() => conflict.value?.causes ?? [])
 const unscheduled = computed(() => job.value?.unscheduled ?? [])
 
-// 進行中顯示「已用掉多少時間預算」;結束後一律填滿——提前結束時 elapsed 可能只有 1%,
-// 進度條停在最左邊卻寫著「已完成」會讓人以為排壞了。
+// 进行中显示「已用掉多少时间预算」;结束后一律填满——提前结束时 elapsed 可能只有 1%,
+// 进度条停在最左边却写著「已完成」会让人以为排坏了。
 const progressPercent = computed(() => {
   if (!job.value) return 0
   if (!running.value) return 100
@@ -65,18 +65,18 @@ const statusTagType = computed(() => {
 })
 
 const STATUS_LABELS: Record<string, string> = {
-  queued: '排隊中', running: '排課中', finished: '已完成', failed: '失敗', cancelled: '已取消',
+  queued: '排队中', running: '排课中', finished: '已完成', failed: '失败', cancelled: '已取消',
 }
 const statusLabel = computed(() =>
-  (explaining.value ? '定位無解原因中' : STATUS_LABELS[job.value?.status ?? ''] ?? ''))
+  (explaining.value ? '定位无解原因中' : STATUS_LABELS[job.value?.status ?? ''] ?? ''))
 
 const codeName = (code: string) => relaxable.value.find((o) => o.code === code)?.name ?? code
 
-// 有試解在時限內沒判定出來。each 的每一項仍是驗證過的,只是清單可能不全;
-// joint 則連「這組是不是最小」都沒把握。兩者要說不同的話。
+// 有试解在时限内没判定出来。each 的每一项仍是验证过的,只是清单可能不全;
+// joint 则连「这组是不是最小」都没把握。两者要说不同的话。
 const incompleteNote = computed(() => {
-  if (conflict.value?.mode === 'joint') return '(時間有限,這組未必是最小的組合)'
-  return '(時間有限,可能還有其他原因未列出)'
+  if (conflict.value?.mode === 'joint') return '(时间有限,这组未必是最小的组合)'
+  return '(时间有限,可能还有其他原因未列出)'
 })
 
 const elapsedText = computed(() => {
@@ -124,9 +124,9 @@ async function poll() {
   }
   if (!running.value) {
     stopPolling()
-    if (job.value.status === 'finished') message.success(`已產生「${job.value.result_name}」`)
-    if (job.value.status === 'cancelled') message.info('已取消排課')
-    if (job.value.status === 'failed') message.error(job.value.error ?? '排課失敗')
+    if (job.value.status === 'finished') message.success(`已产生「${job.value.result_name}」`)
+    if (job.value.status === 'cancelled') message.info('已取消排课')
+    if (job.value.status === 'failed') message.error(job.value.error ?? '排课失败')
     await reload()
   }
 }
@@ -147,16 +147,16 @@ async function onStart() {
     const detail = (e as ApiError).detail as unknown
     if (detail && typeof detail === 'object' && 'issues' in detail) {
       blockingIssues.value = (detail as { issues: PreflightIssue[] }).issues
-      message.error('資料未通過排課前置檢查')
+      message.error('资料未通过排课前置检查')
     } else {
-      message.error((e as ApiError).message || '無法啟動排課')
+      message.error((e as ApiError).message || '无法启动排课')
     }
   } finally {
     starting.value = false
   }
 }
 
-/** 照著衝突報告的建議重試:勾好可放寬的項目,直接再排一次。 */
+/** 照著冲突报告的建议重试:勾好可放宽的项目,直接再排一次。 */
 async function onRetryPartial() {
   allowPartial.value = true
   relax.value = conflict.value?.relaxable_codes ?? []
@@ -167,7 +167,7 @@ async function onRetryPartial() {
 async function onStop() {
   if (!job.value) return
   await stopSolveJob(job.value.job_id)
-  message.info('已要求提前結束,將保留目前最佳解')
+  message.info('已要求提前结束,将保留目前最佳解')
 }
 async function onCancel() {
   if (!job.value) return
@@ -183,70 +183,70 @@ function openResult() {
 <template>
   <n-space vertical size="large">
     <n-space align="center">
-      <h2 style="margin: 0">自動排課</h2>
+      <h2 style="margin: 0">自动排课</h2>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 220px"
-        placeholder="選擇學期" @update:value="onSemesterChange"
+        placeholder="选择学期" @update:value="onSemesterChange"
       />
     </n-space>
 
-    <n-empty v-if="!sid" description="請先建立學期" />
+    <n-empty v-if="!sid" description="请先建立学期" />
 
     <template v-else>
-      <!-- 排課前置檢查 -->
-      <n-card v-if="check" title="排課前置檢查" size="small">
+      <!-- 排课前置检查 -->
+      <n-card v-if="check" title="排课前置检查" size="small">
         <n-space vertical>
           <n-text depth="3">
-            {{ check.class_count }} 班 · {{ check.teacher_count }} 位教師 ·
-            {{ check.assignment_count }} 筆配課 · 共 {{ check.total_periods }} 節
+            {{ check.class_count }} 班 · {{ check.teacher_count }} 位教师 ·
+            {{ check.assignment_count }} 笔配课 · 共 {{ check.total_periods }} 节
           </n-text>
           <n-alert v-if="check.ok && check.warning_count === 0" type="success" :bordered="false">
-            資料檢查通過,可以開始排課
+            资料检查通过,可以开始排课
           </n-alert>
           <n-alert v-else :type="check.ok ? 'warning' : 'error'" :bordered="false">
-            {{ check.error_count }} 項錯誤、{{ check.warning_count }} 項提醒
+            {{ check.error_count }} 项错误、{{ check.warning_count }} 项提醒
           </n-alert>
           <div v-for="i in check.issues" :key="i.code + i.subject_id" data-testid="pf-issue">
             <n-tag size="small" :type="i.level === 'error' ? 'error' : 'warning'">
-              {{ i.level === 'error' ? '錯誤' : '提醒' }}
+              {{ i.level === 'error' ? '错误' : '提醒' }}
             </n-tag>
             <n-text style="margin-left: 8px">{{ i.message }}</n-text>
           </div>
         </n-space>
       </n-card>
 
-      <!-- 啟動 -->
-      <n-card title="開始排課" size="small">
+      <!-- 启动 -->
+      <n-card title="开始排课" size="small">
         <n-space vertical>
           <n-space align="center">
-            <n-text>來源草稿</n-text>
+            <n-text>来源草稿</n-text>
             <n-select
               v-model:value="sourceId" :options="draftOptions" style="width: 260px"
-              placeholder="選擇草稿" data-testid="as-source" :disabled="running"
+              placeholder="选择草稿" data-testid="as-source" :disabled="running"
             />
-            <n-text>排課時間上限</n-text>
+            <n-text>排课时间上限</n-text>
             <n-input-number
               v-model:value="minutes" :min="1" :max="60" style="width: 120px"
               :disabled="running" data-testid="as-minutes"
             >
-              <template #suffix>分鐘</template>
+              <template #suffix>分钟</template>
             </n-input-number>
             <n-button
               type="primary" :loading="starting" :disabled="!sourceId || running"
               data-testid="as-start" @click="onStart"
             >
-              開始排課
+              开始排课
             </n-button>
           </n-space>
           <n-text depth="3">
-            鎖定的格位會維持原位;其餘已排的課會作為求解起點,結果寫成新草稿,來源草稿不動。
+            锁定的格位会维持原位;其余已排的课会作为求解起点,结果写成新草稿,来源草稿不动。
           </n-text>
 
           <n-checkbox v-model:checked="allowPartial" :disabled="running" data-testid="as-partial">
-            允許部分排課(排不下的課列成清單,不要整個失敗)
+            允许部分排课(排不下的课列成清单,不要整个失败)
           </n-checkbox>
           <n-space v-if="allowPartial" align="center" style="padding-left: 24px">
-            <n-text depth="3">可放寬:</n-text>
+            <n-text depth="3">可放宽:</n-text>
             <n-checkbox-group v-model:value="relax" :disabled="running">
               <n-checkbox
                 v-for="o in relaxable" :key="o.code" :value="o.code"
@@ -255,10 +255,10 @@ function openResult() {
             </n-checkbox-group>
           </n-space>
           <n-text v-if="allowPartial" depth="3" style="padding-left: 24px">
-            班級、教師、場地的「同時段只能有一門課」不可放寬——那是物理限制,不是政策。
+            班级、教师、场地的「同时段只能有一门课」不可放宽——那是物理限制,不是政策。
           </n-text>
 
-          <n-alert v-if="blockingIssues.length" type="error" title="請先修正這些問題">
+          <n-alert v-if="blockingIssues.length" type="error" title="请先修正这些问题">
             <div v-for="i in blockingIssues" :key="i.code + i.subject_id" data-testid="as-blocking">
               {{ i.message }}
             </div>
@@ -266,19 +266,19 @@ function openResult() {
         </n-space>
       </n-card>
 
-      <!-- 進度 -->
-      <n-card v-if="job" title="排課進度" size="small" data-testid="as-job">
+      <!-- 进度 -->
+      <n-card v-if="job" title="排课进度" size="small" data-testid="as-job">
         <n-space vertical>
           <n-space align="center">
             <n-tag :type="statusTagType" data-testid="as-status">{{ statusLabel }}</n-tag>
-            <n-text>已耗時 {{ elapsedText }} / 上限 {{ job.max_seconds }} 秒</n-text>
+            <n-text>已耗时 {{ elapsedText }} / 上限 {{ job.max_seconds }} 秒</n-text>
             <n-text v-if="running || job.solutions" data-testid="as-solutions">
-              已找到 {{ job.solutions }} 個解
+              已找到 {{ job.solutions }} 个解
             </n-text>
-            <!-- 部分排課的目標值被「未排入」的高額懲罰灌爆(一節 = 10000),
-                 拿給人看只會以為排壞了;真正該看的是未排幾節。 -->
-            <n-text v-if="job.partial && !running">未排 {{ unplacedPeriods }} 節</n-text>
-            <n-text v-else-if="job.objective !== null">目前目標值 {{ Math.round(job.objective) }}</n-text>
+            <!-- 部分排课的目标值被「未排入」的高额惩罚灌爆(一节 = 10000),
+                 拿给人看只会以为排坏了;真正该看的是未排几节。 -->
+            <n-text v-if="job.partial && !running">未排 {{ unplacedPeriods }} 节</n-text>
+            <n-text v-else-if="job.objective !== null">目前目标值 {{ Math.round(job.objective) }}</n-text>
           </n-space>
 
           <n-progress
@@ -294,21 +294,21 @@ function openResult() {
               type="primary" ghost :disabled="job.solutions === 0"
               data-testid="as-stop" @click="onStop"
             >
-              提前結束(取目前最佳解)
+              提前结束(取目前最佳解)
             </n-button>
             <n-popconfirm @positive-click="onCancel">
               <template #trigger>
-                <n-button type="error" ghost data-testid="as-cancel">取消排課</n-button>
+                <n-button type="error" ghost data-testid="as-cancel">取消排课</n-button>
               </template>
-              取消後不會產生結果草稿,確定?
+              取消后不会产生结果草稿,确定?
             </n-popconfirm>
           </n-space>
 
           <n-text v-if="explaining" depth="3" data-testid="as-explaining">
-            排不出來。正在逐項試解,找出是哪幾件事湊在一起造成的……
+            排不出来。正在逐项试解,找出是哪几件事凑在一起造成的……
           </n-text>
 
-          <!-- 定位不出具體原因時(例如硬約束其實可解、只是軟約束最佳化太慢),仍要給一句人話 -->
+          <!-- 定位不出具体原因时(例如硬约束其实可解、只是软约束最佳化太慢),仍要给一句人话 -->
           <n-alert
             v-if="job.status === 'failed' && !conflictCauses.length"
             type="error" data-testid="as-error"
@@ -316,7 +316,7 @@ function openResult() {
             {{ job.error }}
           </n-alert>
 
-          <!-- 無解衝突定位:不只說「排不出來」,說是誰、差幾節、鬆開哪一個就好 -->
+          <!-- 无解冲突定位:不只说「排不出来」,说是谁、差几节、松开哪一个就好 -->
           <n-alert
             v-if="conflict && conflictCauses.length" type="error"
             :title="conflict.headline" data-testid="as-conflict"
@@ -328,7 +328,7 @@ function openResult() {
                 </n-tag>
                 <n-text style="margin-left: 8px">{{ c.message }}</n-text>
                 <div style="padding-left: 8px">
-                  <n-text depth="3">建議:{{ c.suggestion }}</n-text>
+                  <n-text depth="3">建议:{{ c.suggestion }}</n-text>
                 </div>
               </div>
               <n-text v-if="!conflict.complete" depth="3">{{ incompleteNote }}</n-text>
@@ -336,48 +336,48 @@ function openResult() {
                 v-if="conflict.relaxable_codes.length" type="primary" ghost size="small"
                 data-testid="as-retry-partial" @click="onRetryPartial"
               >
-                改用部分排課(放寬{{ conflict.relaxable_codes.map(codeName).join('、') }})
+                改用部分排课(放宽{{ conflict.relaxable_codes.map(codeName).join('、') }})
               </n-button>
             </n-space>
           </n-alert>
 
           <n-alert v-if="job.status === 'finished'" type="success" data-testid="as-done">
-            已產生新草稿「{{ job.result_name }}」
+            已产生新草稿「{{ job.result_name }}」
             <n-button text type="primary" style="margin-left: 8px" @click="openResult">
-              前往版本與發布
+              前往版本与发布
             </n-button>
           </n-alert>
 
-          <!-- 未排清單:部分排課的另一半交付物 -->
+          <!-- 未排清单:部分排课的另一半交付物 -->
           <n-alert
-            v-if="unscheduled.length" type="warning" title="以下課務未能排入,請人工處理"
+            v-if="unscheduled.length" type="warning" title="以下课务未能排入,请人工处理"
             data-testid="as-unscheduled"
           >
             <table class="data-table">
               <thead>
-                <tr><th>科目</th><th>班級</th><th>未排節數</th><th>原因</th></tr>
+                <tr><th>科目</th><th>班级</th><th>未排节数</th><th>原因</th></tr>
               </thead>
               <tbody>
                 <tr v-for="u in unscheduled" :key="u.assignment_ids.join('-')">
                   <td>{{ u.subject_name }}</td>
                   <td>{{ u.class_names.join('、') }}</td>
-                  <td>{{ u.periods }} 節</td>
-                  <!-- 完全排不下的課會說明原因;其餘是 solver 權衡後的取捨 -->
-                  <td>{{ u.reason || '排課時權衡取捨' }}</td>
+                  <td>{{ u.periods }} 节</td>
+                  <!-- 完全排不下的课会说明原因;其余是 solver 权衡后的取舍 -->
+                  <td>{{ u.reason || '排课时权衡取舍' }}</td>
                 </tr>
               </tbody>
             </table>
           </n-alert>
 
-          <!-- 軟約束達成度 -->
+          <!-- 软约束达成度 -->
           <table v-if="job.report" class="data-table" data-testid="as-report">
             <thead>
-              <tr><th>軟約束</th><th>權重</th><th>達成</th><th>未達成明細</th></tr>
+              <tr><th>软约束</th><th>权重</th><th>达成</th><th>未达成明细</th></tr>
             </thead>
             <tbody>
               <tr v-for="i in job.report.items" :key="i.code">
                 <td>{{ i.code }} {{ i.name }}</td>
-                <td>{{ i.weight === 0 ? '關閉' : i.weight }}</td>
+                <td>{{ i.weight === 0 ? '关闭' : i.weight }}</td>
                 <td>
                   {{ i.satisfied }} / {{ i.opportunities }}
                   <n-text :depth="3">({{ Math.round(i.rate * 100) }}%)</n-text>
@@ -386,7 +386,7 @@ function openResult() {
                   <n-text v-if="!i.details.length" depth="3">—</n-text>
                   <div v-for="(d, k) in i.details.slice(0, 3)" v-else :key="k">{{ d }}</div>
                   <n-text v-if="i.details.length > 3" depth="3">
-                    …等 {{ i.violations }} 項
+                    …等 {{ i.violations }} 项
                   </n-text>
                 </td>
               </tr>

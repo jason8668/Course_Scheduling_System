@@ -9,25 +9,25 @@ const post = async (page: Page, url: string, data: object) =>
 
 async function selectSemester(page: Page, year: number) {
   await page.locator('.n-base-selection').first().click()
-  await page.locator('.n-base-select-option', { hasText: `${year} 學年度第 1 學期` }).click()
+  await page.locator('.n-base-select-option', { hasText: `${year} 学年度第 1 学期` }).click()
 }
 
-/** 12 班國中:規模夠大,solver 需要幾秒收斂,才看得到進度與「提前結束」。 */
+/** 12 班初中:规模够大,solver 需要几秒收敛,才看得到进度与「提前结束」。 */
 async function seedSchool(page: Page, sid: number) {
   const subjects: Record<string, number> = {}
   for (const s of await (await page.request.get(`/api/subjects?semester_id=${sid}`)).json()) {
     subjects[s.name] = s.id
   }
   const plan: [string, number, number][] = [
-    ['國文', 5, 3], ['英語', 4, 3], ['數學', 4, 4], ['自然科學', 3, 2], ['社會', 3, 2],
-    ['健康與體育', 3, 2], ['藝術', 3, 3], ['綜合活動', 3, 2], ['科技', 2, 2], ['彈性學習', 3, 2],
+    ['国文', 5, 3], ['英语', 4, 3], ['数学', 4, 4], ['自然科学', 3, 2], ['社会', 3, 2],
+    ['健康与体育', 3, 2], ['艺术', 3, 3], ['综合活动', 3, 2], ['科技', 2, 2], ['弹性学习', 3, 2],
   ]
   const teachers: Record<string, number[]> = {}
   for (const [subject, , count] of plan) {
     teachers[subject] = []
     for (let i = 0; i < count; i += 1) {
       const t = await post(page, `/api/teachers?semester_id=${sid}`,
-        { name: `${subject}師${i + 1}`, base_periods: 20 })
+        { name: `${subject}师${i + 1}`, base_periods: 20 })
       teachers[subject].push(t.id)
     }
   }
@@ -47,8 +47,8 @@ async function seedSchool(page: Page, sid: number) {
   }
 }
 
-// ── M3-4 驗收①:啟動 → 進度 → 提前結束 → 結果草稿 + 達成度報告 ──
-test('自動排課:顯示進度,提前結束取當前最佳解並產生新草稿', async ({ page }) => {
+// ── M3-4 验收①:启动 → 进度 → 提前结束 → 结果草稿 + 达成度报告 ──
+test('自动排课:显示进度,提前结束取当前最佳解并产生新草稿', async ({ page }) => {
   test.setTimeout(180_000)
   const YEAR = 134
   await login(page)
@@ -63,34 +63,34 @@ test('自動排課:顯示進度,提前結束取當前最佳解並產生新草稿
   await page.goto('/scheduling/auto')
   await selectSemester(page, YEAR)
 
-  // pre-flight 通過才會讓人按下去
-  await expect(page.getByText('資料檢查通過,可以開始排課')).toBeVisible()
+  // pre-flight 通过才会让人按下去
+  await expect(page.getByText('资料检查通过,可以开始排课')).toBeVisible()
   await expect(page.getByText('12 班')).toBeVisible()
 
   await page.getByTestId('as-start').click()
   await expect(page.getByTestId('as-job')).toBeVisible()
 
-  // 進度確實在跑:找到至少一個解之後「提前結束」才可按
+  // 进度确实在跑:找到至少一个解之后「提前结束」才可按
   await expect(page.getByTestId('as-stop')).toBeEnabled({ timeout: 60_000 })
-  await expect(page.getByTestId('as-solutions')).not.toHaveText('已找到 0 個解')
+  await expect(page.getByTestId('as-solutions')).not.toHaveText('已找到 0 个解')
   await page.screenshot({ path: `${SHOTS}/auto-1-progress.png` })
 
   await page.getByTestId('as-stop').click()
   await expect(page.getByTestId('as-status')).toHaveText('已完成', { timeout: 60_000 })
-  await expect(page.getByTestId('as-done')).toContainText('草稿A 自排結果')
+  await expect(page.getByTestId('as-done')).toContainText('草稿A 自排结果')
 
-  // 軟約束達成度報告(人話明細)
+  // 软约束达成度报告(人话明细)
   const report = page.getByTestId('as-report')
   await expect(report).toBeVisible()
-  await expect(report).toContainText('同班同科目分散於不同日')
-  await expect(report).toContainText('主科優先排上午')
+  await expect(report).toContainText('同班同科目分散于不同日')
+  await expect(report).toContainText('主科优先排上午')
   await page.waitForTimeout(300)
   await page.screenshot({ path: `${SHOTS}/auto-2-report.png` })
 
-  // 結果寫成新草稿(396 節),來源草稿完全沒動
+  // 结果写成新草稿(396 节),来源草稿完全没动
   const tts = await (await page.request.get(`/api/timetables?semester_id=${sem.id}`)).json()
   const source = tts.find((t: { name: string }) => t.name === '草稿A')
-  const result = tts.find((t: { name: string }) => t.name === '草稿A 自排結果')
+  const result = tts.find((t: { name: string }) => t.name === '草稿A 自排结果')
   expect(source.entry_count).toBe(0)
   expect(result.entry_count).toBe(396)
   expect(result.status).toBe('draft')
@@ -98,8 +98,8 @@ test('自動排課:顯示進度,提前結束取當前最佳解並產生新草稿
   await deleteSemesterByYearTerm(page, YEAR, 1)
 })
 
-// ── 驗收③:pre-flight 擋下 + 失敗時有明確訊息(而非永遠轉圈)──
-test('自動排課:資料未通過前置檢查時擋下,並列出待修正項目', async ({ page }) => {
+// ── 验收③:pre-flight 挡下 + 失败时有明确讯息(而非永远转圈)──
+test('自动排课:资料未通过前置检查时挡下,并列出待修正项目', async ({ page }) => {
   const YEAR = 135
   await login(page)
   await page.request.patch('/api/wizard/state', { data: { completed: true } })
@@ -109,12 +109,12 @@ test('自動排課:資料未通過前置檢查時擋下,並列出待修正項目
     { academic_year: YEAR, term: 1, template_key: 'junior_high' })
   const c = await post(page, `/api/class-units?semester_id=${sem.id}`,
     { grade: 3, name: '301', track: 'junior_high' })
-  const s = await post(page, `/api/subjects?semester_id=${sem.id}`, { name: '國文X' })
-  // base_periods 留 0(代表學校未維護基鐘)才建得起這筆刻意超載的配課:
-  // 有填基鐘的教師會先被「超鐘點上限」擋在配課階段,pre-flight 就沒東西可檢查了。
+  const s = await post(page, `/api/subjects?semester_id=${sem.id}`, { name: '国文X' })
+  // base_periods 留 0(代表学校未维护基钟)才建得起这笔刻意超载的配课:
+  // 有填基钟的教师会先被「超课时上限」挡在配课阶段,pre-flight 就没东西可检查了。
   const t = await post(page, `/api/teachers?semester_id=${sem.id}`,
-    { name: '王師', base_periods: 0 })
-  await post(page, `/api/assignments?semester_id=${sem.id}`, { // 40 節 > 35 可排節次
+    { name: '王师', base_periods: 0 })
+  await post(page, `/api/assignments?semester_id=${sem.id}`, { // 40 节 > 35 可排节次
     class_id: c.id, subject_id: s.id, periods_per_week: 40,
     teachers: [{ teacher_id: t.id }], block_rules: [],
   })
@@ -123,17 +123,17 @@ test('自動排課:資料未通過前置檢查時擋下,並列出待修正項目
   await page.goto('/scheduling/auto')
   await selectSemester(page, YEAR)
 
-  await expect(page.getByTestId('pf-issue').first()).toContainText('超過可排節次')
+  await expect(page.getByTestId('pf-issue').first()).toContainText('超过可排节次')
   await page.getByTestId('as-start').click()
 
   await expect(page.getByTestId('as-blocking').first()).toContainText('301')
-  await expect(page.getByTestId('as-job')).toHaveCount(0) // 沒有進度卡 = 沒有丟給 worker
+  await expect(page.getByTestId('as-job')).toHaveCount(0) // 没有进度卡 = 没有丢给 worker
   await page.screenshot({ path: `${SHOTS}/auto-3-blocked.png` })
 
   await deleteSemesterByYearTerm(page, YEAR, 1)
 })
 
-/** 301 班國文 12 節單節:每日上限 2 節 × 5 天 = 10 節 → 無解,但 pre-flight 看不出來。 */
+/** 301 班国文 12 节单节:每日上限 2 节 × 5 天 = 10 节 → 无解,但 pre-flight 看不出来。 */
 async function seedInfeasible(page: Page, sid: number) {
   const c = await post(page, `/api/class-units?semester_id=${sid}`,
     { grade: 3, name: '301', track: 'junior_high' })
@@ -141,9 +141,9 @@ async function seedInfeasible(page: Page, sid: number) {
   for (const s of await (await page.request.get(`/api/subjects?semester_id=${sid}`)).json()) {
     subjects[s.name] = s.id
   }
-  const t = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陳師', base_periods: 40 })
+  const t = await post(page, `/api/teachers?semester_id=${sid}`, { name: '陈师', base_periods: 40 })
   await post(page, `/api/assignments?semester_id=${sid}`, {
-    class_id: c.id, subject_id: subjects['國文'], periods_per_week: 12,
+    class_id: c.id, subject_id: subjects['国文'], periods_per_week: 12,
     teachers: [{ teacher_id: t.id }], block_rules: [],
   })
 }
@@ -159,13 +159,13 @@ async function setupInfeasible(page: Page, year: number) {
 
   await page.goto('/scheduling/auto')
   await selectSemester(page, year)
-  await expect(page.getByText('資料檢查通過,可以開始排課')).toBeVisible()
+  await expect(page.getByText('资料检查通过,可以开始排课')).toBeVisible()
   await page.getByTestId('as-minutes').locator('input').fill('1')
   return sem
 }
 
-// ── M3-5 驗收①②:無解時說出是哪一件事、鬆開它就好 ──
-test('無解時定位出原因並給出具體數字與建議', async ({ page }) => {
+// ── M3-5 验收①②:无解时说出是哪一件事、松开它就好 ──
+test('无解时定位出原因并给出具体数字与建议', async ({ page }) => {
   test.setTimeout(240_000)
   const YEAR = 136
   const sem = await setupInfeasible(page, YEAR)
@@ -173,17 +173,17 @@ test('無解時定位出原因並給出具體數字與建議', async ({ page }) 
   await page.getByTestId('as-start').click()
   await expect(page.getByTestId('as-conflict')).toBeVisible({ timeout: 180_000 })
 
-  // 不是「排不出來」,而是「12 節單節 > 每日 2 節 × 5 天 = 10 節」
+  // 不是「排不出来」,而是「12 节单节 > 每日 2 节 × 5 天 = 10 节」
   const conflict = page.getByTestId('as-conflict')
-  await expect(conflict).toContainText('放寬其中任何一項即可排出課表')
+  await expect(conflict).toContainText('放宽其中任何一项即可排出课表')
   const cause = page.getByTestId('as-cause').first()
   await expect(cause).toContainText('301')
-  await expect(cause).toContainText('12 節單節課')
-  await expect(cause).toContainText('每日上限 2 節 × 5 天')
-  await expect(cause).toContainText('建議:')
+  await expect(cause).toContainText('12 节单节课')
+  await expect(cause).toContainText('每日上限 2 节 × 5 天')
+  await expect(cause).toContainText('建议:')
 
-  // 一鍵照建議重試
-  await expect(page.getByTestId('as-retry-partial')).toContainText('同班同科目每日節數上限')
+  // 一键照建议重试
+  await expect(page.getByTestId('as-retry-partial')).toContainText('同班同科目每日节数上限')
   await conflict.scrollIntoViewIfNeeded()
   await page.screenshot({ path: `${SHOTS}/auto-4-conflict.png` })
 
@@ -191,8 +191,8 @@ test('無解時定位出原因並給出具體數字與建議', async ({ page }) 
   expect(sem.id).toBeGreaterThan(0)
 })
 
-// ── M3-5 驗收③:部分排課 → 大部分排入 + 未排清單 ──
-test('部分排課排入大部分課務,並列出未排清單', async ({ page }) => {
+// ── M3-5 验收③:部分排课 → 大部分排入 + 未排清单 ──
+test('部分排课排入大部分课务,并列出未排清单', async ({ page }) => {
   test.setTimeout(240_000)
   const YEAR = 137
   const sem = await setupInfeasible(page, YEAR)
@@ -201,21 +201,21 @@ test('部分排課排入大部分課務,並列出未排清單', async ({ page })
   await page.getByTestId('as-start').click()
 
   await expect(page.getByTestId('as-status')).toHaveText('已完成', { timeout: 180_000 })
-  await expect(page.getByTestId('as-done')).toContainText('草稿A 部分排課結果')
+  await expect(page.getByTestId('as-done')).toContainText('草稿A 部分排课结果')
 
-  // 排不下的 2 節列成清單,說得出是哪一班的哪一科
+  // 排不下的 2 节列成清单,说得出是哪一班的哪一科
   const list = page.getByTestId('as-unscheduled')
   await expect(list).toBeVisible()
-  await expect(list).toContainText('國文')
+  await expect(list).toContainText('国文')
   await expect(list).toContainText('301')
-  await expect(list).toContainText('2 節')
+  await expect(list).toContainText('2 节')
   await list.scrollIntoViewIfNeeded()
   await page.screenshot({ path: `${SHOTS}/auto-5-unscheduled.png` })
 
-  // 12 節裡排進去 10 節,來源草稿不動
+  // 12 节里排进去 10 节,来源草稿不动
   const tts = await (await page.request.get(`/api/timetables?semester_id=${sem.id}`)).json()
   expect(tts.find((t: { name: string }) => t.name === '草稿A').entry_count).toBe(0)
-  expect(tts.find((t: { name: string }) => t.name === '草稿A 部分排課結果').entry_count).toBe(10)
+  expect(tts.find((t: { name: string }) => t.name === '草稿A 部分排课结果').entry_count).toBe(10)
 
   await deleteSemesterByYearTerm(page, YEAR, 1)
 })
