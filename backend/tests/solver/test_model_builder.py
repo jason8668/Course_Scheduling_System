@@ -167,7 +167,7 @@ def test_infeasible_when_teacher_has_no_free_slot(db):
     b = Builder(db, 130, 1, "junior_high")
     b.teacher("王师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=5, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=5, classes=["301"])
     b.assign(subject="数学", teachers=["王师"], periods=5, classes=["301"])
     wang = b.teachers["王师"]
     keep = {(1, 2), (1, 3), (2, 2), (2, 3)}
@@ -258,7 +258,7 @@ def test_daily_subject_cap_counts_single_periods_only(db):
     b.teacher("陈师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
     # 8 节 = 3 连堂 ×2 + 2 单节
-    b.assign(subject="弹性学习", teachers=["陈师"], periods=8, classes=["301"], blocks=(3, 2))
+    b.assign(subject="校本课程", teachers=["陈师"], periods=8, classes=["301"], blocks=(3, 2))
     fx = b.build()
 
     problem = load_problem(db, fx.semester_id)

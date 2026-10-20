@@ -121,7 +121,7 @@ class TeacherDeleteImpact(BaseModel):
     leave_requests: int        # 请假单数
     substitutions: int         # 调代课处置数(含代课、调课、并班…)
     assignments: int           # 会失去这位教师的配课数
-    homeroom_classes: int      # 担任导师的班级数(有的话根本不能删)
+    homeroom_classes: int      # 担任班主任的班级数(有的话根本不能删)
     account_username: str = ""  # 绑定的登录帐号(删除教师时会一并停用)
 
 
@@ -175,5 +175,5 @@ class ClassUnitOut(BaseModel):
     department: str | None
     student_count: int | None
     homeroom_teacher_id: int | None
-    homeroom_teacher: SubjectBrief | None = None  # 借用 {id,name} 结构显示导师
+    homeroom_teacher: SubjectBrief | None = None  # 借用 {id,name} 结构显示班主任
     period_table_id: int | None = None

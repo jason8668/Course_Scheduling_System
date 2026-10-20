@@ -451,7 +451,7 @@ def delete_teacher(
     if homeroom_count:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"此教师为 {homeroom_count} 个班级的导师,无法删除;请先更换导师,或将教师设为离职",
+            f"此教师为 {homeroom_count} 个班级的班主任,无法删除;请先更换班主任,或将教师设为离职",
         )
     # 教师删了、帐号却还能登录是说不过去的(用户回报 #19)。帐号不删(留稽核轨迹),改为停用
     user = db.get(User, teacher.user_id) if teacher.user_id else None
@@ -614,7 +614,7 @@ def _validate_homeroom(db: Session, semester_id: int, teacher_id: int | None) ->
         return
     teacher = db.get(Teacher, teacher_id)
     if teacher is None or teacher.semester_id != semester_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "导师无效或不属于本学期")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "班主任无效或不属于本学期")
 
 
 def _validate_period_table(db: Session, semester_id: int, table_id: int | None) -> None:

@@ -48,6 +48,13 @@ async function onExport(fmt: ExportFmt) {
   }
 }
 
+/** 打印目前视角的课表(新分頁开打印页,供打印出来张贴)。 */
+function openPrint() {
+  if (sid.value === null || targetId.value === null) return
+  const url = `/timetable/print?semester_id=${sid.value}&view=${view.value}&id=${targetId.value}`
+  window.open(url, '_blank')
+}
+
 // 全校导出跟著目前的查看走:班级视角出班级版,教师视角出教师版(用户回报 #22)。
 // 场地没有这个需求,切到场地时不显示这两个按钮。
 const batchView = computed<'class' | 'teacher' | null>(() =>
@@ -210,6 +217,12 @@ const entries = computed<GridEntry[]>(() => {
             PNG
           </n-button>
         </n-button-group>
+        <n-button
+          size="small" type="primary" ghost :disabled="targetId === null"
+          data-testid="tq-print" @click="openPrint"
+        >
+          打印课表
+        </n-button>
         <template v-if="canManage && batchView">
           <n-text depth="3" style="font-size: 13px">{{ batchLabel }}:</n-text>
           <n-button

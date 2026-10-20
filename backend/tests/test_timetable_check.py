@@ -77,7 +77,7 @@ def _unavailable(client, teacher_id, *cells, extra=()):
 # ── 检查课表 ──────────────────────────
 def test_clean_complete_timetable_passes_and_publishes(env3):  # noqa: F811
     client, sid, tid, _ = env3
-    a, *_ = _course(client, sid, "301", "国文", "王师")
+    a, *_ = _course(client, sid, "301", "语文", "王师")
     assert _place(client, tid, a["id"], 1, 1).status_code == 201
 
     r = _check(client, tid)
@@ -88,7 +88,7 @@ def test_clean_complete_timetable_passes_and_publishes(env3):  # noqa: F811
 def test_incomplete_timetable_is_not_reported_as_a_violation(env3):  # noqa: F811
     """还没排完是完整性检查的事,不能又在违规清单里讲一次。"""
     client, sid, tid, _ = env3
-    a, *_ = _course(client, sid, "301", "国文", "王师", periods=3)
+    a, *_ = _course(client, sid, "301", "语文", "王师", periods=3)
     assert _place(client, tid, a["id"], 1, 1).status_code == 201
 
     r = _check(client, tid)
@@ -100,7 +100,7 @@ def test_incomplete_timetable_is_not_reported_as_a_violation(env3):  # noqa: F81
 def test_unavailable_rule_added_after_placement_is_reported(env3):  # noqa: F811
     """#41:课排好之后才把那一节设成不可排。"""
     client, sid, tid, _ = env3
-    a, _c, _s, t = _course(client, sid, "301", "国文", "王师")
+    a, _c, _s, t = _course(client, sid, "301", "语文", "王师")
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     _unavailable(client, t["id"], (3, 2))
 
@@ -108,13 +108,13 @@ def test_unavailable_rule_added_after_placement_is_reported(env3):  # noqa: F811
     assert r["ok"] is False
     assert [i["code"] for i in r["issues"]] == ["H4"]
     assert r["issues"][0]["label"] == "教师不可排时段"
-    assert r["issues"][0]["message"] == "教师王师 周三第二节 为不可排时段,却排了「301 国文」"
+    assert r["issues"][0]["message"] == "教师王师 周三第二节 为不可排时段,却排了「301 语文」"
 
 
 def test_teacher_clash_after_reassigning_teacher_names_both_classes(env3):  # noqa: F811
     """配课改了老师(不检查课表)→ 同一位老师同一节两堂;讯息要看得出是哪两班。"""
     client, sid, tid, _ = env3
-    a1, c1, s1, t1 = _course(client, sid, "301", "国文", "王师")
+    a1, c1, s1, t1 = _course(client, sid, "301", "语文", "王师")
     a2, c2, s2, _t2 = _course(client, sid, "302", "数学", "李师")
     assert _place(client, tid, a1["id"], 1, 1).status_code == 201
     assert _place(client, tid, a2["id"], 1, 1).status_code == 201
@@ -127,12 +127,12 @@ def test_teacher_clash_after_reassigning_teacher_names_both_classes(env3):  # no
     assert [i["code"] for i in issues] == ["H2"]
     msg = issues[0]["message"]
     assert "王师" in msg and "周一第一节" in msg
-    assert "301 国文" in msg and "302 数学" in msg
+    assert "301 语文" in msg and "302 数学" in msg
 
 
 def test_daily_cap_lowered_after_placement_is_reported(env3):  # noqa: F811
     client, sid, tid, _ = env3
-    a, *_ = _course(client, sid, "301", "国文", "王师", periods=2)
+    a, *_ = _course(client, sid, "301", "语文", "王师", periods=2)
     assert _place(client, tid, a["id"], 1, 1).status_code == 201
     assert _place(client, tid, a["id"], 1, 2).status_code == 201
     assert _check(client, tid)["ok"] is True
@@ -143,14 +143,14 @@ def test_daily_cap_lowered_after_placement_is_reported(env3):  # noqa: F811
 
     issues = _check(client, tid)["issues"]
     assert [i["code"] for i in issues] == ["H10"]
-    assert "301" in issues[0]["message"] and "国文" in issues[0]["message"]
+    assert "301" in issues[0]["message"] and "语文" in issues[0]["message"]
     assert "每日上限 1 节" in issues[0]["message"]
 
 
 def test_more_periods_placed_than_the_assignment_now_allows(env3):  # noqa: F811
     """配课的每周节数事后改少 → 课表上多出来的节数要讲,而且讲人话。"""
     client, sid, tid, _ = env3
-    a, c, s, t = _course(client, sid, "301", "国文", "王师", periods=2)
+    a, c, s, t = _course(client, sid, "301", "语文", "王师", periods=2)
     assert _place(client, tid, a["id"], 1, 1).status_code == 201
     assert _place(client, tid, a["id"], 2, 1).status_code == 201
     r = client.patch(f"/api/assignments/{a['id']}", json={
@@ -160,7 +160,7 @@ def test_more_periods_placed_than_the_assignment_now_allows(env3):  # noqa: F811
 
     issues = _check(client, tid)["issues"]
     assert [i["code"] for i in issues] == ["H8"]
-    assert issues[0]["message"] == "301「国文」排了 2 节,超过配课的每周 1 节"
+    assert issues[0]["message"] == "301「语文」排了 2 节,超过配课的每周 1 节"
 
 
 def test_room_type_without_a_room_is_not_a_violation(env3):  # noqa: F811
@@ -183,7 +183,7 @@ def test_room_type_without_a_room_is_not_a_violation(env3):  # noqa: F811
 def test_publish_blocked_by_violations_then_forced(env3):  # noqa: F811
     """#40:课务排满但有冲突 → 发布要先列出来,确认后才发布。"""
     client, sid, tid, _ = env3
-    a, _c, _s, t = _course(client, sid, "301", "国文", "王师")
+    a, _c, _s, t = _course(client, sid, "301", "语文", "王师")
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     _unavailable(client, t["id"], (3, 2))
 
@@ -202,7 +202,7 @@ def test_publish_blocked_by_violations_then_forced(env3):  # noqa: F811
 
 def test_publish_reports_violations_and_unplaced_together(env3):  # noqa: F811
     client, sid, tid, _ = env3
-    a, _c, _s, t = _course(client, sid, "301", "国文", "王师", periods=2)
+    a, _c, _s, t = _course(client, sid, "301", "语文", "王师", periods=2)
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     _unavailable(client, t["id"], (3, 2))
 
@@ -215,7 +215,7 @@ def test_publish_reports_violations_and_unplaced_together(env3):  # noqa: F811
 # ── 储存不可排时段后的提示(#41)────────
 def test_time_rule_conflicts_lists_lessons_in_draft_and_published(env3):  # noqa: F811
     client, sid, tid, _ = env3
-    a, _c, _s, t = _course(client, sid, "301", "国文", "王师", periods=2)
+    a, _c, _s, t = _course(client, sid, "301", "语文", "王师", periods=2)
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     assert _place(client, tid, a["id"], 4, 1).status_code == 201
 
@@ -228,7 +228,7 @@ def test_time_rule_conflicts_lists_lessons_in_draft_and_published(env3):  # noqa
     hits = client.get(url).json()
     assert [(h["weekday"], h["period_no"]) for h in hits] == [(3, 2)]
     assert hits[0]["timetable_name"] == "草稿A" and hits[0]["timetable_status"] == "draft"
-    assert hits[0]["text"] == "周三第二节 301 国文"
+    assert hits[0]["text"] == "周三第二节 301 语文"
 
     # 复制一份并发布 → 两份都列,已发布的排前面
     copy = client.post(f"/api/timetables/{tid}/duplicate", json={"name": "正式版"}).json()

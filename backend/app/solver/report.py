@@ -297,9 +297,9 @@ def _longest_run(sorted_positions: list[int]) -> int:
     return best
 
 
-# ── S7 导师的课排在自己班第一节 ──────────────────────────────
+# ── S7 班主任的课排在自己班第一节 ──────────────────────────────
 def _homeroom_classes(problem: Problem) -> list[tuple[ClassSpec, int]]:
-    """有导师、且导师确实任教该班的班级(否则这条软约束无从满足)。"""
+    """有班主任、且班主任确实任教该班的班级(否则这条软约束无从满足)。"""
     out: list[tuple[ClassSpec, int]] = []
     for cls in problem.classes.values():
         tid = cls.homeroom_teacher_id
@@ -339,7 +339,7 @@ def _s7_homeroom_first_period(
                 violations += 1
                 if len(details) < MAX_DETAILS:
                     details.append(
-                        f"班级 {cls.name} {_wd(weekday)}{first.name} 不是导师"
+                        f"班级 {cls.name} {_wd(weekday)}{first.name} 不是班主任"
                         f"{problem.teachers[tid].name}的课"
                     )
     return SoftScore("S7", SOFT_NAMES["S7"], c.weight("S7"), opportunities, violations,

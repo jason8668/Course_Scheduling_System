@@ -35,7 +35,7 @@ def _blocked_course(client, sid):
 
 
 def _normal_course(client, sid, cls):
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "语文"}).json()
     t = client.post(f"/api/teachers?semester_id={sid}",
                     json={"name": "王师", "base_periods": 20}).json()
     client.post(f"/api/assignments?semester_id={sid}", json={

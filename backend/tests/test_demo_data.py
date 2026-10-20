@@ -35,7 +35,7 @@ def test_spec_gives_every_class_the_same_weekly_periods():
         per_grade[grade] = sum(
             s["periods"].get(str(grade), 0) for s in spec["subjects"]
         )
-    assert set(per_grade.values()) == {33}, f"各年级节数不一致:{per_grade}"
+    assert set(per_grade.values()) == {34}, f"各年级节数不一致:{per_grade}"
 
 
 def test_spec_capacity_covers_demand():
@@ -49,16 +49,10 @@ def test_spec_capacity_covers_demand():
     )
     classes = demo_data._class_names(spec)
     plans = demo_data._plan_teachers(spec, [c for _, c in classes])
-    # 外聘教师的应授在 generate() 时才依实际需求算出,这里以规格值补上
+    # 本规格没有外聘教师;若日后新增外聘组别,其应授在 generate() 时才依实际需求算出
     capacity = sum(p.target for p in plans if p.role != demo_data.ROLE_EXTERNAL)
-    external = sum(
-        s["periods"].get(str(g), 0) * n
-        for s in spec["subjects"]
-        for g in spec["classes"]["grades"]
-        if s["dept"] == "本土语文"
-    )
-    assert capacity + external >= demand
-    assert (capacity + external) / demand < 1.15, "教师过剩,示范资料会显得不真实"
+    assert capacity >= demand
+    assert capacity / demand < 1.15, "教师过剩,示范资料会显得不真实"
 
 
 def test_spec_has_one_homeroom_teacher_per_class():
@@ -77,22 +71,20 @@ def test_generate_builds_a_complete_school(admin_client):
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["classes"] == 18
-    assert body["subjects"] == 24
-    assert body["total_periods"] == 33 * 18
-    assert body["assignments"] > 300
+    assert body["subjects"] == 14
+    assert body["total_periods"] == 34 * 18
+    assert body["assignments"] == 246
     # 每班一间普通教室 + 专科教室
     assert body["rooms"] >= 18
 
 
 def test_class_names_use_grade_plus_serial(admin_client):
-    """十二年国教后多数初中改用 701~706 这种编号,不再用忠孝仁爱。"""
+    """班级以「年级+序号」命名:7年级1班~9年级6班。"""
     client, db = admin_client
     client.post("/api/demo-data")
     names = sorted(cu.name for cu in db.query(ClassUnit).all())
     assert names == [
-        "701", "702", "703", "704", "705", "706",
-        "801", "802", "803", "804", "805", "806",
-        "901", "902", "903", "904", "905", "906",
+        f"{g}年级{i}班" for g in (7, 8, 9) for i in range(1, 7)
     ]
 
 
@@ -100,15 +92,15 @@ def test_school_name_is_reported(admin_client):
     """校名回报给前端,供精灵与系统管理页显示「会建出哪一所学校」。"""
     client, _ = admin_client
     status = client.get("/api/demo-data").json()
-    assert status["school_name"] == "台南市市立敦品初中"
-    assert client.post("/api/demo-data").json()["school_name"] == "台南市市立敦品初中"
+    assert status["school_name"] == "杭州市育英初级中学"
+    assert client.post("/api/demo-data").json()["school_name"] == "杭州市育英初级中学"
 
 
 def test_every_class_has_a_homeroom_teacher(admin_client):
     client, db = admin_client
     client.post("/api/demo-data")
     for cu in db.query(ClassUnit).all():
-        assert cu.homeroom_teacher_id is not None, f"{cu.name} 没有导师"
+        assert cu.homeroom_teacher_id is not None, f"{cu.name} 没有班主任"
 
 
 def test_nobody_exceeds_the_overtime_limit(admin_client):
@@ -140,8 +132,8 @@ def test_no_teacher_is_left_without_classes(admin_client):
     assert not idle, f"有教师完全没课:{idle}"
 
 
-def test_tainan_base_periods_are_applied(admin_client):
-    """国文科导师 11 节、其他科导师 13 节——台南市规定的差异要真的反映出来。"""
+def test_zhejiang_base_periods_are_applied(admin_client):
+    """语文/数学/英语/科学班主任 10 节、社会/体育/综合班主任 12 节——班主任工作量折算的差异要真的反映出来。"""
     client, db = admin_client
     client.post("/api/demo-data")
     homerooms = {
@@ -149,12 +141,12 @@ def test_tainan_base_periods_are_applied(admin_client):
         for t in db.query(Teacher).all()
         if db.query(ClassUnit).filter(ClassUnit.homeroom_teacher_id == t.id).first()
     }
-    assert set(homerooms.values()) == {11, 13}
-    assert sum(1 for v in homerooms.values() if v == 11) == 5   # 国文科导师
+    assert set(homerooms.values()) == {10, 12}
+    assert sum(1 for v in homerooms.values() if v == 10) == 14   # 语文5+数学4+英语3+科学2
 
 
 def test_admin_reduction_produces_the_regulated_target(admin_client):
-    """兼任主任应授 6 节、组长 8 节(18-26 班),存的是 base - reduction。"""
+    """兼任主任应授 6 节、教研组长 8 节,存的是 base - reduction。"""
     client, db = admin_client
     client.post("/api/demo-data")
     targets = {
@@ -167,8 +159,8 @@ def test_admin_reduction_produces_the_regulated_target(admin_client):
         assert target == expected, f"{title} 应授 {target},应为 {expected}"
 
 
-def test_subjects_are_split_not_domain_level(admin_client):
-    """自然科依年级分科:国一生物、国二理化、国三理化+地科。"""
+def test_subjects_follow_zhejiang_structure(admin_client):
+    """浙江初中合科结构:科学、历史与社会贯通三年;信息科技只到八年级;无台湾科目。"""
     client, db = admin_client
     body = client.post("/api/demo-data").json()
     sid = body["semester_id"]
@@ -177,11 +169,14 @@ def test_subjects_are_split_not_domain_level(admin_client):
     for a in rows:
         for m in a.scheduling_unit.members:
             by_grade.setdefault(m.class_unit.grade, set()).add(a.subject.name)
-    assert "生物" in by_grade[7] and "理化" not in by_grade[7]
-    assert "理化" in by_grade[8] and "生物" not in by_grade[8]
-    assert {"理化", "地球科学"} <= by_grade[9]
-    # 本土语文自 111 学年度起为七、八年级部定,九年级不排
-    assert "本土语文" in by_grade[7] and "本土语文" not in by_grade[9]
+    for g in (7, 8, 9):
+        assert {"语文", "数学", "英语", "科学", "历史与社会", "道德与法治"} <= by_grade[g]
+    # 信息科技在三至八年级开设,九年级不开(浙教教材〔2023〕28 号)
+    assert "信息科技" in by_grade[7] and "信息科技" in by_grade[8]
+    assert "信息科技" not in by_grade[9]
+    # 台湾科目不得出现
+    for g in (7, 8, 9):
+        assert not {"国文", "本土语文", "理化", "公民"} & by_grade[g]
 
 
 # ── 安全机制 ────────────────────────────────────────
@@ -243,7 +238,7 @@ def test_demo_data_is_actually_solvable(admin_client):
     )
     assert not validate(problem, result.entries), "解答违反硬约束"
     # H8 周节数守恒:排入的节数必须等于配课总节数
-    assert len(result.entries) == 33 * 18
+    assert len(result.entries) == 34 * 18
 
 
 def test_demo_data_marks_the_setup_wizard_complete(admin_client):

@@ -16,7 +16,7 @@ def _setup(client, sid, *, periods, base_periods=20):
         f"/api/class-units?semester_id={sid}",
         json={"grade": 3, "name": "301", "track": "junior_high"},
     ).json()
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "语文"}).json()
     t = client.post(
         f"/api/teachers?semester_id={sid}", json={"name": "王师", "base_periods": base_periods}
     ).json()

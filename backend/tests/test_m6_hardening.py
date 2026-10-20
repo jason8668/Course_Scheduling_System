@@ -127,9 +127,9 @@ def test_substitution_log_query_applies_the_limit_in_sql(env):
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     w = _World(client, db, sid)
-    w.teacher("王师", ["国文"])
-    w.place("王师", "国文", "701", 0)
-    w.place("王师", "国文", "702", 1)
+    w.teacher("王师", ["语文"])
+    w.place("王师", "语文", "701", 0)
+    w.place("王师", "语文", "702", 1)
     w.publish()
     w.leave("王师")  # 同一天两节受影响
 

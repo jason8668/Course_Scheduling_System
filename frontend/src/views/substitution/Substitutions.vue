@@ -234,7 +234,7 @@ async function assignSwap(
   }
 }
 
-// 整批指派代课:导师请整天或好几天假,同一位代课老师接下所有节次(日薪代课常见)。
+// 整批指派代课:班主任请整天或好几天假,同一位代课老师接下所有节次(日薪代课常见)。
 // 逐节点要点几十次;这里一次派完,派不成的节次(代课老师那节有课)列出来另外找人。
 const batchShow = ref(false)
 const batchLeave = ref<LeaveRequest | null>(null)

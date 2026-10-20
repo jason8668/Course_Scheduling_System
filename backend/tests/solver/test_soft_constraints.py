@@ -57,7 +57,7 @@ def avoidable(db):
     b = Builder(db, 150, 1, "junior_high")
     b.teacher("王师", base_periods=20)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=4, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=4, classes=["301"])
     wang = b.teachers["王师"]
     for p in b.regular_slots():
         if p.weekday == 5:
@@ -82,7 +82,7 @@ def test_avoid_is_soft_not_hard(db):
     b = Builder(db, 151, 1, "junior_high")
     b.teacher("王师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=4, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=4, classes=["301"])
     wang = b.teachers["王师"]
     for p in b.regular_slots():  # 全部时段都标为尽量避开 → 只能硬排
         db.add(TeacherTimeRule(teacher_id=wang.id, weekday=p.weekday, period_no=p.period_no,
@@ -102,7 +102,7 @@ def test_prefer_slots_are_favoured(db):
     b = Builder(db, 152, 1, "junior_high")
     b.teacher("王师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=2, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=2, classes=["301"])
     wang = b.teachers["王师"]
     for weekday in (1, 2):  # 只偏好周一/周二的第一节(period_no 2)
         db.add(TeacherTimeRule(teacher_id=wang.id, weekday=weekday, period_no=2,
@@ -121,7 +121,7 @@ def test_report_details_are_human_readable(db):
     b = Builder(db, 153, 1, "junior_high")
     b.teacher("王师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    a = b.assign(subject="国文", teachers=["王师"], periods=1, classes=["301"])[0]
+    a = b.assign(subject="语文", teachers=["王师"], periods=1, classes=["301"])[0]
     db.add(TeacherTimeRule(teacher_id=b.teachers["王师"].id, weekday=4, period_no=9,
                            rule_type=TeacherRuleType.avoid.value))
     fx = b.build()
@@ -158,7 +158,7 @@ def test_s3_daily_load_cap_reduces_heavy_days(db):
     b.teacher("王师", base_periods=40)
     for i in range(1, 5):
         b.klass(f"30{i}", grade=3, track=ClassTrack.junior_high.value)
-        b.assign(subject="国文", teachers=["王师"], periods=5, classes=[f"30{i}"])
+        b.assign(subject="语文", teachers=["王师"], periods=5, classes=[f"30{i}"])
     fx = b.build()  # 20 节分布在 5 天 → 若不管,可能某天塞 7 节
     problem = load_problem(db, fx.semester_id)
 
@@ -177,10 +177,10 @@ def test_s3_daily_load_cap_reduces_heavy_days(db):
 def test_s5_major_subjects_move_to_morning(db):
     """主科标记后,开启 S5 应把主科从下午移到上午。"""
     b = Builder(db, 155, 1, "junior_high")
-    b.subject("国文", is_major=True)
+    b.subject("语文", is_major=True)
     b.teacher("王师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=4, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=4, classes=["301"])
     fx = b.build()
 
     problem = load_problem(db, fx.semester_id)
@@ -197,7 +197,7 @@ def test_s7_homeroom_teacher_takes_first_period(db):
     b = Builder(db, 156, 1, "junior_high")
     b.teacher("导师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value, homeroom="导师")
-    b.assign(subject="国文", teachers=["导师"], periods=5, classes=["301"])
+    b.assign(subject="语文", teachers=["导师"], periods=5, classes=["301"])
     fx = b.build()
 
     problem = load_problem(db, fx.semester_id)

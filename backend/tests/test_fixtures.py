@@ -177,7 +177,7 @@ def test_junior_high_features(db):
         assert loads[t.id]["assigned"] <= loads[t.id]["target"]
 
     # 弹性课程
-    flexible = [a for a in fx.assignments if a.subject_id == fx.subjects["弹性学习"].id]
+    flexible = [a for a in fx.assignments if a.subject_id == fx.subjects["校本课程"].id]
     assert len(flexible) == 12 and all(a.periods_per_week == 3 for a in flexible)
 
     # 每班 33 节

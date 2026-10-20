@@ -376,7 +376,7 @@ async function onResetWizard() {
         <n-space align="center">
           <n-text style="width: 72px">校名</n-text>
           <n-input
-            v-model:value="schoolName" placeholder="如:台南市市立敦品初中"
+            v-model:value="schoolName" placeholder="如:杭州市育英初级中学"
             style="width: 280px" data-testid="school-name"
           />
           <n-button
@@ -393,8 +393,8 @@ async function onResetWizard() {
       <n-space vertical>
         <n-text depth="3">
           一键建立一所完整的示范初中「{{ demoSchool || '示范初中' }}」,让你不必先手 key
-          资料就能试用全部功能:三个年级共 18 班(701~706、801~806、901~906)、
-          48 位教师(含导师、兼行政、外聘)、24 个分科科目、384 笔配课,
+          资料就能试用全部功能:三个年级共 18 班(7年级1班~9年级6班)、
+          57 位教师(含班主任、兼行政)、14 个科目、246 笔配课,
           以及专科教室与场地。建好后可直接到「自动排课」试跑。
         </n-text>
         <n-alert type="warning" :show-icon="false">
@@ -517,7 +517,7 @@ async function onResetWizard() {
       <n-space vertical>
         <n-text depth="3">
           超课时上限依各县市/各校规定自订。上限是「应授节数 + N」——应授本身因身分而异
-          (例:台南市国文科专任 16 节、兼任导师 11 节、兼任主任 6 节),固定值对谁都不合适。
+          (例:语文专任 12 节、兼任班主任 10 节、兼任主任 6 节),固定值对谁都不合适。
         </n-text>
         <n-space align="center">
           <span>超课时上限</span>

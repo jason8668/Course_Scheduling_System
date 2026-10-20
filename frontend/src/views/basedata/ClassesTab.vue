@@ -119,7 +119,7 @@ async function remove(c: ClassUnit) {
     <table class="data-table">
       <thead>
         <tr>
-          <th>年级</th><th>班名</th><th>学制</th><th>群科</th><th>导师</th>
+          <th>年级</th><th>班名</th><th>学制</th><th>群科</th><th>班主任</th>
           <th v-if="showPeriodTable">节次表</th><th>人数</th><th>操作</th>
         </tr>
       </thead>
@@ -166,7 +166,7 @@ async function remove(c: ClassUnit) {
           <n-text>群科(技高)</n-text>
           <n-input v-model:value="form.department" placeholder="如:机械科" />
         </template>
-        <n-text>导师(选填)</n-text>
+        <n-text>班主任(选填)</n-text>
         <n-select
           v-model:value="form.homeroom_teacher_id"
           :options="teacherOptions"

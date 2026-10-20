@@ -49,7 +49,7 @@ def _music_room_fixture(db, year: int = 140) -> Builder:
 
     for i in (1, 2):
         b.teacher(f"音乐师{i}", base_periods=20)
-        b.teacher(f"国文师{i}", base_periods=20)
+        b.teacher(f"语文师{i}", base_periods=20)
         b.teacher(f"数学师{i}", base_periods=20)
     for i in (1, 2):
         _block_days(b, f"音乐师{i}", [5])
@@ -61,7 +61,7 @@ def _music_room_fixture(db, year: int = 140) -> Builder:
         cls, half = f"70{i}", 1 if i <= 3 else 2
         b.assign(subject="音乐", teachers=[f"音乐师{half}"], periods=5, classes=[cls],
                  room="音乐教室")
-        b.assign(subject="国文", teachers=[f"国文师{half}"], periods=5, classes=[cls])
+        b.assign(subject="语文", teachers=[f"语文师{half}"], periods=5, classes=[cls])
         b.assign(subject="数学", teachers=[f"数学师{half}"], periods=5, classes=[cls])
     return b
 
@@ -148,7 +148,7 @@ def _co_teaching_fixture(db, year: int = 143) -> Builder:
     _block_days(b, "王师", [1, 2, 3, 4])  # 只有周五能上
     _block_days(b, "李师", [5])           # 唯独周五不能上
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="自然科学", teachers=["王师", "李师"], periods=2, classes=["301"])
+    b.assign(subject="科学", teachers=["王师", "李师"], periods=2, classes=["301"])
     return b
 
 
@@ -186,7 +186,7 @@ def _daily_cap_fixture(db, year: int = 145) -> Builder:
     b = Builder(db, year, 1, "junior_high")
     b.teacher("陈师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["陈师"], periods=12, classes=["301"])
+    b.assign(subject="语文", teachers=["陈师"], periods=12, classes=["301"])
     return b
 
 
@@ -238,7 +238,7 @@ def test_preflight_failure_short_circuits_the_solver(db):
     b = Builder(db, 148, 1, "junior_high")
     b.teacher("王师", base_periods=20)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=30, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=30, classes=["301"])
     wang = b.teachers["王师"]
     for p in b.regular_slots():
         if p.weekday in (4, 5):  # 挡掉 14 格 → 可排 21 格 < 30 节
@@ -262,7 +262,7 @@ def test_feasible_problem_reports_no_cause(db):
     b = Builder(db, 149, 1, "junior_high")
     b.teacher("王师", base_periods=20)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=4, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=4, classes=["301"])
     fx = b.build()
 
     report = explain(load_problem(db, fx.semester_id), max_seconds=30.0)
@@ -282,11 +282,11 @@ def test_physical_constraints_cannot_be_relaxed(code):
 
 # ── 两个独立瓶颈:松开任何一个都不够 ──────────────────────────
 def test_two_independent_bottlenecks_must_be_fixed_together(db):
-    """音乐教室不够 + 另一班的国文超过每日上限。两者互不相干,只解决一个仍然无解。"""
+    """音乐教室不够 + 另一班的语文超过每日上限。两者互不相干,只解决一个仍然无解。"""
     b = _music_room_fixture(db, year=150)
     b.teacher("陈师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["陈师"], periods=12, classes=["301"])
+    b.assign(subject="语文", teachers=["陈师"], periods=12, classes=["301"])
     fx = b.build()
 
     problem = load_problem(db, fx.semester_id)
@@ -299,7 +299,7 @@ def test_two_independent_bottlenecks_must_be_fixed_together(db):
 
     codes = {c.code for c in report.causes}
     assert len(report.causes) >= 2
-    assert "H10" in codes  # 国文那一边
+    assert "H10" in codes  # 语文那一边
     assert codes & {"H3", "H4"}  # 音乐教室那一边
 
 

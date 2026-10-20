@@ -73,7 +73,7 @@ def overloaded(db):
     b.teacher("王师", base_periods=22)  # 应授 22 节,故不会另外触发超课时警告
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
     b.klass("302", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["王师"], periods=11, classes=["301"])
+    b.assign(subject="语文", teachers=["王师"], periods=11, classes=["301"])
     b.assign(subject="数学", teachers=["王师"], periods=11, classes=["302"])
 
     wang = b.teachers["王师"]
@@ -105,7 +105,7 @@ def test_teacher_over_hours_is_warning_not_error(db):
     b = Builder(db, 121, 1, "junior_high")
     b.teacher("李师", base_periods=20)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["李师"], periods=24, classes=["301"])
+    b.assign(subject="语文", teachers=["李师"], periods=24, classes=["301"])
     fx = b.build()
 
     report = preflight.run(load_problem(db, fx.semester_id))
@@ -120,7 +120,7 @@ def test_class_overload(db):
     b.teacher("甲师", base_periods=40)
     b.teacher("乙师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="国文", teachers=["甲师"], periods=20, classes=["301"])
+    b.assign(subject="语文", teachers=["甲师"], periods=20, classes=["301"])
     b.assign(subject="数学", teachers=["乙师"], periods=20, classes=["301"])
     fx = b.build()
 
@@ -170,7 +170,7 @@ def test_room_capacity_is_warning_only(db):
     b.teacher("师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value, student_count=40)
     b.room("小教室", room_type=RoomType.special, capacity=25)
-    b.assign(subject="国文", teachers=["师"], periods=3, classes=["301"], room="小教室")
+    b.assign(subject="语文", teachers=["师"], periods=3, classes=["301"], room="小教室")
     fx = b.build()
 
     report = preflight.run(load_problem(db, fx.semester_id))
@@ -184,7 +184,7 @@ def test_block_longer_than_contiguous_run(db):
     b = Builder(db, 126, 1, "junior_high")
     b.teacher("师", base_periods=40)
     b.klass("301", grade=3, track=ClassTrack.junior_high.value)
-    b.assign(subject="弹性学习", teachers=["师"], periods=5, classes=["301"], blocks=(5, 1))
+    b.assign(subject="校本课程", teachers=["师"], periods=5, classes=["301"], blocks=(5, 1))
     fx = b.build()
 
     report = preflight.run(load_problem(db, fx.semester_id))
@@ -252,7 +252,7 @@ def test_cross_table_teacher_has_fewer_available_slots(db):
     b.classes["101"].period_table_id = senior.id
     db.flush()
 
-    b.assign(subject="国文", teachers=["跨部师"], periods=3, classes=["301"])
+    b.assign(subject="语文", teachers=["跨部师"], periods=3, classes=["301"])
     b.assign(subject="数学", teachers=["跨部师"], periods=3, classes=["101"])
     fx = b.build()
 

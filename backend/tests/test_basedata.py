@@ -74,7 +74,7 @@ def test_delete_teacher_referenced_as_homeroom_blocked(scheduler_env):
     )
     r = client.delete(f"/api/teachers/{tid}")
     assert r.status_code == 409
-    assert "导师" in r.json()["detail"]
+    assert "班主任" in r.json()["detail"]
     # 改为离职(is_active=false)则允许
     upd = client.patch(f"/api/teachers/{tid}", json={"name": "陈老师", "is_active": False})
     assert upd.json()["is_active"] is False

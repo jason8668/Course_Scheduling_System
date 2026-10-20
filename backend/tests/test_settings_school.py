@@ -58,4 +58,4 @@ def test_demo_data_sets_the_school_name(env):
     client, db = env
     _admin(client, db)
     client.post("/api/demo-data")
-    assert app_settings.school_name(db) == "台南市市立敦品初中"
+    assert app_settings.school_name(db) == "杭州市育英初级中学"

@@ -877,7 +877,7 @@ class _Model:
                 if tid in self.courses[ci].teacher_ids
             ]
             if not cis:
-                continue  # 导师没教这个班 → 这条软约束无从满足,不列入惩罚
+                continue  # 班主任没教这个班 → 这条软约束无从满足,不列入惩罚
             for weekday in range(1, table.num_weekdays + 1):
                 day = table.slots_on(weekday)
                 if not day:

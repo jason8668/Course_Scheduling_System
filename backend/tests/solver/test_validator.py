@@ -30,7 +30,7 @@ def _codes(violations) -> set[str]:
 
 def test_clean_timetable_has_no_violations(db):
     b = _base(db, 140)
-    a = b.assign(subject="国文", teachers=["甲师"], periods=2, classes=["301"])[0]
+    a = b.assign(subject="语文", teachers=["甲师"], periods=2, classes=["301"])[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
 
@@ -43,7 +43,7 @@ def test_clean_timetable_has_no_violations(db):
 
 def test_h1_class_double_booked(db):
     b = _base(db, 141)
-    guo = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["301"])[0]
+    guo = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["301"])[0]
     shu = b.assign(subject="数学", teachers=["乙师"], periods=1, classes=["301"])[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
@@ -56,8 +56,8 @@ def test_h1_class_double_booked(db):
 
 def test_h2_teacher_double_booked(db):
     b = _base(db, 142)
-    a1 = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["301"])[0]
-    a2 = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["302"])[0]
+    a1 = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["301"])[0]
+    a2 = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["302"])[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
 
@@ -70,9 +70,9 @@ def test_h3_room_double_booked_and_room_type(db):
     b = _base(db, 143)
     b.room("理化实验室", room_type=RoomType.special, capacity=30)
     b.room("操场", room_type=RoomType.outdoor, capacity=200)
-    a1 = b.assign(subject="自然科学", teachers=["甲师"], periods=1, classes=["301"],
+    a1 = b.assign(subject="科学", teachers=["甲师"], periods=1, classes=["301"],
                   room="理化实验室", required_room_type=RoomType.special)
-    a2 = b.assign(subject="自然科学", teachers=["乙师"], periods=1, classes=["302"],
+    a2 = b.assign(subject="科学", teachers=["乙师"], periods=1, classes=["302"],
                   room="理化实验室", required_room_type=RoomType.special)
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
@@ -90,7 +90,7 @@ def test_h4_teacher_unavailable(db):
     from app.models.basedata import TeacherRuleType, TeacherTimeRule
 
     b = _base(db, 144)
-    a = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["301"])[0]
+    a = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["301"])[0]
     db.add(TeacherTimeRule(teacher_id=b.teachers["甲师"].id, weekday=1, period_no=2,
                            rule_type=TeacherRuleType.unavailable.value))
     fx = b.build()
@@ -102,8 +102,8 @@ def test_h4_teacher_unavailable(db):
 
 def test_h5_non_regular_slot_and_h6_block_crossing_lunch(db):
     b = _base(db, 145)
-    single = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["301"])[0]
-    block = b.assign(subject="弹性学习", teachers=["乙师"], periods=3, classes=["302"],
+    single = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["301"])[0]
+    block = b.assign(subject="校本课程", teachers=["乙师"], periods=3, classes=["302"],
                      blocks=(3, 1))[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
@@ -132,7 +132,7 @@ def test_h7_group_out_of_sync(db):
 
 def test_h8_weekly_periods_and_block_shape(db):
     b = _base(db, 147)
-    a = b.assign(subject="国文", teachers=["甲师"], periods=3, classes=["301"])[0]
+    a = b.assign(subject="语文", teachers=["甲师"], periods=3, classes=["301"])[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
 
@@ -146,7 +146,7 @@ def test_h8_weekly_periods_and_block_shape(db):
 
 def test_h9_locked_entry_moved(db):
     b = _base(db, 148)
-    a = b.assign(subject="国文", teachers=["甲师"], periods=1, classes=["301"])[0]
+    a = b.assign(subject="语文", teachers=["甲师"], periods=1, classes=["301"])[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)
     pinned = replace(problem, fixed_entries=(FixedEntry(a.id, 1, 2, 1, None, locked=True),))
@@ -174,8 +174,8 @@ def test_h10_group_same_subject_in_one_slot_counts_once(db):
 
 def test_h10_daily_cap_counts_single_periods_only(db):
     b = _base(db, 149)
-    single = b.assign(subject="国文", teachers=["甲师"], periods=3, classes=["301"])[0]
-    block = b.assign(subject="弹性学习", teachers=["乙师"], periods=6, classes=["302"],
+    single = b.assign(subject="语文", teachers=["甲师"], periods=3, classes=["301"])[0]
+    block = b.assign(subject="校本课程", teachers=["乙师"], periods=6, classes=["302"],
                      blocks=(3, 2))[0]
     fx = b.build()
     problem = load_problem(db, fx.semester_id)

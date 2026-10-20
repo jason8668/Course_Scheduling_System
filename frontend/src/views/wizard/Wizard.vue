@@ -167,8 +167,8 @@ function openPeriodEditor() {
           >
             <n-space vertical size="small">
               <n-text>
-                可以先载入一所完整的示范初中「{{ demoSchool }}」——18 班、48 位教师、
-                384 笔配课全部建好,不必输入任何资料就能直接跑自动排课,
+                可以先载入一所完整的示范初中「{{ demoSchool }}」——18 班、57 位教师、
+                246 笔配课全部建好,不必输入任何资料就能直接跑自动排课,
                 把排课、调代课、导出、备份整套流程玩过一遍。
               </n-text>
               <n-text depth="3" style="font-size: 12px">

@@ -101,7 +101,7 @@ class ClassSpec:
     grade: int
     period_table_id: int  # 已解析(指定表 → 学期默认表),solver 不需再回退
     student_count: int | None
-    homeroom_teacher_id: int | None = None  # 软约束 S7:导师的课优先排在自己班第一节
+    homeroom_teacher_id: int | None = None  # 软约束 S7:班主任的课优先排在自己班第一节
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,7 +253,7 @@ SOFT_NAMES = {
     "S4": "教师空堂集中",
     "S5": "主科优先排上午",
     "S6": "教师连续授课节数上限",
-    "S7": "导师的课排在自己班第一节",
+    "S7": "班主任的课排在自己班第一节",
     "S8": "教师偏好达成率的公平性",
 }
 

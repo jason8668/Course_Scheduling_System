@@ -228,7 +228,7 @@ def test_import_classes_unknown_homeroom(scheduler_env):
     rows = [["1", "甲", "小学", "", "查无此人", ""]]
     body = upload(client, "classes", sid, rows, ncols=6).json()
     assert body["imported"] == 0
-    assert any("导师" in e for e in body["errors"])
+    assert any("班主任" in e for e in body["errors"])
 
 
 def test_import_invalid_file_rejected(scheduler_env):

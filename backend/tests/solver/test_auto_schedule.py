@@ -63,7 +63,7 @@ def _seed_courses(client, sid, *, periods=4):
     c = client.post(f"/api/class-units?semester_id={sid}",
                     json={"grade": 3, "name": "301", "track": "junior_high"}).json()
     out = []
-    for subject, teacher in (("国文", "王师"), ("数学", "李师")):
+    for subject, teacher in (("语文", "王师"), ("数学", "李师")):
         s = client.post(f"/api/subjects?semester_id={sid}", json={"name": subject}).json()
         t = client.post(f"/api/teachers?semester_id={sid}",
                         json={"name": teacher, "base_periods": 20}).json()
@@ -257,7 +257,7 @@ def test_preflight_errors_block_start(sched):
     client, db, sid, tid, store, calls = sched
     c = client.post(f"/api/class-units?semester_id={sid}",
                     json={"grade": 3, "name": "301", "track": "junior_high"}).json()
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "语文"}).json()
     # base_periods=0(学校未维护基钟)才建得起这笔刻意超载的配课:
     # 有填基钟的教师会先被超课时上限挡在配课阶段。
     t = client.post(f"/api/teachers?semester_id={sid}",
@@ -299,10 +299,10 @@ def test_failure_messages_are_actionable():
 
 # ── M3-5:无解时的冲突定位与部分排课 ─────────────────────────
 def _seed_infeasible(client, sid):
-    """301 班国文 12 节单节;每日上限 2 节 × 5 天 = 10 节 → 无解,但 pre-flight 看不出来。"""
+    """301 班语文 12 节单节;每日上限 2 节 × 5 天 = 10 节 → 无解,但 pre-flight 看不出来。"""
     c = client.post(f"/api/class-units?semester_id={sid}",
                     json={"grade": 3, "name": "301", "track": "junior_high"}).json()
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "语文"}).json()
     t = client.post(f"/api/teachers?semester_id={sid}",
                     json={"name": "陈师", "base_periods": 40}).json()
     client.post(f"/api/assignments?semester_id={sid}", json={
@@ -350,7 +350,7 @@ def test_partial_mode_places_most_and_lists_the_rest(sched):
 
     unscheduled = body["unscheduled"]
     assert len(unscheduled) == 1
-    assert unscheduled[0]["subject_name"] == "国文"
+    assert unscheduled[0]["subject_name"] == "语文"
     assert unscheduled[0]["periods"] == 2  # 12 节只排得下 10 节
     assert unscheduled[0]["class_names"] == ["301"]
 
@@ -375,7 +375,7 @@ def test_partial_mode_survives_preflight_overload(sched):
     client, _db, sid, tid, _store, _calls = sched
     c = client.post(f"/api/class-units?semester_id={sid}",
                     json={"grade": 3, "name": "301", "track": "junior_high"}).json()
-    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()
+    s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "语文"}).json()
     t = client.post(f"/api/teachers?semester_id={sid}",
                     json={"name": "陈师", "base_periods": 40}).json()
     client.post(f"/api/assignments?semester_id={sid}", json={

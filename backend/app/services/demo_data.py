@@ -28,12 +28,12 @@ from app.services.assignments import get_or_create_single_unit
 
 _SPEC_PATH = Path(__file__).resolve().parent.parent / "data" / "demo_school.json"
 
-# 教师身分。顺序即配课的优先序:导师要先拿到自己班的课(软约束 S7 才有东西可排),
+# 教师身分。顺序即配课的优先序:班主任要先拿到自己班的课(软约束 S7 才有东西可排),
 # 行政人员应授少、最后才补,免得把他们塞爆。
-ROLE_HOMEROOM = "导师"
+ROLE_HOMEROOM = "班主任"
 ROLE_FULLTIME = "专任"
 ROLE_EXTERNAL = "外聘"
-ROLE_ORDER = [ROLE_HOMEROOM, ROLE_FULLTIME, "组长", "主任", "专任辅导教师", ROLE_EXTERNAL]
+ROLE_ORDER = [ROLE_HOMEROOM, ROLE_FULLTIME, "组长", "主任", "心理教师", ROLE_EXTERNAL]
 
 
 @lru_cache
@@ -53,7 +53,7 @@ class _TeacherPlan:
     admin_reduction: int = 0
     admin_title: str | None = None
     is_external: bool = False
-    homeroom_of: str | None = None          # 导师带的班名
+    homeroom_of: str | None = None          # 班主任带的班名
     assigned: int = 0                        # 累计配课节数
     model: Teacher | None = field(default=None, repr=False)
 
@@ -92,7 +92,7 @@ def _base_for(spec: dict, dept: str, role: str) -> int:
 
 
 def _plan_teachers(spec: dict, class_names: list[str]) -> list[_TeacherPlan]:
-    """依编制表产生教师名册(含应授节数),导师依序绑定班级。"""
+    """依编制表产生教师名册(含应授节数),班主任依序绑定班级。"""
     surnames, givens = spec["surnames"], spec["given_names"]
     titles = {k: list(v) for k, v in spec["admin_titles"].items()}
     homeroom_queue = list(class_names)
@@ -129,7 +129,7 @@ def _plan_teachers(spec: dict, class_names: list[str]) -> list[_TeacherPlan]:
 
 
 def _class_names(spec: dict) -> list[tuple[int, str]]:
-    """班名。十二年国教后多数初中改用年级+序号(701~706),不再用忠孝仁爱。"""
+    """班名。班级以「年级+序号」命名(7年级1班~9年级6班)。"""
     cfg = spec["classes"]
     fmt = cfg.get("name_format", "{grade}{index:02d}")
     return [
@@ -232,7 +232,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         by_name[plan.name] = plan
     db.flush()
 
-    # 外聘教师的应授 = 他实际要教的节数(如本土语文 12 节),避免显示成「超课时 12 节」
+    # 外聘教师的应授 = 他实际要教的节数(如外聘的校本课程教师),避免显示成「超课时 12 节」
     demand = _demand(spec, classes)
     dept_of = {s["name"]: s["dept"] for s in spec["subjects"]}
     for plan in plans:
@@ -243,7 +243,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         assert plan.model is not None
         plan.model.base_periods = total
 
-    # ── 班级(绑导师)──
+    # ── 班级(绑班主任)──
     homeroom_by_class = {p.homeroom_of: p for p in plans if p.homeroom_of}
     class_models: dict[str, ClassUnit] = {}
     for grade, cname in classes:
@@ -266,7 +266,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
     for plan in plans:
         pools.setdefault(plan.dept, []).append(plan)
 
-    # 导师优先拿自己班、自己科的课:S7(导师的课优先排自己班第一节)才示范得出来
+    # 班主任优先拿自己班、自己科的课:S7(班主任的课优先排自己班第一节)才示范得出来
     def sort_key(row: tuple[str, str, int]) -> tuple[int, str, str]:
         cname, sname, _ = row
         hr = homeroom_by_class.get(cname)

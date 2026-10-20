@@ -82,7 +82,7 @@ TEMPLATE_DEFS: dict[str, dict] = {
             ("班名", "必填", "甲"),
             ("学制", "必填:小学/初中/普通型高中/综合型高中/技术型高中", "技术型高中"),
             ("群科", "选填(技高填写)", "机械科"),
-            ("导师", "选填,需为已建立的教师姓名", "王小明"),
+            ("班主任", "选填,需为已建立的教师姓名", "王小明"),
             ("人数", "选填,数字", "35"),
             ("节次表", "选填,需为已建立的节次表名称;空白则用学期默认", "高中部节次表"),
         ],
@@ -234,7 +234,7 @@ def _import_classes(db: Session, semester_id: int, file_bytes: bytes) -> ImportR
         homeroom_id = None
         if homeroom_name:
             if homeroom_name not in teachers:
-                result.errors.append(f"第 {idx} 列:导师「{homeroom_name}」不存在")
+                result.errors.append(f"第 {idx} 列:班主任「{homeroom_name}」不存在")
                 continue
             homeroom_id = teachers[homeroom_name]
         table_name = _cell(row, 6)
