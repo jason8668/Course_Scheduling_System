@@ -14,7 +14,7 @@ def scheduler_env(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sem = client.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     return client, sem["id"]
 
 
@@ -53,7 +53,7 @@ def test_teacher_with_subjects(scheduler_env):
 
 def test_teacher_subject_cross_semester_rejected(scheduler_env):
     client, sid = scheduler_env
-    other = client.post("/api/semesters", json={"academic_year": 115, "term": 2}).json()
+    other = client.post("/api/semesters", json={"academic_year": 2026, "term": 2}).json()
     foreign = client.post(f"/api/subjects?semester_id={other['id']}", json={"name": "体育"}).json()
     r = client.post(
         f"/api/teachers?semester_id={sid}",

@@ -233,6 +233,27 @@ def get_solve_job(
     return _job_out(state)
 
 
+@router.get("/solver/jobs", response_model=list[SolveJobOut])
+def list_solve_jobs(
+    semester_id: int = Query(...),
+    _: object = Depends(viewer),
+    store: ProgressStore = Depends(get_progress_store),
+):
+    """某学期的排课任务列表(新到旧,最多 50 笔;任务保留 24 小时)。
+
+    页面重整或从别页回来时,前端靠这支找回进行中的任务续看进度,
+    也能回看已完成任务的结果与报告,不必重新启动一次排课。
+    """
+    out: list[SolveJobOut] = []
+    for state in store.list(semester_id)[:50]:
+        if is_stale(state):
+            state.status = JobStatus.failed.value
+            state.error = "排课工作程序中断(worker 可能已重启),请重新启动排课"
+            store.update(state.job_id, status=state.status, error=state.error)
+        out.append(_job_out(state))
+    return out
+
+
 @router.post("/solver/jobs/{job_id}/stop", response_model=SolveJobOut)
 def stop_solve_job(
     job_id: str,

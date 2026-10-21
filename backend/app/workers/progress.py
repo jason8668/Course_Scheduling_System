@@ -47,6 +47,7 @@ class JobState:
     source_timetable_id: int
     source_name: str
     max_seconds: float
+    created_at: float = field(default_factory=time.time)
     heartbeat: float = field(default_factory=time.time)
     elapsed: float = 0.0
     solutions: int = 0
@@ -68,6 +69,7 @@ class JobState:
 class ProgressStore(Protocol):
     def create(self, state: JobState) -> None: ...
     def get(self, job_id: str) -> JobState | None: ...
+    def list(self, semester_id: int | None = None) -> list[JobState]: ...
     def update(self, job_id: str, **fields: object) -> None: ...
     def request(self, job_id: str, action: ControlAction) -> None: ...
     def requested(self, job_id: str) -> ControlAction | None: ...
@@ -105,6 +107,19 @@ class RedisProgressStore:
         }
         return JobState(**fields)  # type: ignore[arg-type]
 
+    def list(self, semester_id: int | None = None) -> list[JobState]:
+        states: list[JobState] = []
+        for key in self._redis.scan_iter(match=f"{KEY_PREFIX}*"):
+            name = key.decode() if isinstance(key, bytes) else str(key)
+            if name.endswith(":control"):
+                continue
+            job_id = name[len(KEY_PREFIX):]
+            state = self.get(job_id)
+            if state is not None and (semester_id is None or state.semester_id == semester_id):
+                states.append(state)
+        states.sort(key=lambda st: st.created_at, reverse=True)
+        return states
+
     def update(self, job_id: str, **fields: object) -> None:
         key = self._key(job_id)
         if not self._redis.exists(key):
@@ -135,6 +150,14 @@ class InMemoryProgressStore:
 
     def get(self, job_id: str) -> JobState | None:
         return self.states.get(job_id)
+
+    def list(self, semester_id: int | None = None) -> list[JobState]:
+        states = [
+            st for st in self.states.values()
+            if semester_id is None or st.semester_id == semester_id
+        ]
+        states.sort(key=lambda st: st.created_at, reverse=True)
+        return states
 
     def update(self, job_id: str, **fields: object) -> None:
         state = self.states.get(job_id)

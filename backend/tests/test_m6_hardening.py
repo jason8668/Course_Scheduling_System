@@ -22,7 +22,7 @@ def school(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 115, "term": 1, "template_key": "junior_high",
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
     }).json()["id"]
     return client, db, sid
 
@@ -46,7 +46,7 @@ def test_the_same_class_name_in_another_semester_is_fine(school):
     """唯一性只在学期内:每年都会有 301。"""
     client, _db, sid = school
     assert _class(client, sid, "301").status_code == 201
-    other = client.post("/api/semesters", json={"academic_year": 116, "term": 1}).json()["id"]
+    other = client.post("/api/semesters", json={"academic_year": 2027, "term": 1}).json()["id"]
     assert _class(client, other, "301").status_code == 201
 
 
@@ -123,7 +123,7 @@ def test_substitution_log_query_applies_the_limit_in_sql(env):
     make_user(db, "s2", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s2", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 117, "term": 1, "template_key": "junior_high",
+        "academic_year": 2028, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     w = _World(client, db, sid)

@@ -22,7 +22,7 @@ const wizard = useWizardStore()
 const step = ref(0)
 const templates = ref<Template[]>([])
 const templateKey = ref<string | null>(null)
-const year = ref(115)
+const year = ref(new Date().getFullYear())
 const term = ref(1)
 // 学期起讫日期:请假展开、今日看板与调代课都以它为准,建立时就要填(用户回报 #15)
 const startDate = ref<string | null>(null)
@@ -211,7 +211,7 @@ function openPeriodEditor() {
             <n-text>设置本学期的学年度与学期别。</n-text>
             <n-space align="center">
               <n-text>学年度</n-text>
-              <n-input-number v-model:value="year" data-testid="wizard-year" :min="100" :max="200" :disabled="!!semesterId" style="width: 120px" />
+              <n-input-number v-model:value="year" data-testid="wizard-year" :min="2000" :max="2100" :disabled="!!semesterId" style="width: 120px" />
               <n-select v-model:value="term" :options="termOptions" :disabled="!!semesterId" style="width: 140px" />
             </n-space>
             <n-space align="center">

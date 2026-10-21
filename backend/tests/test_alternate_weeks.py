@@ -281,7 +281,7 @@ class _Term:
         client.post("/api/auth/login", json={"username": "s", "password": "password123"})
         self.client, self.db, self.sem_start = client, db, SEM_START
         self.sid = client.post("/api/semesters", json={
-            "academic_year": 115, "term": 1, "template_key": "junior_high",
+            "academic_year": 2026, "term": 1, "template_key": "junior_high",
             "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
         }).json()["id"]
         self.q = q = f"?semester_id={self.sid}"

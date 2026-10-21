@@ -20,7 +20,7 @@ def w(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 115, "term": 1, "template_key": "junior_high",
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     return _World(client, db, sid)
@@ -51,7 +51,7 @@ def test_sheet_follows_the_paper_form(w):
     r = _sheets(w)
     assert r.status_code == 200, r.json()
     body = r.json()
-    assert "115学年第一学期" in body["title"]
+    assert "2026学年第一学期" in body["title"]
     assert "授课情形" in body["legend"]
     assert [(p["first_ordinal"], p["last_ordinal"]) for p in body["pages"]] == [(1, 4), (5, 7)]
     morning = body["pages"][0]
@@ -271,7 +271,7 @@ def test_xlsx_has_a_sheet_per_half_day_with_the_same_content_as_the_print_page(w
     ws = wb[f"{day} 上午"]
     texts = _texts(ws)
     assert "巡堂纪录" in texts[0] and "第 1~4 节" in texts[0]
-    assert f"{WED.year - 1911}年{WED.month}月{WED.day}日" in texts[0]
+    assert f"{WED.year}年{WED.month}月{WED.day}日" in texts[0]
     header = [c.value for c in ws[2]]
     assert header[0] == "节次" and "701" in header and "巡堂" in header[-1]
     col = header.index("701") + 1

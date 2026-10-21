@@ -23,7 +23,7 @@ def w(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 115, "term": 1, "template_key": "junior_high",
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     world = _World(client, db, sid)
@@ -116,7 +116,7 @@ def test_export_unpublished_semester_404(env):
     make_user(db, "s2", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s2", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 116, "term": 1, "template_key": "junior_high",
+        "academic_year": 2027, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     cid = client.post(f"/api/class-units?semester_id={sid}",

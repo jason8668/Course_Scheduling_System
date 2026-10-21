@@ -34,8 +34,8 @@ _LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
 
 def _date_label(day: date) -> str:
-    """「115年10月13日 星期二」:纸本用民国年。"""
-    return f"{day.year - 1911}年{day.month}月{day.day}日　星期{_WEEKDAYS[day.isoweekday() - 1]}"
+    """「2026年10月13日 星期二」:纸本用公元年。"""
+    return f"{day.year}年{day.month}月{day.day}日　星期{_WEEKDAYS[day.isoweekday() - 1]}"
 
 
 def _range(first: int, last: int) -> str:

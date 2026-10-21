@@ -65,7 +65,7 @@ class PeriodTableUpdate(BaseModel):
 
 # ── 学期 ──────────────────────────────
 class SemesterCreate(BaseModel):
-    academic_year: int = Field(ge=100, le=200)  # 民国学年度
+    academic_year: int = Field(ge=2000, le=2100)  # 公元学年度,如 2026
     term: int = Field(ge=1, le=2)
     start_date: date | None = None
     end_date: date | None = None
@@ -80,7 +80,7 @@ class SemesterUpdate(BaseModel):
 
 
 class SemesterCopyRequest(BaseModel):
-    academic_year: int = Field(ge=100, le=200)
+    academic_year: int = Field(ge=2000, le=2100)
     term: int = Field(ge=1, le=2)
     # 新学期的起讫日:不能沿用来源学期(那是上学期的日期)。少了它,请假展开、今日看板、
     # 代课的「已上过」判定全部失准,而且界面上看不出哪里不对(M6-4)。

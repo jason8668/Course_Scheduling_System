@@ -17,7 +17,7 @@ def scheduler_env(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sem = client.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     return client, sem["id"]
 
 
@@ -92,7 +92,7 @@ def test_import_teachers_with_accounts(scheduler_env):
     assert {s["name"] for s in wang["subjects"]} == {"数学", "物理"}
     # 帐号已建立,可用默认密码登录(首登需改密)
     client.post("/api/auth/logout")
-    login = client.post("/api/auth/login", json={"username": "wang001", "password": "changeme"})
+    login = client.post("/api/auth/login", json={"username": "wang001", "password": "admin"})
     assert login.status_code == 200
     assert login.json()["must_change_password"] is True
 

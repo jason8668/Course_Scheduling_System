@@ -43,7 +43,7 @@ def school(env):
     client.post("/api/auth/login", json={"username": "s", "password": PW})
 
     sid = client.post("/api/semesters", json={
-        "academic_year": 115, "term": 1, "template_key": "junior_high",
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
 
@@ -191,7 +191,7 @@ def test_semester_without_dates_cannot_accept_leaves(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 116, "term": 1, "template_key": "junior_high"}).json()["id"]
+        "academic_year": 2027, "term": 1, "template_key": "junior_high"}).json()["id"]
     t = client.post(f"/api/teachers?semester_id={sid}",
                     json={"name": "王师", "base_periods": 20}).json()
 
@@ -337,7 +337,7 @@ def test_leave_without_published_timetable_registers_with_no_periods(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 117, "term": 1, "template_key": "junior_high",
+        "academic_year": 2028, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat()}).json()["id"]
     t = client.post(f"/api/teachers?semester_id={sid}",
                     json={"name": "王师", "base_periods": 20}).json()

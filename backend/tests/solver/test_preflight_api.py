@@ -31,7 +31,7 @@ def test_preflight_ok(env):
     client, db = env
     _login(client, db)
     sid = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()["id"]
     _setup(client, sid, periods=20)
 
@@ -42,14 +42,14 @@ def test_preflight_ok(env):
     assert body["error_count"] == 0
     assert body["class_count"] == 1 and body["teacher_count"] == 1
     assert body["assignment_count"] == 1 and body["total_periods"] == 20
-    assert body["semester_label"] == "115 学年度第 1 学期"
+    assert body["semester_label"] == "2026 学年度第 1 学期"
 
 
 def test_preflight_reports_class_overload(env):
     client, db = env
     _login(client, db)
     sid = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()["id"]
     # 40 > 35 可排节次(物理性超载)。base_periods=0 代表学校未维护基钟,
     # 这类教师不受超课时上限管制——否则这笔配课在建立阶段就会被挡下,
@@ -80,7 +80,7 @@ def test_preflight_requires_scheduler(env):
     client, db = env
     _login(client, db, username="t", roles=(Role.teacher,))
     sid = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).status_code
     assert sid == 403  # teacher 连建学期都不行
     assert client.get("/api/solver/preflight?semester_id=1").status_code == 403

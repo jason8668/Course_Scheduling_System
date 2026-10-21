@@ -16,7 +16,7 @@ def env2(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()
     return client, sem
 
@@ -75,7 +75,7 @@ def test_delete_period_table_referenced_by_class_blocked(env2):
 def test_assign_cross_semester_table_rejected(env2):
     client, sem = env2
     sid = sem["id"]
-    other = client.post("/api/semesters", json={"academic_year": 115, "term": 2}).json()
+    other = client.post("/api/semesters", json={"academic_year": 2026, "term": 2}).json()
     foreign = _add_table(client, other["id"], "外部表", "senior_high")["id"]
     r = client.post(
         f"/api/class-units?semester_id={sid}",

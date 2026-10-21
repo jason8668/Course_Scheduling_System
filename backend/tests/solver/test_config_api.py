@@ -19,7 +19,7 @@ def _login(client, db, username="s", roles=(Role.scheduler,)):
 
 def _semester(client):
     return client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()["id"]
 
 

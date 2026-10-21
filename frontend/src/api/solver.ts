@@ -78,6 +78,7 @@ export interface RelaxableOption {
 
 export interface SolveJob {
   job_id: string
+  created_at: number
   status: JobStatus
   semester_id: number
   source_timetable_id: number
@@ -129,6 +130,9 @@ export const startAutoSchedule = (
     allow_partial: options.allowPartial ?? false,
     relax: options.relax ?? [],
   })
+
+export const listSolveJobs = (semesterId: number): Promise<SolveJob[]> =>
+  apiGet(`/solver/jobs?semester_id=${semesterId}`)
 
 export const getSolveJob = (jobId: string): Promise<SolveJob> => apiGet(`/solver/jobs/${jobId}`)
 export const stopSolveJob = (jobId: string): Promise<SolveJob> =>

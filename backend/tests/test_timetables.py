@@ -41,7 +41,7 @@ def env2(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sem = client.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     sid = sem["id"]
     pt = client.post(
         f"/api/semesters/{sid}/period-tables", json={"name": "主表", "is_default": True}
@@ -223,7 +223,7 @@ def test_slot_label_uses_period_name_not_index(env):
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post(
         "/api/semesters",
-        json={"academic_year": 117, "term": 1, "template_key": "junior_high"},
+        json={"academic_year": 2028, "term": 1, "template_key": "junior_high"},
     ).json()["id"]
     tid = client.post(f"/api/timetables?semester_id={sid}", json={"name": "草稿"}).json()["id"]
 
@@ -331,7 +331,7 @@ def test_place_rejects_room_from_other_semester(env2):
     t = _teacher(client, sid, "师一")
     s = _subject(client, sid, "自然")
     a = _assign(client, sid, class_id=c["id"], subject_id=s["id"], teacher_ids=[t["id"]])
-    other = client.post("/api/semesters", json={"academic_year": 116, "term": 1}).json()
+    other = client.post("/api/semesters", json={"academic_year": 2027, "term": 1}).json()
     foreign = _room(client, other["id"], "他校教室")
     r = _place(client, tid, a["id"], 1, 1, room_id=foreign["id"])
     assert r.status_code == 400
@@ -649,7 +649,7 @@ def mixed(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sid = client.post("/api/semesters", json={"academic_year": 116, "term": 1}).json()["id"]
+    sid = client.post("/api/semesters", json={"academic_year": 2027, "term": 1}).json()["id"]
     pt_e = client.post(f"/api/semesters/{sid}/period-tables",
                        json={"name": "小学部", "is_default": True}).json()
     pt_s = client.post(f"/api/semesters/{sid}/period-tables", json={"name": "高中部"}).json()
@@ -754,7 +754,7 @@ def test_daily_cap_follows_the_semester_config(env):
     client.post("/api/auth/login", json={"username": "s", "password": PW})
 
     sid = client.post("/api/semesters", json={
-        "academic_year": 180, "term": 1, "template_key": "junior_high"}).json()["id"]
+        "academic_year": 2030, "term": 1, "template_key": "junior_high"}).json()["id"]
     c = client.post(f"/api/class-units?semester_id={sid}",
                     json={"grade": 3, "name": "301", "track": "junior_high"}).json()
     s = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()

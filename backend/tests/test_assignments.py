@@ -19,7 +19,7 @@ def env2(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()
     return client, sem["id"]
 

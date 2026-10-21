@@ -113,6 +113,7 @@ class AutoScheduleAccepted(BaseModel):
 
 class SolveJobOut(BaseModel):
     job_id: str
+    created_at: float = 0.0
     status: str  # queued / running / finished / failed / cancelled
     semester_id: int
     source_timetable_id: int

@@ -26,7 +26,7 @@ def w(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
-        "academic_year": 115, "term": 1, "template_key": "junior_high",
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
         "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
     }).json()["id"]
     return _World(client, db, sid)
@@ -51,7 +51,7 @@ def test_board_empty_when_no_leave_that_day(w):
     assert board["date"] == WED.isoformat()
     assert board["weekday"] == 3
     assert board["school_name"]           # 表头校名(供打印通知单)
-    assert board["semester_label"] == "115 学年度第 1 学期"
+    assert board["semester_label"] == "2026 学年度第 1 学期"
 
 
 def test_board_lists_todays_changes_with_disposition(w):

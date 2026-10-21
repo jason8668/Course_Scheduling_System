@@ -15,7 +15,7 @@ def populated(env):
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()
     sid = sem["id"]
     # 科目已由范本带入;再加教师(含科目+时段规则)、场地、班级
@@ -39,7 +39,7 @@ def populated(env):
 
 
 def _copy(client, sid, **kwargs):
-    body = {"academic_year": 116, "term": 1, **kwargs}
+    body = {"academic_year": 2027, "term": 1, **kwargs}
     return client.post(f"/api/semesters/{sid}/copy", json=body)
 
 
@@ -49,7 +49,7 @@ def test_copy_all_and_counts(populated):
     assert r.status_code == 201
     new = r.json()
     nid = new["id"]
-    assert new["label"] == "116 学年度第 1 学期"
+    assert new["label"] == "2027 学年度第 1 学期"
     # 各实体数量一致
     assert len(client.get(f"/api/subjects?semester_id={nid}").json()) == \
         len(client.get(f"/api/subjects?semester_id={sid}").json())

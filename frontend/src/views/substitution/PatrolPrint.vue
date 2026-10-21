@@ -16,11 +16,11 @@ const data = ref<PatrolSheets | null>(null)
 const error = ref('')
 const loading = ref(true)
 
-/** 「115年9月29日 星期二」:纸本用民国年 */
+/** 「2026年9月29日 星期二」:纸本用公元年 */
 function dateLabel(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   const weekday = new Date(y, m - 1, d).getDay()
-  return `${y - 1911}年${m}月${d}日　星期${WEEKDAYS[(weekday + 6) % 7]}`
+  return `${y}年${m}月${d}日　星期${WEEKDAYS[(weekday + 6) % 7]}`
 }
 
 function range(first: number, last: number): string {

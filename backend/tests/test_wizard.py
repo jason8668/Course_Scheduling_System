@@ -29,7 +29,7 @@ def test_initial_state_is_step0_incomplete(scheduler):
 
 def test_progress_persists(scheduler):
     """验收②:更新步骤后再读,状态保留(模拟关浏览器后续作)。"""
-    sem = scheduler.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = scheduler.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     scheduler.patch("/api/wizard/state", json={"current_step": 3, "semester_id": sem["id"]})
     body = scheduler.get("/api/wizard/state").json()
     assert body["current_step"] == 3
@@ -56,7 +56,7 @@ def test_step_clamped_to_valid_range(scheduler):
 def test_semester_summary_counts(scheduler):
     """验收①:摘要显示教师/班级等数量。"""
     # 用空白学期(不带范本)使计数可预期
-    sem = scheduler.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = scheduler.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     sid = sem["id"]
     scheduler.post(f"/api/subjects?semester_id={sid}", json={"name": "数学"})
     scheduler.post(f"/api/teachers?semester_id={sid}", json={"name": "王老师"})

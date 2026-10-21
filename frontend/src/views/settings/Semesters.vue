@@ -23,7 +23,7 @@ const loading = ref(false)
 // 建立学期表单。起讫日期是请假展开、今日看板、调代课判定的依据——少了它请假会被挡,
 // 而先前界面上没有任何地方填得了(用户回报 #15)
 const emptyForm = () => ({
-  academic_year: 115, term: 1, template_key: null as string | null,
+  academic_year: new Date().getFullYear(), term: 1, template_key: null as string | null,
   start_date: null as string | null, end_date: null as string | null,
 })
 const form = ref(emptyForm())
@@ -163,7 +163,7 @@ function halfYearLater(day: string | null): string | null {
 }
 
 const emptyCopyForm = (): CopyOptions => ({
-  academic_year: 115, term: 1,
+  academic_year: new Date().getFullYear(), term: 1,
   start_date: null, end_date: null,
   period_tables: true, subjects: true, teachers: true, rooms: true, classes: true,
   grade_promotion: true, constraint_config: true,
@@ -210,7 +210,7 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
       <n-card title="建立学期">
         <n-space align="center" :wrap="true">
           <n-text>学年度</n-text>
-          <n-input-number v-model:value="form.academic_year" :min="100" :max="200" style="width: 120px" />
+          <n-input-number v-model:value="form.academic_year" :min="2000" :max="2100" style="width: 120px" />
           <n-select v-model:value="form.term" :options="termOptions" style="width: 130px" />
           <n-text>学制范本</n-text>
           <n-select
@@ -357,7 +357,7 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
       <n-space vertical>
         <n-space align="center">
           <n-text>目标学年度</n-text>
-          <n-input-number v-model:value="copyForm.academic_year" :min="100" :max="200" style="width: 120px" />
+          <n-input-number v-model:value="copyForm.academic_year" :min="2000" :max="2100" style="width: 120px" />
           <n-select v-model:value="copyForm.term" :options="termOptions" style="width: 130px" />
         </n-space>
         <!-- 起讫日必填:请假展开、今日看板、代课的「已上过」判定都吃它,漏填不会报错但整个算错 -->

@@ -24,7 +24,7 @@ def env3(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sid = client.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()["id"]
+    sid = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()["id"]
     pt = client.post(
         f"/api/semesters/{sid}/period-tables", json={"name": "主表", "is_default": True}
     ).json()

@@ -243,7 +243,8 @@ def create_teacher_account(
     if db.scalar(select(User.id).where(User.username == username)) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, f"登录帐号「{username}」已存在")
     password = body.password or settings.default_import_password
-    if len(password) < settings.min_password_length:
+    # 长度规则只管自填密码:系统默认密码是初始密码(首次登录强制修改),比照管理员种子帐号不设限
+    if body.password and len(password) < settings.min_password_length:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"密码至少需 {settings.min_password_length} 个字元",
@@ -276,7 +277,8 @@ def reset_teacher_password(
     """
     _, user = _teacher_account(db, teacher_id)
     password = body.password or settings.default_import_password
-    if len(password) < settings.min_password_length:
+    # 长度规则只管自填密码:系统默认密码是初始密码(首次登录强制修改),比照管理员种子帐号不设限
+    if body.password and len(password) < settings.min_password_length:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"密码至少需 {settings.min_password_length} 个字元",

@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # 新密码最短长度
     min_password_length: int = 8
     # 导入教师并建立帐号时的默认密码(首次登录强制更改)
-    default_import_password: str = "changeme"
+    default_import_password: str = "admin"  # 教师帐号初始密码(导入建号/补开/重设留空时用);首次登录强制改密码
 
     # CORS(开发模式前端 dev server 来源)
     cors_origins: list[str] = ["http://localhost", "http://localhost:5173"]

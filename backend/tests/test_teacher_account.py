@@ -19,7 +19,7 @@ def sched(env):
     client, db = env
     make_user(db, "s", PW, roles=[Role.scheduler])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
-    sem = client.post("/api/semesters", json={"academic_year": 115, "term": 1}).json()
+    sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     return client, sem["id"], db
 
 
@@ -141,7 +141,7 @@ def test_create_account_for_existing_teacher(sched):
     # 新帐号用默认密码登录得了(密码未指定时用部署设置的默认值)
     client.post("/api/auth/logout")
     assert client.post(
-        "/api/auth/login", json={"username": "wang001", "password": "changeme"}
+        "/api/auth/login", json={"username": "wang001", "password": "admin"}
     ).status_code == 200
 
 
@@ -334,7 +334,7 @@ def test_import_binds_account(sched):
     assert wang["phone"] == "0911"
     # 绑定帐号可用默认密码登录
     client.post("/api/auth/logout")
-    login = client.post("/api/auth/login", json={"username": "wang001", "password": "changeme"})
+    login = client.post("/api/auth/login", json={"username": "wang001", "password": "admin"})
     assert login.status_code == 200
 
 
@@ -358,7 +358,7 @@ def test_copy_preserves_binding_and_contact(sched):
     )
     r = client.post(
         f"/api/semesters/{sid}/copy",
-        json={"academic_year": 116, "term": 1, "grade_promotion": False},
+        json={"academic_year": 2027, "term": 1, "grade_promotion": False},
     )
     assert r.status_code == 201
     nid = r.json()["id"]

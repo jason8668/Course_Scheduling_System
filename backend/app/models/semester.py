@@ -29,7 +29,7 @@ class Semester(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    academic_year: Mapped[int] = mapped_column(Integer)  # 学年度,如 115
+    academic_year: Mapped[int] = mapped_column(Integer)  # 学年度(公元),如 2026
     term: Mapped[int] = mapped_column(Integer)           # 学期,1 或 2
     # 领域日期,无时区(见 architecture.md D6)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)

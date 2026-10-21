@@ -9,7 +9,7 @@ import type { ApiError } from '@/api/client'
 import { listSemesters } from '@/api/semesters'
 import type { SemesterListItem } from '@/api/semesters'
 import {
-  cancelSolveJob, getSolveJob, listRelaxable, preflight, startAutoSchedule, stopSolveJob,
+  cancelSolveJob, getSolveJob, listRelaxable, listSolveJobs, preflight, startAutoSchedule, stopSolveJob,
 } from '@/api/solver'
 import type {
   PreflightIssue, PreflightReport, RelaxableOption, SolveJob,
@@ -30,6 +30,7 @@ const minutes = ref(10) // timeout 默认 10 分钟
 
 const check = ref<PreflightReport | null>(null)
 const job = ref<SolveJob | null>(null)
+const history = ref<SolveJob[]>([])
 const blockingIssues = ref<PreflightIssue[]>([])
 const starting = ref(false)
 
@@ -93,12 +94,60 @@ function stopPolling() {
 }
 onUnmounted(stopPolling)
 
+const isActive = (j: SolveJob) => j.status === 'queued' || j.status === 'running'
+
+function tagTypeFor(j: SolveJob) {
+  if (isActive(j)) return 'info'
+  if (j.status === 'finished') return 'success'
+  if (j.status === 'cancelled') return 'warning'
+  return 'error'
+}
+
+function labelFor(j: SolveJob) {
+  if (isActive(j) && j.phase === 'explaining') return '定位无解原因中'
+  return STATUS_LABELS[j.status] ?? j.status
+}
+
+function fmtTime(ts: number) {
+  if (!ts) return ''
+  const d = new Date(ts * 1000)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/** 把某个任务装进「排课进度」卡:进行中的顺带接上轮询。 */
+function attachJob(j: SolveJob) {
+  job.value = j
+  stopPolling()
+  if (isActive(j)) timer = setInterval(poll, POLL_MS)
+}
+
+/** 拉本学期的任务列表;有进行中的任务而进度卡没在跟它,就自动接回。 */
+async function loadHistory() {
+  if (!sid.value) return
+  try {
+    history.value = await listSolveJobs(sid.value)
+  } catch {
+    history.value = []
+    return
+  }
+  const active = history.value.find(isActive)
+  if (active && (!job.value || job.value.job_id === active.job_id || !isActive(job.value))) {
+    if (job.value?.job_id !== active.job_id) attachJob(active)
+  }
+}
+
+function selectJob(j: SolveJob) {
+  attachJob(j)
+}
+
 async function reload() {
   if (!sid.value) return
   const all = await listTimetables(sid.value)
   drafts.value = all.filter((t) => t.status === 'draft')
   sourceId.value = drafts.value[0]?.id ?? null
   check.value = await preflight(sid.value)
+  await loadHistory()
 }
 
 async function onSemesterChange(id: number) {
@@ -140,9 +189,8 @@ async function onStart() {
       allowPartial: allowPartial.value,
       relax: allowPartial.value ? relax.value : [],
     })
-    job.value = await getSolveJob(job_id)
-    stopPolling()
-    timer = setInterval(poll, POLL_MS)
+    attachJob(await getSolveJob(job_id))
+    await loadHistory()
   } catch (e) {
     const detail = (e as ApiError).detail as unknown
     if (detail && typeof detail === 'object' && 'issues' in detail) {
@@ -392,6 +440,34 @@ function openResult() {
               </tr>
             </tbody>
           </table>
+        </n-space>
+      </n-card>
+
+      <!-- 排课记录:离开页面再回来,靠它找回进行中的任务与过去的结果(保留 24 小时) -->
+      <n-card title="排课记录" size="small" data-testid="as-history">
+        <n-space vertical size="small">
+          <n-text v-if="!history.length" depth="3">尚无排课记录(记录保留 24 小时)</n-text>
+          <div
+            v-for="j in history" :key="j.job_id" data-testid="as-history-row"
+            :style="{
+              cursor: 'pointer', padding: '6px 8px', borderRadius: '4px',
+              background: job?.job_id === j.job_id ? 'rgba(128,128,128,0.12)' : 'transparent',
+            }"
+            @click="selectJob(j)"
+          >
+            <n-space align="center" :size="8">
+              <n-text depth="3">{{ fmtTime(j.created_at) }}</n-text>
+              <n-tag size="small" :type="tagTypeFor(j)">{{ labelFor(j) }}</n-tag>
+              <n-text>来源:{{ j.source_name }}</n-text>
+              <n-text v-if="j.solutions" depth="3">{{ j.solutions }} 个解</n-text>
+              <n-text v-if="j.status === 'finished' && j.result_name" depth="3">
+                结果:{{ j.result_name }}
+              </n-text>
+              <n-text v-if="j.status === 'failed' && j.error" depth="3">
+                {{ j.error.slice(0, 40) }}
+              </n-text>
+            </n-space>
+          </div>
         </n-space>
       </n-card>
     </template>

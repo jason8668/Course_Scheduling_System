@@ -53,7 +53,7 @@ def sched(env, monkeypatch):
     monkeypatch.setattr(job_queue, "enqueue_solve", fake_enqueue)
 
     sid = client.post(
-        "/api/semesters", json={"academic_year": 115, "term": 1, "template_key": "junior_high"}
+        "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}
     ).json()["id"]
     tt = client.post(f"/api/timetables?semester_id={sid}", json={"name": "草稿A"}).json()
     return client, db, sid, tt["id"], store, calls
@@ -449,3 +449,55 @@ def test_timeout_on_a_solvable_problem_says_so(sched):
     assert "确实排得出来" in got.error
     assert got.conflict["status"] == "feasible"
     assert got.conflict["causes"] == []
+
+
+# ── 任务列表:离开页面再回来,靠它找回进行中任务与历史结果 ──────────────
+
+def _mk_job(job_id, semester_id, *, created_at, status="finished", heartbeat=None):
+    return JobState(
+        job_id=job_id, status=status, semester_id=semester_id,
+        source_timetable_id=1, source_name="草稿A", max_seconds=60,
+        created_at=created_at,
+        heartbeat=created_at if heartbeat is None else heartbeat,
+    )
+
+
+def test_jobs_list_newest_first_and_filtered_by_semester(sched):
+    client, db, sid, tid, store, calls = sched
+    store.create(_mk_job("old", sid, created_at=1000.0))
+    store.create(_mk_job("new", sid, created_at=2000.0))
+    store.create(_mk_job("other", sid + 999, created_at=3000.0))
+
+    r = client.get(f"/api/solver/jobs?semester_id={sid}")
+    assert r.status_code == 200
+    body = r.json()
+    assert [j["job_id"] for j in body] == ["new", "old"]
+    assert body[0]["source_name"] == "草稿A"
+    assert body[0]["created_at"] == 2000.0
+
+
+def test_jobs_list_empty_for_fresh_semester(sched):
+    client, db, sid, tid, store, calls = sched
+    assert client.get(f"/api/solver/jobs?semester_id={sid}").json() == []
+
+
+def test_jobs_list_marks_stale_running_job_failed(sched):
+    client, db, sid, tid, store, calls = sched
+    store.create(_mk_job("stuck", sid, created_at=time.time() - 7200,
+                         status=JobStatus.running.value,
+                         heartbeat=time.time() - 3600))
+    body = client.get(f"/api/solver/jobs?semester_id={sid}").json()
+    assert body[0]["status"] == "failed"
+    assert "中断" in body[0]["error"]
+
+
+def test_jobs_list_contains_started_job(sched):
+    client, db, sid, tid, store, calls = sched
+    _seed_courses(client, sid)
+    r = _start(client, tid)
+    assert r.status_code == 202
+    body = client.get(f"/api/solver/jobs?semester_id={sid}").json()
+    assert len(body) == 1
+    assert body[0]["job_id"] == r.json()["job_id"]
+    assert body[0]["status"] == "finished"  # 假伫列同步执行,立刻完成
+    assert body[0]["result_timetable_id"] is not None
