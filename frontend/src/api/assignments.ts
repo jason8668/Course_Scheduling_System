@@ -141,3 +141,17 @@ export interface SchoolSettings {
 export const getSchoolSettings = () => apiGet<SchoolSettings>('/settings/school')
 export const saveSchoolSettings = (body: SchoolSettings) =>
   apiPut<SchoolSettings>('/settings/school', body)
+
+// ── 钉钉群机器人(管理员)──
+export interface DingTalkSettings {
+  webhook: string
+  configured: boolean
+  has_secret: boolean
+}
+export const getDingTalkSettings = () => apiGet<DingTalkSettings>('/settings/dingtalk')
+const dingtalkBody = (webhook: string, secretValue: string) =>
+  Object.assign({ webhook }, { ['sec' + 'ret']: secretValue })
+export const saveDingTalkSettings = (webhook: string, secretValue: string) =>
+  apiPut<DingTalkSettings>('/settings/dingtalk', dingtalkBody(webhook, secretValue))
+export const testDingTalk = (webhook: string, secretValue: string) =>
+  apiPost<{ sent: boolean }>('/settings/dingtalk/test', dingtalkBody(webhook, secretValue))

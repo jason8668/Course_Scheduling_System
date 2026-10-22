@@ -3,6 +3,7 @@ import {
   NAlert, NButton, NCard, NCheckbox, NDivider, NEmpty, NInputNumber, NModal, NPopconfirm,
   NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText, useMessage,
 } from 'naive-ui'
+import { classLabel } from '@/utils/labels'
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
@@ -34,7 +35,7 @@ const loads = ref<TeacherLoad[]>([])
 const classLoads = ref<ClassLoad[]>([])
 
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade}年${c.name}`, value: c.id })))
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
 const subjectOptions = computed(() => subjects.value.map((s) => ({ label: s.name, value: s.id })))
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
@@ -262,7 +263,7 @@ function unitLabel(a: Assignment): string {
     return `${u.name}(${a.week_parity ? WEEK_LABELS[a.week_parity] : '未设周别'})`
   }
   const c = u.classes[0]
-  return c ? `${c.grade}年${c.name}` : u.name
+  return c ? classLabel(c) : u.name
 }
 function blockLabel(a: Assignment): string {
   if (a.block_rules.length === 0) return '—'
@@ -366,7 +367,7 @@ function blockLabel(a: Assignment): string {
               <n-text>
                 <strong>{{ g.name }}</strong>
                 <n-text depth="3" style="margin-left: 8px">
-                  {{ g.classes.map((c) => `${c.grade}年${c.name}`).join('、') }}
+                  {{ g.classes.map((c) => classLabel(c)).join('、') }}
                 </n-text>
               </n-text>
               <n-popconfirm @positive-click="removeGroup(g)">

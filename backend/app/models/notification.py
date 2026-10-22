@@ -1,6 +1,6 @@
 """通知 model(architecture.md §5.3)。
 
-M4-1 只建立资料落地与写入点;**寄送管道**(站内铃铛、Email、v2 的 webhook/LINE)
+M4-1 只建立资料落地与写入点;**寄送管道**(站内铃铛、Email、v2 的 webhook/钉钉)
 由 M4-3 以 `NotificationChannel` 介面实作。这里先把「该通知谁、通知什么」定下来,
 因为销假的级联取消必须立刻能通知已被指派的代课教师——那是 M4-1 的验收标准。
 

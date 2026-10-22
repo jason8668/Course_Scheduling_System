@@ -3,6 +3,7 @@ import {
   NButton, NButtonGroup, NCard, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
   useMessage,
 } from 'naive-ui'
+import { classLabel } from '@/utils/labels'
 import { computed, onMounted, ref } from 'vue'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
@@ -77,7 +78,7 @@ async function onExportAll(kind: 'school' | 'batch') {
 
 const semesterOptions = computed(() => semesters.value.map((s) => ({ label: s.label, value: s.id })))
 const classOptions = computed(() =>
-  (data.value?.classes ?? []).map((c) => ({ label: `${c.grade}年${c.name}`, value: c.id })))
+  (data.value?.classes ?? []).map((c) => ({ label: classLabel(c), value: c.id })))
 const teacherOptions = computed(() =>
   (data.value?.teachers ?? []).map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() =>

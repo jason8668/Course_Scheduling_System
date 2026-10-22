@@ -32,7 +32,6 @@ export interface Teacher {
   subjects: SubjectBrief[]
   email: string | null
   phone: string | null
-  line_id: string | null
   user_id: number | null
 }
 export interface BindableAccount {

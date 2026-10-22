@@ -20,7 +20,7 @@ function stubFetch(rows: number) {
     let body: unknown = Array.from({ length: rows }, (_, i) => leave(i + 1))
     if (url.includes('/leave-types')) body = { sick: '病假' }
     else if (url.includes('/teachers')) body = []
-    else if (url.includes('/semesters')) body = [{ id: 1, label: '149 学年度第 1 学期' }]
+    else if (url.includes('/semesters')) body = [{ id: 1, label: '2026-2027 学年 第 1 学期' }]
     return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) })
   }))
 }

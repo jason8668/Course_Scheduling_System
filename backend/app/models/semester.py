@@ -47,4 +47,4 @@ class Semester(Base):
 
     @property
     def label(self) -> str:
-        return f"{self.academic_year} 学年度第 {self.term} 学期"
+        return f"{self.academic_year}-{self.academic_year + 1} 学年 第 {self.term} 学期"

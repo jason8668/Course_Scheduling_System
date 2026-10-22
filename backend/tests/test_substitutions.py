@@ -597,7 +597,7 @@ def test_swap_slips_same_class_follow_the_paper_form(env2):
     r = _slips(w, *wang)
     assert r.status_code == 200, r.json()
     body = r.json()
-    assert body["title"].endswith("2026学年第一学期")
+    assert body["title"].endswith("2026-2027学年第一学期")
     kinds = [(s["kind"], s["teacher_name"], s["class_names"]) for s in body["slips"]]
     assert kinds == [("teacher", "陈师", "701"), ("teacher", "王师", "701"), ("class", "", "701")]
 

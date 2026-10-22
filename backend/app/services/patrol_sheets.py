@@ -99,7 +99,7 @@ class GroupList:
 
 @dataclass
 class PatrolSheets:
-    title: str                # 「示范初中115学年第一学期」
+    title: str                # 「示范学校2026-2027学年第一学期」
     legend: str               # 纸本下方的记录说明(各校代码不同,可在系统管理修改)
     pages: list[PatrolPage] = field(default_factory=list)
     group_lists: list[GroupList] = field(default_factory=list)

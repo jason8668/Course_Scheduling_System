@@ -33,13 +33,12 @@ def test_contact_fields_crud(sched):
     r = client.post(
         f"/api/teachers?semester_id={sid}",
         json={"name": "王老师", "email": "wang@example.edu.tw", "phone": "0912345678",
-              "line_id": "wang_line"},
+              },
     )
     assert r.status_code == 201
     t = r.json()
     assert t["email"] == "wang@example.edu.tw"
     assert t["phone"] == "0912345678"
-    assert t["line_id"] == "wang_line"
     # 更新联络信息
     r = client.patch(f"/api/teachers/{t['id']}", json={"name": "王老师", "email": "new@a.bc"})
     assert r.json()["email"] == "new@a.bc"

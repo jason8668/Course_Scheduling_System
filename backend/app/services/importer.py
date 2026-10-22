@@ -72,7 +72,6 @@ TEMPLATE_DEFS: dict[str, dict] = {
             ("登录帐号", "选填,勾选建立帐号时使用", "wang001"),
             ("Email", "选填,调代课通知寄送用", "wang@example.edu.tw"),
             ("手机", "选填,人工联络用", "0912345678"),
-            ("LINE ID", "选填,人工联络用", "wang_line"),
         ],
     },
     "classes": {
@@ -354,8 +353,7 @@ def _import_teachers(
                 fields["admin_reduction"] = admin_reduction_cell
             if external_cell is not None:
                 fields["is_external"] = external_cell == "是"
-            for attr, value in (("email", email), ("phone", _cell(row, 9)),
-                                ("line_id", _cell(row, 10))):
+            for attr, value in (("email", email), ("phone", _cell(row, 9))):
                 if value is not None:
                     fields[attr] = value
             updates.append((current, fields, subject_objs if subj_field else None))
@@ -366,7 +364,7 @@ def _import_teachers(
             base_periods=base_periods_cell or 0, admin_title=_cell(row, 4),
             admin_reduction=admin_reduction_cell or 0,
             is_external=(external_cell or "否") == "是",
-            email=email, phone=_cell(row, 9), line_id=_cell(row, 10),
+            email=email, phone=_cell(row, 9),
             subjects=subject_objs,
         )
         pending.append((teacher, username if create_accounts else None))

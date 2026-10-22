@@ -49,7 +49,7 @@ def test_copy_all_and_counts(populated):
     assert r.status_code == 201
     new = r.json()
     nid = new["id"]
-    assert new["label"] == "2027 学年度第 1 学期"
+    assert new["label"] == "2027-2028 学年 第 1 学期"
     # 各实体数量一致
     assert len(client.get(f"/api/subjects?semester_id={nid}").json()) == \
         len(client.get(f"/api/subjects?semester_id={sid}").json())

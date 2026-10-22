@@ -13,7 +13,8 @@ import {
 } from '@/api/backups'
 import type { Backup, RestoreResult } from '@/api/backups'
 import {
-  demoDataStatus, getSchedulingSettings, getSchoolSettings, loadDemoData,
+  demoDataStatus, getDingTalkSettings, getSchedulingSettings, getSchoolSettings, loadDemoData,
+  saveDingTalkSettings, testDingTalk,
   saveSchedulingSettings, saveSchoolSettings,
 } from '@/api/assignments'
 import { getSmtp, saveSmtp } from '@/api/notifications'
@@ -186,6 +187,39 @@ async function onSavePatrol() {
     savingPatrol.value = false
   }
 }
+// ── 钉钉群机器人 ──
+const dingtalk = ref({ webhook: '', secret: '' })
+const dingtalkHasSecret = ref(false)
+const savingDingtalk = ref(false)
+const testingDingtalk = ref(false)
+
+async function onSaveDingtalk() {
+  savingDingtalk.value = true
+  try {
+    const r = await saveDingTalkSettings(dingtalk.value.webhook, dingtalk.value.secret)
+    dingtalk.value.webhook = r.webhook
+    dingtalk.value.secret = ''
+    dingtalkHasSecret.value = r.has_secret
+    message.success(r.configured ? '已保存钉钉设置' : '已清空钉钉 Webhook,群通知停用')
+  } catch (e) {
+    message.error((e as ApiError).message || '保存失败')
+  } finally {
+    savingDingtalk.value = false
+  }
+}
+
+async function onTestDingtalk() {
+  testingDingtalk.value = true
+  try {
+    await testDingTalk(dingtalk.value.webhook, dingtalk.value.secret)
+    message.success('测试消息已发送,请到钉钉群确认')
+  } catch (e) {
+    message.error((e as ApiError).message || '发送失败')
+  } finally {
+    testingDingtalk.value = false
+  }
+}
+
 const savingSchool = ref(false)
 
 async function onSaveSchool() {
@@ -212,6 +246,9 @@ onMounted(async () => {
   hasPassword.value = s.has_password
   maxOvertime.value = (await getSchedulingSettings()).max_overtime
   schoolName.value = (await getSchoolSettings()).school_name
+  const dt = await getDingTalkSettings()
+  dingtalk.value.webhook = dt.webhook
+  dingtalkHasSecret.value = dt.has_secret
   patrolLegend.value = (await getPatrolSettings()).legend
   const demo = await demoDataStatus()
   demoAvailable.value = demo.available
@@ -384,6 +421,40 @@ async function onResetWizard() {
             @click="onSaveSchool"
           >
             储存
+          </n-button>
+        </n-space>
+      </n-space>
+    </n-card>
+
+    <n-card v-if="isAdmin()" title="钉钉通知" data-testid="dingtalk-card">
+      <n-space vertical>
+        <n-text depth="3">
+          在钉钉群里添加「自定义机器人」(群设置 → 机器人),安全设置选「加签」,
+          把机器人的 Webhook 地址与加签密钥粘贴到这里。之后教师请假、调课、代课的
+          通知会同步推送到群里(站内通知与邮件不受影响)。清空 Webhook 即可停用。
+        </n-text>
+        <n-space align="center">
+          <n-text style="width: 72px">Webhook</n-text>
+          <n-input
+            v-model:value="dingtalk.webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=…"
+            style="width: 460px" data-testid="dingtalk-webhook"
+          />
+        </n-space>
+        <n-space align="center">
+          <n-text style="width: 72px">加签密钥</n-text>
+          <n-input
+            v-model:value="dingtalk.secret" type="password" show-password-on="click"
+            :placeholder="dingtalkHasSecret ? '已设置(留空不变更)' : 'SEC 开头的加签密钥,可留空'"
+            style="width: 460px" data-testid="dingtalk-secret"
+          />
+          <n-button :loading="testingDingtalk" data-testid="dingtalk-test" @click="onTestDingtalk">
+            发送测试消息
+          </n-button>
+          <n-button
+            type="primary" :loading="savingDingtalk" data-testid="dingtalk-save"
+            @click="onSaveDingtalk"
+          >
+            保存
           </n-button>
         </n-space>
       </n-space>

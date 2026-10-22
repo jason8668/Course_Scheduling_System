@@ -105,8 +105,8 @@ async function onLogout() {
 <template>
   <n-layout has-sider style="height: 100vh">
     <n-layout-sider
-      bordered
       collapse-mode="width"
+      style="background: linear-gradient(180deg, #082f42 0%, #0d5a6e 100%)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -114,10 +114,11 @@ async function onLogout() {
       @collapse="collapsed = true"
       @expand="collapsed = false"
     >
-      <div style="padding: 16px; font-weight: 700; white-space: nowrap; overflow: hidden">
+      <div style="padding: 18px 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; color: #fff; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
       <n-menu
+        inverted
         :value="activeKey"
         :collapsed="collapsed"
         :collapsed-width="64"
@@ -130,7 +131,7 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout>
-      <n-layout-header bordered style="padding: 12px 24px">
+      <n-layout-header style="padding: 12px 24px; background: #fff; box-shadow: 0 1px 6px rgba(8, 47, 66, 0.07)">
         <n-space justify="end" align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
@@ -146,7 +147,7 @@ async function onLogout() {
           <n-button size="small" data-testid="header-change-password" @click="onChangePassword">
             修改密码
           </n-button>
-          <n-button size="small" @click="onLogout">登出</n-button>
+          <n-button size="small" @click="onLogout">退出登录</n-button>
         </n-space>
       </n-layout-header>
 
@@ -158,6 +159,6 @@ async function onLogout() {
 </template>
 
 <style scoped>
-.version { padding: 12px 20px; font-size: 12px; opacity: 0.6; }
+.version { padding: 12px 20px; font-size: 12px; color: rgba(255, 255, 255, 0.65); }
 .update-link { text-decoration: none; }
 </style>

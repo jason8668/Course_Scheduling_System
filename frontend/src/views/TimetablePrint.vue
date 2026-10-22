@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { classLabel } from '@/utils/labels'
 import { useRoute } from 'vue-router'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import type { PeriodCell } from '@/components/timetable/types'
@@ -32,7 +33,7 @@ const targetName = computed(() => {
   if (!d || targetId.value === null) return ''
   if (view.value === 'class') {
     const c = d.classes.find((x) => x.id === targetId.value)
-    return c ? `${c.grade}年${c.name}` : ''
+    return c ? classLabel(c) : ''
   }
   const list = view.value === 'teacher' ? d.teachers : d.rooms
   return list.find((x) => x.id === targetId.value)?.name ?? ''

@@ -51,7 +51,7 @@ def test_board_empty_when_no_leave_that_day(w):
     assert board["date"] == WED.isoformat()
     assert board["weekday"] == 3
     assert board["school_name"]           # 表头校名(供打印通知单)
-    assert board["semester_label"] == "2026 学年度第 1 学期"
+    assert board["semester_label"] == "2026-2027 学年 第 1 学期"
 
 
 def test_board_lists_todays_changes_with_disposition(w):

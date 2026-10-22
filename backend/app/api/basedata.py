@@ -393,7 +393,6 @@ def create_teacher(
         is_active=body.is_active,
         email=body.email,
         phone=body.phone,
-        line_id=body.line_id,
         user_id=body.user_id,
         subjects=_resolve_subjects(db, semester_id, body.subject_ids),
     )
@@ -430,7 +429,6 @@ def update_teacher(
     teacher.is_active = body.is_active
     teacher.email = body.email
     teacher.phone = body.phone
-    teacher.line_id = body.line_id
     teacher.user_id = body.user_id
     teacher.subjects = _resolve_subjects(db, teacher.semester_id, body.subject_ids)
     db.commit()

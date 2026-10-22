@@ -39,13 +39,13 @@ const editingId = ref<number | null>(null)
 interface TeacherForm {
   name: string; base_periods: number; admin_title: string; admin_reduction: number
   is_external: boolean; is_active: boolean; subject_ids: number[]
-  email: string; phone: string; line_id: string; user_id: number | null
+  email: string; phone: string; user_id: number | null
 }
 function emptyForm(): TeacherForm {
   return {
     name: '', base_periods: 0, admin_title: '', admin_reduction: 0,
     is_external: false, is_active: true, subject_ids: [],
-    email: '', phone: '', line_id: '', user_id: null,
+    email: '', phone: '', user_id: null,
   }
 }
 const form = ref<TeacherForm>(emptyForm())
@@ -144,7 +144,7 @@ async function openEdit(t: Teacher) {
     name: t.name, base_periods: t.base_periods, admin_title: t.admin_title ?? '',
     admin_reduction: t.admin_reduction, is_external: t.is_external, is_active: t.is_active,
     subject_ids: t.subjects.map((s) => s.id),
-    email: t.email ?? '', phone: t.phone ?? '', line_id: t.line_id ?? '', user_id: t.user_id,
+    email: t.email ?? '', phone: t.phone ?? '', user_id: t.user_id,
   }
   savedUserId.value = t.user_id
   boundAccount.value = null
@@ -164,7 +164,6 @@ async function save() {
     admin_title: form.value.admin_title || null,
     email: form.value.email || null,
     phone: form.value.phone || null,
-    line_id: form.value.line_id || null,
   }
   try {
     if (editingId.value) await updateTeacher(editingId.value, body)
@@ -325,8 +324,6 @@ function openRules(t: Teacher) {
             <n-input v-model:value="form.phone" placeholder="人工联络用" />
           </n-space>
         </n-space>
-        <n-text>LINE ID(选填,人工联络用)</n-text>
-        <n-input v-model:value="form.line_id" placeholder="LINE ID" />
         <n-text>绑定登录帐号(选填)</n-text>
         <n-select
           v-model:value="form.user_id"

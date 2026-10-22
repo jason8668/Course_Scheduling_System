@@ -28,6 +28,17 @@ class SchedulingSettings(BaseModel):
     )
 
 
+class DingTalkSettingsIn(BaseModel):
+    webhook: str = Field(default="", max_length=500)
+    secret: str = Field(default="", max_length=128, description="加签密钥;留空 = 不变更")
+
+
+class DingTalkSettingsOut(BaseModel):
+    webhook: str
+    configured: bool
+    has_secret: bool
+
+
 class PatrolSettings(BaseModel):
     # app_settings.value 栏位长度 500
     legend: str = Field(max_length=500, description="巡堂表下方的记录说明;留空则恢复默认")
@@ -82,6 +93,60 @@ def put_school(
     ))
     db.commit()
     return SchoolSettings(school_name=app_settings.school_name(db))
+
+
+def _dingtalk_out(db: Session) -> DingTalkSettingsOut:
+    cfg = app_settings.dingtalk_config(db)
+    return DingTalkSettingsOut(
+        webhook=cfg.webhook, configured=cfg.configured, has_secret=bool(cfg.secret),
+    )
+
+
+@router.get("/settings/dingtalk", response_model=DingTalkSettingsOut)
+def get_dingtalk(db: Session = Depends(get_db), _: User = Depends(admin_only)):
+    """钉钉设置(不回传密钥明文)。"""
+    return _dingtalk_out(db)
+
+
+@router.put("/settings/dingtalk", response_model=DingTalkSettingsOut)
+def put_dingtalk(
+    body: DingTalkSettingsIn, db: Session = Depends(get_db), user: User = Depends(admin_only)
+):
+    app_settings.save_dingtalk(db, body.webhook, body.secret)
+    db.add(AuditLog(
+        user_id=user.id, username=user.username, action="update_dingtalk",
+        target_type="app_setting", target_id=None,
+        detail="钉钉群机器人设置更新"[:500],
+    ))
+    db.commit()
+    return _dingtalk_out(db)
+
+
+@router.post("/settings/dingtalk/test", status_code=status.HTTP_200_OK)
+def test_dingtalk(
+    body: DingTalkSettingsIn | None = None,
+    db: Session = Depends(get_db), _: User = Depends(admin_only),
+):
+    """发一则测试消息到钉钉群,当场回报结果。可用表单上的值先测再存。"""
+    from app.services.notifications import send_dingtalk
+
+    cfg = app_settings.dingtalk_config(db)
+    webhook = (body.webhook if body and body.webhook else cfg.webhook).strip()
+    picked = cfg.secret
+    if body and body.secret:
+        picked = body.secret
+    if not webhook:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "尚未设置钉钉机器人 Webhook")
+    try:
+        send_dingtalk(
+            webhook, picked,
+            title="排课系统测试消息",
+            text="### 排课系统测试消息\n\n收到这则消息,代表钉钉群机器人设置正确。"
+                 "之后请假、调课、代课的通知会同步推送到这个群。",
+        )
+    except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"发送失败:{exc}") from exc
+    return {"sent": True}
 
 
 @router.get("/settings/scheduling", response_model=SchedulingSettings)

@@ -31,7 +31,7 @@ def test_create_semester_from_elementary_template(env):
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert body["label"] == "2026 学年度第 1 学期"
+    assert body["label"] == "2026-2027 学年 第 1 学期"
     assert len(body["period_tables"]) == 1
     table = body["period_tables"][0]
     assert table["is_default"] is True

@@ -51,7 +51,7 @@ def test_sheet_follows_the_paper_form(w):
     r = _sheets(w)
     assert r.status_code == 200, r.json()
     body = r.json()
-    assert "2026学年第一学期" in body["title"]
+    assert "2026-2027学年第一学期" in body["title"]
     assert "授课情形" in body["legend"]
     assert [(p["first_ordinal"], p["last_ordinal"]) for p in body["pages"]] == [(1, 4), (5, 7)]
     morning = body["pages"][0]

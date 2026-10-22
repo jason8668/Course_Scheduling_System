@@ -42,7 +42,7 @@ def test_preflight_ok(env):
     assert body["error_count"] == 0
     assert body["class_count"] == 1 and body["teacher_count"] == 1
     assert body["assignment_count"] == 1 and body["total_periods"] == 20
-    assert body["semester_label"] == "2026 学年度第 1 学期"
+    assert body["semester_label"] == "2026-2027 学年 第 1 学期"
 
 
 def test_preflight_reports_class_overload(env):

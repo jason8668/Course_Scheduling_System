@@ -161,12 +161,12 @@ class Tables:
 
 
 def school_title(db: Session, semester_id: int | None = None) -> str:
-    """校名;给了学期就再接「115学年第一学期」(调课单纸本有,代课单没有)。"""
+    """校名;给了学期就再接「2026-2027学年第一学期」(调课单纸本有,代课单没有)。"""
     school = app_settings.school_name(db)
     sem = db.get(Semester, semester_id) if semester_id else None
     if sem is None:
         return school
-    return f"{school}{sem.academic_year}学年第{_TERM_CN.get(sem.term, str(sem.term))}学期"
+    return f"{school}{sem.academic_year}-{sem.academic_year + 1}学年第{_TERM_CN.get(sem.term, str(sem.term))}学期"
 
 
 def assemble(

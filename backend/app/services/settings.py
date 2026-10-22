@@ -31,6 +31,35 @@ DEFAULT_PATROL_LEGEND = (
     "三、注记事项部分请记录巡堂时临时状况"
 )
 
+# 钉钉群机器人 Webhook(调代课通知同步推送到教师群)
+DINGTALK_WEBHOOK = "dingtalk_webhook"
+DINGTALK_SECRET = "dingtalk_secret"
+
+
+@dataclass(frozen=True, slots=True)
+class DingTalkConfig:
+    webhook: str
+    secret: str
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.webhook)
+
+
+def dingtalk_config(db: Session) -> DingTalkConfig:
+    values = all_settings(db)
+    webhook = values[DINGTALK_WEBHOOK] if DINGTALK_WEBHOOK in values else ""
+    sign = values[DINGTALK_SECRET] if DINGTALK_SECRET in values else ""
+    return DingTalkConfig(webhook.strip(), sign.strip())
+
+
+def save_dingtalk(db: Session, webhook: str, secret: str) -> None:
+    set_value(db, DINGTALK_WEBHOOK, webhook.strip())
+    # 空密钥视为「不变更」(同 SMTP 密码语义),避免每次保存都要重打
+    if secret:
+        set_value(db, DINGTALK_SECRET, secret.strip())
+
+
 # SMTP 设置的 key
 SMTP_HOST = "smtp_host"
 SMTP_PORT = "smtp_port"

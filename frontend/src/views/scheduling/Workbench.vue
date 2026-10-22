@@ -3,6 +3,7 @@ import {
   NAlert, NButton, NCard, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
   useMessage,
 } from 'naive-ui'
+import { classLabel } from '@/utils/labels'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
@@ -45,7 +46,7 @@ const roomId = ref<number | null>(null)
 const semesterOptions = computed(() => semesters.value.map((s) => ({ label: s.label, value: s.id })))
 const draftOptions = computed(() => drafts.value.map((d) => ({ label: d.name, value: d.id })))
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade}年${c.name}`, value: c.id })))
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
 

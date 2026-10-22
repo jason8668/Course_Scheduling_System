@@ -3,6 +3,7 @@ import {
   NButton, NCard, NCheckbox, NDatePicker, NDivider, NEmpty, NInputNumber, NModal,
   NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
 } from 'naive-ui'
+import { academicYearLabel } from '@/utils/labels'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
@@ -211,6 +212,7 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
         <n-space align="center" :wrap="true">
           <n-text>学年度</n-text>
           <n-input-number v-model:value="form.academic_year" :min="2000" :max="2100" style="width: 120px" />
+          <n-text depth="3" style="margin-left: 8px">即 {{ academicYearLabel(form.academic_year) }}(起始年)</n-text>
           <n-select v-model:value="form.term" :options="termOptions" style="width: 130px" />
           <n-text>学制范本</n-text>
           <n-select
@@ -358,6 +360,7 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
         <n-space align="center">
           <n-text>目标学年度</n-text>
           <n-input-number v-model:value="copyForm.academic_year" :min="2000" :max="2100" style="width: 120px" />
+          <n-text depth="3" style="margin-left: 8px">即 {{ academicYearLabel(copyForm.academic_year) }}(起始年)</n-text>
           <n-select v-model:value="copyForm.term" :options="termOptions" style="width: 130px" />
         </n-space>
         <!-- 起讫日必填:请假展开、今日看板、代课的「已上过」判定都吃它,漏填不会报错但整个算错 -->

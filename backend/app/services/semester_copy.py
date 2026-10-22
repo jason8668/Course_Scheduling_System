@@ -112,7 +112,7 @@ def copy_semester(
                 admin_reduction=t.admin_reduction, is_external=t.is_external,
                 is_active=t.is_active,
                 # 帐号绑定与联络信息跨学期延续(user_id 唯一性以 semester 为范围,不冲突)
-                email=t.email, phone=t.phone, line_id=t.line_id, user_id=t.user_id,
+                email=t.email, phone=t.phone, user_id=t.user_id,
             )
             # 任教科目(仅在科目也复制时对应)
             nt.subjects = [subject_map[s.id] for s in t.subjects if s.id in subject_map]

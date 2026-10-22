@@ -51,7 +51,6 @@ class TeacherIn(BaseModel):
     subject_ids: list[int] = []
     email: str | None = Field(default=None, max_length=128)
     phone: str | None = Field(default=None, max_length=32)
-    line_id: str | None = Field(default=None, max_length=64)
     user_id: int | None = None  # 绑定的登录帐号(空=不绑定)
 
     @field_validator("email")
@@ -74,7 +73,6 @@ class TeacherOut(BaseModel):
     subjects: list[SubjectBrief] = []
     email: str | None = None
     phone: str | None = None
-    line_id: str | None = None
     user_id: int | None = None
 
 

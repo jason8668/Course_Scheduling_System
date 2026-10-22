@@ -3,6 +3,7 @@ import {
   NAlert, NButton, NCard, NDatePicker, NGrid, NGridItem, NInputNumber, NResult, NSelect,
   NSpace, NStatistic, NStep, NSteps, NText, useMessage,
 } from 'naive-ui'
+import { academicYearLabel } from '@/utils/labels'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
@@ -212,6 +213,7 @@ function openPeriodEditor() {
             <n-space align="center">
               <n-text>学年度</n-text>
               <n-input-number v-model:value="year" data-testid="wizard-year" :min="2000" :max="2100" :disabled="!!semesterId" style="width: 120px" />
+              <n-text depth="3">即 {{ academicYearLabel(year) }}(起始年)</n-text>
               <n-select v-model:value="term" :options="termOptions" :disabled="!!semesterId" style="width: 140px" />
             </n-space>
             <n-space align="center">
