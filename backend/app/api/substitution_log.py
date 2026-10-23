@@ -1,0 +1,119 @@
+"""今日调代课看板与调代课日志(M4-4)。
+
+看板/日志是行政的当日排课与历史查询工具,限教学组长/教务主任。
+"""
+
+from dataclasses import asdict
+from datetime import date
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.orm import Session
+
+from app.core.auth import require_roles
+from app.core.db import get_db
+from app.models.semester import Semester
+from app.models.user import Role, User
+from app.schemas.substitution_log import DailyBoardOut, LogEntryOut, PatrolSheetsOut
+from app.services import patrol_sheets, patrol_xlsx
+from app.services import settings as app_settings
+from app.services import substitution_log as log_service
+
+router = APIRouter(tags=["substitution-log"])
+
+viewer = require_roles(Role.scheduler, Role.director)
+
+
+def _entry_out(e: log_service.LogEntry) -> LogEntryOut:
+    return LogEntryOut(**{f: getattr(e, f) for f in LogEntryOut.model_fields})
+
+
+def _get_semester(db: Session, semester_id: int) -> Semester:
+    sem = db.get(Semester, semester_id)
+    if sem is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
+    return sem
+
+
+@router.get("/daily-board", response_model=DailyBoardOut)
+def daily_board(
+    semester_id: int = Query(...),
+    on: date | None = Query(default=None, description="看板日期,默认为学校时区的今天"),
+    db: Session = Depends(get_db),
+    _: User = Depends(viewer),
+):
+    """某一天全校的调代课异动(默认今天);无异动则 entries 为空。"""
+    sem = _get_semester(db, semester_id)
+    day = on or log_service.school_today()
+    entries = log_service.daily_board(db, semester_id, day)
+    return DailyBoardOut(
+        date=day,
+        weekday=day.isoweekday(),
+        school_name=app_settings.school_name(db),
+        semester_label=sem.label,
+        entries=[_entry_out(e) for e in entries],
+    )
+
+
+@router.get("/patrol-sheets", response_model=PatrolSheetsOut)
+def get_patrol_sheets(
+    semester_id: int = Query(...),
+    date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
+    date_to: date | None = Query(default=None, description="默认同 date_from(只印一天)"),
+    db: Session = Depends(get_db),
+    _: User = Depends(viewer),
+):
+    """巡堂表的打印资料:已发布课表叠上当天的调代课,一天分上午/下午各一张。"""
+    _get_semester(db, semester_id)
+    start = date_from or log_service.school_today()
+    try:
+        sheets = patrol_sheets.build(db, semester_id, start, date_to or start)
+    except patrol_sheets.PatrolError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    return PatrolSheetsOut.model_validate(asdict(sheets))
+
+
+@router.get("/patrol-sheets.xlsx")
+def export_patrol_sheets(
+    semester_id: int = Query(...),
+    date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
+    date_to: date | None = Query(default=None, description="默认同 date_from(只导出一天)"),
+    db: Session = Depends(get_db),
+    _: User = Depends(viewer),
+) -> Response:
+    """巡堂表的 Excel 版:内容与打印页相同,给学校下载后自行增减栏位、填巡堂人员。"""
+    _get_semester(db, semester_id)
+    start = date_from or log_service.school_today()
+    end = date_to or start
+    try:
+        sheets = patrol_sheets.build(db, semester_id, start, end)
+    except patrol_sheets.PatrolError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    name = f"巡堂表_{start:%Y-%m-%d}" + (f"_{end:%m-%d}" if end != start else "")
+    # 中文档名以 RFC 5987 filename* 表达;filename 提供 ASCII 后备(与课表导出一致)
+    disposition = f"attachment; filename=\"patrol.xlsx\"; filename*=UTF-8''{quote(name)}.xlsx"
+    return Response(
+        content=patrol_xlsx.to_xlsx(sheets),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": disposition},
+    )
+
+
+@router.get("/substitution-log", response_model=list[LogEntryOut])
+def substitution_log(
+    semester_id: int = Query(...),
+    teacher_id: int | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    leave_type: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _: User = Depends(viewer),
+):
+    """调代课历史查询:依教师(缺课或代课)、日期区间、假别筛选。"""
+    _get_semester(db, semester_id)
+    entries = log_service.query(
+        db, semester_id,
+        date_from=date_from, date_to=date_to,
+        teacher_id=teacher_id, leave_type=leave_type,
+    )
+    return [_entry_out(e) for e in entries]
