@@ -18,6 +18,7 @@ from app.models.assignment import (
     SchedulingUnitMember,
 )
 from app.models.basedata import ClassUnit, Room, Teacher, TeacherRuleType, TeacherTimeRule
+from app.models.calendar import SchoolCalendarEvent
 from app.models.constraint import ConstraintConfig
 from app.models.period import Period, PeriodTable, PeriodType
 from app.models.semester import Semester
@@ -124,6 +125,102 @@ def _load_tables(db: Session, semester_id: int) -> dict[int, PeriodTableSpec]:
     return out
 
 
+def _calendar_blocks(
+    db: Session, semester_id: int
+) -> tuple[dict[int, dict[tuple[int, int], str]], dict[int, dict[tuple[int, int], str]]]:
+    """校历每周重复活动的占用格位(批次 #4)。
+
+    只取 weekly_recurring=True 的事件:一次性事件只影响那一周的看板显示,
+    不改变整个学期的排课空间。回传 (class_cells, teacher_cells),
+    皆为 id → {(weekday, period_no): 原因文字}。
+    """
+    class_cells: dict[int, dict[tuple[int, int], str]] = {}
+    teacher_cells: dict[int, dict[tuple[int, int], str]] = {}
+    events = db.scalars(
+        select(SchoolCalendarEvent).where(
+            SchoolCalendarEvent.semester_id == semester_id,
+            SchoolCalendarEvent.weekly_recurring.is_(True),
+        )
+    ).all()
+    if not events:
+        return class_cells, teacher_cells
+
+    all_classes = db.scalars(
+        select(ClassUnit).where(ClassUnit.semester_id == semester_id)
+    ).all()
+    class_ids = [c.id for c in all_classes]
+    all_teacher_ids = list(db.scalars(
+        select(Teacher.id).where(Teacher.semester_id == semester_id)
+    ))
+
+    # 全天事件的节次集合:该学期所有节次表中该 weekday 的 regular 节次并集
+    periods_by_weekday: dict[int, set[int]] = {}
+    for weekday, period_no in db.execute(
+        select(Period.weekday, Period.period_no)
+        .join(PeriodTable, Period.period_table_id == PeriodTable.id)
+        .where(
+            PeriodTable.semester_id == semester_id,
+            Period.type == PeriodType.regular.value,
+        )
+    ):
+        periods_by_weekday.setdefault(weekday, set()).add(period_no)
+
+    # 班级 → 教师映射(经排课单位成员 → 配课 → 配课教师),独立查询不依赖
+    # load_problem 的中间组装顺序
+    teachers_by_class: dict[int, set[int]] = {}
+    for class_id, teacher_id in db.execute(
+        select(SchedulingUnitMember.class_unit_id, AssignmentTeacher.teacher_id)
+        .join(
+            CourseAssignment,
+            CourseAssignment.scheduling_unit_id == SchedulingUnitMember.scheduling_unit_id,
+        )
+        .join(
+            AssignmentTeacher,
+            AssignmentTeacher.course_assignment_id == CourseAssignment.id,
+        )
+        .where(CourseAssignment.semester_id == semester_id)
+    ):
+        teachers_by_class.setdefault(class_id, set()).add(teacher_id)
+
+    for ev in events:
+        weekday = ev.start_date.isoweekday()
+        if ev.period_start is not None and ev.period_end is not None:
+            cells = {
+                (weekday, p) for p in range(ev.period_start, ev.period_end + 1)
+            }
+        else:
+            cells = {(weekday, p) for p in periods_by_weekday.get(weekday, set())}
+        if not cells:
+            continue
+        reason = f"校历活动「{ev.title}」占用"
+
+        if ev.scope_type == "grade":
+            affected = [c.id for c in all_classes if c.grade == ev.scope_id]
+        elif ev.scope_type == "class":
+            affected = [ev.scope_id] if ev.scope_id in class_ids else []
+        else:  # school(及其余未知范围一律按全校保守处理不会发生,Literal 已挡)
+            affected = list(class_ids) if ev.scope_type == "school" else []
+
+        for cid in affected:
+            slot = class_cells.setdefault(cid, {})
+            for cell in cells:
+                slot[cell] = reason
+
+        if ev.scope_type == "school":
+            affected_teachers = all_teacher_ids
+        else:
+            tset: set[int] = set()
+            for cid in affected:
+                tset |= teachers_by_class.get(cid, set())
+            affected_teachers = list(tset)
+        for tid in affected_teachers:
+            slot = teacher_cells.setdefault(tid, {})
+            for cell in cells:
+                slot[cell] = reason
+
+    return class_cells, teacher_cells
+
+
 def load_problem(
     db: Session, semester_id: int, timetable: Timetable | None = None
 ) -> Problem:
@@ -140,6 +237,9 @@ def load_problem(
     default_table = pt_service.semester_default_table(db, semester_id)
     default_table_id = default_table.id if default_table else None
 
+    # 校历每周重复占用:先算好 dict,班级/教师 Spec 建构时直接并入
+    cal_class_cells, cal_teacher_cells = _calendar_blocks(db, semester_id)
+
     classes: dict[int, ClassSpec] = {}
     for c in db.scalars(
         select(ClassUnit).where(ClassUnit.semester_id == semester_id).order_by(ClassUnit.id)
@@ -148,10 +248,13 @@ def load_problem(
         table_id = c.period_table_id if c.period_table_id in tables else default_table_id
         if table_id is None:
             continue
+        cal = cal_class_cells.get(c.id, {})
         classes[c.id] = ClassSpec(
             id=c.id, name=c.name, grade=c.grade,
             period_table_id=table_id, student_count=c.student_count,
             homeroom_teacher_id=c.homeroom_teacher_id,
+            unavailable=frozenset(cal.keys()),
+            unavailable_reasons=dict(cal),
         )
 
     # 直接查规则表而非走 Teacher.time_rules 关联:同一个 session 内若规则是稍早才写入的,
@@ -173,12 +276,16 @@ def load_problem(
         select(Teacher).where(Teacher.semester_id == semester_id).order_by(Teacher.id)
     ):
         rules = rules_by_teacher.get(t.id, {})
+        cal_t = cal_teacher_cells.get(t.id, {})
         teachers[t.id] = TeacherSpec(
             id=t.id, name=t.name, base_periods=t.base_periods,
             admin_reduction=t.admin_reduction, is_external=t.is_external,
-            unavailable=frozenset(rules.get(TeacherRuleType.unavailable.value, set())),
+            unavailable=frozenset(
+                rules.get(TeacherRuleType.unavailable.value, set()) | set(cal_t.keys())
+            ),
             avoid=frozenset(rules.get(TeacherRuleType.avoid.value, set())),
             prefer=frozenset(rules.get(TeacherRuleType.prefer.value, set())),
+            unavailable_reasons=dict(cal_t),
         )
 
     rooms = {

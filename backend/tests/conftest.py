@@ -19,6 +19,7 @@ from app.api import (
     auth,
     backups,
     basedata,
+    calendar,
     demo,
     exports,
     imports,
@@ -98,6 +99,7 @@ def env():
     application.include_router(backups.router, prefix="/api")
     application.include_router(demo.router, prefix="/api")
     application.include_router(system.router, prefix="/api")
+    application.include_router(calendar.router, prefix="/api")
 
     @application.get("/api/_protected")
     def _protected(user: User = Depends(get_active_user)) -> dict:

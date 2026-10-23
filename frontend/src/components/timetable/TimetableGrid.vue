@@ -9,12 +9,14 @@ const props = withDefaults(defineProps<{
   readonly?: boolean
   dragging?: DragData | null // 父层告知目前拖曳中的内容(供 check feedback)
   feedback?: DropFeedback | null // 父层回填的可放/冲突判定
+  highlightWeekday?: number | null // 高亮的星期列(1=周一…7=周日),如「今天」;null 不高亮
 }>(), {
   entries: () => [],
   numWeekdays: undefined,
   readonly: false,
   dragging: null,
   feedback: null,
+  highlightWeekday: null,
 })
 
 const emit = defineEmits<{
@@ -134,6 +136,7 @@ function cellClass(w: number, p: number) {
     'has-entry': !!entryAt(w, p),
     'is-droppable': !!isFbCell && fb!.ok,
     'is-conflict': !!isFbCell && !fb!.ok,
+    'is-today': props.highlightWeekday !== null && props.highlightWeekday === w,
   }
 }
 function feedbackReason(w: number, p: number): string | null {
@@ -180,6 +183,8 @@ function onCellDrop(w: number, p: number, ev: DragEvent) {
       <div class="tg-corner" :style="{ gridColumn: '1', gridRow: '1' }" />
       <div
         v-for="w in weekdays" :key="`h${w}`" class="tg-head"
+        :class="{ 'is-today': highlightWeekday !== null && highlightWeekday === w }"
+        :data-weekday="w"
         :style="{ gridColumn: `${w + 1}`, gridRow: '1' }"
       >
         {{ weekdayLabel(w) }}
@@ -250,6 +255,8 @@ function onCellDrop(w: number, p: number, ev: DragEvent) {
   text-align: center; font-weight: 600; padding: 6px 4px;
   background: rgba(128, 128, 128, 0.1); border-radius: 4px;
 }
+.tg-head.is-today { background: #0d5a6e; color: #fff; }
+.tg-cell.is-today { background: rgba(13, 90, 110, 0.06); }
 .tg-period {
   display: flex; flex-direction: column; justify-content: center;
   padding: 4px 6px; background: rgba(128, 128, 128, 0.06); border-radius: 4px;

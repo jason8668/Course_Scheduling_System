@@ -390,10 +390,29 @@ def _unavailable_cause(problem: Problem, tag: ConstraintTag, _config: SolverConf
     teacher = problem.teachers[tag.scope_id]
     assigned, available = _teacher_numbers(problem, teacher)
     blocked = _blocked_slots(problem, teacher)
+    message = (
+        f"教师{teacher.name} 有 {blocked} 格不可排时段,扣除后只剩 {available} 格"
+        f"可安排 {fmt_periods(assigned)} 节课,挡住了排课"
+    )
+    # 校历占用落在实际可排节次格上的,点名活动让组长知道这不是教师个人规则
+    if teacher.unavailable_reasons:
+        actual = {
+            s.key for table in problem.tables_of_teacher(teacher.id) for s in table.slots
+        }
+        names: list[str] = []
+        for cell, reason in teacher.unavailable_reasons.items():
+            if cell not in actual:
+                continue
+            name = reason
+            if "「" in reason and "」" in reason:
+                name = reason.split("「", 1)[1].split("」", 1)[0]
+            if name not in names:
+                names.append(name)
+        if names:
+            message += f"；其中包含校历活动占用：{'、'.join(names[:2])}"
     return Cause(
         "H4", "teacher", teacher.id, teacher.name,
-        f"教师{teacher.name} 有 {blocked} 格不可排时段,扣除后只剩 {available} 格"
-        f"可安排 {fmt_periods(assigned)} 节课,挡住了排课",
+        message,
         f"放宽 {teacher.name} 的不可排时段(或在部分排课中勾选放宽此项)",
         _relaxable("H4"),
         {"assigned": assigned, "available": available, "unavailable": blocked},

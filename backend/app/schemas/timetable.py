@@ -1,6 +1,6 @@
 """课表(timetable / schedule_entry)与冲突检查 schema。"""
 
-from datetime import time
+from datetime import date, time
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -136,6 +136,10 @@ class UnavailableHitOut(BaseModel):
 class PublicSemester(BaseModel):
     id: int
     label: str
+    start_date: date | None = None
+    end_date: date | None = None
+    current_week_number: int | None = None
+    current_week_parity: str | None = None
 
 
 class NamedBrief(BaseModel):

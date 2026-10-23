@@ -92,6 +92,16 @@ async function onSubmit() {
   flex: 1.15;
   min-height: 560px;
 }
+.login-visual::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(rgba(8, 47, 66, 0.55), rgba(8, 47, 66, 0));
+  pointer-events: none;
+}
 .login-visual img {
   position: absolute;
   inset: 0;
@@ -103,7 +113,8 @@ async function onSubmit() {
   position: absolute;
   left: 32px;
   right: 32px;
-  bottom: 28px;
+  top: 28px;
+  z-index: 1;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }

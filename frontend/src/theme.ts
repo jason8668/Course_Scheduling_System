@@ -28,6 +28,15 @@ export const themeOverrides: GlobalThemeOverrides = {
     borderColor: '#dde7ea',
     tdColorHover: '#f4f8f9',
   },
+  // Naive 的 Button 没有单一 borderRadius token,是 Tiny/Small/Medium/Large 四个;
+  // Input 则有单一 borderRadius(已查 node_modules 类型定义确认)。
+  Button: {
+    borderRadiusTiny: '8px',
+    borderRadiusSmall: '8px',
+    borderRadiusMedium: '8px',
+    borderRadiusLarge: '8px',
+  },
+  Input: { borderRadius: '8px' },
   Dialog: { borderRadius: '12px' },
   Drawer: { borderRadius: '12px' },
   Tag: { borderRadius: '6px' },

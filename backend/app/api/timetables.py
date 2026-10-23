@@ -9,7 +9,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_active_user, require_roles
+from app.core.clock import school_today
 from app.core.db import get_db
+from app.core.week_parity import week_number, week_parity
 from app.models.assignment import CourseAssignment
 from app.models.basedata import ClassUnit, Room, Teacher
 from app.models.period import PeriodTable
@@ -302,8 +304,22 @@ def published_semesters(db: Session = Depends(get_db), _: User = Depends(get_act
         .join(Timetable, Timetable.semester_id == Semester.id)
         .where(Timetable.status == TimetableStatus.published.value)
         .order_by(Semester.academic_year.desc(), Semester.term.desc())
-    ).all()
-    return [PublicSemester(id=s.id, label=s.label) for s in rows]
+    ).unique().all()
+    today = school_today()
+    out = []
+    for s in rows:
+        if s.start_date is None:
+            wn = None
+            wp = None
+        else:
+            wn = week_number(s.start_date, today)
+            wp = week_parity(s.start_date, today)
+        out.append(PublicSemester(
+            id=s.id, label=s.label,
+            start_date=s.start_date, end_date=s.end_date,
+            current_week_number=wn, current_week_parity=wp,
+        ))
+    return out
 
 
 @router.get("/published/my-teacher", response_model=NamedBrief | None)

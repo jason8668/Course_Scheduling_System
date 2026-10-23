@@ -23,6 +23,7 @@ from app.models.basedata import (
     TeacherRuleType,
     TeacherTimeRule,
 )
+from app.models.calendar import SchoolCalendarEvent
 from app.models.constraint import ConstraintConfig
 from app.models.leave import (
     LEAVE_TYPE_CN,
@@ -85,4 +86,5 @@ __all__ = [
     "Substitution",
     "SubstitutionType",
     "SUBSTITUTION_TYPE_CN",
+    "SchoolCalendarEvent",
 ]

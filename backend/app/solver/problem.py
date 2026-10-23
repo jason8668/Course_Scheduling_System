@@ -75,6 +75,8 @@ class TeacherSpec:
     unavailable: frozenset[tuple[int, int]]  # 硬约束 H4
     avoid: frozenset[tuple[int, int]] = frozenset()   # 软约束 S1:尽量避开
     prefer: frozenset[tuple[int, int]] = frozenset()  # 软约束 S1:偏好
+    # unavailable 中各格的原因(目前来自校历活动占用),供冲突报告说明
+    unavailable_reasons: dict[tuple[int, int], str] = field(default_factory=dict)
 
     @property
     def target_periods(self) -> int:
@@ -102,6 +104,9 @@ class ClassSpec:
     period_table_id: int  # 已解析(指定表 → 学期默认表),solver 不需再回退
     student_count: int | None
     homeroom_teacher_id: int | None = None  # 软约束 S7:班主任的课优先排在自己班第一节
+    # 校历每周重复活动占用(H4 同级硬约束,由 services/solver_data 合并进来)
+    unavailable: frozenset[tuple[int, int]] = frozenset()
+    unavailable_reasons: dict[tuple[int, int], str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

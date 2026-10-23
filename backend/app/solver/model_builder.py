@@ -366,6 +366,11 @@ class _Model:
             teacher = self.problem.teachers.get(tid)
             if teacher and not self._off("H4", "teacher", tid):
                 cells |= set(teacher.unavailable)
+        # 班级校历占用:该 course 所属班级被活动占用的格子同样不可排
+        for cid in course.unit.class_ids:
+            cls = self.problem.classes.get(cid)
+            if cls is not None:
+                cells |= set(cls.unavailable)
         return frozenset(cells)
 
     def _make_lesson_vars(self) -> None:

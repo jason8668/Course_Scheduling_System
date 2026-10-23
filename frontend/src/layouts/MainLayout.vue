@@ -35,9 +35,12 @@ const menuOptions = computed(() => {
   const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
   // 教师可查自己的代课课时
   const myStats = { label: menuLink('substitution-stats', '我的代课课时'), key: 'substitution-stats' }
-  if (!canManage.value) return [query, leaves, myStats]
+  const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
+  const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
+  if (!canManage.value) return [dashboard, query, schoolCalendar, leaves, myStats]
   return [
-    { label: menuLink('dashboard', '仪表板'), key: 'dashboard' },
+    dashboard,
+    schoolCalendar,
     query,
     {
       label: '基础资料',

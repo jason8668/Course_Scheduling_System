@@ -13,6 +13,7 @@ from app.api import (
     auth,
     backups,
     basedata,
+    calendar,
     demo,
     exports,
     health,
@@ -111,3 +112,4 @@ app.include_router(audit.router, prefix="/api")
 app.include_router(imports.router, prefix="/api")
 app.include_router(wizard.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
+app.include_router(calendar.router, prefix="/api")

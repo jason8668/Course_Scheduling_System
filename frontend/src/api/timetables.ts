@@ -77,7 +77,15 @@ export interface TimetableCheck {
 }
 
 // ── 全员唯读查询 ──
-export interface PublicSemester { id: number; label: string }
+export interface PublicSemester {
+  id: number
+  label: string
+  // 批次#4 新增(可选,后端未回时为 undefined):学期起讫与服务器今天所在周次
+  start_date?: string | null
+  end_date?: string | null
+  current_week_number?: number | null
+  current_week_parity?: 'odd' | 'even' | null
+}
 export interface NamedBrief { id: number; name: string }
 export interface PublicClass {
   id: number
