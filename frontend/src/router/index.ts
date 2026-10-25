@@ -50,6 +50,12 @@ const routes = [
     component: () => import('@/views/TimetablePrint.vue'),
   },
   {
+    // 校历打印页:本学期全部校历一页一览,供 A4 打印张贴,不套侧边栏
+    path: '/calendar/print',
+    name: 'calendar-print',
+    component: () => import('@/views/CalendarPrint.vue'),
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
@@ -157,7 +163,8 @@ const AUTH_PAGES = new Set(['login', 'change-password'])
 // 全域守卫:管控登录、强制改密、首次登录引导至设置精灵
 // 纯教师帐号可进入的页面(请假是教师自己要做的事;课表打印页是查课表后打印自己/班级课表用)
 const TEACHER_PAGES = new Set([
-  'dashboard', 'school-calendar', 'timetable-query', 'timetable-print', 'leaves', 'substitution-stats',
+  'dashboard', 'school-calendar', 'calendar-print',
+  'timetable-query', 'timetable-print', 'leaves', 'substitution-stats',
 ])
 
 router.beforeEach(async (to) => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NDatePicker, NDrawer, NDrawerContent, NEmpty, NForm, NFormItem,
+  NAlert, NButton, NCard, NDatePicker, NEmpty, NForm, NFormItem,
   NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText,
   useMessage,
 } from 'naive-ui'
@@ -15,15 +15,15 @@ import { listSemesters } from '@/api/semesters'
 import { getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { PublicClass, PublicSemester } from '@/api/timetables'
 import { useAuthStore } from '@/stores/auth'
-import { addDays, expandCalendarEvents, mondayOf, toISODate } from '@/utils/calendar'
+import { eventDateText, groupEventsByMonth, weekdayLabel } from '@/utils/calendarList'
 import { classLabel } from '@/utils/labels'
+import { toISODate as toISO } from '@/utils/calendar'
 
 const message = useMessage()
 const auth = useAuthStore()
 const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
 
-const WEEKDAY_HEADS = ['一', '二', '三', '四', '五', '六', '日']
 const TYPE_COLORS: Record<CalendarEventType, { bg: string; fg: string }> = {
   holiday: { bg: '#fdecea', fg: '#c0392b' },
   activity: { bg: '#eef6f8', fg: '#0d5a6e' },
@@ -37,48 +37,32 @@ const classes = ref<PublicClass[]>([])
 const eventsRaw = ref<CalendarEvent[]>([])
 const loading = ref(false)
 
-const now = new Date()
-const viewYear = ref(now.getFullYear())
-const viewMonth = ref(now.getMonth() + 1) // 1-12
-const todayIso = toISODate(now)
+const todayIso = toISO(new Date())
 
 const semester = computed(() => semesters.value.find((s) => s.id === sid.value) ?? null)
 const semesterOptions = computed(() =>
   semesters.value.map((s) => ({ label: s.label, value: s.id })))
-const monthTitle = computed(() => `${viewYear.value}年${viewMonth.value}月`)
 
-/** 月历网格:6 行 × 7 列,周一起头(首格为当月 1 日所在周的周一)。 */
-const gridStart = computed(() => mondayOf(new Date(viewYear.value, viewMonth.value - 1, 1)))
-const gridEnd = computed(() => addDays(gridStart.value, 41))
-const expanded = computed(() =>
-  expandCalendarEvents(eventsRaw.value, toISODate(gridStart.value), toISODate(gridEnd.value)))
-
-interface CalCell {
-  iso: string
-  dayNum: number
-  inMonth: boolean
-  isToday: boolean
-  events: CalendarEvent[]
-}
-const cells = computed<CalCell[]>(() =>
-  Array.from({ length: 42 }, (_, i) => {
-    const d = addDays(gridStart.value, i)
-    const iso = toISODate(d)
-    return {
-      iso,
-      dayNum: d.getDate(),
-      inMonth: d.getMonth() === viewMonth.value - 1,
-      isToday: iso === todayIso,
-      events: expanded.value.get(iso) ?? [],
-    }
-  }))
+// 一页一览:本学期全部活动(后端不传范围即返回全部),按开始月份分组。
+const monthGroups = computed(() => groupEventsByMonth(eventsRaw.value))
+const typeCounts = computed(() => {
+  const m = new Map<CalendarEventType, number>()
+  for (const ev of eventsRaw.value) m.set(ev.event_type, (m.get(ev.event_type) ?? 0) + 1)
+  return m
+})
+const semesterRange = computed(() => {
+  const s = semester.value
+  if (!s) return ''
+  if (s.start_date && s.end_date) return `${s.start_date} 至 ${s.end_date}`
+  return s.start_date ?? s.end_date ?? ''
+})
 
 async function loadEvents() {
   if (sid.value === null) return
   loading.value = true
   try {
-    eventsRaw.value = await listCalendarEvents(
-      sid.value, toISODate(gridStart.value), toISODate(gridEnd.value))
+    // 不传 from/to:一次拉取本学期全部活动,不再按月翻页取数。
+    eventsRaw.value = await listCalendarEvents(sid.value)
   } catch {
     eventsRaw.value = []
   } finally {
@@ -101,17 +85,9 @@ async function onSemesterChange(id: number) {
   await Promise.all([loadEvents(), loadClasses()])
 }
 
-function shiftMonth(delta: number) {
-  const d = new Date(viewYear.value, viewMonth.value - 1 + delta, 1)
-  viewYear.value = d.getFullYear()
-  viewMonth.value = d.getMonth() + 1
-  void loadEvents()
-}
-function backToThisMonth() {
-  const d = new Date()
-  viewYear.value = d.getFullYear()
-  viewMonth.value = d.getMonth() + 1
-  void loadEvents()
+function openPrint() {
+  if (sid.value === null) return
+  window.open(`/calendar/print?semester_id=${sid.value}`, '_blank')
 }
 
 onMounted(async () => {
@@ -137,20 +113,6 @@ onMounted(async () => {
   }
 })
 
-// ── 当天详情 ──
-const showDay = ref(false)
-const selectedDate = ref<string>(todayIso)
-const dayEvents = computed(() => expanded.value.get(selectedDate.value) ?? [])
-const selectedDateLabel = computed(() => {
-  const d = new Date(`${selectedDate.value}T00:00:00`)
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
-})
-
-function openDay(cell: CalCell) {
-  selectedDate.value = cell.iso
-  showDay.value = true
-}
-
 function scopeText(ev: CalendarEvent): string {
   if (ev.scope_type === 'school') return '全校'
   if (ev.scope_type === 'grade') return ev.scope_id != null ? `${ev.scope_id}年级` : '年级'
@@ -162,7 +124,7 @@ function timeText(ev: CalendarEvent): string {
   return `第 ${ev.period_start}–${ev.period_end} 节`
 }
 
-// ── 新增 / 编辑表单 ──
+// ── 新增 / 编辑表单(字段与校验与旧版一致) ──
 const showForm = ref(false)
 const saving = ref(false)
 const editingId = ref<number | null>(null)
@@ -194,9 +156,9 @@ const gradeOptions = computed(() => {
 const classOptions = computed(() =>
   classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
 
-function openCreate(dateIso?: string) {
+function openCreate() {
   editingId.value = null
-  form.value = emptyForm(dateIso ?? selectedDate.value ?? todayIso)
+  form.value = emptyForm(todayIso)
   showForm.value = true
 }
 function openEdit(ev: CalendarEvent) {
@@ -296,6 +258,9 @@ async function onDelete(ev: CalendarEvent) {
       <n-button v-if="canManage && sid !== null" type="primary" data-testid="cal-add" @click="openCreate()">
         新增活动
       </n-button>
+      <n-button v-if="sid !== null" data-testid="cal-print" @click="openPrint">
+        打印校历
+      </n-button>
     </n-space>
 
     <n-alert v-if="semester && !semester.start_date" type="warning" data-testid="cal-nostart">
@@ -304,85 +269,78 @@ async function onDelete(ev: CalendarEvent) {
 
     <n-empty v-if="!loading && sid === null" description="尚无可用学期" />
 
-    <template v-else>
-      <n-space align="center" :wrap="true">
-        <n-button size="small" data-testid="cal-prev" @click="shiftMonth(-1)">上月</n-button>
-        <strong style="font-size: 16px">{{ monthTitle }}</strong>
-        <n-button size="small" data-testid="cal-next" @click="shiftMonth(1)">下月</n-button>
-        <n-button size="small" quaternary @click="backToThisMonth()">回到本月</n-button>
-        <n-text depth="3" style="font-size: 12px">点任一天查看当天活动</n-text>
-      </n-space>
-
-      <div class="cal-wrap">
-        <div class="cal-heads">
-          <div v-for="h in WEEKDAY_HEADS" :key="h" class="cal-head">周{{ h }}</div>
-        </div>
-        <div class="cal-grid" data-testid="cal-grid">
-          <div
-            v-for="cell in cells" :key="cell.iso"
-            class="cal-cell" :class="{ 'is-other': !cell.inMonth, 'is-today': cell.isToday }"
-            :data-date="cell.iso" @click="openDay(cell)"
-          >
-            <div class="cal-daynum">{{ cell.dayNum }}</div>
-            <div
-              v-for="ev in cell.events.slice(0, 3)" :key="ev.id"
-              class="cal-chip"
-              :style="{ background: TYPE_COLORS[ev.event_type].bg, color: TYPE_COLORS[ev.event_type].fg }"
-              :title="ev.title"
-            >
-              {{ ev.title }}
-            </div>
-            <div v-if="cell.events.length > 3" class="cal-more">+{{ cell.events.length - 3 }}</div>
-          </div>
-        </div>
-      </div>
-
-      <n-space :wrap="true" size="small">
-        <span
-          v-for="(c, k) in TYPE_COLORS" :key="k" class="cal-legend"
-          :style="{ background: c.bg, color: c.fg }"
-        >{{ CALENDAR_EVENT_TYPE_LABELS[k as CalendarEventType] }}</span>
-      </n-space>
-    </template>
-
-    <n-drawer v-model:show="showDay" :width="420" placement="right">
-      <n-drawer-content :title="selectedDateLabel" closable>
-        <n-space vertical>
-          <n-button v-if="canManage" type="primary" @click="openCreate(selectedDate)">
-            新增活动
-          </n-button>
-          <n-empty v-if="!dayEvents.length" description="当天没有校历活动" />
-          <div v-for="ev in dayEvents" :key="ev.id" class="day-event">
-            <n-space align="center" :wrap="true" size="small">
-              <strong>{{ ev.title }}</strong>
-              <n-tag
-                size="small"
-                :color="{ color: TYPE_COLORS[ev.event_type].bg, textColor: TYPE_COLORS[ev.event_type].fg }"
-              >
-                {{ CALENDAR_EVENT_TYPE_LABELS[ev.event_type] }}
-              </n-tag>
-              <n-tag v-if="ev.weekly_recurring" size="small" type="info">每周重复</n-tag>
-            </n-space>
-            <div class="day-event-meta">
-              范围：{{ scopeText(ev) }} · 时间：{{ timeText(ev) }}
-              <span v-if="ev.start_date !== ev.end_date || ev.weekly_recurring">
-                · {{ ev.start_date }} 至 {{ ev.end_date }}
-              </span>
-            </div>
-            <div v-if="ev.note" class="day-event-meta">备注：{{ ev.note }}</div>
-            <n-space v-if="canManage" size="small" style="margin-top: 8px">
-              <n-button size="small" @click="openEdit(ev)">编辑</n-button>
-              <n-popconfirm @positive-click="onDelete(ev)">
-                <template #trigger>
-                  <n-button size="small" type="error">删除</n-button>
-                </template>
-                确定删除「{{ ev.title }}」？
-              </n-popconfirm>
-            </n-space>
-          </div>
+    <template v-else-if="sid !== null">
+      <n-card data-testid="cal-overview">
+        <n-space :wrap="true" size="large" align="center">
+          <n-text strong>{{ semester?.label }}</n-text>
+          <n-text v-if="semesterRange" depth="3">{{ semesterRange }}</n-text>
+          <n-text>共 {{ eventsRaw.length }} 条活动</n-text>
+          <span
+            v-for="k in (Object.keys(CALENDAR_EVENT_TYPE_LABELS) as CalendarEventType[])" :key="k"
+            class="cal-legend"
+            :style="{ background: TYPE_COLORS[k].bg, color: TYPE_COLORS[k].fg }"
+          >{{ CALENDAR_EVENT_TYPE_LABELS[k] }} {{ typeCounts.get(k) ?? 0 }}</span>
         </n-space>
-      </n-drawer-content>
-    </n-drawer>
+      </n-card>
+
+      <n-empty v-if="!loading && !eventsRaw.length" description="本学期暂无校历活动">
+        <template #extra>
+          <n-button v-if="canManage" type="primary" @click="openCreate()">新增活动</n-button>
+        </template>
+      </n-empty>
+
+      <div v-else data-testid="cal-groups">
+        <section v-for="group in monthGroups" :key="group.month" class="cal-month">
+          <h2 class="cal-month-title">{{ group.month }}</h2>
+          <table class="cal-table">
+            <thead>
+              <tr>
+                <th class="col-date">日期</th>
+                <th class="col-week">星期</th>
+                <th>名称</th>
+                <th class="col-type">类型</th>
+                <th>范围</th>
+                <th>时间</th>
+                <th class="col-note">备注</th>
+                <th v-if="canManage" class="col-actions">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ev in group.events" :key="ev.id">
+                <td class="col-date">{{ eventDateText(ev) }}</td>
+                <td class="col-week">{{ weekdayLabel(ev.start_date) }}</td>
+                <td><strong>{{ ev.title }}</strong></td>
+                <td class="col-type">
+                  <n-tag
+                    size="small"
+                    :color="{ color: TYPE_COLORS[ev.event_type].bg, textColor: TYPE_COLORS[ev.event_type].fg }"
+                  >
+                    {{ CALENDAR_EVENT_TYPE_LABELS[ev.event_type] }}
+                  </n-tag>
+                  <n-tag v-if="ev.weekly_recurring" size="small" type="info" style="margin-left: 4px">
+                    每周重复
+                  </n-tag>
+                </td>
+                <td>{{ scopeText(ev) }}</td>
+                <td>{{ timeText(ev) }}</td>
+                <td class="col-note">{{ ev.note ?? '—' }}</td>
+                <td v-if="canManage" class="col-actions">
+                  <n-space size="small">
+                    <n-button size="small" @click="openEdit(ev)">编辑</n-button>
+                    <n-popconfirm @positive-click="onDelete(ev)">
+                      <template #trigger>
+                        <n-button size="small" type="error">删除</n-button>
+                      </template>
+                      确定删除「{{ ev.title }}」？
+                    </n-popconfirm>
+                  </n-space>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </template>
 
     <n-modal
       v-model:show="showForm" preset="card" style="width: min(560px, 92vw)"
@@ -454,24 +412,19 @@ async function onDelete(ev: CalendarEvent) {
 </template>
 
 <style scoped>
-.cal-wrap { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16); }
-.cal-heads { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
-.cal-head { text-align: center; font-weight: 600; font-size: 13px; color: #0b4257; padding: 4px 0; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.cal-cell {
-  min-height: 96px; border: 1px solid #dde7ea; border-radius: 10px;
-  padding: 6px; cursor: pointer; background: #fff; overflow: hidden;
-}
-.cal-cell:hover { border-color: #0d5a6e; }
-.cal-cell.is-other { opacity: 0.45; }
-.cal-cell.is-today { border: 2px solid #0d5a6e; background: rgba(13, 90, 110, 0.05); }
-.cal-daynum { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-.cal-chip {
-  font-size: 11px; line-height: 1.5; padding: 1px 6px; border-radius: 999px;
-  margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.cal-more { font-size: 11px; color: #5b6b73; }
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
-.day-event { border: 1px solid #dde7ea; border-radius: 10px; padding: 10px 12px; }
-.day-event-meta { margin-top: 6px; font-size: 13px; color: #5b6b73; }
+.cal-month { margin-bottom: 28px; }
+.cal-month-title {
+  font-size: 17px; font-weight: 700; color: #0b4257; margin: 0 0 10px;
+  padding-left: 10px; border-left: 4px solid #0d5a6e;
+}
+.cal-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16); }
+.cal-table th, .cal-table td { border-bottom: 1px solid #dde7ea; padding: 9px 10px; text-align: left; font-size: 14px; }
+.cal-table th { background: #e9f2f4; color: #0b4257; }
+.cal-table tr:last-child td { border-bottom: none; }
+.col-date { white-space: nowrap; }
+.col-week { white-space: nowrap; }
+.col-type { white-space: nowrap; }
+.col-note { max-width: 220px; }
+.col-actions { white-space: nowrap; }
 </style>

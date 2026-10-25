@@ -51,10 +51,13 @@ export const CALENDAR_SCOPE_LABELS: Record<CalendarScopeType, string> = {
   class: '班级',
 }
 
-export const listCalendarEvents = (semesterId: number, from: string, to: string) =>
-  apiGet<CalendarEvent[]>(
-    `/calendar-events?semester_id=${semesterId}&from=${from}&to=${to}`,
-  )
+// from/to 皆可省:后端不传范围即返回本学期全部活动(一页一览用)。
+export const listCalendarEvents = (semesterId: number, from?: string, to?: string) => {
+  const params = new URLSearchParams({ semester_id: String(semesterId) })
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  return apiGet<CalendarEvent[]>(`/calendar-events?${params.toString()}`)
+}
 
 export const createCalendarEvent = (body: CalendarEventPayload) =>
   apiPost<CalendarEvent>('/calendar-events', body)
