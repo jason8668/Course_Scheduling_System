@@ -6,7 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { ApiError } from '@/api/client'
-import { getPatrolSheets } from '@/api/substitutionLog'
+import { getPatrolSheets, gradeLabel } from '@/api/substitutionLog'
 import type { PatrolGroupList, PatrolSheets } from '@/api/substitutionLog'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -45,12 +45,16 @@ function doClose() {
   window.close()
 }
 
+const printGrade = route.query.grade != null && route.query.grade !== ''
+  ? Number(route.query.grade)
+  : null
+
 onMounted(async () => {
   const sid = Number(route.query.semester_id)
   const from = String(route.query.from ?? '')
   const to = String(route.query.to ?? from)
   try {
-    data.value = await getPatrolSheets(sid, from, to)
+    data.value = await getPatrolSheets(sid, from, to, printGrade)
   } catch (e) {
     error.value = (e as ApiError).message || '无法产生课堂巡视情况记录表'
   } finally {
@@ -72,7 +76,7 @@ onMounted(async () => {
 
     <section v-for="(page, i) in data?.pages ?? []" :key="`p${i}`" class="page" data-testid="patrol-page">
       <h1 class="title">
-        <span class="school">{{ data?.title }}课堂巡视情况记录表</span>
+        <span class="school">{{ data?.title }}课堂巡视情况记录表<span v-if="printGrade != null">({{ gradeLabel(printGrade) }})</span></span>
         <span>{{ dateLabel(page.date) }}</span>
         <span>{{ range(page.first_ordinal, page.last_ordinal) }}</span>
         <span v-if="page.table_name" class="table-name">({{ page.table_name }})</span>

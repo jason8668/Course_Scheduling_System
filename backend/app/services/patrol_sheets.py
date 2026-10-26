@@ -281,8 +281,12 @@ def legend(db: Session) -> str:
     return app_settings.patrol_legend(db)
 
 
-def build(db: Session, semester_id: int, date_from: date, date_to: date) -> PatrolSheets:
-    """把一段期间的每一天组成课堂巡视情况记录表;没有课的日子(假日)自动略过。"""
+def build(
+    db: Session, semester_id: int, date_from: date, date_to: date,
+    grade: int | None = None,
+) -> PatrolSheets:
+    """把一段期间的每一天组成课堂巡视情况记录表;没有课的日子(假日)自动略过。
+    grade 不为空时只印该年级的班(分组巡视单也只跟著这些班走);为空则印全部年级。"""
     if date_to < date_from:
         raise PatrolError("结束日期不可早于开始日期")
     if (date_to - date_from).days >= MAX_DAYS:
@@ -291,10 +295,12 @@ def build(db: Session, semester_id: int, date_from: date, date_to: date) -> Patr
     if timetable is None:
         raise PatrolError("此学期尚无已发布的课表")
 
-    classes = list(db.scalars(
-        select(ClassUnit).where(ClassUnit.semester_id == semester_id)
-        .order_by(ClassUnit.grade, ClassUnit.name)
-    ))
+    stmt = select(ClassUnit).where(ClassUnit.semester_id == semester_id)
+    if grade is not None:
+        stmt = stmt.where(ClassUnit.grade == grade)
+    classes = list(db.scalars(stmt.order_by(ClassUnit.grade, ClassUnit.name)))
+    if grade is not None and not classes:
+        raise PatrolError("该年级暂无班级")
     by_table: dict[int, tuple[PeriodTable, list[ClassUnit]]] = {}
     for c in classes:
         table = pt_service.resolve_period_table(db, c)

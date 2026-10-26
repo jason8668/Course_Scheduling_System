@@ -4,8 +4,9 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { exportPatrolSheets, getDailyBoard, openPatrolSheets } from '@/api/substitutionLog'
+import { exportPatrolSheets, getDailyBoard, gradeLabel, openPatrolSheets } from '@/api/substitutionLog'
 import type { DailyBoard, LogEntry } from '@/api/substitutionLog'
+import { listClassUnits } from '@/api/basedata'
 import { listSemesters } from '@/api/semesters'
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -50,8 +51,23 @@ async function reload() {
   }
 }
 
+// 下拉框的值只能是 string | number,'全部年级'用 'all' 表示,换算成后端要的 null
+const patrolGradeSel = ref<string>('all')
+const patrolGrade = computed(() => (patrolGradeSel.value === 'all' ? null : Number(patrolGradeSel.value)))
+const patrolGradeOptions = ref<{ label: string; value: string }[]>([
+  { label: '全部年级', value: 'all' },
+])
+
 async function onSemesterChange(id: number) {
   sid.value = id
+  // 年级选项从本学期实际班级取,有几年级列几个;换学期后回到全部年级
+  const units = await listClassUnits(id)
+  const grades = [...new Set(units.map((u) => u.grade))].sort((a, b) => a - b)
+  patrolGradeOptions.value = [
+    { label: '全部年级', value: 'all' },
+    ...grades.map((g) => ({ label: gradeLabel(g), value: String(g) })),
+  ]
+  patrolGradeSel.value = 'all'
   await reload()
 }
 
@@ -80,7 +96,7 @@ function patrolRange(week: boolean): [string, string] {
 
 function openPatrol(week: boolean) {
   if (sid.value === null) return
-  openPatrolSheets(sid.value, ...patrolRange(week))
+  openPatrolSheets(sid.value, ...patrolRange(week), patrolGrade.value)
 }
 
 // 导出 Excel:打印页印出来就不能改,学校常要再加栏位、填巡视人员
@@ -89,7 +105,7 @@ async function exportPatrol(week: boolean) {
   if (sid.value === null) return
   exportingPatrol.value = true
   try {
-    await exportPatrolSheets(sid.value, ...patrolRange(week))
+    await exportPatrolSheets(sid.value, ...patrolRange(week), patrolGrade.value)
   } catch (e) {
     message.error((e as Error).message || '导出失败')
   } finally {
@@ -136,6 +152,10 @@ function statusType(e: LogEntry): string {
       </n-button>
       <template v-if="sid !== null">
         <n-text depth="3">课堂巡视情况记录表:</n-text>
+        <n-select
+          v-model:value="patrolGradeSel" :options="patrolGradeOptions" style="width: 120px"
+          data-testid="board-patrol-grade"
+        />
         <n-button-group>
           <n-button data-testid="board-patrol" @click="openPatrol(false)">打印当天</n-button>
           <n-button data-testid="board-patrol-week" @click="openPatrol(true)">打印整周</n-button>

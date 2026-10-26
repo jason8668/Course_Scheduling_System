@@ -60,6 +60,7 @@ def get_patrol_sheets(
     semester_id: int = Query(...),
     date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
     date_to: date | None = Query(default=None, description="默认同 date_from(只印一天)"),
+    grade: int | None = Query(default=None, description="只印该年级,不传则印全部年级"),
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
@@ -67,7 +68,7 @@ def get_patrol_sheets(
     _get_semester(db, semester_id)
     start = date_from or log_service.school_today()
     try:
-        sheets = patrol_sheets.build(db, semester_id, start, date_to or start)
+        sheets = patrol_sheets.build(db, semester_id, start, date_to or start, grade=grade)
     except patrol_sheets.PatrolError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     return PatrolSheetsOut.model_validate(asdict(sheets))
@@ -78,6 +79,7 @@ def export_patrol_sheets(
     semester_id: int = Query(...),
     date_from: date | None = Query(default=None, description="默认为学校时区的今天"),
     date_to: date | None = Query(default=None, description="默认同 date_from(只导出一天)"),
+    grade: int | None = Query(default=None, description="只导出该年级,不传则导出全部年级"),
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ) -> Response:
@@ -86,7 +88,7 @@ def export_patrol_sheets(
     start = date_from or log_service.school_today()
     end = date_to or start
     try:
-        sheets = patrol_sheets.build(db, semester_id, start, end)
+        sheets = patrol_sheets.build(db, semester_id, start, end, grade=grade)
     except patrol_sheets.PatrolError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     name = f"课堂巡视情况记录表_{start:%Y-%m-%d}" + (f"_{end:%m-%d}" if end != start else "")

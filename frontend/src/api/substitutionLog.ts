@@ -93,17 +93,31 @@ export interface PatrolSheets {
   group_lists: PatrolGroupList[]
 }
 
-export const getPatrolSheets = (semesterId: number, from: string, to: string): Promise<PatrolSheets> =>
-  apiGet(`/patrol-sheets?semester_id=${semesterId}&date_from=${from}&date_to=${to}`)
+/** 年级数字转中文年级名(1~12 映射,超出则直接用数字);巡视表年级筛选与打印标题共用。 */
+export function gradeLabel(grade: number): string {
+  const cn = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二']
+  return `${cn[grade] ?? grade}年级`
+}
 
-/** 在新分页开启课堂巡视情况记录表打印页(不套侧边栏) */
-export function openPatrolSheets(semesterId: number, from: string, to: string = from) {
-  window.open(`/patrol-sheets/print?semester_id=${semesterId}&from=${from}&to=${to}`, '_blank')
+const patrolGradeParam = (grade?: number | null) => (grade != null ? `&grade=${grade}` : '')
+
+export const getPatrolSheets = (
+  semesterId: number, from: string, to: string, grade?: number | null,
+): Promise<PatrolSheets> =>
+  apiGet(`/patrol-sheets?semester_id=${semesterId}&date_from=${from}&date_to=${to}${patrolGradeParam(grade)}`)
+
+/** 在新分页开启课堂巡视情况记录表打印页(不套侧边栏);grade 不传则印全部年级 */
+export function openPatrolSheets(
+  semesterId: number, from: string, to: string = from, grade?: number | null,
+) {
+  window.open(`/patrol-sheets/print?semester_id=${semesterId}&from=${from}&to=${to}${patrolGradeParam(grade)}`, '_blank')
 }
 
 /** 课堂巡视情况记录表 Excel:内容与打印页相同,下载后可自行增减栏位、填巡视人员 */
-export const exportPatrolSheets = (semesterId: number, from: string, to: string = from): Promise<void> =>
-  download(`/patrol-sheets.xlsx?semester_id=${semesterId}&date_from=${from}&date_to=${to}`, '课堂巡视情况记录表.xlsx')
+export const exportPatrolSheets = (
+  semesterId: number, from: string, to: string = from, grade?: number | null,
+): Promise<void> =>
+  download(`/patrol-sheets.xlsx?semester_id=${semesterId}&date_from=${from}&date_to=${to}${patrolGradeParam(grade)}`, '课堂巡视情况记录表.xlsx')
 
 export interface PatrolSettings {
   legend: string

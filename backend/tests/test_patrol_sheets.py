@@ -317,3 +317,30 @@ def test_xlsx_week_export_and_errors(w):
     r, wb = _xlsx(w, mon, sun)
     assert len(wb.sheetnames) == 2                          # 只有周三排了课
     assert f"_{mon.isoformat()}_{sun:%m-%d}.xlsx" in r.headers["content-disposition"]
+
+
+def test_patrol_sheets_filter_by_grade(w):
+    """按年级打印:只印该年级的班;不存在的年级给 404。"""
+    w.teacher("王师", ["国文"])
+    w.teacher("陈师", ["国文"])
+    w.place("王师", "国文", "701", 0)
+    # 八年级班直接建班(grade=8),再让 _World 复用它排课(klass 会沿用已建的 id);
+    # 用另一位老师,避免同一老师同节双班的硬约束冲突
+    c801 = w.client.post(f"/api/class-units{w.q}", json={
+        "grade": 8, "name": "801", "track": "junior_high"}).json()["id"]
+    w.classes["801"] = c801
+    w.place("陈师", "国文", "801", 0)
+    w.publish()
+
+    body = w.client.get(
+        f"/api/patrol-sheets{w.q}&date_from={WED.isoformat()}&grade=7").json()
+    classes7 = {c for p in body["pages"] for c in p["classes"]}
+    assert "701" in classes7 and "801" not in classes7
+
+    body = w.client.get(
+        f"/api/patrol-sheets{w.q}&date_from={WED.isoformat()}&grade=8").json()
+    classes8 = {c for p in body["pages"] for c in p["classes"]}
+    assert classes8 == {"801"}
+
+    r = w.client.get(f"/api/patrol-sheets{w.q}&date_from={WED.isoformat()}&grade=9")
+    assert r.status_code == 404
