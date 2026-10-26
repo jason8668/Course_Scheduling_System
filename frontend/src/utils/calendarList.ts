@@ -100,6 +100,49 @@ export function resolveSemesterEnd(startIso: string | null, endIso: string | nul
   return toISODate(addDays(parseISODate(startIso), 20 * 7))
 }
 
+/** UTC 午夜的“天数”，避免本地时区夏令时让毫秒差除 86400000 出错。 */
+function utcDayNumber(iso: string): number {
+  const d = parseISODate(iso)
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000)
+}
+
+/**
+ * 本学期第几周（与后端 solver/week_parity.py 的 week_number 同规则）：
+ * 学期开始那一周 = 第 1 周，周一起算（first_monday = start 所在周的周一）。
+ * start 缺失返回 null；date 在学期开始周之前时返回 0 或负数（与后端一致，
+ * 展示层对 <1 的值显示“—”，见 weekLabel）。
+ */
+export function weekNumberOf(startIso: string | null, dateIso: string): number | null {
+  if (!startIso) return null
+  const firstMonday = utcDayNumber(startIso) - (weekdayOf(parseISODate(startIso)) - 1)
+  return Math.floor((utcDayNumber(dateIso) - firstMonday) / 7) + 1
+}
+
+/** 周次展示：无开始日期或未到学期开始周时显示“—”，否则「第 X 周」。 */
+export function weekLabel(startIso: string | null, dateIso: string): string {
+  const w = weekNumberOf(startIso, dateIso)
+  return w === null || w < 1 ? '—' : `第 ${w} 周`
+}
+
+/**
+ * 明细表周次列文案（semesterStart 为学期开始日期）：
+ * - 每周重复：「第 X 周起，每周」（X = 开始日期周次）。
+ * - 单日：「第 X 周」；跨周：「第 X–Y 周」。
+ * - 无开始日期、或起止都在开学前：显示“—”；开始在开学前、结束在开学后：
+ *   显示「开学前–第 Y 周」。
+ */
+export function eventWeekText(semesterStart: string | null, ev: CalendarEvent): string {
+  if (!semesterStart) return '—'
+  const w1 = weekNumberOf(semesterStart, ev.start_date)
+  if (w1 === null) return '—'
+  if (ev.weekly_recurring) return w1 < 1 ? '—' : `第 ${w1} 周起，每周`
+  const w2 = weekNumberOf(semesterStart, ev.end_date)
+  if (w2 === null || w2 < 1) return '—'
+  if (w1 < 1) return `开学前–第 ${w2} 周`
+  if (w1 === w2) return `第 ${w1} 周`
+  return `第 ${w1}–${w2} 周`
+}
+
 export interface CalendarMonthGroup {
   month: string
   events: CalendarEvent[]

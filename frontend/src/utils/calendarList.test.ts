@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from '@/api/calendar'
 import {
-  eventDateText, groupEventsByMonth, monthLabel, monthsInRange, monthWeeks,
-  resolveSemesterEnd, weekdayLabel,
+  eventDateText, eventWeekText, groupEventsByMonth, monthLabel, monthsInRange, monthWeeks,
+  resolveSemesterEnd, weekdayLabel, weekLabel, weekNumberOf,
 } from '@/utils/calendarList'
 
 const base = (over: Partial<CalendarEvent>): CalendarEvent => ({
@@ -94,6 +94,61 @@ describe('resolveSemesterEnd', () => {
   })
   it('缺开始日期返回 null', () => {
     expect(resolveSemesterEnd(null, '2027-01-15')).toBe(null)
+  })
+})
+
+describe('weekNumberOf（与后端 week_number 同规则：开学周 = 第 1 周，周一起算）', () => {
+  it('开学在周三（2026-09-02）：所在周的周一 08-31 就是第 1 周，开学日与当周周日同为第 1 周', () => {
+    expect(weekNumberOf('2026-09-02', '2026-08-31')).toBe(1)
+    expect(weekNumberOf('2026-09-02', '2026-09-02')).toBe(1)
+    expect(weekNumberOf('2026-09-02', '2026-09-06')).toBe(1)
+    expect(weekNumberOf('2026-09-02', '2026-09-07')).toBe(2)
+  })
+  it('开学在周一（2026-09-07）：开学日第 1 周，当周周日仍第 1 周', () => {
+    expect(weekNumberOf('2026-09-07', '2026-09-07')).toBe(1)
+    expect(weekNumberOf('2026-09-07', '2026-09-13')).toBe(1)
+  })
+  it('开学在周日（2026-09-06）：所在周的周一 08-31 为第 1 周，开学日也是第 1 周', () => {
+    expect(weekNumberOf('2026-09-06', '2026-08-31')).toBe(1)
+    expect(weekNumberOf('2026-09-06', '2026-09-06')).toBe(1)
+  })
+  it('跨月与跨学年：2026-09-02 开学，10-05 为第 6 周，2027-01-15 为第 20 周', () => {
+    expect(weekNumberOf('2026-09-02', '2026-10-05')).toBe(6)
+    expect(weekNumberOf('2026-09-02', '2027-01-15')).toBe(20)
+  })
+  it('学期开始前：前一周的周一算第 0 周，再前一周算第 -1 周（与后端一致，展示层显示“—”）', () => {
+    expect(weekNumberOf('2026-09-02', '2026-08-24')).toBe(0)
+    expect(weekNumberOf('2026-09-02', '2026-08-17')).toBe(-1)
+  })
+  it('缺开始日期返回 null', () => {
+    expect(weekNumberOf(null, '2026-10-05')).toBe(null)
+  })
+})
+
+describe('weekLabel / eventWeekText', () => {
+  it('缺开始日期或未到开学周显示“—”，否则「第 X 周」', () => {
+    expect(weekLabel(null, '2026-10-05')).toBe('—')
+    expect(weekLabel('2026-09-02', '2026-08-24')).toBe('—')
+    expect(weekLabel('2026-09-02', '2026-09-02')).toBe('第 1 周')
+  })
+  it('明细单日活动：第 9 周（2026-09-02 开学，10-30 为第 9 周）', () => {
+    expect(eventWeekText('2026-09-02', base({}))).toBe('第 9 周')
+  })
+  it('明细跨周活动：10-30 至 11-02 显示「第 9–10 周」', () => {
+    expect(eventWeekText('2026-09-02', base({ start_date: '2026-10-30', end_date: '2026-11-02' })))
+      .toBe('第 9–10 周')
+  })
+  it('明细每周重复活动：从开始日期周次起，每周', () => {
+    expect(eventWeekText('2026-09-02', base({
+      weekly_recurring: true, start_date: '2026-09-04', end_date: '2027-01-15',
+    }))).toBe('第 1 周起，每周')
+  })
+  it('明细无开始日期或起止都在开学前显示“—”，开始在开学前则写开学前', () => {
+    expect(eventWeekText(null, base({}))).toBe('—')
+    expect(eventWeekText('2026-09-02', base({ start_date: '2026-08-24', end_date: '2026-08-25' })))
+      .toBe('—')
+    expect(eventWeekText('2026-09-02', base({ start_date: '2026-08-24', end_date: '2026-09-03' })))
+      .toBe('开学前–第 1 周')
   })
 })
 

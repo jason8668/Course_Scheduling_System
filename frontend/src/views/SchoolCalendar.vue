@@ -16,8 +16,8 @@ import { getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { PublicClass, PublicSemester } from '@/api/timetables'
 import { useAuthStore } from '@/stores/auth'
 import {
-  eventDateText, groupEventsByMonth, monthsInRange, monthWeeks, resolveSemesterEnd,
-  weekdayLabel,
+  eventDateText, eventWeekText, groupEventsByMonth, monthsInRange, monthWeeks,
+  resolveSemesterEnd, weekdayLabel, weekLabel,
 } from '@/utils/calendarList'
 import { classLabel } from '@/utils/labels'
 import { expandCalendarEvents, toISODate as toISO } from '@/utils/calendar'
@@ -338,9 +338,11 @@ async function onDelete(ev: CalendarEvent) {
           >
             <h3 class="month-frame-title">{{ frame.label }}</h3>
             <div class="frame-heads">
+              <div class="frame-head frame-weekno-head">周次</div>
               <div v-for="h in WEEKDAY_HEADS" :key="h" class="frame-head">周{{ h }}</div>
             </div>
             <div v-for="(week, wi) in frame.weeks" :key="wi" class="frame-week">
+              <div class="frame-weekno">{{ weekLabel(rangeStart, week[0]!.iso) }}</div>
               <div
                 v-for="cell in week" :key="cell.iso"
                 class="frame-cell"
@@ -377,6 +379,7 @@ async function onDelete(ev: CalendarEvent) {
             <thead>
               <tr>
                 <th class="col-date">日期</th>
+                <th class="col-weekno">周次</th>
                 <th class="col-week">星期</th>
                 <th>名称</th>
                 <th class="col-type">类型</th>
@@ -389,6 +392,7 @@ async function onDelete(ev: CalendarEvent) {
             <tbody>
               <tr v-for="ev in group.events" :key="ev.id">
                 <td class="col-date">{{ eventDateText(ev) }}</td>
+                <td class="col-weekno">{{ eventWeekText(rangeStart, ev) }}</td>
                 <td class="col-week">{{ weekdayLabel(ev.start_date) }}</td>
                 <td><strong>{{ ev.title }}</strong></td>
                 <td class="col-type">
@@ -505,8 +509,13 @@ async function onDelete(ev: CalendarEvent) {
   box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16);
 }
 .month-frame-title { font-size: 15px; font-weight: 700; color: #0b4257; margin: 0 0 8px; }
-.frame-heads, .frame-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.frame-heads, .frame-week { display: grid; grid-template-columns: 44px repeat(7, 1fr); gap: 4px; }
 .frame-head { text-align: center; font-size: 12px; font-weight: 600; color: #0b4257; padding: 2px 0; }
+.frame-weekno-head { color: #5b6b73; font-weight: 500; }
+.frame-weekno {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #5b6b73; background: #f2f6f7; border-radius: 8px;
+}
 .frame-week { margin-bottom: 4px; }
 .frame-cell {
   min-height: 64px; border: 1px solid #e6edf0; border-radius: 8px;
@@ -532,6 +541,7 @@ async function onDelete(ev: CalendarEvent) {
 .cal-table th { background: #e9f2f4; color: #0b4257; }
 .cal-table tr:last-child td { border-bottom: none; }
 .col-date { white-space: nowrap; }
+.col-weekno { white-space: nowrap; color: #0b4257; }
 .col-week { white-space: nowrap; }
 .col-type { white-space: nowrap; }
 .col-note { max-width: 220px; }

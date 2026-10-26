@@ -9,8 +9,8 @@ import { getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { PublicClass, PublicSemester } from '@/api/timetables'
 import { getSchoolSettings } from '@/api/assignments'
 import {
-  eventDateText, groupEventsByMonth, monthsInRange, monthWeeks, resolveSemesterEnd,
-  weekdayLabel,
+  eventDateText, eventWeekText, groupEventsByMonth, monthsInRange, monthWeeks,
+  resolveSemesterEnd, weekdayLabel, weekLabel,
 } from '@/utils/calendarList'
 import { expandCalendarEvents, toISODate } from '@/utils/calendar'
 import { classLabel } from '@/utils/labels'
@@ -132,10 +132,11 @@ onMounted(async () => {
           <h3 class="month-frame-title">{{ frame.label }}</h3>
           <table class="frame-grid">
             <thead>
-              <tr><th v-for="h in WEEKDAY_HEADS" :key="h">周{{ h }}</th></tr>
+              <tr><th class="weekno-col">周次</th><th v-for="h in WEEKDAY_HEADS" :key="h">周{{ h }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="(week, wi) in frame.weeks" :key="wi">
+                <td class="weekno-col">{{ weekLabel(rangeStart, week[0]!.iso) }}</td>
                 <td
                   v-for="cell in week" :key="cell.iso"
                   :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
@@ -160,6 +161,7 @@ onMounted(async () => {
           <thead>
             <tr>
               <th class="date-col">日期</th>
+              <th class="weekno-col">周次</th>
               <th class="week-col">星期</th>
               <th>名称</th>
               <th>类型</th>
@@ -171,6 +173,7 @@ onMounted(async () => {
           <tbody>
             <tr v-for="ev in group.events" :key="ev.id">
               <td class="date-col">{{ eventDateText(ev) }}</td>
+              <td class="weekno-col">{{ eventWeekText(rangeStart, ev) }}</td>
               <td class="week-col">{{ weekdayLabel(ev.start_date) }}</td>
               <td><strong>{{ ev.title }}</strong></td>
               <td>
@@ -186,7 +189,7 @@ onMounted(async () => {
       </div>
 
       <p class="foot">
-        说明：类型包括放假停课、全校活动、考试、其他；「每周重复」表示该活动在起止日期内每周同一天重复发生。
+        说明：类型包括放假停课、全校活动、考试、其他；「每周重复」表示该活动在起止日期内每周同一天重复发生。周次按学期开始日期计算，开学所在周为第 1 周，周一起算。
       </p>
     </template>
 
@@ -220,6 +223,8 @@ onMounted(async () => {
 .grid th, .grid td { border: 1px solid #000; padding: 5px 6px; text-align: left; vertical-align: middle; }
 .grid th { background: #eee; font-size: 14px; }
 .date-col { width: 150px; }
+.weekno-col { width: 52px; text-align: center; }
+.frame-grid td.weekno-col { background: #f4f4f4; font-size: 12px; vertical-align: middle; }
 .week-col { width: 56px; }
 .cal-frames { margin-bottom: 18px; }
 .month-frame { margin-bottom: 16px; }
