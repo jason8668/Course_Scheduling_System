@@ -15,9 +15,12 @@ import { listSemesters } from '@/api/semesters'
 import { getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { PublicClass, PublicSemester } from '@/api/timetables'
 import { useAuthStore } from '@/stores/auth'
-import { eventDateText, groupEventsByMonth, weekdayLabel } from '@/utils/calendarList'
+import {
+  eventDateText, groupEventsByMonth, monthsInRange, monthWeeks, resolveSemesterEnd,
+  weekdayLabel,
+} from '@/utils/calendarList'
 import { classLabel } from '@/utils/labels'
-import { toISODate as toISO } from '@/utils/calendar'
+import { expandCalendarEvents, toISODate as toISO } from '@/utils/calendar'
 
 const message = useMessage()
 const auth = useAuthStore()
@@ -56,6 +59,47 @@ const semesterRange = computed(() => {
   if (s.start_date && s.end_date) return `${s.start_date} 至 ${s.end_date}`
   return s.start_date ?? s.end_date ?? ''
 })
+
+// ── 学期日历（月框）：从开学第一天到最后一天，每个月一个框 ──
+const WEEKDAY_HEADS = ['一', '二', '三', '四', '五', '六', '日']
+const rangeStart = computed(() => semester.value?.start_date ?? null)
+const rangeEnd = computed(() =>
+  resolveSemesterEnd(semester.value?.start_date ?? null, semester.value?.end_date ?? null))
+const semesterMonths = computed(() =>
+  rangeStart.value && rangeEnd.value ? monthsInRange(rangeStart.value, rangeEnd.value) : [])
+// 把活动展开到学期范围内的每一天（每周重复按星期展开，与 Dashboard 覆盖逻辑一致）。
+const expandedByDate = computed(() =>
+  rangeStart.value && rangeEnd.value
+    ? expandCalendarEvents(eventsRaw.value, rangeStart.value, rangeEnd.value)
+    : new Map<string, CalendarEvent[]>())
+interface FrameCell {
+  iso: string
+  dayNum: number
+  inMonth: boolean
+  inRange: boolean
+  isToday: boolean
+  events: CalendarEvent[]
+}
+const monthFrames = computed(() => semesterMonths.value.map((m) => ({
+  ...m,
+  weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell): FrameCell => ({
+    ...cell,
+    inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
+    isToday: cell.iso === todayIso,
+    events: expandedByDate.value.get(cell.iso) ?? [],
+  }))),
+})))
+
+function onCellClick(cell: FrameCell) {
+  // 学期范围外的补齐格不可点；教师点击只看，不打开任何编辑入口。
+  if (!cell.inRange || !canManage.value) return
+  openCreate(cell.iso)
+}
+function onChipClick(ev: CalendarEvent, e: MouseEvent) {
+  e.stopPropagation()
+  if (!canManage.value) return
+  openEdit(ev)
+}
 
 async function loadEvents() {
   if (sid.value === null) return
@@ -156,9 +200,9 @@ const gradeOptions = computed(() => {
 const classOptions = computed(() =>
   classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
 
-function openCreate() {
+function openCreate(dateIso?: string) {
   editingId.value = null
-  form.value = emptyForm(todayIso)
+  form.value = emptyForm(dateIso ?? todayIso)
   showForm.value = true
 }
 function openEdit(ev: CalendarEvent) {
@@ -264,7 +308,7 @@ async function onDelete(ev: CalendarEvent) {
     </n-space>
 
     <n-alert v-if="semester && !semester.start_date" type="warning" data-testid="cal-nostart">
-      本学期尚未设定开始日期，周次计算依赖它；请至「学期与节次表」补上学期开始日期。
+      本学期尚未设定开始日期，无法生成整学期日历；请至「学期与节次表」补上学期开始/结束日期。
     </n-alert>
 
     <n-empty v-if="!loading && sid === null" description="尚无可用学期" />
@@ -282,6 +326,43 @@ async function onDelete(ev: CalendarEvent) {
           >{{ CALENDAR_EVENT_TYPE_LABELS[k] }} {{ typeCounts.get(k) ?? 0 }}</span>
         </n-space>
       </n-card>
+
+      <div v-if="semesterMonths.length" data-testid="cal-month-frames">
+        <h2 class="cal-frames-title">学期日历</h2>
+        <n-text v-if="semester && !semester.end_date" depth="3">
+          结束日期未设定，按开学起 20 周显示。
+        </n-text>
+        <div class="month-frames">
+          <section
+            v-for="frame in monthFrames" :key="`${frame.year}-${frame.month}`" class="month-frame"
+          >
+            <h3 class="month-frame-title">{{ frame.label }}</h3>
+            <div class="frame-heads">
+              <div v-for="h in WEEKDAY_HEADS" :key="h" class="frame-head">周{{ h }}</div>
+            </div>
+            <div v-for="(week, wi) in frame.weeks" :key="wi" class="frame-week">
+              <div
+                v-for="cell in week" :key="cell.iso"
+                class="frame-cell"
+                :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
+                @click="onCellClick(cell)"
+              >
+                <div class="frame-daynum">{{ cell.dayNum }}</div>
+                <div
+                  v-for="ev in cell.events.slice(0, 2)" :key="ev.id"
+                  class="frame-chip"
+                  :style="{ background: TYPE_COLORS[ev.event_type].bg, color: TYPE_COLORS[ev.event_type].fg }"
+                  :title="ev.title"
+                  @click.stop="onChipClick(ev, $event)"
+                >
+                  {{ ev.title }}
+                </div>
+                <div v-if="cell.events.length > 2" class="frame-more">+{{ cell.events.length - 2 }}</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
 
       <n-empty v-if="!loading && !eventsRaw.length" description="本学期暂无校历活动">
         <template #extra>
@@ -413,6 +494,34 @@ async function onDelete(ev: CalendarEvent) {
 
 <style scoped>
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
+.cal-frames-title {
+  font-size: 17px; font-weight: 700; color: #0b4257; margin: 4px 0 12px;
+  padding-left: 10px; border-left: 4px solid #0d5a6e;
+}
+.month-frames { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .month-frames { grid-template-columns: 1fr; } }
+.month-frame {
+  background: #fff; border-radius: 12px; padding: 12px;
+  box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16);
+}
+.month-frame-title { font-size: 15px; font-weight: 700; color: #0b4257; margin: 0 0 8px; }
+.frame-heads, .frame-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.frame-head { text-align: center; font-size: 12px; font-weight: 600; color: #0b4257; padding: 2px 0; }
+.frame-week { margin-bottom: 4px; }
+.frame-cell {
+  min-height: 64px; border: 1px solid #e6edf0; border-radius: 8px;
+  padding: 4px; cursor: pointer; overflow: hidden; background: #fff;
+}
+.frame-cell:hover { border-color: #0d5a6e; }
+.frame-cell.is-out { opacity: 0.45; cursor: default; }
+.frame-cell.is-out:hover { border-color: #e6edf0; }
+.frame-cell.is-today { border: 2px solid #0d5a6e; background: rgba(13, 90, 110, 0.05); }
+.frame-daynum { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.frame-chip {
+  font-size: 11px; line-height: 1.5; padding: 1px 5px; border-radius: 999px;
+  margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.frame-more { font-size: 11px; color: #5b6b73; }
 .cal-month { margin-bottom: 28px; }
 .cal-month-title {
   font-size: 17px; font-weight: 700; color: #0b4257; margin: 0 0 10px;

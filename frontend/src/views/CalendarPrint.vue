@@ -8,7 +8,11 @@ import type { CalendarEvent, CalendarEventType } from '@/api/calendar'
 import { getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { PublicClass, PublicSemester } from '@/api/timetables'
 import { getSchoolSettings } from '@/api/assignments'
-import { eventDateText, groupEventsByMonth, weekdayLabel } from '@/utils/calendarList'
+import {
+  eventDateText, groupEventsByMonth, monthsInRange, monthWeeks, resolveSemesterEnd,
+  weekdayLabel,
+} from '@/utils/calendarList'
+import { expandCalendarEvents, toISODate } from '@/utils/calendar'
 import { classLabel } from '@/utils/labels'
 
 // 校历打印页:独立一页供 A4 打印张贴,不套侧边栏(仿 TimetablePrint.vue 模式)。
@@ -24,6 +28,28 @@ const printedAt = new Date().toLocaleString('zh-CN', { hour12: false })
 
 const sid = computed(() => Number(route.query.semester_id) || null)
 const monthGroups = computed(() => groupEventsByMonth(events.value))
+
+// ── 学期日历（月框）：与主页面一致，从开学第一天到最后一天 ──
+const WEEKDAY_HEADS = ['一', '二', '三', '四', '五', '六', '日']
+const todayIso = toISODate(new Date())
+const rangeStart = computed(() => semester.value?.start_date ?? null)
+const rangeEnd = computed(() =>
+  resolveSemesterEnd(semester.value?.start_date ?? null, semester.value?.end_date ?? null))
+const semesterMonths = computed(() =>
+  rangeStart.value && rangeEnd.value ? monthsInRange(rangeStart.value, rangeEnd.value) : [])
+const expandedByDate = computed(() =>
+  rangeStart.value && rangeEnd.value
+    ? expandCalendarEvents(events.value, rangeStart.value, rangeEnd.value)
+    : new Map<string, CalendarEvent[]>())
+const monthFrames = computed(() => semesterMonths.value.map((m) => ({
+  ...m,
+  weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell) => ({
+    ...cell,
+    inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
+    isToday: cell.iso === todayIso,
+    events: expandedByDate.value.get(cell.iso) ?? [],
+  }))),
+})))
 const semesterRange = computed(() => {
   const s = semester.value
   if (!s) return ''
@@ -101,6 +127,31 @@ onMounted(async () => {
 
       <p class="summary">共 {{ events.length }} 条活动</p>
 
+      <div v-if="semesterMonths.length" class="cal-frames">
+        <div v-for="frame in monthFrames" :key="`${frame.year}-${frame.month}`" class="month-frame">
+          <h3 class="month-frame-title">{{ frame.label }}</h3>
+          <table class="frame-grid">
+            <thead>
+              <tr><th v-for="h in WEEKDAY_HEADS" :key="h">周{{ h }}</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(week, wi) in frame.weeks" :key="wi">
+                <td
+                  v-for="cell in week" :key="cell.iso"
+                  :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
+                >
+                  <div class="f-day">{{ cell.dayNum }}</div>
+                  <div v-for="ev in cell.events" :key="ev.id" class="f-ev">{{ ev.title }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p v-else-if="!semester.start_date" class="empty">
+        本学期尚未设定开始日期，无法生成整学期日历；请至「学期与节次表」补上开始/结束日期。
+      </p>
+
       <p v-if="!events.length" class="empty">本学期暂无校历活动。</p>
 
       <div v-for="group in monthGroups" :key="group.month" class="month-group">
@@ -170,6 +221,17 @@ onMounted(async () => {
 .grid th { background: #eee; font-size: 14px; }
 .date-col { width: 150px; }
 .week-col { width: 56px; }
+.cal-frames { margin-bottom: 18px; }
+.month-frame { margin-bottom: 16px; }
+.month-frame-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; padding-left: 8px; border-left: 4px solid #000; }
+.frame-grid { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
+.frame-grid th, .frame-grid td { border: 1px solid #000; padding: 4px 5px; text-align: left; vertical-align: top; }
+.frame-grid th { background: #eee; text-align: center; font-size: 13px; }
+.frame-grid td { height: 52px; }
+.frame-grid td.is-out { color: #999; }
+.frame-grid td.is-today { outline: 2px solid #000; outline-offset: -2px; }
+.f-day { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+.f-ev { font-size: 11px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .foot { font-size: 12px; color: #444; margin-top: 16px; }
 .empty { text-align: center; padding: 40px 0; font-size: 15px; }
 
@@ -178,5 +240,6 @@ onMounted(async () => {
   .no-print { display: none !important; }
   .sheet { max-width: none; padding: 0; }
   .month-group { page-break-inside: avoid; }
+  .month-frame { page-break-inside: avoid; }
 }
 </style>
