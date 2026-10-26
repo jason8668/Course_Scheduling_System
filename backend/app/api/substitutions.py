@@ -74,7 +74,8 @@ def get_recommendations(
         candidates=[
             CandidateOut(
                 teacher_id=c.teacher_id, teacher_name=c.teacher_name,
-                same_subject=c.same_subject, at_school_that_day=c.at_school_that_day,
+                same_grade=c.same_grade, same_subject=c.same_subject,
+                at_school_that_day=c.at_school_that_day,
                 sub_periods_this_month=c.sub_periods_this_month, reasons=list(c.reasons),
             )
             for c in rec.candidates

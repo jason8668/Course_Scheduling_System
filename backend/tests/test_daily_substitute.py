@@ -1,7 +1,8 @@
-"""日薪代课与整批指派(v1.2.19,用户回报 #36)。
+"""按日计酬的旧数据兼容与整批指派(v1.2.19,用户回报 #36)。
 
-小学导师请整天假,常由一位代课老师整天接手、按日计酬:
-- 计费方式多一个「日薪代课」;月结统计把这些节次从课时移到「日薪天数」。
+小学导师请整天假,常由一位代课老师整天接手、按日计酬。计费方式简化后,
+界面只提供「计入课时」/「不计入课时」两种,旧数据里的按日值(「日薪代课」)
+不再是下拉选项,但月结统计仍把这些节次从课时移到「日薪天数」。
 - 整张假单(或其中一天)可以一次指派给同一位代课老师;派不成的节次跳过并说明原因。
 """
 
@@ -16,6 +17,7 @@ from tests.dates import SEM_END, SEM_START, THU, WED
 from tests.test_substitutions import _World
 
 PW = "password123"
+# 旧按日值:界面已不再提供,仅供统计兼容旧数据
 DAILY = "日薪代课"
 
 
@@ -62,9 +64,10 @@ def _homeroom_day(w, periods=3, weekday=3):
 
 
 # ── 计费方式 ──────────────────────────
-def test_daily_is_offered_as_a_funding_option(w):
+def test_legacy_daily_value_is_no_longer_offered_but_still_counts_daily(w):
+    # 简化后下拉只剩计入/不计入课时;旧按日值不在选项里(下面统计测试仍用它验证兼容)
     options = w.client.get("/api/substitution-funding-sources").json()
-    assert DAILY in options
+    assert options == ["计入课时", "不计入课时"]
 
 
 # ── 统计:课时与日薪分开 ────────────────
@@ -101,7 +104,7 @@ def test_hourly_and_daily_are_listed_separately_for_the_same_teacher(w):
         w.assign(ap["id"], type="substitute", handler_teacher_id=w.teachers["陈师"],
                  funding_source=DAILY)
     li = w.leave("李师")
-    w.assign(li[0]["id"], type="substitute", handler_teacher_id=w.teachers["陈师"])  # 公费课时
+    w.assign(li[0]["id"], type="substitute", handler_teacher_id=w.teachers["陈师"])  # 计入课时代课
 
     chen = _summary(w, "陈师")
     assert chen["handled_count"] == 3

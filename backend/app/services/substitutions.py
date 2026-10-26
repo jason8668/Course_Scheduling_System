@@ -21,7 +21,6 @@ from app.models.leave import (
     AffectedStatus,
     LeaveRequest,
     LeaveStatus,
-    LeaveType,
 )
 from app.models.notification import NotificationType
 from app.models.substitution import (
@@ -49,14 +48,14 @@ def _counts_default(sub_type: str) -> bool:
     return sub_type == SubstitutionType.substitute.value
 
 
-def _funding_default(sub_type: str, leave_type: str) -> str:
-    """没填计费方式时的默认:事假请人代课由请假教师自付,其余由学校经费支应。
+def _funding_default(sub_type: str, counts_toward_hours: bool) -> str:
+    """没填计费方式时的默认:跟著「代课课时 计入/不计」开关走。
 
-    学校规定不一,界面上可改;这里只是让通知单不会印空白。
+    简化后界面不再让选谁出钱,代课单上只印计入课时或不计入课时。
     """
     if sub_type != SubstitutionType.substitute.value:
         return ""
-    return "自费代课" if leave_type == LeaveType.personal.value else "公费代课"
+    return "计入课时" if counts_toward_hours else "不计入课时"
 
 
 def assign(
@@ -101,8 +100,7 @@ def assign(
     sub.type = sub_type
     sub.handler_teacher_id = handler.id if handler else None
     sub.counts_toward_hours = counts
-    sub.funding_source = funding_source or _funding_default(
-        sub_type, affected.leave_request.leave_type)
+    sub.funding_source = funding_source or _funding_default(sub_type, counts)
     sub.created_by_user_id = created_by_user_id
     sub.created_by_name = created_by_name
     for k, v in swap_fields.items():

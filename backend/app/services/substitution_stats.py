@@ -7,8 +7,8 @@
 - 代课节数:该教师接手的所有处置(代课/调课/并班),即他实际处理了几节。
 - 计费节数(课时):其中 `counts_toward_hours` 为真、且不是日薪者。并班/自习默认不计、
   代课默认计(可覆写)。
-- 日薪天数:计费方式为「日薪代课」的代课,按日计酬——算的是「有几天」不是「几节」,
-  所以这些节次不进课时(#36)。同一位请假教师同一天若由两位以上日薪代课分担,
+- 日薪天数:计费方式为「外聘代课（按日计酬）」的代课,按日计酬——算的是「有几天」不是「几节」,
+  所以这些节次不进课时(#36)。同一位请假教师同一天若由两位以上外聘代课（按日计酬）分担,
   每位各算一天并标示出来,怎么给付由学校决定(各县市规定不同,系统不代为判断)。
 
 **跨月假单自动拆月**:以每一个 `affected_period` 自己的日期分月,不是以假单分月。
@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 from app.models.leave import LEAVE_TYPE_CN, AffectedPeriod, AffectedStatus
 from app.models.substitution import (
     DAILY_FUNDING,
+    DAILY_FUNDING_LEGACY,
     SUBSTITUTION_TYPE_CN,
     Substitution,
     SubstitutionType,
@@ -57,14 +58,16 @@ class StatDetail:
     counts_toward_hours: bool
     funding_source: str
     pay_kind: str = "none"       # hourly 课时 / daily 日薪 / none 不计
-    daily_shared: bool = False   # 日薪:这一天同一位请假教师的课由两位以上日薪代课分担
+    daily_shared: bool = False   # 日薪:这一天同一位请假教师的课由两位以上外聘代课（按日计酬）分担
 
 
 PAY_KIND_CN = {"hourly": "课时", "daily": "日薪", "none": "不计"}
 
 
 def pay_kind(sub: Substitution) -> str:
-    if sub.type == SubstitutionType.substitute.value and sub.funding_source == DAILY_FUNDING:
+    if sub.type == SubstitutionType.substitute.value and sub.funding_source in (
+        DAILY_FUNDING, DAILY_FUNDING_LEGACY,
+    ):
         return "daily"
     return "hourly" if sub.counts_toward_hours else "none"
 
@@ -77,7 +80,7 @@ class TeacherSummary:
     billable_count: int = 0  # 课时计费节数(counts_toward_hours 为真,不含日薪)
     daily_days: int = 0      # 日薪天数
     daily_periods: int = 0   # 日薪那几天共代了几节(供核对)
-    daily_shared_days: int = 0  # 其中几天是与其他日薪代课老师分担的
+    daily_shared_days: int = 0  # 其中几天是与其他外聘代课（按日计酬）老师分担的
 
 
 @dataclass
@@ -173,7 +176,7 @@ def monthly_report(
 def _shared_daily_days(
     db: Session, semester_id: int, month_start: date, month_end: date
 ) -> set[tuple[int, date]]:
-    """(请假教师, 日期):那一天他的课由两位以上「日薪代课」老师分担。
+    """(请假教师, 日期):那一天他的课由两位以上「外聘代课（按日计酬）」老师分担。
 
     一律看全校,不受 teacher_id 筛选影响——教师个人查询时也要看得到「这天是分担的」。
     """
@@ -185,7 +188,7 @@ def _shared_daily_days(
             Substitution.semester_id == semester_id,
             Substitution.handler_teacher_id.isnot(None),
             Substitution.type == SubstitutionType.substitute.value,
-            Substitution.funding_source == DAILY_FUNDING,
+            Substitution.funding_source.in_([DAILY_FUNDING, DAILY_FUNDING_LEGACY]),
             AffectedPeriod.status != AffectedStatus.cancelled.value,
             AffectedPeriod.date >= month_start,
             AffectedPeriod.date < month_end,
@@ -203,7 +206,7 @@ _DETAIL_HEADERS = (
     "计酬", "备注",
 )
 _SUMMARY_HEADERS = ("教师", "代课节数", "课时计费节数", "日薪天数", "日薪节数", "备注")
-_SHARED_NOTE = "当日与其他日薪代课分担"
+_SHARED_NOTE = "当日与其他按日代课分担"
 
 
 def build_workbook(report: MonthlyReport) -> bytes:
@@ -214,7 +217,7 @@ def build_workbook(report: MonthlyReport) -> bytes:
     ws_sum.title = "汇总"
     ws_sum.append(list(_SUMMARY_HEADERS))
     for s in report.summaries:
-        note = f"其中 {s.daily_shared_days} 天与其他日薪代课分担" if s.daily_shared_days else ""
+        note = f"其中 {s.daily_shared_days} 天与其他外聘代课（按日计酬）分担" if s.daily_shared_days else ""
         ws_sum.append([
             s.teacher_name, s.handled_count, s.billable_count,
             s.daily_days, s.daily_periods, note,

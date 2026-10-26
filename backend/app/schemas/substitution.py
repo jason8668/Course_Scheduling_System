@@ -11,6 +11,7 @@ _Date = date
 class CandidateOut(BaseModel):
     teacher_id: int
     teacher_name: str
+    same_grade: bool = False
     same_subject: bool
     at_school_that_day: bool
     sub_periods_this_month: int

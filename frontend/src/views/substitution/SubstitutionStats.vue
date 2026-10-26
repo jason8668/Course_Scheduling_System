@@ -55,7 +55,7 @@ const periodLabel = computed(() => {
 })
 const totalBillable = computed(() =>
   (report.value?.summaries ?? []).reduce((n, s) => n + s.billable_count, 0))
-// 日薪代课(小学常见)按日计酬:没有用到日薪的学校,界面和原本完全一样
+// 外聘代课（按日计酬）(小学常见)按日计酬:没有用到日薪的学校,界面和原本完全一样
 const totalDailyDays = computed(() =>
   (report.value?.summaries ?? []).reduce((n, s) => n + s.daily_days, 0))
 const hasDaily = computed(() => (report.value?.details ?? []).some((d) => d.pay_kind === 'daily'))
@@ -140,9 +140,9 @@ onMounted(async () => {
     </n-space>
 
     <n-alert v-if="hasDaily" type="info" :show-icon="true" data-testid="stats-daily-note">
-      计费方式为「日薪代课」的节次按日计酬:列在「日薪天数」,不计入课时计费节数。
+      计费方式为「外聘代课（按日计酬）」的节次按日计酬:列在「日薪天数」,不计入课时计费节数。
       <template v-if="hasShared">
-        标示「分担」的日子,同一位请假教师的课由两位以上日薪代课老师分担,每位各算 1 天,
+        标示「分担」的日子,同一位请假教师的课由两位以上外聘代课（按日计酬）老师分担,每位各算 1 天,
         实际如何给付请依学校规定核对。
       </template>
     </n-alert>

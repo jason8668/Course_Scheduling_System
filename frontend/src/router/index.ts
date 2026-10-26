@@ -44,6 +44,12 @@ const routes = [
     component: () => import('@/views/substitution/PatrolPrint.vue'),
   },
   {
+    // 教学课时统计打印页(A4 直式,按年级分组),不套侧边栏
+    path: '/teaching-hours/print',
+    name: 'teaching-hours-print',
+    component: () => import('@/views/substitution/TeachingHoursPrint.vue'),
+  },
+  {
     // 课表打印页(班级/教师/场地三种视角共用),供打印张贴,不套侧边栏
     path: '/timetable/print',
     name: 'timetable-print',
@@ -128,6 +134,11 @@ const routes = [
         path: 'substitution-stats',
         name: 'substitution-stats',
         component: () => import('@/views/substitution/SubstitutionStats.vue'),
+      },
+      {
+        path: 'substitution/teaching-hours',
+        name: 'teaching-hours',
+        component: () => import('@/views/substitution/TeachingHours.vue'),
       },
       {
         path: 'scheduling/versions',

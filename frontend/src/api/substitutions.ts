@@ -5,6 +5,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from '@/api/client'
 export interface Candidate {
   teacher_id: number
   teacher_name: string
+  same_grade: boolean
   same_subject: boolean
   at_school_that_day: boolean
   sub_periods_this_month: number

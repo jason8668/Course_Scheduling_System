@@ -125,6 +125,30 @@ def test_recommendation_ranks_same_subject_first(env2):
     assert "同科目教师" in top["reasons"]
 
 
+def test_recommendation_ranks_same_grade_before_cross_grade(env2):
+    """同科时,同年级优先于跨年级;跨年级仍在候选里(特殊情况可跨年级指派)。"""
+    w = env2
+    w.teacher("王师", ["国文"])
+    w.teacher("陈师", ["国文"])   # 同科同年级(7 年级)
+    w.teacher("林师", ["国文"])   # 同科跨年级(8 年级)
+    c801 = w.client.post(f"/api/class-units{w.q}", json={
+        "grade": 8, "name": "801", "track": "junior_high"}).json()["id"]
+    w.classes["801"] = c801
+    w.place("王师", "国文", "701", 0)   # 王师周三第一节 701(7 年级)国文
+    w.place("陈师", "国文", "702", 2)   # 陈师 7 年级另一班,第一节空堂
+    w.place("林师", "国文", "801", 2)   # 林师 8 年级,第一节空堂
+    w.publish()
+    affected = w.leave("王师")
+
+    rec = w.recommend(affected[0]["id"])
+    names = [c["teacher_name"] for c in rec["candidates"]]
+    assert names.index("陈师") < names.index("林师"), names
+    chen = next(c for c in rec["candidates"] if c["teacher_name"] == "陈师")
+    lin = next(c for c in rec["candidates"] if c["teacher_name"] == "林师")
+    assert chen["same_grade"] is True and "同年级教师" in chen["reasons"]
+    assert lin["same_grade"] is False and "跨年级教师" in lin["reasons"]
+
+
 def test_at_school_that_day_beats_a_teacher_not_coming_in(env2):
     """同为非本科,当天已在校者优先(免多跑一趟)。"""
     w = env2
@@ -684,7 +708,7 @@ def test_substitute_slips_follow_the_paper_form(env2):
     for slip in body["slips"]:
         assert slip["absent_teacher_name"] == "王师"
         assert slip["leave_type_name"] == "病假"
-        assert slip["funding_label"] == "公费代课"          # 事假以外的默认
+        assert slip["funding_label"] == "计入课时"          # 代课默认计入课时
         # 日期是请假起讫,不是只有被代的那几天
         assert (slip["date_from"], slip["date_to"]) == (WED.isoformat(), WED.isoformat())
         assert [row["ordinal"] for row in slip["rows"]][:2] == [1, 2]
@@ -692,17 +716,17 @@ def test_substitute_slips_follow_the_paper_form(env2):
 
 
 def test_substitute_slips_personal_leave_defaults_to_self_funding(env2):
-    """事假请人代课默认自费;界面指定的计费方式优先。"""
+    """请人代课默认计入课时;界面指定的计费方式优先(自由文字仍存得进去)。"""
     w = env2
     first, second = _sub_world(w, leave_type="personal")
     assert w.assign(first, type="substitute", handler_teacher_id=w.teachers["陈师"])[0] == 200
     slip = _sub_slips(w, first).json()["slips"][0]
-    assert slip["leave_type_name"] == "事假" and slip["funding_label"] == "自费代课"
+    assert slip["leave_type_name"] == "事假" and slip["funding_label"] == "计入课时"
 
     assert w.assign(second, type="substitute", handler_teacher_id=w.teachers["林师"],
-                    funding_source="课务自理")[0] == 200
+                    funding_source="自行调课补课")[0] == 200
     sub = w.client.get(f"/api/affected-periods/{second}/substitution").json()
-    assert sub["funding_source"] == "课务自理"
+    assert sub["funding_source"] == "自行调课补课"
 
 
 def test_substitute_slips_include_merge_with_its_own_mark(env2):
@@ -729,7 +753,7 @@ def test_substitute_slips_without_any_substitute_is_404(env2):
 
 def test_funding_sources_are_listed_for_the_form(env2):
     options = env2.client.get("/api/substitution-funding-sources").json()
-    assert "公费代课" in options and "自费代课" in options
+    assert options == ["计入课时", "不计入课时"]
 
 
 def _place_block(w, teacher, subject, klass, weekday, period_idx):

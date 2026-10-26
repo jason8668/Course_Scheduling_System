@@ -53,8 +53,6 @@ function stubFetch(leaveObj: unknown = leave, candidates: unknown[] = []) {
     if (url.includes('/swap-options')) body = swapOptions
     else if (url.includes('/recommendations')) {
       body = { affected_period_id: 11, candidates, no_candidate_hint: '无人可代' }
-    } else if (url.includes('/substitution-funding-sources')) {
-      body = ['公费代课', '自费代课', '课务自理', '不支课时']
     } else if (url.includes('/substitution-types')) body = { swap: '调课', substitute: '代课' }
     else if (url.includes('/semesters')) body = [{ id: 1, label: '115 学年度第 1 学期' }]
     else if (url.includes('/teachers')) body = []
@@ -76,7 +74,8 @@ async function openSwap() {
   return { wrapper, calls }
 }
 
-// 代课单上要印「计费方式」,所以指派代课时一定要把它送出去;默认依假别(事假自费)
+// 计费方式已简化:只分计入/不计入课时,跟著「代课课时」开关走,不再让选谁出钱。
+// 代课单上要印「计费方式」,所以指派代课时一定要把它送出去;默认开关开著 = 计入课时。
 describe('调代课处理:代课的计费方式', () => {
   async function pick(leaveObj: unknown) {
     const calls = stubFetch(leaveObj, [candidate])
@@ -89,16 +88,18 @@ describe('调代课处理:代课的计费方式', () => {
     return calls.find((c) => c.method === 'PUT')
   }
 
-  it('病假默认公费代课', async () => {
+  it('默认计入课时', async () => {
     expect((await pick(leave))?.body).toEqual({
       type: 'substitute', handler_teacher_id: 2, counts_toward_hours: true,
-      funding_source: '公费代课',
+      funding_source: '计入课时',
     })
   })
 
-  it('事假默认自费代课', async () => {
+  it('事假也不再分自费/公费,一律跟著开关走', async () => {
     const personal = { ...leave, leave_type: 'personal', leave_type_label: '事假' }
-    expect((await pick(personal))?.body).toMatchObject({ funding_source: '自费代课' })
+    expect((await pick(personal))?.body).toMatchObject({
+      counts_toward_hours: true, funding_source: '计入课时',
+    })
   })
 })
 

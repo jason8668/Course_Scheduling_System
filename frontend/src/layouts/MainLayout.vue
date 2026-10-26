@@ -70,6 +70,7 @@ const menuOptions = computed(() => {
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
         { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
         { label: menuLink('substitution-stats', '代课课时统计'), key: 'substitution-stats' },
+        { label: menuLink('teaching-hours', '教学课时统计'), key: 'teaching-hours' },
         { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },

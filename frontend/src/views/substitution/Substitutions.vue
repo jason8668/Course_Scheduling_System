@@ -11,7 +11,7 @@ import { listTeachers } from '@/api/basedata'
 import type { Teacher } from '@/api/basedata'
 import {
   assignSubstitution, assignSubstitutionBatch, clearSubstitution, getRecommendations,
-  getSwapOptions, listFundingSources, listSubstitutionTypes, openSlips,
+  getSwapOptions, listSubstitutionTypes, openSlips,
 } from '@/api/substitutions'
 import type {
   BatchSkip, Candidate, Recommendation, SwapOption, SwapOptions, SwapPartner,
@@ -27,9 +27,9 @@ const openId = ref<number | null>(null) // 展开中的受影响节次
 const rec = ref<Recommendation | null>(null)
 const loadingRec = ref(false)
 const countsHours = ref(true)
-// 代课课时由谁支付:印在代课通知单上。默认依假别(事假自费、其余公费),组长可改或自行输入
-const fundingOptions = ref<{ label: string; value: string }[]>([])
-const funding = ref('')
+// 计费方式已简化:只分计入/不计入课时两种,跟著上面这个开关走,不再让选谁出钱。
+// 代课单上印的计费方式 = 开关状态对应的「计入课时」/「不计入课时」。
+const fundingOf = (counts: boolean): string => counts ? '计入课时' : '不计入课时'
 const teachers = ref<Teacher[]>([])
 // 调课:展开中节次的可对调清单。swapTeacherId 为空 = 只看也教这个班的老师
 const swapOpen = ref(false)
@@ -99,10 +99,9 @@ async function onSemesterChange(id: number) {
 }
 
 onMounted(async () => {
-  const [sems, subTypes, fundings] = await Promise.all(
-    [listSemesters(), listSubstitutionTypes(), listFundingSources()])
+  const [sems, subTypes] = await Promise.all(
+    [listSemesters(), listSubstitutionTypes()])
   ;[semesters.value, types.value] = [sems, subTypes]
-  fundingOptions.value = fundings.map((f) => ({ label: f, value: f }))
   if (semesters.value.length) await onSemesterChange(semesters.value[0].id)
 })
 
@@ -115,7 +114,6 @@ async function openPeriod(p: AffectedPeriod) {
   rec.value = null
   resetSwap()
   countsHours.value = true
-  funding.value = defaultFunding(leaveOf(p))
   loadingRec.value = true
   try {
     rec.value = await getRecommendations(p.id)
@@ -124,23 +122,13 @@ async function openPeriod(p: AffectedPeriod) {
   }
 }
 
-// 事假请人代课由请假教师自付,其余由学校经费支应(与后端默认一致;学校规定不一,可改)
-function defaultFunding(l: LeaveRequest | undefined): string {
-  if (!l) return ''
-  return l.leave_type === 'personal' ? '自费代课' : '公费代课'
-}
-
-function leaveOf(p: AffectedPeriod): LeaveRequest | undefined {
-  return leaves.value.find((l) => l.affected_periods.some((x) => x.id === p.id))
-}
-
 async function assign(p: AffectedPeriod, type: string, candidate?: Candidate) {
   try {
     await assignSubstitution(p.id, {
       type,
       handler_teacher_id: candidate?.teacher_id ?? null,
       counts_toward_hours: type === 'substitute' ? countsHours.value : null,
-      funding_source: type === 'substitute' ? funding.value : '',
+      funding_source: type === 'substitute' ? fundingOf(countsHours.value) : '',
     })
     message.success(candidate
       ? `已指派 ${candidate.teacher_name} ${types.value[type]}`
@@ -234,12 +222,12 @@ async function assignSwap(
   }
 }
 
-// 整批指派代课:班主任请整天或好几天假,同一位代课老师接下所有节次(日薪代课常见)。
+// 整批指派代课:班主任请整天或好几天假,同一位代课老师接下所有节次(外聘代课（按日计酬）常见)。
 // 逐节点要点几十次;这里一次派完,派不成的节次(代课老师那节有课)列出来另外找人。
 const batchShow = ref(false)
 const batchLeave = ref<LeaveRequest | null>(null)
 const batchTeacher = ref<number | null>(null)
-const batchFunding = ref('')
+const batchCounts = ref(true)
 const batchDate = ref('') // 空字串 = 整张假单
 const batchBusy = ref(false)
 const batchSkipped = ref<BatchSkip[]>([])
@@ -267,7 +255,7 @@ const batchDateOptions = computed(() => {
 function openBatch(l: LeaveRequest) {
   batchLeave.value = l
   batchTeacher.value = null
-  batchFunding.value = defaultFunding(l)
+  batchCounts.value = true
   batchDate.value = ''
   batchSkipped.value = []
   batchDone.value = null
@@ -279,7 +267,8 @@ async function runBatch() {
   try {
     const r = await assignSubstitutionBatch(batchLeave.value.id, {
       handler_teacher_id: batchTeacher.value,
-      funding_source: batchFunding.value,
+      counts_toward_hours: batchCounts.value,
+      funding_source: fundingOf(batchCounts.value),
       date: batchDate.value || null,
     })
     batchDone.value = r.assigned
@@ -314,7 +303,8 @@ const STATUS: Record<AffectedPeriod['status'], { type: string; label: string }> 
 }
 
 function candidateTagType(c: Candidate): string {
-  if (c.same_subject) return 'success'
+  if (c.same_grade && c.same_subject) return 'success'
+  if (c.same_grade || c.same_subject) return 'info'
   if (c.at_school_that_day) return 'info'
   return 'default'
 }
@@ -431,12 +421,6 @@ function candidateTagType(c: Candidate): string {
                         <n-text depth="3">代课课时</n-text>
                         <n-switch v-model:value="countsHours" size="small" />
                         <n-text depth="3">{{ countsHours ? '计入' : '不计' }}</n-text>
-                        <n-text depth="3">计费方式</n-text>
-                        <n-select
-                          v-model:value="funding" size="small" style="width: 150px"
-                          filterable tag :options="fundingOptions"
-                          data-testid="sub-funding"
-                        />
                       </n-space>
                       <div
                         v-for="c in rec.candidates" :key="c.teacher_id"
@@ -575,11 +559,9 @@ function candidateTagType(c: Candidate): string {
           />
         </n-space>
         <n-space align="center">
-          <n-text style="min-width: 70px">计费方式</n-text>
-          <n-select
-            v-model:value="batchFunding" :options="fundingOptions" filterable tag
-            style="width: 240px" data-testid="sub-batch-funding"
-          />
+          <n-text style="min-width: 70px">代课课时</n-text>
+          <n-switch v-model:value="batchCounts" size="small" />
+          <n-text depth="3">{{ batchCounts ? '计入' : '不计' }}</n-text>
         </n-space>
         <n-space align="center">
           <n-text style="min-width: 70px">范围</n-text>

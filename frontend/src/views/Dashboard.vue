@@ -12,6 +12,8 @@ import { CALENDAR_EVENT_TYPE_LABELS, listCalendarEvents } from '@/api/calendar'
 import type { CalendarEvent } from '@/api/calendar'
 import { getMyTeacher, getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { NamedBrief, PublicSemester, PublishedTimetable } from '@/api/timetables'
+import { getMyTeachingHours } from '@/api/teachingHours'
+import type { TeachingHoursReport } from '@/api/teachingHours'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
@@ -56,6 +58,10 @@ const weekMe = ref<NamedBrief | null>(null)
 const weekEvents = ref<CalendarEvent[]>([])
 const weekTeacherId = ref<number | null>(null)
 const weekLoading = ref(true)
+
+// 教师本人已上课时数(本月 / 本学期):只有绑定了教师主档的登录者才显示
+const hoursMonth = ref<TeachingHoursReport | null>(null)
+const hoursSemester = ref<TeachingHoursReport | null>(null)
 
 const today = new Date()
 const weekMonday = mondayOf(today)
@@ -207,6 +213,20 @@ async function loadWeek() {
     weekMe.value = me
     weekEvents.value = events
     weekTeacherId.value = me?.id ?? data?.teachers[0]?.id ?? null
+    // 教师本人的课时卡:本月 + 本学期已上课时数;失败时整卡隐藏,不拖垮仪表板
+    if (me) {
+      try {
+        const [m, s] = await Promise.all([
+          getMyTeachingHours(sid, 'month'),
+          getMyTeachingHours(sid, 'semester'),
+        ])
+        hoursMonth.value = m
+        hoursSemester.value = s
+      } catch {
+        hoursMonth.value = null
+        hoursSemester.value = null
+      }
+    }
   } catch {
     // 本周课表加载失败只让本卡显示空状态,不影响整个仪表板
     weekData.value = null
@@ -259,6 +279,23 @@ onMounted(() => {
         data-testid="dash-week-none"
       />
       <n-text v-else depth="3">加载中…</n-text>
+    </n-card>
+
+    <n-card
+      v-if="weekMe && (hoursMonth || hoursSemester)"
+      data-testid="dash-hours" title="我的课时"
+    >
+      <n-space align="center">
+        <n-statistic
+          v-if="hoursMonth" label="本月已上课时数"
+          :value="hoursMonth.teachers[0]?.total ?? 0"
+        />
+        <n-statistic
+          v-if="hoursSemester" label="本学期已上课时数"
+          :value="hoursSemester.teachers[0]?.total ?? 0"
+        />
+        <n-text depth="3" style="font-size: 13px">统计至今天（未来日期不计入已上课时）</n-text>
+      </n-space>
     </n-card>
 
     <n-card v-if="semester" :title="`${semester.label} · 资料摘要`">

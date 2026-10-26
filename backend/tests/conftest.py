@@ -31,6 +31,7 @@ from app.api import (
     substitution_stats,
     substitutions,
     system,
+    teaching_hours,
     timetables,
     wizard,
 )
@@ -94,6 +95,7 @@ def env():
     application.include_router(substitutions.router, prefix="/api")
     application.include_router(substitution_log.router, prefix="/api")
     application.include_router(substitution_stats.router, prefix="/api")
+    application.include_router(teaching_hours.router, prefix="/api")
     application.include_router(notifications.router, prefix="/api")
     application.include_router(settings_api.router, prefix="/api")
     application.include_router(backups.router, prefix="/api")

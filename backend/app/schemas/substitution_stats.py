@@ -22,7 +22,7 @@ class StatDetailOut(BaseModel):
     counts_toward_hours: bool
     funding_source: str
     pay_kind: str = "none"      # hourly / daily / none
-    daily_shared: bool = False  # 日薪:当日与其他日薪代课老师分担
+    daily_shared: bool = False  # 日薪:当日与其他按日计酬代课老师分担
 
 
 class TeacherSummaryOut(BaseModel):
@@ -32,7 +32,7 @@ class TeacherSummaryOut(BaseModel):
     billable_count: int          # 课时计费节数(不含日薪)
     daily_days: int = 0          # 日薪天数
     daily_periods: int = 0       # 日薪那几天共代了几节
-    daily_shared_days: int = 0   # 其中几天与其他日薪代课老师分担
+    daily_shared_days: int = 0   # 其中几天与其他按日计酬代课老师分担
 
 
 class MonthlyReportOut(BaseModel):

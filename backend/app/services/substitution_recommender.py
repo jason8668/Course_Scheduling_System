@@ -1,8 +1,12 @@
 """代课推荐(M4-2,architecture.md §5.3)。
 
 回答「这一节该找谁代」。两段式:先**硬性过滤**(只留下那个特定日期真的能来的人),
-再**排序**(同科目 > 当天已在校 > 本月代课课时少),每位候选附上为什么排这个位置。
+再**排序**(同年级 > 同科目 > 当天已在校 > 本月代课课时少),每位候选附上为什么排这个位置。
+跨年级教师不被滤掉,只是排在后面——特殊情况仍可跨年级指派。
 
+「年级」取自配课:教师的年级 = 他所教班级的年级(由配课的排课单位成员班推导);
+受影响节次的年级 = 它原来那格课所教班级的年级(溯源 schedule_entry_id /
+course_assignment_id,课表改版后对不上时退回空集合,即一律视为跨年级)。
 硬性过滤一律经 `availability`——那里才知道「李师周三第二节空堂」不等于「11/11 他能代」
 (他自己可能也请假、或已被指派代别班)。排序理由给人看,不是黑箱分数。
 """
@@ -23,6 +27,7 @@ from app.services.availability import Availability
 class Candidate:
     teacher_id: int
     teacher_name: str
+    same_grade: bool         # 教受影响节次的年级(优先本年级,跨年级只排后面)
     same_subject: bool       # 教这个科目
     at_school_that_day: bool  # 当天本来就有课(免多跑一趟)
     sub_periods_this_month: int  # 本月已代课节数(愈少愈优先,公平)
@@ -30,8 +35,9 @@ class Candidate:
 
     @property
     def sort_key(self) -> tuple:
-        # 同科目最重要,其次当天在校,再者本月代课少者优先;同分以姓名稳定排序
+        # 同年级最重要,其次同科目,再者当天在校,再者本月代课少者优先;同分以姓名稳定排序
         return (
+            0 if self.same_grade else 1,
             0 if self.same_subject else 1,
             0 if self.at_school_that_day else 1,
             self.sub_periods_this_month,
@@ -60,6 +66,46 @@ def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> se
         .where(Teacher.semester_id == semester_id, Subject.name == subject_name)
     ).all()
     return {r[0] for r in rows}
+
+
+def _teacher_grades(db: Session, semester_id: int) -> dict[int, set[int]]:
+    """每位教师所教的年级集合(由配课推导:配课的排课单位成员班的年级)。"""
+    from app.models.assignment import AssignmentTeacher, CourseAssignment, SchedulingUnitMember
+    from app.models.basedata import ClassUnit
+
+    rows = db.execute(
+        select(AssignmentTeacher.teacher_id, ClassUnit.grade)
+        .join(CourseAssignment, CourseAssignment.id == AssignmentTeacher.course_assignment_id)
+        .join(SchedulingUnitMember, SchedulingUnitMember.scheduling_unit_id == CourseAssignment.scheduling_unit_id)
+        .join(ClassUnit, ClassUnit.id == SchedulingUnitMember.class_unit_id)
+        .where(CourseAssignment.semester_id == semester_id)
+    ).all()
+    out: dict[int, set[int]] = {}
+    for teacher_id, grade in rows:
+        out.setdefault(teacher_id, set()).add(grade)
+    return out
+
+
+def _affected_grades(db: Session, affected: AffectedPeriod) -> set[int]:
+    """受影响节次原来那格课所教班级的年级(溯源课表条目,改版后对不上则为空)。"""
+    from app.models.timetable import ScheduleEntry
+
+    entry = None
+    if affected.schedule_entry_id is not None:
+        entry = db.get(ScheduleEntry, affected.schedule_entry_id)
+    if entry is None and affected.course_assignment_id is not None:
+        entry = db.scalar(
+            select(ScheduleEntry).where(
+                ScheduleEntry.course_assignment_id == affected.course_assignment_id
+            ).limit(1)
+        )
+    if entry is None or entry.assignment is None:
+        return set()
+    return {
+        m.class_unit.grade
+        for m in entry.assignment.scheduling_unit.members
+        if m.class_unit is not None
+    }
 
 
 def _monthly_sub_counts(db: Session, semester_id: int, month_start: date) -> dict[int, int]:
@@ -104,6 +150,8 @@ def recommend(
 
     absent_teacher_id = affected.leave_request.teacher_id
     subject_teachers = _subject_teacher_ids(db, semester_id, affected.subject_name)
+    grades_of_teacher = _teacher_grades(db, semester_id)
+    affected_grades = _affected_grades(db, affected)
     month_counts = _monthly_sub_counts(db, semester_id, affected.date.replace(day=1))
 
     teachers = db.scalars(
@@ -121,10 +169,12 @@ def recommend(
             continue
 
         same_subject = t.id in subject_teachers
+        same_grade = bool(grades_of_teacher.get(t.id, set()) & affected_grades)
         at_school = av.teaches_on(t.id, affected.weekday, affected.date)
         month_n = month_counts.get(t.id, 0)
 
         reasons: list[str] = []
+        reasons.append("同年级教师" if same_grade else "跨年级教师")
         reasons.append("同科目教师" if same_subject else "非本科教师")
         if at_school:
             reasons.append("当天已在校")
@@ -132,7 +182,8 @@ def recommend(
 
         rec.candidates.append(Candidate(
             teacher_id=t.id, teacher_name=t.name,
-            same_subject=same_subject, at_school_that_day=at_school,
+            same_grade=same_grade, same_subject=same_subject,
+            at_school_that_day=at_school,
             sub_periods_this_month=month_n, reasons=tuple(reasons),
         ))
 

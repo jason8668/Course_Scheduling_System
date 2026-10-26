@@ -17,7 +17,7 @@ export interface StatDetail {
   counts_toward_hours: boolean
   funding_source: string
   pay_kind: 'hourly' | 'daily' | 'none' // 课时 / 日薪 / 不计
-  daily_shared: boolean // 日薪:当日与其他日薪代课老师分担
+  daily_shared: boolean // 日薪:当日与其他按日计酬代课老师分担
 }
 
 export interface TeacherSummary {
@@ -27,7 +27,7 @@ export interface TeacherSummary {
   billable_count: number // 课时计费节数(不含日薪)
   daily_days: number // 日薪天数
   daily_periods: number // 日薪那几天共代了几节
-  daily_shared_days: number // 其中几天与其他日薪代课老师分担
+  daily_shared_days: number // 其中几天与其他按日计酬代课老师分担
 }
 
 export interface MonthlyReport {
