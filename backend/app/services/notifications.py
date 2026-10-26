@@ -75,15 +75,26 @@ class _DingTalkMsg:
     text: str
 
 
+# 钉钉只发调课/代课:调课(swap)与代课都走 substitution_* 类型(含双方通知与取消);
+# 请假(leave_registered / leave_cancelled)只留站内通知,不进钉钉群。课表发布等
+# 其他类型也不发钉钉——规则收在这一处,新增 notify 与「再次提醒」重发都同样受限。
+_DINGTALK_TYPE_VALUES = frozenset({
+    NotificationType.substitution_assigned.value,
+    NotificationType.substitution_cancelled.value,
+})
+
+
 class DingTalkChannel:
     """钉钉群机器人:与 Email 相同走寄件匣模式——在交易内就把 Webhook/密钥/
     校名/文案全部备好(after_commit 阶段已不能再查 DB),commit 后只做 POST,
     交易 rollback 就不送。未设置 Webhook 时静默略过。内容是给全群看的广播,
-    只同步标题与摘要。"""
+    只同步标题与摘要。只发调课/代课类型(见 _DINGTALK_TYPE_VALUES),请假不发。"""
 
     key = "dingtalk"
 
     def deliver(self, db: Session, notification: Notification, teacher: Teacher | None) -> None:
+        if notification.type not in _DINGTALK_TYPE_VALUES:
+            return
         from app.services import settings as app_settings
 
         cfg = app_settings.dingtalk_config(db)

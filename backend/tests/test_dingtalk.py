@@ -71,15 +71,42 @@ def test_notification_broadcasts_to_dingtalk(admin, monkeypatch):
     teacher = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王小明"}).json()
 
     sent.clear()
-    # 直接走服务层验证广播:notify + commit 后应 POST 一次
+    # 直接走服务层验证广播:调课/代课类型 notify + commit 后应 POST 一次
     from app.models.notification import NotificationType
     notif.notify(db, semester_id=sid, teacher_id=teacher["id"],
-                 type=NotificationType.timetable_published, title="测试通知", body="内容摘要")
+                 type=NotificationType.substitution_assigned, title="代课通知", body="内容摘要")
     db.commit()
     assert len(sent) == 1
     webhook, secret, title, text = sent[0]
     assert webhook == HOOK and secret == "SECxyz"
-    assert "测试通知" in title and "内容摘要" in text
+    assert "代课通知" in title and "内容摘要" in text
+
+
+def test_leave_does_not_broadcast_to_dingtalk(admin, monkeypatch):
+    client, db = admin
+    sent: list = []
+    monkeypatch.setattr(
+        notif, "send_dingtalk",
+        lambda *a, **k: sent.append(a),
+    )
+    app_settings.save_dingtalk(db, webhook=HOOK, secret="SECxyz")
+    db.commit()
+
+    client.post("/api/semesters", json={
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
+        "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
+    })
+    sid = client.get("/api/semesters").json()[0]["id"]
+    teacher = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王小明"}).json()
+
+    # 请假登记与销假:站内通知照常写,但一律不进钉钉群
+    from app.models.notification import NotificationType
+    notif.notify(db, semester_id=sid, teacher_id=teacher["id"],
+                 type=NotificationType.leave_registered, title="请假已登记", body="")
+    notif.notify(db, semester_id=sid, teacher_id=teacher["id"],
+                 type=NotificationType.leave_cancelled, title="销假完成", body="")
+    db.commit()
+    assert sent == []
 
 
 def test_no_webhook_no_broadcast(admin, monkeypatch):
@@ -92,7 +119,7 @@ def test_no_webhook_no_broadcast(admin, monkeypatch):
     }).json()["id"]
     from app.models.notification import NotificationType
     notif.notify(db, semester_id=sid, teacher_id=None,
-                 type=NotificationType.timetable_published, title="无广播", body="")
+                 type=NotificationType.substitution_assigned, title="无广播", body="")
     db.commit()
     assert calls == []
 
