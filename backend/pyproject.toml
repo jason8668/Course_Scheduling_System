@@ -22,13 +22,15 @@ dependencies = [
     "openpyxl>=3.1,<4",
     # 排课引擎(M3-2)。wheel 约 29MB,amd64/arm64 皆有 manylinux wheel。
     "ortools>=9.14,<10",
+    # 钉钉群机器人发送(send_dingtalk 用)。之前只放在 dev 里,api 映像 pip install . 时
+    # 不装 dev extra,线上一点测试消息就报 No module named 'httpx'。
+    "httpx>=0.28,<1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
-    "httpx>=0.28",
     "ruff>=0.8",
     "mypy>=1.13",
 ]
