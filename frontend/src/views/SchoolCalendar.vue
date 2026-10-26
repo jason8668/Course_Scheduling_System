@@ -85,8 +85,10 @@ const monthFrames = computed(() => semesterMonths.value.map((m) => ({
   weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell): FrameCell => ({
     ...cell,
     inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
-    isToday: cell.iso === todayIso,
-    events: expandedByDate.value.get(cell.iso) ?? [],
+    // 今天只在本月框内高亮：跨月补齐格里的同一天不再重复描边（10-26 同时出现在 10 月框与 11 月框补齐格的问题）。
+    isToday: cell.iso === todayIso && cell.inMonth,
+    // 活动只在本月框内显示：跨月补齐格里的同一天不再重复出现活动。
+    events: cell.inMonth ? (expandedByDate.value.get(cell.iso) ?? []) : [],
   }))),
 })))
 
@@ -99,6 +101,18 @@ function onChipClick(ev: CalendarEvent, e: MouseEvent) {
   e.stopPropagation()
   if (!canManage.value) return
   openEdit(ev)
+}
+
+// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）；今天格仍保留深青描边。
+function cellStyle(cell: FrameCell) {
+  const ev = cell.events[0]
+  if (!ev) return {}
+  const c = TYPE_COLORS[ev.event_type]
+  return {
+    background: c.bg,
+    borderColor: cell.isToday ? '#0d5a6e' : c.fg,
+    borderWidth: '2px',
+  }
 }
 
 async function loadEvents() {
@@ -347,6 +361,7 @@ async function onDelete(ev: CalendarEvent) {
                 v-for="cell in week" :key="cell.iso"
                 class="frame-cell"
                 :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
+                :style="cellStyle(cell)"
                 @click="onCellClick(cell)"
               >
                 <div class="frame-daynum">{{ cell.dayNum }}</div>

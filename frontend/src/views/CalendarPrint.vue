@@ -19,6 +19,27 @@ import { classLabel } from '@/utils/labels'
 // 内容与校历主页面一致:本学期全部活动按月分组,一页内完整列出。
 
 const route = useRoute()
+
+// 活动类型颜色（与主页面 TYPE_COLORS 一致）：整格高亮用底色，描边用前景色。
+const PRINT_COLORS: Record<CalendarEventType, { bg: string; fg: string }> = {
+  holiday: { bg: '#fdecea', fg: '#c0392b' },
+  activity: { bg: '#eef6f8', fg: '#0d5a6e' },
+  exam: { bg: '#fdf3e7', fg: '#c05621' },
+  other: { bg: '#eef3fb', fg: '#2b6cb0' },
+}
+
+// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）；今天格仍保留黑色描边。
+function cellStyle(cell: { isToday: boolean; events: CalendarEvent[] }) {
+  const ev = cell.events[0]
+  if (!ev) return {}
+  const c = PRINT_COLORS[ev.event_type]
+  return {
+    background: c.bg,
+    outline: `2px solid ${cell.isToday ? '#000' : c.fg}`,
+    outlineOffset: '-2px',
+  }
+}
+
 const semester = ref<PublicSemester | null>(null)
 const classes = ref<PublicClass[]>([])
 const events = ref<CalendarEvent[]>([])
@@ -46,8 +67,10 @@ const monthFrames = computed(() => semesterMonths.value.map((m) => ({
   weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell) => ({
     ...cell,
     inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
-    isToday: cell.iso === todayIso,
-    events: expandedByDate.value.get(cell.iso) ?? [],
+    // 今天只在本月框内高亮：跨月补齐格里的同一天不再重复描边。
+    isToday: cell.iso === todayIso && cell.inMonth,
+    // 活动只在本月框内显示：跨月补齐格里的同一天不再重复出现活动。
+    events: cell.inMonth ? (expandedByDate.value.get(cell.iso) ?? []) : [],
   }))),
 })))
 const semesterRange = computed(() => {
@@ -140,9 +163,13 @@ onMounted(async () => {
                 <td
                   v-for="cell in week" :key="cell.iso"
                   :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
+                  :style="cellStyle(cell)"
                 >
                   <div class="f-day">{{ cell.dayNum }}</div>
-                  <div v-for="ev in cell.events" :key="ev.id" class="f-ev">{{ ev.title }}</div>
+                  <div
+                    v-for="ev in cell.events" :key="ev.id" class="f-ev"
+                    :style="{ color: PRINT_COLORS[ev.event_type].fg }"
+                  >{{ ev.title }}</div>
                 </td>
               </tr>
             </tbody>
@@ -242,6 +269,8 @@ onMounted(async () => {
 
 @media print {
   @page { size: A4 portrait; margin: 12mm; }
+  /* 打印时保留活动格底色（浏览器默认会去掉背景色）。 */
+  .frame-grid td { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .no-print { display: none !important; }
   .sheet { max-width: none; padding: 0; }
   .month-group { page-break-inside: avoid; }
