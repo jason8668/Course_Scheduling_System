@@ -1,12 +1,12 @@
-"""巡堂表导出 Excel(v1.2.14)。
+"""课堂巡视情况记录表导出 Excel(v1.2.14)。
 
-打印页印出来就不能改了;学校实务上常要在发出去之前再调整——加栏位、填巡堂人员或
-值日、并进自己既有的巡堂纪录档(用户建议)。这里把同一份资料(`patrol_sheets.build`)
+打印页印出来就不能改了;学校实务上常要在发出去之前再调整——加栏位、填巡视人员或
+值日、并进自己既有的课堂巡视情况记录表档(用户建议)。这里把同一份资料(`patrol_sheets.build`)
 写成可编辑的活页簿,版面比照打印页:
 
-- 每张巡堂纪录一个分页(每天的上午、下午;班级多时再分页),班级为栏、节次为列,
-  每节五列:科目/教师、教室、授课情形、学生学习、备注;最右边是巡堂签名栏。
-- 每张分组巡堂单(社团等)一个分页。
+- 每张课堂巡视情况记录表一个分页(每天的上午、下午;班级多时再分页),班级为栏、节次为列,
+  每节五列:科目/教师、教室、授课情形、学生学习、备注;最右边是巡视签名栏。
+- 每张分组巡视单(社团等)一个分页。
 - 已设成 A4 横向、缩成一页宽,下载后不改也能直接印。
 
 定位是「拿来改」而不是取代打印页:字型与格线不会和打印页一模一样。
@@ -47,7 +47,7 @@ def _sheet_name(base: str, used: set[str]) -> str:
     clean = base
     for ch in ":\\/?*[]":
         clean = clean.replace(ch, " ")
-    clean = clean[:28].strip() or "巡堂表"
+    clean = clean[:28].strip() or "课堂巡视情况记录表"
     name, i = clean, 2
     while name in used:
         name = f"{clean[:25]}({i})"
@@ -79,11 +79,11 @@ def _landscape(ws: Worksheet) -> None:
 
 def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> None:
     n = len(page.classes)
-    last_col = n + 3                      # 节次 | 列名 | 各班… | 巡堂签名
+    last_col = n + 3                      # 节次 | 列名 | 各班… | 巡视签名
     sign_col = last_col
 
     periods = _range(page.first_ordinal, page.last_ordinal)
-    heading = f"{title}巡堂纪录　{_date_label(page.date)}　{periods}"
+    heading = f"{title}课堂巡视情况记录表　{_date_label(page.date)}　{periods}"
     if page.table_name:
         heading += f"　({page.table_name})"
     ws.cell(row=1, column=1, value=heading).font = Font(bold=True, size=14)
@@ -93,7 +93,7 @@ def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> Non
     ws.cell(row=2, column=1, value="节次")
     for k, name in enumerate(page.classes):
         ws.cell(row=2, column=3 + k, value=name)
-    ws.cell(row=2, column=sign_col, value="巡堂\n签名")
+    ws.cell(row=2, column=sign_col, value="巡视\n签名")
     for cell in ws[2]:
         cell.alignment = _CENTER
         cell.font = Font(bold=True)
@@ -149,7 +149,7 @@ def _write_page(ws: Worksheet, title: str, legend: str, page: PatrolPage) -> Non
 def _write_list(ws: Worksheet, title: str, lst: GroupList) -> None:
     ws.cell(row=1, column=1, value=title)
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
-    heading = f"{lst.group_name}巡堂单　{_date_label(lst.date)}　{lst.period_name}"
+    heading = f"{lst.group_name}巡视单　{_date_label(lst.date)}　{lst.period_name}"
     ws.cell(row=2, column=1, value=heading).font = Font(bold=True, size=14)
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=6)
     ws.row_dimensions[2].height = 26
@@ -175,7 +175,7 @@ def _write_list(ws: Worksheet, title: str, lst: GroupList) -> None:
 
 
 def to_xlsx(sheets: PatrolSheets) -> bytes:
-    """巡堂纪录与分组巡堂单各自成页的活页簿。分页依日期排,同一天先主表、后分组单。"""
+    """课堂巡视情况记录表与分组巡视单各自成页的活页簿。分页依日期排,同一天先主表、后分组单。"""
     wb = Workbook()
     wb.remove(wb.active)
     used: set[str] = set()

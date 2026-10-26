@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// 巡堂表打印页(v1.2.12),A4 横式。版面照使用学校的纸本:
-//   巡堂纪录:班级为栏、节次为列,一天分上午/下午各一张;科目/教师/教室/备注由系统带出
-//             (已套用当天的调代课),授课情形、学生学习、巡堂签名留白手写。
-//   分组巡堂单:社团这类大型跑班群组另列清单(一列一组),一张 A4 并排两份。
+// 课堂巡视情况记录表打印页(v1.2.12),A4 横式。版面照使用学校的纸本:
+//   课堂巡视情况记录表:班级为栏、节次为列,一天分上午/下午各一张;科目/教师/教室/备注由系统带出
+//             (已套用当天的调代课),授课情形、学生学习、巡视签名留白手写。
+//   分组巡视单:社团这类大型跑班群组另列清单(一列一组),一张 A4 并排两份。
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { ApiError } from '@/api/client'
@@ -27,7 +27,7 @@ function range(first: number, last: number): string {
   return first === last ? `第 ${first} 节` : `第 ${first}~${last} 节`
 }
 
-/** 分组巡堂单两份一页(社团常连上两节,刚好并排) */
+/** 分组巡视单两份一页(社团常连上两节,刚好并排) */
 const listPairs = computed(() => {
   const lists = data.value?.group_lists ?? []
   const out: PatrolGroupList[][] = []
@@ -52,7 +52,7 @@ onMounted(async () => {
   try {
     data.value = await getPatrolSheets(sid, from, to)
   } catch (e) {
-    error.value = (e as ApiError).message || '无法产生巡堂表'
+    error.value = (e as ApiError).message || '无法产生课堂巡视情况记录表'
   } finally {
     loading.value = false
   }
@@ -72,7 +72,7 @@ onMounted(async () => {
 
     <section v-for="(page, i) in data?.pages ?? []" :key="`p${i}`" class="page" data-testid="patrol-page">
       <h1 class="title">
-        <span class="school">{{ data?.title }}巡堂纪录</span>
+        <span class="school">{{ data?.title }}课堂巡视情况记录表</span>
         <span>{{ dateLabel(page.date) }}</span>
         <span>{{ range(page.first_ordinal, page.last_ordinal) }}</span>
         <span v-if="page.table_name" class="table-name">({{ page.table_name }})</span>
@@ -90,7 +90,7 @@ onMounted(async () => {
             <th>节次</th>
             <th />
             <th v-for="c in page.classes" :key="c" data-testid="patrol-class">{{ c }}</th>
-            <th>巡堂<br>签名</th>
+            <th>巡视<br>签名</th>
           </tr>
         </thead>
         <tbody v-for="row in page.rows" :key="row.ordinal" class="period">
@@ -138,7 +138,7 @@ onMounted(async () => {
       <div v-for="(list, k) in pair" :key="k" class="list" data-testid="patrol-group-list">
         <div class="list-school">{{ data?.title }}</div>
         <h1 class="title list-title">
-          <span class="school">{{ list.group_name }}巡堂单</span>
+          <span class="school">{{ list.group_name }}巡视单</span>
           <span>{{ dateLabel(list.date) }}</span>
           <span>{{ list.period_name }}</span>
         </h1>
@@ -206,7 +206,7 @@ tr.blank td { height: 22px; }
 .legend { width: 52%; line-height: 1.5; }
 .remarks { height: 62px; }
 
-/* 分组巡堂单:一张 A4 横式并排两份 */
+/* 分组巡视单:一张 A4 横式并排两份 */
 .lists { display: flex; gap: 32px; align-items: flex-start; }
 .list { flex: 1; min-width: 0; }
 .list-title { flex-wrap: wrap; row-gap: 2px; }

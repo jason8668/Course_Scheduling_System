@@ -172,7 +172,7 @@ const savingScheduling = ref(false)
 
 const schoolName = ref('')
 
-// ── 巡堂表的记录说明(各校的代码不同)──
+// ── 课堂巡视情况记录表的记录说明(各校的代码不同)──
 const patrolLegend = ref('')
 const savingPatrol = ref(false)
 async function onSavePatrol() {
@@ -180,7 +180,7 @@ async function onSavePatrol() {
   try {
     // 留空送出 = 恢复默认;后端会回传实际生效的文字
     patrolLegend.value = (await savePatrolSettings({ legend: patrolLegend.value })).legend
-    message.success('已储存巡堂表设置')
+    message.success('已储存课堂巡视情况记录表设置')
   } catch (e) {
     message.error((e as ApiError).message || '储存失败')
   } finally {
@@ -613,11 +613,11 @@ async function onResetWizard() {
       </n-space>
     </n-card>
 
-    <n-card v-if="isAdmin()" title="巡堂表" data-testid="patrol-card">
+    <n-card v-if="isAdmin()" title="课堂巡视情况记录表" data-testid="patrol-card">
       <n-space vertical>
         <n-text depth="3">
-          印在巡堂表下方的「记录说明」。授课情形、学生学习的代码各校不同,请改成贵校的写法;
-          一行一项。清空后储存会恢复默认内容。巡堂表在「今日调代课看板」打印。
+          印在课堂巡视情况记录表下方的「记录说明」。授课情形、学生学习的代码各校不同,请改成贵校的写法;
+          一行一项。清空后储存会恢复默认内容。课堂巡视情况记录表在「今日调代课看板」打印。
         </n-text>
         <n-input
           v-model:value="patrolLegend" type="textarea" :autosize="{ minRows: 3, maxRows: 6 }"
@@ -627,7 +627,7 @@ async function onResetWizard() {
           <n-button
             type="primary" :loading="savingPatrol" data-testid="patrol-save" @click="onSavePatrol"
           >
-            储存巡堂表设置
+            储存课堂巡视情况记录表设置
           </n-button>
         </div>
       </n-space>

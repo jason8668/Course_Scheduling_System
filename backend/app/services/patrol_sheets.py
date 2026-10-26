@@ -1,19 +1,19 @@
-"""巡堂表(巡堂纪录)的资料组装(v1.2.12)。
+"""课堂巡视情况记录表(课堂巡视情况记录表)的资料组装(v1.2.12)。
 
-巡堂人员拿著这张纸逐班走:每一节、每一班「现在应该是谁在上什么课、在哪里」。
+巡视人员拿著这张纸逐班走:每一节、每一班「现在应该是谁在上什么课、在哪里」。
 周课表答不了这个问题——调代课之后,那一天的老师、科目可能都换了。这里把
 「已发布的周课表」与「那一天的调代课处置」叠起来,印出当天真正的样子。
 
 版面照使用学校的纸本:
 
-- **巡堂纪录**:班级为栏、节次为列,一天分上午/下午各一张(以午休为界;早自习、
+- **课堂巡视情况记录表**:班级为栏、节次为列,一天分上午/下午各一张(以午休为界;早自习、
   午休等非一般课的时段不列)。每格印科目、教师、教室与备注(代课/调课/…);
-  授课情形、学生学习、巡堂签名留白手写。班级多的学校自动分页。
-- **分组巡堂单**:社团、多元选修这类「一个时段全校拆成很多组」的跑班群组,
+  授课情形、学生学习、巡视签名留白手写。班级多的学校自动分页。
+- **分组巡视单**:社团、多元选修这类「一个时段全校拆成很多组」的跑班群组,
   十几组塞不进一个格子,另外列成清单(一列一组:名称、教师、地点)。
   主表那一格只写群组名称与组数。
 
-**巡堂人员不在表上。** 纸本是签名栏,由巡堂的人自己签;系统不管巡堂轮值。
+**巡视人员不在表上。** 纸本是签名栏,由巡视的人自己签;系统不管巡视轮值。
 
 本模组只读,不写资料库。
 """
@@ -41,7 +41,7 @@ from app.services.slip_layout import school_title
 _Date = date
 
 CLASSES_PER_PAGE = 12       # A4 横式一页放得下的班级栏数(照使用学校的纸本)
-GROUP_LIST_MIN = 4          # 群组在同一节有几门课以上,就改列成分组巡堂单
+GROUP_LIST_MIN = 4          # 群组在同一节有几门课以上,就改列成分组巡视单
 MAX_DAYS = 14               # 一次最多印几天
 _NOON = time(12, 0)
 
@@ -106,7 +106,7 @@ class PatrolSheets:
 
 
 class PatrolError(Exception):
-    """印不出巡堂表(呼叫端转 404/400)。"""
+    """印不出课堂巡视情况记录表(呼叫端转 404/400)。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,7 +167,7 @@ class _Day:
                 select(ScheduleEntry).where(
                     ScheduleEntry.timetable_id == timetable_id, ScheduleEntry.weekday == weekday)
             )
-            # 单双周的课只在对应的那一周出现在巡堂表上(v1.3.0)
+            # 单双周的课只在对应的那一周出现在课堂巡视情况记录表上(v1.3.0)
             if runs_in_week(e.assignment.week_parity, week)
         ]
         live = (
@@ -248,7 +248,7 @@ class _Day:
         """这一班这一节的课;跑班时会有好几门(每一组一门),依配课建立的顺序排列。
 
         顺序不能看格位:群组的格位是一次整批写入的,写入顺序取决于资料库怎么回传配课,
-        PostgreSQL 并不保证。分组巡堂单的编号要每次都对到同一个社团,故以配课 id 为准。
+        PostgreSQL 并不保证。分组巡视单的编号要每次都对到同一个社团,故以配课 id 为准。
         """
         out = []
         for e in self.entries:
@@ -268,7 +268,7 @@ def _cell(lessons: list[_Lesson]) -> PatrolCell:
         return PatrolCell()
     if lessons[0].is_group and len(lessons) >= GROUP_LIST_MIN:
         return PatrolCell(
-            subject=lessons[0].unit_name, teacher=f"共 {len(lessons)} 组", note="见分组巡堂单")
+            subject=lessons[0].unit_name, teacher=f"共 {len(lessons)} 组", note="见分组巡视单")
     return PatrolCell(
         subject=_join([x.subject for x in lessons]),
         teacher=_join([x.teacher for x in lessons]),
@@ -282,7 +282,7 @@ def legend(db: Session) -> str:
 
 
 def build(db: Session, semester_id: int, date_from: date, date_to: date) -> PatrolSheets:
-    """把一段期间的每一天组成巡堂表;没有课的日子(假日)自动略过。"""
+    """把一段期间的每一天组成课堂巡视情况记录表;没有课的日子(假日)自动略过。"""
     if date_to < date_from:
         raise PatrolError("结束日期不可早于开始日期")
     if (date_to - date_from).days >= MAX_DAYS:

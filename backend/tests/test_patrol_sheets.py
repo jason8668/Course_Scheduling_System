@@ -1,4 +1,4 @@
-"""巡堂表(v1.2.12):已发布课表叠上当天的调代课,印出那一天每班每节真正的样子。"""
+"""课堂巡视情况记录表(v1.2.12):已发布课表叠上当天的调代课,印出那一天每班每节真正的样子。"""
 
 import io
 from datetime import timedelta
@@ -151,7 +151,7 @@ def test_small_group_lists_every_teacher_in_the_cell(w):
 
 
 def test_big_group_gets_its_own_list(w):
-    """社团:全校拆成很多组,格子塞不下,主表只写群组名称,另出一张分组巡堂单。"""
+    """社团:全校拆成很多组,格子塞不下,主表只写群组名称,另出一张分组巡视单。"""
     clubs = ["羽球社", "桌球社", "棒球社", "漫画社"]
     room_id = w.client.post(f"/api/rooms{w.q}", json={"name": "体育馆"}).json()["id"]
     unit = _group(w, "社团", ["701", "702"])
@@ -164,7 +164,7 @@ def test_big_group_gets_its_own_list(w):
 
     body = _sheets(w).json()
     cell = _cell(body, "701", 6)
-    assert (cell["subject"], cell["teacher"], cell["note"]) == ("社团", "共 4 组", "见分组巡堂单")
+    assert (cell["subject"], cell["teacher"], cell["note"]) == ("社团", "共 4 组", "见分组巡视单")
     assert len(body["group_lists"]) == 1          # 两个班共用一张,不重复
     listing = body["group_lists"][0]
     assert (listing["group_name"], listing["period_name"]) == ("社团", "第六节")
@@ -265,15 +265,15 @@ def test_xlsx_has_a_sheet_per_half_day_with_the_same_content_as_the_print_page(w
     r, wb = _xlsx(w)
     day = f"{WED:%m-%d}"
     assert wb.sheetnames == [f"{day} 上午", f"{day} 下午"]
-    assert f"UTF-8''%E5%B7%A1%E5%A0%82%E8%A1%A8_{WED.isoformat()}.xlsx" in (
+    assert f"UTF-8''%E8%AF%BE%E5%A0%82%E5%B7%A1%E8%A7%86%E6%83%85%E5%86%B5%E8%AE%B0%E5%BD%95%E8%A1%A8_{WED.isoformat()}.xlsx" in (
         r.headers["content-disposition"])
 
     ws = wb[f"{day} 上午"]
     texts = _texts(ws)
-    assert "巡堂纪录" in texts[0] and "第 1~4 节" in texts[0]
+    assert "课堂巡视情况记录表" in texts[0] and "第 1~4 节" in texts[0]
     assert f"{WED.year}年{WED.month}月{WED.day}日" in texts[0]
     header = [c.value for c in ws[2]]
-    assert header[0] == "节次" and "701" in header and "巡堂" in header[-1]
+    assert header[0] == "节次" and "701" in header and "巡视" in header[-1]
     col = header.index("701") + 1
     # 第一节那一块:科目/教师、教室、授课情形、学生学习、备注
     assert [ws.cell(row=r_, column=2).value for r_ in range(3, 8)] == [

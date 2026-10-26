@@ -38,7 +38,7 @@ const routes = [
     component: () => import('@/views/substitution/SlipsPrint.vue'),
   },
   {
-    // 巡堂表打印页(A4 横式),不套侧边栏
+    // 课堂巡视情况记录表打印页(A4 横式),不套侧边栏
     path: '/patrol-sheets/print',
     name: 'patrol-sheets-print',
     component: () => import('@/views/substitution/PatrolPrint.vue'),

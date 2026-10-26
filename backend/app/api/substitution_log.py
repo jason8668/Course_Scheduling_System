@@ -63,7 +63,7 @@ def get_patrol_sheets(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """巡堂表的打印资料:已发布课表叠上当天的调代课,一天分上午/下午各一张。"""
+    """课堂巡视情况记录表的打印资料:已发布课表叠上当天的调代课,一天分上午/下午各一张。"""
     _get_semester(db, semester_id)
     start = date_from or log_service.school_today()
     try:
@@ -81,7 +81,7 @@ def export_patrol_sheets(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ) -> Response:
-    """巡堂表的 Excel 版:内容与打印页相同,给学校下载后自行增减栏位、填巡堂人员。"""
+    """课堂巡视情况记录表的 Excel 版:内容与打印页相同,给学校下载后自行增减栏位、填巡视人员。"""
     _get_semester(db, semester_id)
     start = date_from or log_service.school_today()
     end = date_to or start
@@ -89,7 +89,7 @@ def export_patrol_sheets(
         sheets = patrol_sheets.build(db, semester_id, start, end)
     except patrol_sheets.PatrolError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
-    name = f"巡堂表_{start:%Y-%m-%d}" + (f"_{end:%m-%d}" if end != start else "")
+    name = f"课堂巡视情况记录表_{start:%Y-%m-%d}" + (f"_{end:%m-%d}" if end != start else "")
     # 中文档名以 RFC 5987 filename* 表达;filename 提供 ASCII 后备(与课表导出一致)
     disposition = f"attachment; filename=\"patrol.xlsx\"; filename*=UTF-8''{quote(name)}.xlsx"
     return Response(

@@ -65,12 +65,12 @@ export const getSubstitutionLog = (
   return apiGet(`/substitution-log?${p.toString()}`)
 }
 
-// ── 巡堂表(v1.2.12)──
+// ── 课堂巡视情况记录表(v1.2.12)──
 export interface PatrolCell {
   subject: string
   teacher: string
   room: string
-  note: string // 代课/调课/并班/自习/停课/请假待处理;大型群组为「见分组巡堂单」
+  note: string // 代课/调课/并班/自习/停课/请假待处理;大型群组为「见分组巡视单」
 }
 export interface PatrolPage {
   date: string
@@ -96,14 +96,14 @@ export interface PatrolSheets {
 export const getPatrolSheets = (semesterId: number, from: string, to: string): Promise<PatrolSheets> =>
   apiGet(`/patrol-sheets?semester_id=${semesterId}&date_from=${from}&date_to=${to}`)
 
-/** 在新分页开启巡堂表打印页(不套侧边栏) */
+/** 在新分页开启课堂巡视情况记录表打印页(不套侧边栏) */
 export function openPatrolSheets(semesterId: number, from: string, to: string = from) {
   window.open(`/patrol-sheets/print?semester_id=${semesterId}&from=${from}&to=${to}`, '_blank')
 }
 
-/** 巡堂表 Excel:内容与打印页相同,下载后可自行增减栏位、填巡堂人员 */
+/** 课堂巡视情况记录表 Excel:内容与打印页相同,下载后可自行增减栏位、填巡视人员 */
 export const exportPatrolSheets = (semesterId: number, from: string, to: string = from): Promise<void> =>
-  download(`/patrol-sheets.xlsx?semester_id=${semesterId}&date_from=${from}&date_to=${to}`, '巡堂表.xlsx')
+  download(`/patrol-sheets.xlsx?semester_id=${semesterId}&date_from=${from}&date_to=${to}`, '课堂巡视情况记录表.xlsx')
 
 export interface PatrolSettings {
   legend: string

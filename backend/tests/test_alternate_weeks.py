@@ -263,7 +263,7 @@ def test_timetable_check_accepts_a_crossed_timetable(crossed):
     assert r["issues"] == [] and r["completeness"]["complete"] is True
 
 
-# ── 跟日期有关的部分:请假、代课、调课、巡堂表、导出 ─────────────
+# ── 跟日期有关的部分:请假、代课、调课、课堂巡视情况记录表、导出 ─────────────
 class _Term:
     """有起讫日期的学期(请假要用),课表已发布:
 

@@ -59,7 +59,7 @@ const activeTable = computed(() => {
 })
 const numWeekdays = computed(() => activeTable.value?.num_weekdays ?? 5)
 const weekdays = computed(() => Array.from({ length: numWeekdays.value }, (_, i) => i + 1))
-/** 星期多时 A4 横式才不溢出(同巡堂表);五天周用直式。 */
+/** 星期多时 A4 横式才不溢出(同课堂巡视情况记录表);五天周用直式。 */
 const wide = computed(() => numWeekdays.value > 5)
 
 const shownEntries = computed(() => {

@@ -69,7 +69,7 @@ function openPrint() {
   window.open(url, '_blank')
 }
 
-/** 巡堂表的范围:当天,或选定日期那一周(周一到周日;没课的日子后端会略过) */
+/** 课堂巡视情况记录表的范围:当天,或选定日期那一周(周一到周日;没课的日子后端会略过) */
 function patrolRange(week: boolean): [string, string] {
   if (!week) return [toISODate(dateTs.value), toISODate(dateTs.value)]
   const d = new Date(dateTs.value)
@@ -83,7 +83,7 @@ function openPatrol(week: boolean) {
   openPatrolSheets(sid.value, ...patrolRange(week))
 }
 
-// 导出 Excel:打印页印出来就不能改,学校常要再加栏位、填巡堂人员
+// 导出 Excel:打印页印出来就不能改,学校常要再加栏位、填巡视人员
 const exportingPatrol = ref(false)
 async function exportPatrol(week: boolean) {
   if (sid.value === null) return
@@ -135,7 +135,7 @@ function statusType(e: LogEntry): string {
         打印通知单
       </n-button>
       <template v-if="sid !== null">
-        <n-text depth="3">巡堂表:</n-text>
+        <n-text depth="3">课堂巡视情况记录表:</n-text>
         <n-button-group>
           <n-button data-testid="board-patrol" @click="openPatrol(false)">打印当天</n-button>
           <n-button data-testid="board-patrol-week" @click="openPatrol(true)">打印整周</n-button>

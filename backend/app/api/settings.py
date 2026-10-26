@@ -41,7 +41,7 @@ class DingTalkSettingsOut(BaseModel):
 
 class PatrolSettings(BaseModel):
     # app_settings.value 栏位长度 500
-    legend: str = Field(max_length=500, description="巡堂表下方的记录说明;留空则恢复默认")
+    legend: str = Field(max_length=500, description="课堂巡视情况记录表下方的记录说明;留空则恢复默认")
 
 
 def _smtp_out(db: Session) -> SmtpSettingsOut:
@@ -180,7 +180,7 @@ def put_patrol(
     app_settings.save_patrol_legend(db, body.legend)
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_patrol_settings",
-        target_type="app_setting", target_id=None, detail="修改巡堂表的记录说明",
+        target_type="app_setting", target_id=None, detail="修改课堂巡视情况记录表的记录说明",
     ))
     db.commit()
     return PatrolSettings(legend=app_settings.patrol_legend(db))

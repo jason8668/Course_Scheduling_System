@@ -22,13 +22,13 @@ SCHOOL_NAME = "school_name"
 MAX_OVERTIME = "max_overtime_periods"
 DEFAULT_MAX_OVERTIME = 8
 
-# 巡堂表下方的「记录说明」。授课情形/学生学习的代码各校不同(有的是 1~3,有的是优良可),
+# 课堂巡视情况记录表下方的「记录说明」。授课情形/学生学习的代码各校不同(有的是 1~3,有的是优良可),
 # 写死就只有一所学校能用;默认值取自使用学校的纸本,可在系统管理修改。
 PATROL_LEGEND = "patrol_legend"
 DEFAULT_PATROL_LEGEND = (
     "一、授课情形(填写代码):1. 融入媒体教学 2. 双语教学 3. 正常教学\n"
     "二、学生学习状况(填写代码):1. 态度积极 2. 秩序良好 3. 未能专心\n"
-    "三、注记事项部分请记录巡堂时临时状况"
+    "三、注记事项部分请记录巡视时临时状况"
 )
 
 # 钉钉群机器人 Webhook(调代课通知同步推送到教师群)
@@ -113,7 +113,7 @@ def save_school_name(db: Session, value: str) -> None:
 
 
 def patrol_legend(db: Session) -> str:
-    """巡堂表的记录说明;未设置时用默认值。"""
+    """课堂巡视情况记录表的记录说明;未设置时用默认值。"""
     return get(db, PATROL_LEGEND).strip() or DEFAULT_PATROL_LEGEND
 
 

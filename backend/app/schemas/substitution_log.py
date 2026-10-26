@@ -78,7 +78,7 @@ class PatrolGroupListOut(BaseModel):
 
 
 class PatrolSheetsOut(BaseModel):
-    """巡堂表打印资料:巡堂纪录(班级为栏)+ 分组巡堂单(社团等大型跑班群组)。"""
+    """课堂巡视情况记录表打印资料:课堂巡视情况记录表(班级为栏)+ 分组巡视单(社团等大型跑班群组)。"""
 
     title: str
     legend: str
