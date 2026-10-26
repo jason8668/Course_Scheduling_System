@@ -28,6 +28,7 @@ from app.api import (
     teaching_hours,
     system,
     timetables,
+    user_grades,
     wizard,
 )
 from app.api import (
@@ -107,6 +108,7 @@ app.include_router(substitutions.router, prefix="/api")
 app.include_router(substitution_log.router, prefix="/api")
 app.include_router(substitution_stats.router, prefix="/api")
 app.include_router(teaching_hours.router, prefix="/api")
+app.include_router(user_grades.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(settings_api.router, prefix="/api")
 app.include_router(backups.router, prefix="/api")

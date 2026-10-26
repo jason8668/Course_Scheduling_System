@@ -1,6 +1,6 @@
 """代课课时月结统计(M4-5)。
 
-组长/主任看全校并可导出 Excel;教师只能查自己的明细(`/mine`)。
+主任/主任看全校并可导出 Excel;教师只能查自己的明细(`/mine`)。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -20,7 +20,7 @@ from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["substitution-stats"])
 
-viewer = require_roles(Role.scheduler, Role.director)
+viewer = require_roles(Role.director)
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 

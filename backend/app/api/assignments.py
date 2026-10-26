@@ -1,6 +1,6 @@
 """配课 API:排课单位(跑班群组)、配课 CRUD、课时/负载统计。
 
-权限:读取 = 教学组长/教务主任;写入 = 教学组长(admin 一律通过)。
+权限:读取 = 年级主任/教务主任;写入 = 年级主任(admin 一律通过)。
 所有资源以 semester_id 为范围。
 """
 
@@ -20,7 +20,8 @@ from app.models.assignment import (
 )
 from app.models.basedata import ClassUnit, Room, Subject, Teacher
 from app.models.semester import Semester
-from app.models.user import Role
+from app.models.user import Role, User
+from app.services import grade_scopes
 from app.schemas.assignment import (
     AlternateIn,
     AssignmentIn,
@@ -34,8 +35,8 @@ from app.services import assignments as svc
 
 router = APIRouter(tags=["assignments"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
 
 
 def _require_semester(db: Session, semester_id: int) -> None:
@@ -71,9 +72,13 @@ def create_group(
     body: GroupIn,
     semester_id: int = Query(...),
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     _require_semester(db, semester_id)
+    _group_grades = db.scalars(
+        select(ClassUnit.grade).where(ClassUnit.id.in_(body.class_ids))
+    ).all()
+    grade_scopes.require_grades(db, user, set(_group_grades))
     try:
         unit = svc.create_group(db, semester_id, body.name, body.class_ids)
     except svc.DomainError as e:
@@ -85,12 +90,13 @@ def create_group(
 
 @router.delete("/scheduling-units/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_group(
-    unit_id: int, db: Session = Depends(get_db), _: object = Depends(editor)
+    unit_id: int, db: Session = Depends(get_db), user: User = Depends(editor)
 ) -> None:
     """删除跑班群组或单双周组(连同组内的配课)。"""
     unit = db.get(SchedulingUnit, unit_id)
     if unit is None or unit.unit_type not in BUNDLE_UNIT_TYPES:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到跑班群组或单双周组")
+    grade_scopes.require_grades(db, user, grade_scopes.unit_grades(db, unit.id))
     db.delete(unit)  # 级联删除其配课
     db.commit()
 
@@ -118,10 +124,13 @@ def create_alternate(
     body: AlternateIn,
     semester_id: int = Query(...),
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     """建立单双周组:一个班,之后在组里配单周、双周各一笔课。"""
     _require_semester(db, semester_id)
+    _cls = db.get(ClassUnit, body.class_id)
+    if _cls is not None:
+        grade_scopes.require_grades(db, user, {_cls.grade})
     try:
         unit = svc.create_alternate(db, semester_id, body.class_id, body.name)
     except svc.DomainError as e:
@@ -243,11 +252,12 @@ def create_assignment(
     body: AssignmentIn,
     semester_id: int = Query(...),
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     _require_semester(db, semester_id)
     _validate_refs(db, semester_id, body)
     unit = _resolve_unit(db, semester_id, body)
+    grade_scopes.require_grades(db, user, grade_scopes.unit_grades(db, unit.id))
     _check_week(db, unit, body, None)
     assignment = CourseAssignment(
         semester_id=semester_id, scheduling_unit_id=unit.id, subject_id=body.subject_id,
@@ -277,13 +287,15 @@ def update_assignment(
     assignment_id: int,
     body: AssignmentIn,
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     a = db.get(CourseAssignment, assignment_id)
     if a is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到配课")
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, a.id))
     _validate_refs(db, a.semester_id, body)
     unit = _resolve_unit(db, a.semester_id, body)
+    grade_scopes.require_grades(db, user, grade_scopes.unit_grades(db, unit.id))
     _check_week(db, unit, body, a.id)
     a.scheduling_unit_id = unit.id
     _apply(db, a, body)
@@ -295,10 +307,11 @@ def update_assignment(
 
 @router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_assignment(
-    assignment_id: int, db: Session = Depends(get_db), _: object = Depends(editor)
+    assignment_id: int, db: Session = Depends(get_db), user: User = Depends(editor)
 ) -> None:
     a = db.get(CourseAssignment, assignment_id)
     if a is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到配课")
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, a.id))
     db.delete(a)
     db.commit()

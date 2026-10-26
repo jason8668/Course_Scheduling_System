@@ -25,7 +25,7 @@ from app.solver.model_builder import SolveOptions, solve
 from app.solver.problem import SolverConfig
 from app.solver.validator import validate
 from app.workers.solve_job import write_result
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import MON, SEM_END, SEM_START, on_or_after
 from tests.fixtures import (
     build_elementary_small,
@@ -71,7 +71,8 @@ def _pick_teacher_and_weekday(db, published):
 def test_full_pipeline_per_track(name, builder, db):
     fx = builder(db)
     sid = fx.semester_id
-    scheduler = make_user(db, f"sched_{name}", roles=[Role.scheduler])
+    scheduler = make_user(db, f"sched_{name}", roles=[Role.director])
+    grant_grades(db, scheduler)
 
     # 学期起讫(请假登记需要);fixture 范本未设。
     fx.semester.start_date = _SEM_START

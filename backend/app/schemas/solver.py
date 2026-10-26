@@ -105,6 +105,8 @@ class AutoScheduleRequest(BaseModel):
     # 部分排课:允许少数课务未排入,并可勾选放宽的硬约束(M3-5)
     allow_partial: bool = False
     relax: list[str] = []
+    # 按年级排课的范围;空 = 全校。只排这些年级,范围外已有格位钉住不动
+    grades: list[int] | None = None
 
 
 class AutoScheduleAccepted(BaseModel):
@@ -130,3 +132,4 @@ class SolveJobOut(BaseModel):
     partial: bool = False
     conflict: ConflictReportOut | None = None
     unscheduled: list[UnscheduledCourseOut] | None = None
+    scope_grades: list[int] | None = None

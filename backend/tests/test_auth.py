@@ -1,7 +1,7 @@
 """认证与 RBAC 流程测试。对应 M0-2 验收标准。"""
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -54,7 +54,7 @@ def test_me_requires_auth(env):
 
 def test_me_authenticated(env):
     client, db = env
-    make_user(db, "scheduler1", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "scheduler1", PW, roles=[Role.scheduler]))
     client.post("/api/auth/login", json={"username": "scheduler1", "password": PW})
     resp = client.get("/api/auth/me")
     assert resp.status_code == 200
@@ -77,7 +77,7 @@ def test_protected_requires_auth(env):
 
 def test_must_change_password_blocks_then_allows(env):
     client, db = env
-    make_user(db, "newbie", PW, roles=[Role.scheduler], must_change_password=True)
+    grant_grades(db, make_user(db, "newbie", PW, roles=[Role.scheduler], must_change_password=True))
     login = client.post("/api/auth/login", json={"username": "newbie", "password": PW})
     assert login.status_code == 200
     assert login.json()["must_change_password"] is True
@@ -95,7 +95,7 @@ def test_must_change_password_blocks_then_allows(env):
 
 def test_change_password_revokes_old_sessions(env):
     client, db = env
-    make_user(db, "u", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "u", PW, roles=[Role.scheduler]))
     client.post("/api/auth/login", json={"username": "u", "password": PW})
     old_cookie = client.cookies.get("session")
     assert old_cookie is not None
@@ -143,7 +143,7 @@ def test_rbac_teacher_forbidden_on_scheduler(env):
 
 def test_rbac_scheduler_allowed(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.scheduler]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     assert client.get("/api/_scheduler").status_code == 200
 

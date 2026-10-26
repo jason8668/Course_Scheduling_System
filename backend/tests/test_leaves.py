@@ -12,7 +12,7 @@ import pytest
 from app.models.leave import AffectedStatus, LeaveRequest, LeaveStatus
 from app.models.notification import Notification, NotificationType
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 
 # 日期一律由执行当日推算(硬编会过期,见 tests/dates.py):
 # MON/WED/FRI/SAT 同属一个未来的基准周,SUN 是该周日、NEXT_MON 是下周一。
@@ -39,7 +39,7 @@ def school(env):
     回传 (client, db, semester_id, teacher_id)。
     """
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
 
     sid = client.post("/api/semesters", json={
@@ -77,7 +77,8 @@ def school(env):
         assign_and_place(cid, 3, pno)
     assign_and_place(classes[0], 5, fri_slot)  # 周五 701 班一节
 
-    r = client.post(f"/api/timetables/{tt['id']}/publish?force=true")
+    with as_admin(client, db):
+        r = client.post(f"/api/timetables/{tt['id']}/publish?force=true")
     assert r.status_code == 200, r.json()
     return client, db, sid, wang["id"]
 
@@ -188,7 +189,7 @@ def test_end_time_before_start_time_on_the_same_day_is_rejected(school):
 
 def test_semester_without_dates_cannot_accept_leaves(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2027, "term": 1, "template_key": "junior_high"}).json()["id"]
@@ -334,7 +335,7 @@ def test_unbound_account_gets_a_helpful_error(school):
 
 def test_leave_without_published_timetable_registers_with_no_periods(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2028, "term": 1, "template_key": "junior_high",

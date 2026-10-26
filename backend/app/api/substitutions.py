@@ -1,6 +1,6 @@
 """调代课处理工作台:代课推荐、指派处置、调课(M4-2)。
 
-处置是行政决定,一律限教学组长/教务主任。教师端不在这里处理(只在通知端「确认收到」)。
+处置是行政决定,一律限年级主任/教务主任。教师端不在这里处理(只在通知端「确认收到」)。
 """
 
 from dataclasses import asdict
@@ -31,14 +31,14 @@ from app.schemas.substitution import (
     SubstitutionOut,
     SwapOptionsOut,
 )
-from app.services import sub_slips, swap_options, swap_slips
+from app.services import grade_scopes, sub_slips, swap_options, swap_slips
 from app.services import substitution_recommender as recommender
 from app.services import substitutions as sub_service
 from app.services.slip_layout import SlipError
 
 router = APIRouter(tags=["substitutions"])
 
-editor = require_roles(Role.scheduler, Role.director)
+editor = require_roles(Role.director)
 
 
 def _get_affected(db: Session, affected_id: int) -> AffectedPeriod:
@@ -136,6 +136,9 @@ def assign_substitution(
 ):
     """指派处置(代课/调课/并班/自习/不处理);指派即生效并通知处理教师。"""
     affected = _get_affected(db, affected_id)
+    grade_scopes.require_grades(
+        db, user, grade_scopes.source_grades(
+            db, affected.schedule_entry_id, affected.course_assignment_id))
     try:
         sub = sub_service.assign(
             db, affected,
@@ -168,6 +171,9 @@ def clear_substitution(
 ):
     """撤回处置:退回待处理,已指派教师收到取消通知。"""
     affected = _get_affected(db, affected_id)
+    grade_scopes.require_grades(
+        db, user, grade_scopes.source_grades(
+            db, affected.schedule_entry_id, affected.course_assignment_id))
     try:
         sub_service.clear(db, affected, actor_name=user.username)
     except sub_service.SubstitutionError as exc:
@@ -202,6 +208,7 @@ def assign_substitutions_batch(
             funding_source=body.funding_source,
             counts_toward_hours=body.counts_toward_hours, on_date=body.date,
             created_by_user_id=user.id, created_by_name=user.username,
+            allowed_grades=grade_scopes.allowed_grades(db, user),
         )
     except sub_service.SubstitutionError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc

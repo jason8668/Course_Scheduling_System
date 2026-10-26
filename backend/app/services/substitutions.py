@@ -139,12 +139,16 @@ def assign_batch(
     on_date: date | None,
     created_by_user_id: int | None,
     created_by_name: str,
+    allowed_grades: set[int] | None = None,
 ) -> tuple[list[Substitution], list[BatchSkip]]:
     """把一张假单(或其中一天)还没处理的节次,一次指派给同一位代课老师(#36)。
 
     班主任请整天或好几天假时,一节一节点同一位代课老师要点几十次。这里逐节沿用 `assign`
     ——检查规则完全一样——派得成的就派,派不成的(代课老师那一节自己有课、节次已结束)
     跳过并回报原因,由组长另外找人。已经处理过的节次不动。呼叫端负责 commit。
+
+    allowed_grades 给定时(有年级权限的组长),范围外的节次不派、记为跳过并说明
+    原因——跨年级的节次留给有权限的组长处理,而不是整批被挡下。
     """
     pending = sorted(
         (
@@ -161,6 +165,16 @@ def assign_batch(
     done: list[Substitution] = []
     skipped: list[BatchSkip] = []
     for ap in pending:
+        if allowed_grades is not None:
+            from app.services import grade_scopes as _gs
+            _grades = _gs.source_grades(db, ap.schedule_entry_id, ap.course_assignment_id)
+            if _grades and not _grades <= allowed_grades:
+                skipped.append(BatchSkip(
+                    affected_period_id=ap.id, date=ap.date, period_name=ap.period_name,
+                    class_names=ap.class_names, subject_name=ap.subject_name,
+                    reason="超出你的年级权限,已跳过",
+                ))
+                continue
         try:
             done.append(assign(
                 db, ap,

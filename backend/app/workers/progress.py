@@ -60,6 +60,7 @@ class JobState:
     partial: bool = False           # 是否为部分排课
     conflict: dict | None = None    # 无解时的冲突定位报告(M3-5)
     unscheduled: list | None = None  # 部分排课下未排入的课务
+    scope_grades: list[int] | None = None  # 按年级排课的范围;空 = 全校
 
     @property
     def done(self) -> bool:

@@ -1,13 +1,13 @@
 """M3-1:pre-flight 检查报告 API(GET /api/solver/preflight)。"""
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
 
-def _login(client, db, username="s", roles=(Role.scheduler,)):
-    make_user(db, username, PW, roles=list(roles))
+def _login(client, db, username="s", roles=(Role.director,)):
+    grant_grades(db, make_user(db, username, PW, roles=list(roles)))
     client.post("/api/auth/login", json={"username": username, "password": PW})
 
 

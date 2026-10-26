@@ -1,6 +1,6 @@
 """学期与节次表 API。
 
-权限:读取 = 教学组长/教务主任;写入 = 教学组长(admin 一律通过)。
+权限:读取 = 年级主任/教务主任;写入 = 年级主任(admin 一律通过)。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -33,8 +33,8 @@ from app.services.semester_copy import CopyOptions, copy_semester
 
 router = APIRouter(tags=["semesters"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
 
 
 # ── 内部工具 ──────────────────────────

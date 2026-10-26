@@ -1,7 +1,7 @@
 """校历活动 API(批次 #4)。
 
 权限:读取 = 所有已登录且完成改密者(get_active_user);
-写入 = admin / director / scheduler(require_roles,admin 一律放行)。
+写入 = admin / director(require_roles,admin 一律放行)。
 """
 
 from datetime import date
@@ -20,7 +20,7 @@ from app.schemas.calendar import CalendarEventCreate, CalendarEventOut, Calendar
 
 router = APIRouter(tags=["calendar"])
 
-editor = require_roles(Role.director, Role.scheduler)
+editor = require_roles(Role.director)
 
 
 def _get_semester(db: Session, semester_id: int) -> Semester:

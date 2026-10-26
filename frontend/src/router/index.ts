@@ -160,6 +160,11 @@ const routes = [
         name: 'system',
         component: () => import('@/views/settings/System.vue'),
       },
+      {
+        path: 'settings/user-grades',
+        name: 'user-grades',
+        component: () => import('@/views/settings/UserGrades.vue'),
+      },
     ],
   },
 ]
@@ -198,10 +203,10 @@ router.beforeEach(async (to) => {
     return { name: 'change-password' }
   }
 
-  // 纯教师帐号:只开放课表查询与请假登记(其余页面的后端 API 皆需教学组长以上权限)。
+  // 纯教师帐号:只开放课表查询与请假登记(其余页面的后端 API 皆需主任以上权限)。
   // 改密码页必须排除:否则首次登录的教师会被「导去改密码 → 不在教师可进清单 → 导回课表查询
   // → 又要求改密码」互踢,界面卡在 /login 动不了(#10)。
-  const canManage = auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director')
+  const canManage = auth.hasRole('admin') || auth.hasRole('director')
   if (
     !canManage && auth.hasRole('teacher')
     && !AUTH_PAGES.has(to.name as string) && !TEACHER_PAGES.has(to.name as string)
@@ -209,8 +214,8 @@ router.beforeEach(async (to) => {
     return { name: 'timetable-query' }
   }
 
-  // 首次登录引导:教学组长/管理员在尚未完成初始设置时,自动进入精灵(精灵内可略过)
-  const canSetup = auth.hasRole('scheduler') || auth.hasRole('admin')
+  // 首次登录引导:年级主任/管理员在尚未完成初始设置时,自动进入精灵(精灵内可略过)
+  const canSetup = auth.hasRole('director') || auth.hasRole('admin')
   if (canSetup && to.name !== 'wizard' && !AUTH_PAGES.has(to.name as string)) {
     const wizard = useWizardStore()
     if (!wizard.loaded) await wizard.fetch()

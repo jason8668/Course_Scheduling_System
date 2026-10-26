@@ -3,7 +3,7 @@
 import pytest
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.test_import import upload
 
 PW = "password123"
@@ -13,7 +13,7 @@ PW = "password123"
 def env2(env):
     """已登录教学组长 + 一个以初中范本建立的学期(默认=初中节次表)。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post(
         "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}

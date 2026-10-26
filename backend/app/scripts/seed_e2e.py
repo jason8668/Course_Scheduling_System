@@ -22,7 +22,7 @@ from app.models.wizard import SINGLETON_ID, WizardState
 from app.services.users import create_user
 
 _ACCOUNTS: list[tuple[str, str, Role, str]] = [
-    ("e2e_scheduler", "e2etest1234", Role.scheduler, "E2E 教学组长"),
+    ("e2e_scheduler", "e2etest1234", Role.director, "E2E 年级主任"),
     ("e2e_teacher", "e2eteacher1234", Role.teacher, "E2E 教师"),
     ("e2e_admin", "e2eadmin1234", Role.admin, "E2E 系统管理员"),
 ]
@@ -32,7 +32,7 @@ _ACCOUNTS: list[tuple[str, str, Role, str]] = [
 # 所以这个帐号每次 seed 都强制重设回「首次登录」,否则第二次跑 e2e 会因为状态已被用掉而失败。
 # 纯教师角色另外一个:教师可进的页面比组长少,改密码页曾因此被守卫互踢成无限跳转(#10)
 NEW_USERS: list[tuple[str, str, Role, str]] = [
-    ("e2e_newuser", "e2enewuser1234", Role.scheduler, "E2E 首次登录用户"),
+    ("e2e_newuser", "e2enewuser1234", Role.director, "E2E 首次登录用户"),
     ("e2e_newteacher", "e2enewteacher1234", Role.teacher, "E2E 首次登录教师"),
 ]
 

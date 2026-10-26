@@ -13,6 +13,7 @@ import { listAssignments } from '@/api/assignments'
 import type { Assignment } from '@/api/assignments'
 import { listClassUnits, listRooms, listTeachers } from '@/api/basedata'
 import type { ClassUnit, Room, Teacher } from '@/api/basedata'
+import { gradeLabel } from '@/api/substitutionLog'
 import { getSemester, listSemesters } from '@/api/semesters'
 import type { PeriodTable, SemesterListItem } from '@/api/semesters'
 import {
@@ -45,8 +46,26 @@ const roomId = ref<number | null>(null)
 
 const semesterOptions = computed(() => semesters.value.map((s) => ({ label: s.label, value: s.id })))
 const draftOptions = computed(() => drafts.value.map((d) => ({ label: d.name, value: d.id })))
+
+// 班级视角按年级筛选:一次只看一个年级的班;写操作仍由后端按帐号权限拦截
+const gradeFilter = ref<number | null>(null)
+const gradeFilterOptions = computed(() => {
+  const grades = [...new Set(classes.value.map((c) => c.grade))].sort((a, b) => a - b)
+  return grades.map((g) => ({ label: gradeLabel(g), value: g }))
+})
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
+  classes.value
+    .filter((c) => gradeFilter.value === null || c.grade === gradeFilter.value)
+    .map((c) => ({ label: classLabel(c), value: c.id })))
+
+function onGradeFilterChange() {
+  if (view.value === 'class') {
+    const first = classes.value.find(
+      (c) => gradeFilter.value === null || c.grade === gradeFilter.value)
+    classId.value = first?.id ?? null
+    if (classId.value) onClassChange(classId.value)
+  }
+}
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
 
@@ -62,6 +81,7 @@ async function loadSemester(id: number) {
   classes.value = cs
   teachers.value = ts
   rooms.value = rs
+  gradeFilter.value = null
   allTables.value = sem.period_tables
   defaultTable.value = sem.period_tables.find((p) => p.is_default) ?? sem.period_tables[0] ?? null
 
@@ -383,6 +403,11 @@ function onKey(ev: KeyboardEvent) {
           <n-radio-button value="teacher" data-testid="wb-view-teacher">教师视角</n-radio-button>
           <n-radio-button value="room" data-testid="wb-view-room">场地视角</n-radio-button>
         </n-radio-group>
+        <n-select
+          v-if="view === 'class'" v-model:value="gradeFilter" :options="gradeFilterOptions"
+          style="width: 130px" data-testid="wb-grade-filter" clearable
+          placeholder="全部年级" @update:value="onGradeFilterChange"
+        />
         <n-select
           v-if="view === 'class'" :value="classId" data-testid="wb-class"
           :options="classOptions" style="width: 180px" filterable @update:value="onClassChange"

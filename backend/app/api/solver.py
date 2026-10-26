@@ -37,8 +37,8 @@ from app.workers.progress import (
 
 router = APIRouter(tags=["solver"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
 
 
 def get_progress_store() -> ProgressStore:
@@ -49,13 +49,34 @@ def get_progress_store() -> ProgressStore:
 @router.get("/solver/preflight", response_model=PreflightOut)
 def solver_preflight(
     semester_id: int = Query(...),
+    grades: list[int] | None = Query(default=None),
     db: Session = Depends(get_db),
-    _: object = Depends(viewer),
+    user: User = Depends(viewer),
 ):
-    """排课前置检查:必要条件不成立时直接指出是谁、差几节,不必等 solver 跑完才知道无解。"""
+    """排课前置检查:必要条件不成立时直接指出是谁、差几节,不必等 solver 跑完才知道无解。
+
+    按年级排课时只检查所给年级;未给时,有年级权限的帐号默认只查自己的年级。
+    """
     if db.get(Semester, semester_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
-    problem = load_problem(db, semester_id)
+    from app.services.grade_scopes import allowed_grades
+
+    allowed = allowed_grades(db, user)
+    if allowed is not None and len(allowed) == 0:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "你还没有被分配年级,请联系系统管理员",
+        )
+    if grades:
+        scope = sorted(set(grades))
+        if allowed is not None and not set(scope) <= allowed:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "超出你的年级权限")
+    elif allowed is not None:
+        scope = sorted(allowed)
+    else:
+        scope = []
+    problem = load_problem(
+        db, semester_id, scope_grades=frozenset(scope) if scope else None,
+    )
     report = preflight.run(problem)
     return PreflightOut(
         semester_id=problem.semester_id,
@@ -161,8 +182,11 @@ def start_auto_schedule(
 ):
     """以来源草稿启动自动排课;结果写成新草稿,来源不动。
 
-    pre-flight 有错误时直接挡下——没必要让教学组长等十分钟才知道资料有问题。
+    pre-flight 有错误时直接挡下——没必要让年级主任等十分钟才知道资料有问题。
     部分排课模式只挡结构性错误:「总量不足」正是它要处理的事(少排几节,列成清单)。
+
+    按年级排课:grades 给定时只排这些年级,范围外已有格位钉住不动;
+    未给时,有年级权限的帐号默认只排自己的年级,无权限限制的帐号排全校。
     """
     tt = db.get(Timetable, timetable_id)
     if tt is None:
@@ -183,7 +207,26 @@ def start_auto_schedule(
             status.HTTP_400_BAD_REQUEST, "放宽硬约束只在部分排课模式下有效"
         )
 
-    problem = load_problem(db, tt.semester_id)
+    from app.services.grade_scopes import allowed_grades
+
+    allowed = allowed_grades(db, user)
+    if allowed is not None and len(allowed) == 0:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "你还没有被分配年级,请联系系统管理员",
+        )
+    if body.grades:
+        scope = sorted(set(body.grades))
+        if allowed is not None and not set(scope) <= allowed:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, "超出你的年级权限",
+            )
+    elif allowed is not None:
+        scope = sorted(allowed)
+    else:
+        scope = []
+    scope_fs = frozenset(scope) if scope else None
+
+    problem = load_problem(db, tt.semester_id, scope_grades=scope_fs)
     report = preflight.run(problem)
     blocking = preflight.blocking_errors(report, allow_partial=body.allow_partial)
     if blocking:
@@ -203,11 +246,11 @@ def start_auto_schedule(
         job_id=job_id, status=JobStatus.queued.value, semester_id=tt.semester_id,
         source_timetable_id=tt.id, source_name=tt.name,
         max_seconds=float(body.max_seconds), heartbeat=time.time(),
-        partial=body.allow_partial,
+        partial=body.allow_partial, scope_grades=scope or None,
     ))
     job_queue.enqueue_solve(
         job_id, tt.id, float(body.max_seconds), body.seed, user.id, user.username,
-        body.allow_partial, list(body.relax),
+        body.allow_partial, list(body.relax), scope_grades=scope or None,
     )
     return AutoScheduleAccepted(job_id=job_id)
 

@@ -11,7 +11,7 @@ from app.services import importer
 
 router = APIRouter(tags=["import"])
 
-editor = require_roles(Role.scheduler)
+editor = require_roles(Role.director)
 
 VALID_ENTITIES = {"subjects", "teachers", "classes", "assignments"}
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

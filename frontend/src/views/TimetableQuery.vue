@@ -25,7 +25,7 @@ const loading = ref(true)
 const message = useMessage()
 const auth = useAuthStore()
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 const view = ref<'class' | 'teacher' | 'room'>('class')
 const classId = ref<number | null>(null)

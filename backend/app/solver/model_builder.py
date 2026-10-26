@@ -677,7 +677,7 @@ class _Model:
         course_of = self._course_of_assignment()
         pinned: set[tuple[int, int, int, int]] = set()
         for f in self.problem.fixed_entries:
-            if not f.locked or f.assignment_id not in course_of:
+            if not (f.locked or f.scope_pinned) or f.assignment_id not in course_of:
                 continue
             ci = course_of[f.assignment_id]
             key = (ci, f.weekday, f.period_no, f.span)

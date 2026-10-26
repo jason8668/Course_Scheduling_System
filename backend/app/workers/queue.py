@@ -35,6 +35,7 @@ def enqueue_solve(
     username: str,
     allow_partial: bool = False,
     relax: list[str] | None = None,
+    scope_grades: list[int] | None = None,
 ) -> None:
     """把自动排课任务丢进伫列(API 层呼叫;测试以假伫列取代)。"""
     from app.workers.solve_job import run_auto_schedule
@@ -42,7 +43,7 @@ def enqueue_solve(
     default_queue.enqueue(
         run_auto_schedule,
         job_id, timetable_id, max_seconds, seed, user_id, username,
-        allow_partial, relax or [],
+        allow_partial, relax or [], scope_grades,
         job_id=job_id,
         job_timeout=int(max_seconds) + JOB_TIMEOUT_MARGIN,
     )

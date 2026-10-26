@@ -82,7 +82,7 @@ def _login(client, db, username, roles):
 
 def test_list_backups_admin_only(env, backup_dir):
     client, db = env
-    _login(client, db, "sch", [Role.scheduler])
+    _login(client, db, "sch", [Role.director])
     assert client.get("/api/backups").status_code == 403
     client.post("/api/auth/logout")
     _login(client, db, "adm", [Role.admin])
@@ -103,9 +103,9 @@ def test_restore_upload_rejects_garbage_before_touching_db(env, backup_dir):
     assert list(backup_dir.iterdir()) == []  # 系统无损:没有档案落地
 
 
-def test_scheduler_cannot_restore(env, backup_dir):
+def test_director_cannot_restore(env, backup_dir):
     client, db = env
-    _login(client, db, "sch", [Role.scheduler])
+    _login(client, db, "sch", [Role.director])
     assert client.post("/api/backups/some.dump/restore").status_code == 403
 
 

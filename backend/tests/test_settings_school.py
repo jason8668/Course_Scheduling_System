@@ -7,7 +7,7 @@
 from app.core.config import settings as env_settings
 from app.models.user import Role
 from app.services import settings as app_settings
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -48,7 +48,7 @@ def test_blank_name_is_rejected(env):
 
 def test_non_admin_cannot_change_it(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     assert client.put("/api/settings/school", json={"school_name": "X"}).status_code == 403
 

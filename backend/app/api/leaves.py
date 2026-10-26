@@ -1,7 +1,7 @@
 """请假登记与受影响节次(M4-1)。
 
 RBAC:教师只能登记/销自己的假、只看得到自己的假单;
-教学组长与教务主任可代登、可看全校、可代销。
+年级主任与教务主任可代登、可看全校、可代销。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -28,12 +28,12 @@ router = APIRouter(tags=["leaves"])
 # 假单清单的保护性上限(M6-5);完整分页 UI 留 v1.2
 MAX_LEAVE_ROWS = 1000
 
-registrar = require_roles(Role.scheduler, Role.director)  # 可代登/代销
+registrar = require_roles(Role.director)  # 可代登/代销
 
 
 def _is_registrar(user: User) -> bool:
     """可代登/代销/看全校。admin 一律通过(与 require_roles 一致)。"""
-    return bool(user.role_names & {Role.scheduler.value, Role.director.value, Role.admin.value})
+    return bool(user.role_names & {Role.director.value, Role.admin.value})
 
 
 def _get_semester(db: Session, semester_id: int) -> Semester:
@@ -78,7 +78,7 @@ def _resolve_target_teacher(db: Session, semester_id: int, body_teacher_id: int 
     """代登指定教师;自登则解析登录者绑定的教师主档。"""
     if body_teacher_id is not None:
         if not _is_registrar(user):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "只有教学组长或教务主任可代为登记")
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "只有年级主任或教务主任可代为登记")
         teacher = leave_service.find_teacher(db, semester_id, body_teacher_id)
         if teacher is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到教师")
@@ -88,7 +88,7 @@ def _resolve_target_teacher(db: Session, semester_id: int, body_teacher_id: int 
     if teacher is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "您的帐号尚未绑定本学期的教师主档,无法登记请假;请洽教学组长",
+            "您的帐号尚未绑定本学期的教师主档,无法登记请假;请洽年级主任",
         )
     return teacher
 
@@ -142,7 +142,7 @@ def list_leaves(
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
-    """组长看全校;教师只看得到自己的假单(即使指定了别人的 teacher_id)。"""
+    """主任看全校;教师只看得到自己的假单(即使指定了别人的 teacher_id)。"""
     _get_semester(db, semester_id)
     stmt = select(LeaveRequest).where(LeaveRequest.semester_id == semester_id)
 

@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 
 from app.models.user import Role
 from app.services import timetable_export as tex
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import SEM_END, SEM_START  # 日期一律由执行当日推算,不硬编
 from tests.test_substitutions import _World
 
@@ -20,7 +20,7 @@ PW = "password123"
 @pytest.fixture
 def w(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -113,7 +113,7 @@ def test_batch_zip_has_per_class_files(w):
 # ── 边界 / RBAC ─────────────────────────────────────────────
 def test_export_unpublished_semester_404(env):
     client, db = env
-    make_user(db, "s2", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s2", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s2", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2027, "term": 1, "template_key": "junior_high",

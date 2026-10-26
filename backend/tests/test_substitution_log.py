@@ -12,7 +12,7 @@ import pytest
 
 from app.models.user import Role
 from app.services import substitution_log as log_service
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, WED, WED2  # 日期一律由执行当日推算,不硬编
 from tests.test_substitutions import _World
 
@@ -23,7 +23,7 @@ PW = "password123"
 def w(env):
     """已发布课表的初中,登录教学组长。回传 _World。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",

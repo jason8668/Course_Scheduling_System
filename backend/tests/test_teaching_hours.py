@@ -23,7 +23,7 @@ from app.models.substitution import Substitution
 from app.models.timetable import ScheduleEntry, Timetable
 from app.services import teaching_hours as hours_service
 from app.services.substitution_log import school_today
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from app.models.user import Role
 
 PW = "password123"
@@ -259,7 +259,8 @@ def test_mine_api_only_self_and_admin_sees_all(env):
     client, db = env
     w = build_world(db)
     sem_id = w["sem"].id
-    scheduler = make_user(db, "s", PW, roles=[Role.scheduler])
+    scheduler = make_user(db, "s", PW, roles=[Role.director])
+    grant_grades(db, scheduler)
     teacher_user = make_user(db, "t", PW, roles=[Role.teacher])
     w["teachers"]["王师"].user_id = teacher_user.id
     db.commit()

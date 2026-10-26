@@ -12,7 +12,7 @@ from app.services.solver_data import load_problem
 from app.solver.model_builder import SolveOptions, solve
 from app.solver.problem import SolverConfig
 from tests.fixtures import build_elementary_small, build_junior_high_mid, build_vocational_high
-from tests.test_publish import env3  # noqa: F401  (env3 是 fixture)
+from tests.test_publish import _publish, env3  # noqa: F401  (env3 是 fixture)
 from tests.test_timetables import _assign, _class, _place, _subject, _teacher
 
 
@@ -82,7 +82,7 @@ def test_clean_complete_timetable_passes_and_publishes(env3):  # noqa: F811
 
     r = _check(client, tid)
     assert r["ok"] is True and r["issues"] == [] and r["completeness"]["complete"] is True
-    assert client.post(f"/api/timetables/{tid}/publish").status_code == 200
+    assert _publish(client, tid).status_code == 200
 
 
 def test_incomplete_timetable_is_not_reported_as_a_violation(env3):  # noqa: F811
@@ -187,14 +187,14 @@ def test_publish_blocked_by_violations_then_forced(env3):  # noqa: F811
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     _unavailable(client, t["id"], (3, 2))
 
-    r = client.post(f"/api/timetables/{tid}/publish")
+    r = _publish(client, tid)
     assert r.status_code == 409
     detail = r.json()["detail"]
     assert detail["message"] == "课表有冲突,确认后可强制发布"
     assert detail["completeness"]["complete"] is True
     assert [i["code"] for i in detail["issues"]] == ["H4"]
 
-    r = client.post(f"/api/timetables/{tid}/publish?force=true")
+    r = _publish(client, tid, force=True)
     assert r.status_code == 200 and r.json()["status"] == "published"
     # 发布后仍可检查(已发布的课表也可能因为事后改规则而出现矛盾)
     assert [i["code"] for i in _check(client, tid)["issues"]] == ["H4"]
@@ -206,7 +206,7 @@ def test_publish_reports_violations_and_unplaced_together(env3):  # noqa: F811
     assert _place(client, tid, a["id"], 3, 2).status_code == 201
     _unavailable(client, t["id"], (3, 2))
 
-    detail = client.post(f"/api/timetables/{tid}/publish").json()["detail"]
+    detail = _publish(client, tid).json()["detail"]
     assert detail["message"] == "课表有冲突,且尚有课务未排完;确认后可强制发布"
     assert detail["completeness"]["remaining"] == 1
     assert len(detail["issues"]) == 1
@@ -232,14 +232,14 @@ def test_time_rule_conflicts_lists_lessons_in_draft_and_published(env3):  # noqa
 
     # 复制一份并发布 → 两份都列,已发布的排前面
     copy = client.post(f"/api/timetables/{tid}/duplicate", json={"name": "正式版"}).json()
-    assert client.post(f"/api/timetables/{copy['id']}/publish?force=true").status_code == 200
+    assert _publish(client, copy["id"], force=True).status_code == 200
     hits = client.get(url).json()
     assert [(h["timetable_name"], h["timetable_status"]) for h in hits] == [
         ("正式版", "published"), ("草稿A", "draft")]
 
     # 再发布另一份 → 「正式版」转为封存,封存的不看
     other = client.post(f"/api/timetables?semester_id={sid}", json={"name": "空白版"}).json()
-    assert client.post(f"/api/timetables/{other['id']}/publish?force=true").status_code == 200
+    assert _publish(client, other["id"], force=True).status_code == 200
     assert [h["timetable_name"] for h in client.get(url).json()] == ["草稿A"]
 
 

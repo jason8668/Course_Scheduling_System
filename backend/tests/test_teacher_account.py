@@ -8,7 +8,7 @@ from openpyxl import Workbook
 from app.api.imports import XLSX_MIME
 from app.models.user import Role, User
 from app.services.teachers import current_teacher
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -17,7 +17,7 @@ PW = "password123"
 def sched(env):
     """已登录教学组长 + 一个学期。回传 (client, semester_id, db)。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     return client, sem["id"], db
@@ -195,7 +195,7 @@ def test_reset_teacher_password(sched):
 def test_reset_password_refuses_non_teacher_account(sched):
     """绑定的帐号若不只是教师角色(例如兼任组长),这条路不给改,避免越权。"""
     client, sid, db = sched
-    boss = make_user(db, "boss", PW, roles=[Role.teacher, Role.scheduler])
+    boss = make_user(db, "boss", PW, roles=[Role.teacher, Role.director])
     t = client.post(
         f"/api/teachers?semester_id={sid}", json={"name": "主任老师", "user_id": boss.id}
     ).json()

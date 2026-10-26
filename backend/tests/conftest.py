@@ -5,6 +5,7 @@
 """
 
 from collections.abc import Iterable
+from contextlib import contextmanager
 
 import pytest
 from fastapi import Depends, FastAPI
@@ -33,6 +34,7 @@ from app.api import (
     system,
     teaching_hours,
     timetables,
+    user_grades,
     wizard,
 )
 from app.api import (
@@ -96,6 +98,7 @@ def env():
     application.include_router(substitution_log.router, prefix="/api")
     application.include_router(substitution_stats.router, prefix="/api")
     application.include_router(teaching_hours.router, prefix="/api")
+    application.include_router(user_grades.router, prefix="/api")
     application.include_router(notifications.router, prefix="/api")
     application.include_router(settings_api.router, prefix="/api")
     application.include_router(backups.router, prefix="/api")
@@ -138,3 +141,34 @@ def make_user(
     )
     db.commit()
     return user
+
+
+def grant_grades(db: Session, user: User, grades: Iterable[int] = range(1, 13)) -> None:
+    """测试用:代表管理员已给该帐号分配年级(默认 1–12 全配 = 旧测试里“什么都能排的主任”)。
+
+    权限拦截本身只由 test_grade_scopes.py 验证;其他测试的组长帐号一律先配齐,
+    否则按新规则(未配年级 = 无排课权限)连搭建资料都会被挡。
+    """
+    from app.models.user import UserGradeScope
+
+    for g in grades:
+        db.add(UserGradeScope(user_id=user.id, grade=g))
+    db.commit()
+
+
+@contextmanager
+def as_admin(client, db, back_to="s", password="password123"):
+    """整校操作(发布/改名/删课表)须由不受限帐号执行:切到管理员,做完切回原组长。
+
+    管理员帐号按需建立(各测试的 fixture 只建了组长,未必建了 adm)。
+    """
+    from app.models.user import Role, User
+
+    if not db.query(User).filter_by(username="adm").first():
+        make_user(db, "adm", password, roles=[Role.admin])
+    client.post("/api/auth/login", json={"username": "adm", "password": password})
+    try:
+        yield
+    finally:
+        if back_to:
+            client.post("/api/auth/login", json={"username": back_to, "password": password})

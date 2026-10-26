@@ -1,4 +1,4 @@
-"""通知:教师端(铃铛、确认收到)与组长看板(确认状态、再次提醒)(M4-3)。"""
+"""通知:教师端(铃铛、确认收到)与主任看板(确认状态、再次提醒)(M4-3)。"""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -19,7 +19,7 @@ from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["notifications"])
 
-registrar = require_roles(Role.scheduler, Role.director)
+registrar = require_roles(Role.director)
 
 
 # ── 教师端 ────────────────────────────────
@@ -84,7 +84,7 @@ def acknowledge(
     return NotificationOut.model_validate(n)
 
 
-# ── 组长看板 ──────────────────────────────
+# ── 主任看板 ──────────────────────────────
 @router.get("/notifications", response_model=list[TeacherNotificationStatus])
 def board(
     semester_id: int = Query(...),

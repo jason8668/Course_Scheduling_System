@@ -14,7 +14,7 @@ from app.core import clock
 from app.models.leave import AffectedPeriod, AffectedStatus
 from app.models.user import Role
 from app.services.availability import Availability, Interval
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, WED, WED2  # 日期一律由执行当日推算,不硬编
 from tests.test_substitutions import _find_entry, _World
 
@@ -28,7 +28,7 @@ AFTER = datetime.combine(
 @pytest.fixture
 def w(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -148,7 +148,8 @@ def test_republish_flags_stale_future_affected(w):
 
     # 重新发布另一版课表:回应应提醒有未来的调代课依旧课表安排
     tt2 = w.client.post(f"/api/timetables{w.q}", json={"name": "草稿B"}).json()["id"]
-    r = w.client.post(f"/api/timetables/{tt2}/publish?force=true")
+    with as_admin(w.client, w.db):
+        r = w.client.post(f"/api/timetables/{tt2}/publish?force=true")
     assert r.status_code == 200
     assert r.json()["stale_affected"] >= 1
 
@@ -156,7 +157,8 @@ def test_republish_flags_stale_future_affected(w):
 def test_first_publish_has_no_stale(w):
     w.teacher("王师", ["国文"])
     w.place("王师", "国文", "701", 0)
-    r = w.client.post(f"/api/timetables/{w.tt}/publish?force=true")
+    with as_admin(w.client, w.db):
+        r = w.client.post(f"/api/timetables/{w.tt}/publish?force=true")
     assert r.status_code == 200
     assert r.json()["stale_affected"] == 0
 

@@ -222,12 +222,20 @@ def _calendar_blocks(
 
 
 def load_problem(
-    db: Session, semester_id: int, timetable: Timetable | None = None
+    db: Session, semester_id: int, timetable: Timetable | None = None,
+    scope_grades: frozenset[int] | None = None,
 ) -> Problem:
     """把一个学期的排课资料读成纯 dataclass 的问题描述。
 
     timetable 给定时,其格位一并带入 fixed_entries:locked 者为 H9 硬约束,
     其余供求解器作为起点提示(M3-4)。
+
+    scope_grades 给定时只排这些年级(按年级排课):范围以排课单位为原子——
+    单位成员班的年级全在范围内才进入求解;范围外单位已有格位以 scope_pinned
+    带入,同样 H9 硬约束(求解器不动它们,也不敢抢它们的教师与场地),
+    但结果里不标锁定,下一轮全校重排仍可动它们;范围外单位若尚无格位则
+    整个排除(它本就没有课位可守,也不该被这一轮排出来)。无 timetable 的
+    前置检查同样只看范围内配课。
     """
     semester = db.get(Semester, semester_id)
     if semester is None:
@@ -334,6 +342,26 @@ def load_problem(
     ):
         blocks_by_a.setdefault(a_id, []).append(BlockSpec(size=size, count=count))
 
+    # 范围外单位的已排格位要先知道,才能决定哪些配课留作「被钉住的约束」
+    source_entries: list[ScheduleEntry] = []
+    if timetable is not None:
+        source_entries = list(db.scalars(
+            select(ScheduleEntry)
+            .where(ScheduleEntry.timetable_id == timetable.id)
+            .order_by(ScheduleEntry.id)
+        ))
+    pinned_assignment_ids = {e.course_assignment_id for e in source_entries}
+
+    def _in_scope(a: CourseAssignment) -> bool:
+        if scope_grades is None:
+            return True
+        grades = {
+            classes[cid].grade
+            for cid in members.get(a.scheduling_unit_id, [])
+            if cid in classes
+        }
+        return grades <= scope_grades
+
     assignments = tuple(
         AssignmentSpec(
             id=a.id, unit_id=a.scheduling_unit_id,
@@ -351,21 +379,33 @@ def load_problem(
             .where(CourseAssignment.semester_id == semester_id)
             .order_by(CourseAssignment.id)
         )
+        if _in_scope(a) or a.id in pinned_assignment_ids
     )
 
     fixed: tuple[FixedEntry, ...] = ()
     if timetable is not None:
+        unit_of = {
+            a.id: a.scheduling_unit_id
+            for a in db.scalars(
+                select(CourseAssignment)
+                .where(CourseAssignment.semester_id == semester_id)
+            )
+        }
         fixed = tuple(
             FixedEntry(
                 assignment_id=e.course_assignment_id, weekday=e.weekday,
                 period_no=e.period_no, span=e.span,
                 room_id=e.room_id, locked=e.locked,
+                scope_pinned=(
+                    scope_grades is not None
+                    and not {
+                        classes[cid].grade
+                        for cid in members.get(unit_of.get(e.course_assignment_id), [])
+                        if cid in classes
+                    } <= scope_grades
+                ),
             )
-            for e in db.scalars(
-                select(ScheduleEntry)
-                .where(ScheduleEntry.timetable_id == timetable.id)
-                .order_by(ScheduleEntry.id)
-            )
+            for e in source_entries
         )
 
     return Problem(

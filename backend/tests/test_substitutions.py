@@ -12,7 +12,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.models.leave import AffectedPeriod, AffectedStatus
-from app.models.user import Role
+from app.models.user import Role, UserGradeScope
 from tests.conftest import make_user
 from tests.dates import SEM_END, SEM_START, THU, WED, WED2  # 日期一律由执行当日推算,不硬编
 
@@ -23,7 +23,12 @@ PW = "password123"
 def env2(env):
     """已发布课表的初中。回传 helper 物件,测试逐步叠教师/配课/请假。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    s = make_user(db, "s", PW, roles=[Role.director])
+    # 本批语意:未配年级的组长没有任何排课权限;本 helper 用 7 年级,同年级推荐测试另用 8 年级,都先配给 s
+    db.add(UserGradeScope(user_id=s.id, grade=7))
+    db.add(UserGradeScope(user_id=s.id, grade=8))
+    db.commit()
+    make_user(db, "adm", PW, roles=[Role.admin])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -86,7 +91,16 @@ class _World:
         return a["id"], slots[period_idx]["period_no"]
 
     def publish(self):
+        # 发布是整校操作,有年级限制的组长做不了,改由管理员发布再切回组长。
+        # 管理员帐号按需建立:各测试的 fixture 只建了组长,未必建了 adm。
+        from app.models.user import User
+        from tests.conftest import make_user
+
+        if not self.db.query(User).filter_by(username="adm").first():
+            make_user(self.db, "adm", PW, roles=[Role.admin])
+        self.client.post("/api/auth/login", json={"username": "adm", "password": PW})
         r = self.client.post(f"/api/timetables/{self.tt}/publish?force=true")
+        self.client.post("/api/auth/login", json={"username": "s", "password": PW})
         assert r.status_code == 200, r.json()
         self._published = True
 

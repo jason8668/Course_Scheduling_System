@@ -60,6 +60,7 @@ def run_auto_schedule(
     username: str,
     allow_partial: bool = False,
     relax: Sequence[str] = (),
+    scope_grades: Sequence[int] | None = None,
 ) -> None:
     """RQ 进入点。任何例外都必须落到 job 状态上,否则前端只会看到永远的转圈。"""
     from app.core.db import SessionLocal
@@ -69,7 +70,7 @@ def run_auto_schedule(
     db = SessionLocal()
     try:
         execute(db, store, job_id, timetable_id, max_seconds, seed, user_id, username,
-                allow_partial, relax)
+                allow_partial, relax, scope_grades)
     except Exception as exc:  # noqa: BLE001 - worker 边界:一律转为可见的失败状态
         db.rollback()
         store.update(
@@ -91,15 +92,22 @@ def execute(
     username: str = "system",
     allow_partial: bool = False,
     relax: Sequence[str] = (),
+    scope_grades: Sequence[int] | None = None,
 ) -> None:
-    """实际流程。与 RQ 解耦,测试可直接呼叫(记忆体版 store + 测试 session)。"""
+    """实际流程。与 RQ 解耦,测试可直接呼叫(记忆体版 store + 测试 session)。
+
+    scope_grades 给定时只排这些年级,范围外已有格位钉住不动(见 solver_data)。
+    """
     source = db.get(Timetable, timetable_id)
     if source is None:
         store.update(job_id, status=JobStatus.failed.value, error="找不到来源课表",
                      heartbeat=time.time())
         return
 
-    problem = load_problem(db, source.semester_id, source)
+    problem = load_problem(
+        db, source.semester_id, source,
+        scope_grades=frozenset(scope_grades) if scope_grades else None,
+    )
     config = load_config(db, source.semester_id)
     relaxation = Relaxation(soft_codes=frozenset(relax)) if allow_partial else None
 

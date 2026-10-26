@@ -18,7 +18,7 @@ const unread = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
 
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 async function resolveSemester() {
   // 教师看已发布课表的学期;管理者看全部学期。取最近一个。

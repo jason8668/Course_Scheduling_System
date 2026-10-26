@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 
 from app.models.basedata import Teacher
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 # 日期一律由执行当日推算,不硬编(见 tests/dates.py)。
 # CROSS_WED / CROSS_WED2 是相邻但分属不同月份的两个周三,供跨月拆帐验证。
@@ -29,7 +29,7 @@ def _other_month(day):
 @pytest.fixture
 def w(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",

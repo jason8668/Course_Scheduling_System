@@ -14,8 +14,11 @@ import {
 import type {
   PreflightIssue, PreflightReport, RelaxableOption, SolveJob,
 } from '@/api/solver'
+import { listClassUnits } from '@/api/basedata'
+import { gradeLabel } from '@/api/substitutionLog'
 import { listTimetables } from '@/api/timetables'
 import type { TimetableBrief } from '@/api/timetables'
+import { myGradeScopes } from '@/api/userGrades'
 
 const message = useMessage()
 const router = useRouter()
@@ -37,6 +40,27 @@ const starting = ref(false)
 const relaxable = ref<RelaxableOption[]>([])
 const allowPartial = ref(false)
 const relax = ref<string[]>([])
+
+// 按年级排课:只排勾选的年级,其他年级已排好的格位钉住不动。默认 = 自己权限内的
+// 年级(管理员默认全选;未被分配年级的主任没有可排的年级,需联系管理员)。
+// 后端仍会按权限再拦一次,前端只是方便。
+const gradeOptions = ref<{ label: string, value: number }[]>([])
+const scopeGrades = ref<number[]>([])
+const myScopes = ref<number[] | null>(null)
+
+async function loadGradeOptions(semesterId: number) {
+  try {
+    const classes = await listClassUnits(semesterId)
+    const grades = [...new Set(classes.map((c) => c.grade))].sort((a, b) => a - b)
+    gradeOptions.value = grades.map((g) => ({ label: gradeLabel(g), value: g }))
+    scopeGrades.value = myScopes.value === null
+      ? grades
+      : grades.filter((g) => myScopes.value!.includes(g))
+  } catch {
+    gradeOptions.value = []
+    scopeGrades.value = []
+  }
+}
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -147,6 +171,7 @@ async function reload() {
   drafts.value = all.filter((t) => t.status === 'draft')
   sourceId.value = drafts.value[0]?.id ?? null
   check.value = await preflight(sid.value)
+  await loadGradeOptions(sid.value)
   await loadHistory()
 }
 
@@ -160,6 +185,7 @@ async function onSemesterChange(id: number) {
 
 onMounted(async () => {
   ;[semesters.value, relaxable.value] = await Promise.all([listSemesters(), listRelaxable()])
+  try { myScopes.value = await myGradeScopes() } catch { myScopes.value = null }
   if (semesters.value.length) await onSemesterChange(semesters.value[0].id)
 })
 
@@ -188,6 +214,7 @@ async function onStart() {
     const { job_id } = await startAutoSchedule(sourceId.value, minutes.value * 60, {
       allowPartial: allowPartial.value,
       relax: allowPartial.value ? relax.value : [],
+      grades: scopeGrades.value.length ? scopeGrades.value : undefined,
     })
     attachJob(await getSolveJob(job_id))
     await loadHistory()
@@ -280,7 +307,8 @@ function openResult() {
               <template #suffix>分钟</template>
             </n-input-number>
             <n-button
-              type="primary" :loading="starting" :disabled="!sourceId || running"
+              type="primary" :loading="starting"
+              :disabled="!sourceId || running || (gradeOptions.length > 0 && scopeGrades.length === 0)"
               data-testid="as-start" @click="onStart"
             >
               开始排课
@@ -289,6 +317,20 @@ function openResult() {
           <n-text depth="3">
             锁定的格位会维持原位;其余已排的课会作为求解起点,结果写成新草稿,来源草稿不动。
           </n-text>
+          <n-alert
+            v-if="myScopes !== null && myScopes.length === 0" type="warning"
+            title="你还没有被分配年级,请联系系统管理员"
+          />
+          <n-space v-if="gradeOptions.length" align="center">
+            <n-text depth="3">排课年级:</n-text>
+            <n-checkbox-group v-model:value="scopeGrades" :disabled="running">
+              <n-checkbox
+                v-for="o in gradeOptions" :key="o.value" :value="o.value"
+                :label="o.label" :data-testid="`as-grade-${o.value}`"
+              />
+            </n-checkbox-group>
+            <n-text depth="3">只排勾选的年级;其他年级已排好的格位不动。</n-text>
+          </n-space>
 
           <n-checkbox v-model:checked="allowPartial" :disabled="running" data-testid="as-partial">
             允许部分排课(排不下的课列成清单,不要整个失败)

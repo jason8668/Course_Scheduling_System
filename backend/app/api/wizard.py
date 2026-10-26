@@ -13,8 +13,8 @@ from app.schemas.wizard import WizardStateOut, WizardStateUpdate
 
 router = APIRouter(tags=["wizard"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
 
 
 def _get_or_create(db: Session) -> WizardState:

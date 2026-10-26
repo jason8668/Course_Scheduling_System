@@ -17,7 +17,7 @@ const message = useMessage()
 
 // 组长/主任可代登、可看全校;教师只登记自己的假、只看自己的假单
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 const semesters = ref<{ id: number; label: string }[]>([])
 const sid = ref<number | null>(null)

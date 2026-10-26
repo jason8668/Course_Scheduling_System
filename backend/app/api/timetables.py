@@ -38,14 +38,18 @@ from app.schemas.timetable import (
     TimetableRename,
 )
 from app.services import conflict_checker as cc
+from app.services import grade_scopes
 from app.services import timetable_check
 from app.services import timetable_publish as pub
 from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["timetables"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
+# 发布是整校操作:主任可发布(主任的年级范围由 grade_scopes 管,见下);
+# 改名/删除仍只限管理员。
+publisher = require_roles(Role.director)
 
 
 def _get_timetable(db: Session, timetable_id: int) -> Timetable:
@@ -195,9 +199,10 @@ def rename_timetable(
     timetable_id: int,
     body: TimetableRename,
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     tt = _get_timetable(db, timetable_id)
+    grade_scopes.require_unrestricted(db, user)
     tt.name = body.name
     db.commit()
     return get_timetable(timetable_id, db, None)
@@ -250,13 +255,16 @@ def publish_timetable(
     timetable_id: int,
     force: bool = Query(False),
     db: Session = Depends(get_db),
-    user: User = Depends(editor),
+    user: User = Depends(publisher),
 ):
     """draft → published;同学期原 published 转 archived。
 
     未排完、或课表有冲堂等违规时,需 force=true 才可发布(列出来让用户自己决定)。
+    主任可发布(须已由管理员分配年级);未配年级的主任仍无权发布。课表一学期一张,
+    点发布就是把整张发出去了,各年级主任发布前需协调好。
     """
     tt = _require_draft(_get_timetable(db, timetable_id))
+    grade_scopes.require_can_publish(db, user)
     report = pub.completeness(db, tt)
     issues = timetable_check.check(db, tt)
     blocked = not report["complete"] or bool(issues)
@@ -288,9 +296,10 @@ def publish_timetable(
 
 @router.delete("/timetables/{timetable_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_timetable(
-    timetable_id: int, db: Session = Depends(get_db), _: object = Depends(editor)
+    timetable_id: int, db: Session = Depends(get_db), user: User = Depends(editor)
 ) -> None:
     tt = _get_timetable(db, timetable_id)
+    grade_scopes.require_unrestricted(db, user)
     db.delete(tt)
     db.commit()
 
@@ -419,10 +428,11 @@ def place_entry(
     timetable_id: int,
     body: PlaceRequest,
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ):
     tt = _require_draft(_get_timetable(db, timetable_id))
     a = _get_assignment(db, tt.semester_id, body.course_assignment_id)
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, a.id))
     if body.room_id is not None:
         room = db.get(Room, body.room_id)
         if room is None or room.semester_id != tt.semester_id:
@@ -455,12 +465,13 @@ def place_entry(
 @router.patch("/timetables/{timetable_id}/entries/{entry_id}", response_model=TimetableOut)
 def move_entry(
     timetable_id: int, entry_id: int, body: MoveRequest,
-    db: Session = Depends(get_db), _: object = Depends(editor),
+    db: Session = Depends(get_db), user: User = Depends(editor),
 ):
     tt = _require_draft(_get_timetable(db, timetable_id))
     e = db.get(ScheduleEntry, entry_id)
     if e is None or e.timetable_id != tt.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到格位")
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, e.course_assignment_id))
     if e.locked:
         raise HTTPException(status.HTTP_409_CONFLICT, "格位已锁定,请先解锁再移动")
     a = e.assignment
@@ -483,12 +494,13 @@ def move_entry(
 @router.post("/timetables/{timetable_id}/entries/{entry_id}/lock", response_model=TimetableOut)
 def lock_entry(
     timetable_id: int, entry_id: int, locked: bool = Query(True),
-    db: Session = Depends(get_db), _: object = Depends(editor),
+    db: Session = Depends(get_db), user: User = Depends(editor),
 ):
     tt = _require_draft(_get_timetable(db, timetable_id))
     e = db.get(ScheduleEntry, entry_id)
     if e is None or e.timetable_id != tt.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到格位")
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, e.course_assignment_id))
     for sib in _slot_siblings(db, tt.id, e.assignment.scheduling_unit_id, e.weekday, e.period_no):
         sib.locked = locked
     db.commit()
@@ -503,12 +515,13 @@ def delete_entry(
     timetable_id: int,
     entry_id: int,
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ) -> None:
     tt = _require_draft(_get_timetable(db, timetable_id))
     e = db.get(ScheduleEntry, entry_id)
     if e is None or e.timetable_id != tt.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到格位")
+    grade_scopes.require_grades(db, user, grade_scopes.assignment_grades(db, e.course_assignment_id))
     if e.locked:
         raise HTTPException(status.HTTP_409_CONFLICT, "格位已锁定,请先解锁再移除")
     for sib in _slot_siblings(db, tt.id, e.assignment.scheduling_unit_id, e.weekday, e.period_no):

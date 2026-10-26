@@ -11,7 +11,7 @@ from app.models.basedata import ClassUnit, Teacher
 from app.models.user import Role
 from app.services import assignments as assign_svc
 from app.services import demo_data
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -200,7 +200,7 @@ def test_status_endpoint_reflects_availability(admin_client):
 
 def test_non_admin_cannot_load_demo_data(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     assert client.post("/api/demo-data").status_code == 403
 

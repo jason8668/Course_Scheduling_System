@@ -7,7 +7,7 @@ from openpyxl import Workbook
 
 from app.api.imports import XLSX_MIME
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -16,7 +16,7 @@ PW = "password123"
 def env2(env):
     """已登录教学组长 + 初中范本学期(含默认节次表与科目)。回传 (client, sid)。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post(
         "/api/semesters", json={"academic_year": 2026, "term": 1, "template_key": "junior_high"}

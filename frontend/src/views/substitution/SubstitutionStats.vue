@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 function withWeekday(iso: string): string {

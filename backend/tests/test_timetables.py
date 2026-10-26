@@ -9,7 +9,7 @@ import time as _time
 import pytest
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 
 PW = "password123"
 
@@ -39,7 +39,7 @@ def _periods(slots, weekdays=5):
 def env2(env):
     """已登录教学组长 + 空白学期 + 主节次表(默认)+ 一份课表草稿。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     sid = sem["id"]
@@ -128,11 +128,13 @@ def test_class_period_table_endpoint(env2):
 
 
 # ── 课表草稿 CRUD ─────────────────────
-def test_create_and_list_timetable(env2):
+def test_create_and_list_timetable(env2, env):
     client, sid, tid, _ = env2
+    _, db = env  # env2 回传的第 4 项是节次表 id,不是 db;db 从 env  fixture 取(同一 session)
     lst = client.get(f"/api/timetables?semester_id={sid}").json()
     assert len(lst) == 1 and lst[0]["name"] == "草稿A" and lst[0]["entry_count"] == 0
-    assert client.delete(f"/api/timetables/{tid}").status_code == 204
+    with as_admin(client, db):
+        assert client.delete(f"/api/timetables/{tid}").status_code == 204
     assert client.get(f"/api/timetables?semester_id={sid}").json() == []
 
 
@@ -219,7 +221,7 @@ def test_slot_label_uses_period_name_not_index(env):
     会显示「第2节」,与教学组长的认知不符(2026-07-10 实机验证发现)。
     """
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post(
         "/api/semesters",
@@ -647,7 +649,7 @@ SENIOR_SLOTS = [  # 50 分/节
 def mixed(env):
     """完全中学情境:小学部(40 分)与高中部(50 分)两套节次表 + 一位跨部教师。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={"academic_year": 2027, "term": 1}).json()["id"]
     pt_e = client.post(f"/api/semesters/{sid}/period-tables",
@@ -750,7 +752,7 @@ def test_daily_cap_follows_the_semester_config(env):
     而 M4 调代课直接重用这支检查器。
     """
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
 
     sid = client.post("/api/semesters", json={

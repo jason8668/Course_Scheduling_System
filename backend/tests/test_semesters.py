@@ -6,7 +6,7 @@ from tests.conftest import make_user
 PW = "password123"
 
 
-def login(client, db, roles=(Role.scheduler,), username="s"):
+def login(client, db, roles=(Role.director,), username="s"):
     make_user(db, username, PW, roles=list(roles))
     resp = client.post("/api/auth/login", json={"username": username, "password": PW})
     assert resp.status_code == 200

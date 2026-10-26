@@ -8,15 +8,17 @@ from app.models.calendar import SchoolCalendarEvent
 from app.models.user import Role
 from app.schemas.timetable import PublicSemester
 from app.services.solver_data import load_problem
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 from tests.fixtures import build_junior_high_mid
 from tests.test_timetables import MAIN_SLOTS, _assign, _class, _periods, _place, _subject, _teacher
 
 PW = "password123"
 
 
-def _login(client, db, roles=(Role.scheduler,), username="s"):
+def _login(client, db, roles=(Role.director,), username="s"):
     user = make_user(db, username, PW, roles=list(roles))
+    if Role.director in roles:
+        grant_grades(db, user)
     resp = client.post("/api/auth/login", json={"username": username, "password": PW})
     assert resp.status_code == 200
     return user
@@ -268,7 +270,8 @@ def test_published_semesters_include_week_fields(env):
         teacher_ids=[t["id"]], periods=1,
     )
     _place(client, tt["id"], a["id"], 1, 1)
-    assert client.post(f"/api/timetables/{tt['id']}/publish").status_code == 200
+    with as_admin(client, db):
+        assert client.post(f"/api/timetables/{tt['id']}/publish").status_code == 200
 
     sems = client.get("/api/published/semesters").json()
     assert len(sems) == 1

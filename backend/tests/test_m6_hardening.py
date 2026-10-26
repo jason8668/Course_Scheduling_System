@@ -10,7 +10,7 @@
 import pytest
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, WED, WED2
 
 PW = "password123"
@@ -19,7 +19,7 @@ PW = "password123"
 @pytest.fixture
 def school(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -120,7 +120,7 @@ def test_substitution_log_query_applies_the_limit_in_sql(env):
     from tests.test_substitutions import _World
 
     client, db = env
-    make_user(db, "s2", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s2", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s2", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2028, "term": 1, "template_key": "junior_high",

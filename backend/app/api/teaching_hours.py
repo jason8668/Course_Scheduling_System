@@ -20,7 +20,7 @@ from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["teaching-hours"])
 
-viewer = require_roles(Role.scheduler, Role.director)
+viewer = require_roles(Role.director)
 
 
 def _get_semester(db: Session, semester_id: int) -> Semester:
@@ -82,7 +82,7 @@ def teaching_hours(
     db: Session = Depends(get_db),
     _: User = Depends(viewer),
 ):
-    """管理员/组长查全校(可筛单一教师、单一年级)。"""
+    """管理员/主任查全校(可筛单一教师、单一年级)。"""
     sem = _get_semester(db, semester_id)
     start, end = _resolve_range(sem, scope, date_from, date_to)
     rows, eff_start, eff_end = hours_service.compute(

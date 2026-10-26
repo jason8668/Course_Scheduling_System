@@ -10,7 +10,7 @@ import pytest
 
 from app.api import solver as solver_api
 from app.models.timetable import ScheduleEntry, Timetable
-from app.models.user import Role
+from app.models.user import Role, UserGradeScope
 from app.services.solver_data import load_problem
 from app.solver.model_builder import SolveControl, SolveOptions, SolveProgress, solve
 from app.solver.problem import SolverConfig
@@ -36,7 +36,10 @@ def sched(env, monkeypatch):
     回传 (client, db, sid, timetable_id, store, calls)。
     """
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    s = make_user(db, "s", PW, roles=[Role.director])
+    # 本批语意:未配年级的组长没有任何排课权限;测试用的 3 年级须先配给 s
+    db.add(UserGradeScope(user_id=s.id, grade=3))
+    db.commit()
     client.post("/api/auth/login", json={"username": "s", "password": PW})
 
     store = InMemoryProgressStore()
@@ -45,10 +48,10 @@ def sched(env, monkeypatch):
     calls: list[tuple] = []
 
     def fake_enqueue(job_id, timetable_id, max_seconds, seed, user_id, username,
-                     allow_partial=False, relax=()):
+                     allow_partial=False, relax=(), scope_grades=None):
         calls.append((job_id, timetable_id, max_seconds, seed))
         solve_job.execute(db, store, job_id, timetable_id, max_seconds, seed, user_id, username,
-                          allow_partial, relax)
+                          allow_partial, relax, scope_grades)
 
     monkeypatch.setattr(job_queue, "enqueue_solve", fake_enqueue)
 
@@ -170,7 +173,7 @@ def test_stop_keeps_best_solution(sched, monkeypatch):
 
     # 求解一开始就要求提前结束 → 第一个解出现即停,仍写出结果草稿
     def enqueue_then_stop(job_id, timetable_id, max_seconds, seed, user_id, username,
-                          allow_partial=False, relax=()):
+                          allow_partial=False, relax=(), scope_grades=None):
         store.request(job_id, ControlAction.stop)
         solve_job.execute(db, store, job_id, timetable_id, max_seconds, seed, user_id, username)
 
@@ -188,7 +191,7 @@ def test_cancel_discards_result(sched, monkeypatch):
     _seed_courses(client, sid, periods=4)
 
     def enqueue_then_cancel(job_id, timetable_id, max_seconds, seed, user_id, username,
-                            allow_partial=False, relax=()):
+                            allow_partial=False, relax=(), scope_grades=None):
         store.request(job_id, ControlAction.cancel)
         solve_job.execute(db, store, job_id, timetable_id, max_seconds, seed, user_id, username)
 

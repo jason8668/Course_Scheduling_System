@@ -3,7 +3,7 @@
 import pytest
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 
 PW = "password123"
 
@@ -12,7 +12,7 @@ PW = "password123"
 def scheduler_env(env):
     """已登录教学组长 + 一个学期,回传 (client, semester_id)。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()
     return client, sem["id"]
@@ -157,8 +157,8 @@ def test_search_teachers_by_name(scheduler_env):
 
 def test_teacher_viewer_role_readonly(env):
     client, db = env
-    make_user(db, "d", PW, roles=[Role.director])
-    client.post("/api/auth/login", json={"username": "d", "password": PW})
-    # director 可读(需先有学期,由 admin/scheduler 建立;此处直接测写入被拒)
+    make_user(db, "t", PW, roles=[Role.teacher])
+    client.post("/api/auth/login", json={"username": "t", "password": PW})
+    # 普通老师只读:基础资料写入被拒(权限检查先于学期检查,故学期不存在也回 403)
     r = client.post("/api/teachers?semester_id=1", json={"name": "x"})
     assert r.status_code == 403

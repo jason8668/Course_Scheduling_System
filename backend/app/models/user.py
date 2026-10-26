@@ -26,7 +26,7 @@ class Role(enum.StrEnum):
 
     admin = "admin"          # 系统管理员(超级用户)
     director = "director"    # 教务主任
-    scheduler = "scheduler"  # 教学组长
+    scheduler = "scheduler"  # 停用:三种角色只剩管理员/主任/教师,不再分配;枚举保留只为兼容旧数据
     teacher = "teacher"      # 教师
 
 
@@ -71,3 +71,25 @@ class UserRole(Base):
     role: Mapped[str] = mapped_column(String(20))
 
     user: Mapped["User"] = relationship(back_populates="roles")
+
+
+class UserGradeScope(Base):
+    """帐号—年级对应(按年级排课的权限分离)。
+
+    管理员给帐号配年级后,该帐号的排课写操作只允许在这些年级内:
+    配课、手动排课格位、自动排课范围、班级资料、调课处置均按此拦截。
+    年级主任本身就是老师:未配年级的主任没有任何排课权限,只能当任课老师用;
+    主任、管理员始终不受限。
+    年级是全校统一的数字(7/8/9),不绑定学期——年级主任换学期仍管同一年级。
+    """
+
+    __tablename__ = "user_grade_scopes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "grade", name="uq_user_grade_scope"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    grade: Mapped[int] = mapped_column(Integer)

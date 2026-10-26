@@ -10,7 +10,7 @@ import pytest
 from app.models.user import Role
 from app.services import notifications as notif_service
 from app.services import settings as app_settings
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, WED  # 日期一律由执行当日推算,不硬编
 
 PW = "password123"
@@ -30,7 +30,7 @@ def outbox(monkeypatch):
 @pytest.fixture
 def school(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -39,7 +39,7 @@ def school(env):
     return client, db, sid
 
 
-def _publish_wang(client, sid, *, email: str | None = None):
+def _publish_wang(client, db, sid, *, email: str | None = None):
     """王师周三第一节国文,课表已发布。回传 (王师id, 陈师id)。"""
     guo = client.post(f"/api/subjects?semester_id={sid}", json={"name": "国文"}).json()["id"]
     wang = client.post(f"/api/teachers?semester_id={sid}",
@@ -58,7 +58,8 @@ def _publish_wang(client, sid, *, email: str | None = None):
         "teachers": [{"teacher_id": wang}], "block_rules": []}).json()
     client.post(f"/api/timetables/{tt}/entries", json={
         "course_assignment_id": a["id"], "weekday": 3, "period_no": wed[0]["period_no"], "span": 1})
-    client.post(f"/api/timetables/{tt}/publish?force=true")
+    with as_admin(client, db):
+        client.post(f"/api/timetables/{tt}/publish?force=true")
     return wang, chen
 
 
@@ -74,7 +75,7 @@ def _leave_and_assign(client, sid, wang, chen):
 # ── 验收①:指派后站内通知;有 Email 则排入寄送 ────────────────
 def test_assignment_creates_in_app_notification(school, outbox):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid)   # 陈师无 email
+    wang, chen = _publish_wang(client, db, sid)   # 陈师无 email
     _leave_and_assign(client, sid, wang, chen)
 
     # 站内:陈师登录看得到自己的通知
@@ -89,7 +90,7 @@ def test_assignment_creates_in_app_notification(school, outbox):
 
 def test_assignment_emails_when_teacher_has_address(school, outbox):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid, email="chen@example.com")
+    wang, chen = _publish_wang(client, db, sid, email="chen@example.com")
     # 需设置 SMTP,否则 email 管道不会放进寄件匣?——不,寄件匣只看有没有信箱;
     # 是否真的寄由 email_job 依 SMTP 设置决定。这里验「有信箱 → 有排入」。
     _leave_and_assign(client, sid, wang, chen)
@@ -103,7 +104,7 @@ def test_assignment_emails_when_teacher_has_address(school, outbox):
 # ── 验收①:确认收到 ─────────────────────────────────────────
 def test_teacher_acknowledges_a_notification(school):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid)
+    wang, chen = _publish_wang(client, db, sid)
     _leave_and_assign(client, sid, wang, chen)
 
     _bind_login(client, db, chen, "chen")
@@ -121,7 +122,7 @@ def test_teacher_acknowledges_a_notification(school):
 
 def test_cannot_acknowledge_someone_elses_notification(school):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid)
+    wang, chen = _publish_wang(client, db, sid)
     _leave_and_assign(client, sid, wang, chen)
     nid = client.get(f"/api/notifications?semester_id={sid}&teacher_id={chen}").json()[0]["id"]
 
@@ -133,7 +134,7 @@ def test_cannot_acknowledge_someone_elses_notification(school):
 # ── 验收②:组长看板 + 再次提醒 ──────────────────────────────
 def test_board_shows_acknowledgement_status(school):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid)
+    wang, chen = _publish_wang(client, db, sid)
     _leave_and_assign(client, sid, wang, chen)
 
     board = client.get(f"/api/notifications?semester_id={sid}").json()
@@ -149,7 +150,7 @@ def test_board_shows_acknowledgement_status(school):
 
 def test_remind_resends_and_is_blocked_after_acknowledgement(school, outbox):
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid, email="chen@example.com")
+    wang, chen = _publish_wang(client, db, sid, email="chen@example.com")
     _leave_and_assign(client, sid, wang, chen)
     outbox.clear()
 
@@ -173,7 +174,7 @@ def test_remind_resends_and_is_blocked_after_acknowledgement(school, outbox):
 def test_works_without_smtp_configured(school, outbox):
     """没设 SMTP:站内通知照常;email_job 之后会 no-op(此处验 send 回 False)。"""
     client, db, sid = school
-    wang, chen = _publish_wang(client, sid, email="chen@example.com")
+    wang, chen = _publish_wang(client, db, sid, email="chen@example.com")
     _leave_and_assign(client, sid, wang, chen)
 
     # 通知仍建立(站内)
@@ -237,7 +238,7 @@ def _Teacher():
 
 
 def _prep_teacher_with_email(client, db) -> int:
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2027, "term": 1, "template_key": "junior_high"}).json()["id"]

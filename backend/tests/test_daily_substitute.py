@@ -12,7 +12,7 @@ import pytest
 from openpyxl import load_workbook
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, THU, WED
 from tests.test_substitutions import _World
 
@@ -24,7 +24,7 @@ DAILY = "日薪代课"
 @pytest.fixture
 def w(env):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",

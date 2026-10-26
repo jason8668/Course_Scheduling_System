@@ -1,7 +1,7 @@
 """课表导出:班级/教师/场地 Excel/PDF/PNG、全校总表、批次 zip(M5-1)。
 
 Excel 在 api 同步产生(openpyxl 轻量);PDF/PNG 派到 worker(WeasyPrint + 中文字型)
-再取回。单一对象导出开放给所有登录者(课表本就全校可查);全校总表/批次限教学组长以上。
+再取回。单一对象导出开放给所有登录者(课表本就全校可查);全校总表/批次限年级主任以上。
 """
 
 from urllib.parse import quote
@@ -17,7 +17,7 @@ from app.workers import queue as job_queue
 
 router = APIRouter(tags=["exports"])
 
-manager = require_roles(Role.scheduler, Role.director)
+manager = require_roles(Role.director)
 
 _MIME = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

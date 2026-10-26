@@ -15,6 +15,7 @@ import type {
 } from '@/api/assignments'
 import { listClassUnits, listRooms, listSubjects, listTeachers, ROOM_TYPE_LABELS } from '@/api/basedata'
 import type { ClassUnit, Room, Subject, Teacher } from '@/api/basedata'
+import { gradeLabel } from '@/api/substitutionLog'
 import { listSemesters } from '@/api/semesters'
 import type { SemesterListItem } from '@/api/semesters'
 
@@ -36,6 +37,21 @@ const classLoads = ref<ClassLoad[]>([])
 
 const classOptions = computed(() =>
   classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
+
+// 按年级筛选配课清单(一次只看一个年级);写操作仍由后端按帐号权限拦截
+const gradeFilter = ref<number | null>(null)
+const gradeFilterOptions = computed(() => {
+  const grades = [...new Set(
+    assignments.value.flatMap((a) => a.scheduling_unit.classes.map((c) => c.grade)),
+  )].sort((a, b) => a - b)
+  return grades.map((g) => ({ label: gradeLabel(g), value: g }))
+})
+const filteredAssignments = computed(() =>
+  gradeFilter.value === null
+    ? assignments.value
+    : assignments.value.filter((a) =>
+        a.scheduling_unit.classes.some((c) => c.grade === gradeFilter.value)),
+)
 const subjectOptions = computed(() => subjects.value.map((s) => ({ label: s.name, value: s.id })))
 const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
@@ -290,16 +306,20 @@ function blockLabel(a: Assignment): string {
           <n-button type="primary" data-testid="assignment-add" @click="openCreate">新增配课</n-button>
           <n-button data-testid="group-add" @click="openGroup">新增跑班群组</n-button>
           <n-button data-testid="alt-add" @click="openAlternate">新增单双周组</n-button>
+          <n-select
+            v-model:value="gradeFilter" :options="gradeFilterOptions" style="width: 160px"
+            placeholder="全部年级" clearable data-testid="a-grade-filter"
+          />
         </n-space>
 
         <n-card title="配课清单" size="small">
-          <n-empty v-if="assignments.length === 0" description="尚无配课" />
+          <n-empty v-if="filteredAssignments.length === 0" description="尚无配课" />
           <table v-else class="data-table">
             <thead>
               <tr><th>排课单位</th><th>科目</th><th>教师</th><th>周节数</th><th>连堂</th><th>场地</th><th>操作</th></tr>
             </thead>
             <tbody>
-              <tr v-for="a in assignments" :key="a.id">
+              <tr v-for="a in filteredAssignments" :key="a.id">
                 <td>{{ unitLabel(a) }}</td>
                 <td>{{ a.subject.name }}</td>
                 <td>

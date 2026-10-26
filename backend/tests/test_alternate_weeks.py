@@ -274,10 +274,10 @@ class _Term:
 
     def __init__(self, client, db):
         from app.models.user import Role
-        from tests.conftest import make_user
+        from tests.conftest import as_admin, grant_grades, make_user
         from tests.dates import SEM_END, SEM_START
 
-        make_user(db, "s", "password123", roles=[Role.scheduler])
+        grant_grades(db, make_user(db, "s", "password123", roles=[Role.director]))
         client.post("/api/auth/login", json={"username": "s", "password": "password123"})
         self.client, self.db, self.sem_start = client, db, SEM_START
         self.sid = client.post("/api/semesters", json={
@@ -316,7 +316,8 @@ class _Term:
                 self.a[(cls, week)] = r.json()["id"]
             r = _place(client, self.tt, self.a[(cls, "odd")], 3, period["period_no"])
             assert r.status_code == 201, r.text
-        assert client.post(f"/api/timetables/{self.tt}/publish").status_code == 200
+        with as_admin(client, db):
+            assert client.post(f"/api/timetables/{self.tt}/publish").status_code == 200
 
     def week(self, day):
         return week_parity(self.sem_start, day)

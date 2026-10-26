@@ -1,6 +1,6 @@
 """今日调代课看板与调代课日志(M4-4)。
 
-看板/日志是行政的当日排课与历史查询工具,限教学组长/教务主任。
+看板/日志是行政的当日排课与历史查询工具,限年级主任/教务主任。
 """
 
 from dataclasses import asdict
@@ -21,7 +21,7 @@ from app.services import substitution_log as log_service
 
 router = APIRouter(tags=["substitution-log"])
 
-viewer = require_roles(Role.scheduler, Role.director)
+viewer = require_roles(Role.director)
 
 
 def _entry_out(e: log_service.LogEntry) -> LogEntryOut:

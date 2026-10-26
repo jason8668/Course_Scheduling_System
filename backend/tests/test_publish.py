@@ -3,7 +3,7 @@
 import pytest
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import as_admin, grant_grades, make_user
 from tests.test_timetables import (
     MAIN_SLOTS,
     _assign,
@@ -22,7 +22,8 @@ PW = "password123"
 def env3(env):
     """教学组长 + 学期 + 主节次表 + 一份草稿A。回传 (client, sid, ttA_id, db)。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
+    make_user(db, "adm", PW, roles=[Role.admin])
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={"academic_year": 2026, "term": 1}).json()["id"]
     pt = client.post(
@@ -74,6 +75,14 @@ def test_completeness_complete_when_all_placed(env3):
 
 
 # ── 验收②:未排完 → 警告;强制可发布 ──
+def _publish(client, tid, force=False):
+    """发布是整校操作,有年级限制的组长做不了,改由管理员发布再切回组长。"""
+    client.post("/api/auth/login", json={"username": "adm", "password": PW})
+    r = client.post(f"/api/timetables/{tid}/publish" + ("?force=true" if force else ""))
+    client.post("/api/auth/login", json={"username": "s", "password": PW})
+    return r
+
+
 def test_publish_blocked_when_incomplete_then_forced(env3):
     client, sid, tid, _ = env3
     c = _class(client, sid, 3, "301")
@@ -84,14 +93,14 @@ def test_publish_blocked_when_incomplete_then_forced(env3):
     for wd in (1, 2):
         _place(client, tid, a["id"], wd, 1)  # 只排 2 节,尚缺 3 节
 
-    r = client.post(f"/api/timetables/{tid}/publish")
+    r = _publish(client, tid)
     assert r.status_code == 409
     detail = r.json()["detail"]
     assert detail["completeness"]["remaining"] == 3
     assert detail["completeness"]["unplaced"][0]["remaining"] == 3
 
     # 确认后强制发布
-    r = client.post(f"/api/timetables/{tid}/publish?force=true")
+    r = _publish(client, tid, force=True)
     assert r.status_code == 200
     assert r.json()["status"] == "published"
 
@@ -100,7 +109,7 @@ def test_publish_complete_without_force(env3):
     client, sid, tid, _ = env3
     a = _one_period_course(client, sid)
     _place(client, tid, a["id"], 1, 1)
-    r = client.post(f"/api/timetables/{tid}/publish")
+    r = _publish(client, tid)
     assert r.status_code == 200 and r.json()["status"] == "published"
 
 
@@ -133,7 +142,7 @@ def test_publish_b_leaves_a_editable(env3):
     _place(client, tidA, a["id"], 1, 1)
     tidB = client.post(f"/api/timetables/{tidA}/duplicate", json={"name": "草稿B"}).json()["id"]
 
-    assert client.post(f"/api/timetables/{tidB}/publish").status_code == 200
+    assert _publish(client, tidB).status_code == 200
 
     lst = {t["id"]: t["status"] for t in client.get(f"/api/timetables?semester_id={sid}").json()}
     assert lst[tidB] == "published"
@@ -156,8 +165,8 @@ def test_publishing_new_archives_previous(env3):
     _place(client, tidA, a["id"], 1, 1)
     tidB = client.post(f"/api/timetables/{tidA}/duplicate", json={"name": "草稿B"}).json()["id"]
 
-    client.post(f"/api/timetables/{tidA}/publish")
-    client.post(f"/api/timetables/{tidB}/publish")
+    _publish(client, tidA)
+    _publish(client, tidB)
     lst = {t["id"]: t["status"] for t in client.get(f"/api/timetables?semester_id={sid}").json()}
     assert lst[tidA] == "archived" and lst[tidB] == "published"
     # 同学期至多一份 published
@@ -170,7 +179,7 @@ def test_published_timetable_is_read_only(env3):
     a = _one_period_course(client, sid)
     _place(client, tid, a["id"], 1, 1)
     eid = _entries(client, tid)[0]["id"]
-    client.post(f"/api/timetables/{tid}/publish")
+    _publish(client, tid)
 
     assert _place(client, tid, a["id"], 2, 1).status_code == 409
     assert client.patch(f"/api/timetables/{tid}/entries/{eid}",
@@ -178,13 +187,28 @@ def test_published_timetable_is_read_only(env3):
     assert client.delete(f"/api/timetables/{tid}/entries/{eid}").status_code == 409
     assert client.post(f"/api/timetables/{tid}/entries/{eid}/lock?locked=true").status_code == 409
     # 再次发布也不行(已非草稿)
-    assert client.post(f"/api/timetables/{tid}/publish").status_code == 409
+    assert _publish(client, tid).status_code == 409
 
 
 def test_rename_timetable(env3):
-    client, _sid, tid, _ = env3
-    r = client.patch(f"/api/timetables/{tid}", json={"name": "重新命名"})
+    client, _sid, tid, db = env3
+    with as_admin(client, db):
+        r = client.patch(f"/api/timetables/{tid}", json={"name": "重新命名"})
     assert r.status_code == 200 and r.json()["name"] == "重新命名"
+
+
+def test_director_can_publish_but_not_rename(env3):
+    """已任命的主任可发布课表;改名仍是管理员的事。未任命(无年级)的主任不能发布。"""
+    client, _sid, tid, db = env3
+    grant_grades(db, make_user(db, "dir", PW, roles=[Role.director]))
+    make_user(db, "dir2", PW, roles=[Role.director])
+    client.post("/api/auth/logout")
+    client.post("/api/auth/login", json={"username": "dir2", "password": PW})
+    assert client.post(f"/api/timetables/{tid}/publish?force=true").status_code == 403
+    client.post("/api/auth/login", json={"username": "dir", "password": PW})
+    r = client.post(f"/api/timetables/{tid}/publish?force=true")
+    assert r.status_code == 200 and r.json()["status"] == "published"
+    assert client.patch(f"/api/timetables/{tid}", json={"name": "改名"}).status_code == 403
 
 
 # ── 全员查询 API 与教师权限(验收③后端面)──
@@ -192,7 +216,7 @@ def test_published_endpoints_readable_by_teacher(env3):
     client, sid, tid, db = env3
     a = _one_period_course(client, sid)
     _place(client, tid, a["id"], 1, 1)
-    client.post(f"/api/timetables/{tid}/publish")
+    _publish(client, tid)
 
     # 绑定教师帐号:王师 ↔ e2e teacher user
     teacher = client.get(f"/api/teachers?semester_id={sid}").json()[0]
@@ -234,7 +258,7 @@ def test_publish_writes_audit_log(env3):
     client, sid, tid, db = env3
     a = _one_period_course(client, sid)
     _place(client, tid, a["id"], 1, 1)
-    client.post(f"/api/timetables/{tid}/publish")
+    _publish(client, tid)
 
     make_user(db, "admin1", PW, roles=[Role.admin])
     client.post("/api/auth/logout")
@@ -242,7 +266,7 @@ def test_publish_writes_audit_log(env3):
 
     logs = client.get("/api/audit-logs?action=publish_timetable").json()
     assert len(logs) == 1
-    assert logs[0]["username"] == "s"
+    assert logs[0]["username"] == "adm"
     assert logs[0]["target_id"] == tid
     assert "草稿A" in logs[0]["detail"]
 
@@ -253,7 +277,7 @@ def test_forced_publish_marked_in_audit(env3):
     s = _subject(client, sid, "国文")
     t = _teacher(client, sid, "王师")
     _assign(client, sid, class_id=c["id"], subject_id=s["id"], teacher_ids=[t["id"]], periods=5)
-    client.post(f"/api/timetables/{tid}/publish?force=true")
+    _publish(client, tid, force=True)
 
     make_user(db, "admin1", PW, roles=[Role.admin])
     client.post("/api/auth/logout")

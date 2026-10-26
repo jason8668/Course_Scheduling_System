@@ -168,6 +168,8 @@ class FixedEntry:
     """课表的一个格位:某配课排在某格、用某场地。
 
     作为输入时 locked=True 者为 H9 硬约束,其余可作为求解起点提示;
+    scope_pinned=True 者也是 H9 硬约束,但只因「本轮按年级排课、范围外的格位
+    不动它」而钉住——结果写回时不标锁定,下一轮全校重排仍可动它。
     作为求解结果时即待写回 DB 的 schedule_entry。
     """
 
@@ -177,6 +179,7 @@ class FixedEntry:
     span: int
     room_id: int | None
     locked: bool = False
+    scope_pinned: bool = False
 
 
 # 求解结果与既有格位同形,共用一个型别(输入来自草稿,输出写回草稿)

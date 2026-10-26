@@ -122,13 +122,14 @@ export const listRelaxable = (): Promise<RelaxableOption[]> => apiGet('/solver/r
 export const startAutoSchedule = (
   timetableId: number,
   maxSeconds: number,
-  options: { allowPartial?: boolean; relax?: string[] } = {},
+  options: { allowPartial?: boolean; relax?: string[]; grades?: number[] } = {},
 ): Promise<{ job_id: string }> =>
   apiPost(`/timetables/${timetableId}/auto-schedule`, {
     max_seconds: maxSeconds,
     seed: 0,
     allow_partial: options.allowPartial ?? false,
     relax: options.relax ?? [],
+    grades: options.grades ?? null,
   })
 
 export const listSolveJobs = (semesterId: number): Promise<SolveJob[]> =>

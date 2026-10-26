@@ -93,7 +93,7 @@ def _restore(db: Session, user: User, target_name: str) -> RestoreResult:
     # 还原前先关掉本请求的 session。pg_restore --clean 会中止资料库上的所有连线,包含
     # 验证身分时开的这条;而 FastAPI 的 yield 依赖是在**回应送出后**才收尾,届时
     # db.close() 会对一条已死的连线送出 ROLLBACK,在 log 喷出一段 AdminShutdown
-    # traceback——回应与资料都是对的,但刚按下「还原」的组长看到那段红字,只会以为
+    # traceback——回应与资料都是对的,但刚按下「还原」的主任看到那段红字,只会以为
     # 还原失败了。还原期间本来就用不到这条 session(稽核另开新连线写)。
     # 关闭前先把等下要用的栏位取成纯量,免得 user 成为 detached instance。
     actor_id, actor_name = user.id, user.username

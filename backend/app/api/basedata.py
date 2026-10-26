@@ -1,6 +1,6 @@
 """基础资料 API:教师、科目、场地、班级。
 
-权限:读取 = 教学组长/教务主任;写入 = 教学组长(admin 一律通过)。
+权限:读取 = 年级主任/教务主任;写入 = 年级主任(admin 一律通过)。
 所有资源以 semester_id 为范围。
 """
 
@@ -47,13 +47,14 @@ from app.schemas.basedata import (
 )
 from app.schemas.semester import AvailableSlot, PeriodTableOut
 from app.schemas.timetable import UnavailableHitOut
+from app.services import grade_scopes
 from app.services import period_tables as pt_service
 from app.services import timetable_check
 
 router = APIRouter(tags=["basedata"])
 
-viewer = require_roles(Role.scheduler, Role.director)
-editor = require_roles(Role.scheduler)
+viewer = require_roles(Role.director)
+editor = require_roles(Role.director)
 
 
 def _require_semester(db: Session, semester_id: int) -> None:
@@ -202,8 +203,8 @@ def list_bindable_accounts(
 def _teacher_account(db: Session, teacher_id: int) -> tuple[Teacher, User]:
     """取出教师与其绑定帐号;只允许动「纯教师角色」的帐号。
 
-    教学组长本来就能建立教师帐号(Excel 导入就是),但不该通过这条路去改到
-    主任/组长/管理员的密码,所以这里挡掉有其他角色的帐号。
+    年级主任本来就能建立教师帐号(Excel 导入就是),但不该通过这条路去改到
+    主任/主任/管理员的密码,所以这里挡掉有其他角色的帐号。
     """
     teacher = db.get(Teacher, teacher_id)
     if teacher is None:
@@ -597,7 +598,7 @@ def _require_unique_class_name(
 ) -> None:
     """同学期不得有两个同名班级(M6-5)。
 
-    冲突讯息、课表、导出全都以班名指称班级——同学期出现两个「301」时,组长在界面上
+    冲突讯息、课表、导出全都以班名指称班级——同学期出现两个「301」时,主任在界面上
     根本分不出是哪一班。DB 有 uq 约束兜底,这里先挡下来给人话。
     """
     stmt = select(ClassUnit).where(
@@ -630,9 +631,10 @@ def create_class_unit(
     body: ClassUnitIn,
     semester_id: int = Query(...),
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    user: User = Depends(editor),
 ) -> ClassUnit:
     _require_semester(db, semester_id)
+    grade_scopes.require_grades(db, user, {body.grade})
     _require_unique_class_name(db, semester_id, body.name)
     _validate_homeroom(db, semester_id, body.homeroom_teacher_id)
     _validate_period_table(db, semester_id, body.period_table_id)
@@ -654,11 +656,12 @@ def create_class_unit(
 
 @router.patch("/class-units/{class_id}", response_model=ClassUnitOut)
 def update_class_unit(
-    class_id: int, body: ClassUnitIn, db: Session = Depends(get_db), _: object = Depends(editor)
+    class_id: int, body: ClassUnitIn, db: Session = Depends(get_db), user: User = Depends(editor)
 ) -> ClassUnit:
     cu = db.get(ClassUnit, class_id)
     if cu is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到班级")
+    grade_scopes.require_grades(db, user, {cu.grade, body.grade})
     _require_unique_class_name(db, cu.semester_id, body.name, exclude_id=cu.id)
     _validate_homeroom(db, cu.semester_id, body.homeroom_teacher_id)
     _validate_period_table(db, cu.semester_id, body.period_table_id)
@@ -714,10 +717,11 @@ def class_available_slots(
 
 @router.delete("/class-units/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_class_unit(
-    class_id: int, db: Session = Depends(get_db), _: object = Depends(editor)
+    class_id: int, db: Session = Depends(get_db), user: User = Depends(editor)
 ) -> None:
     cu = db.get(ClassUnit, class_id)
     if cu is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到班级")
+    grade_scopes.require_grades(db, user, {cu.grade})
     db.delete(cu)
     db.commit()

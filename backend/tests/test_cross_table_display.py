@@ -11,7 +11,7 @@ import pytest
 from openpyxl import load_workbook
 
 from app.models.user import Role
-from tests.conftest import make_user
+from tests.conftest import grant_grades, make_user
 from tests.dates import SEM_END, SEM_START, WED
 from tests.test_substitutions import _World
 
@@ -22,7 +22,7 @@ PW = "password123"
 def k9(env):
     """初中小:默认初中节次表 + 小学节次表;林师在 701(初中)与 601(小学)都有英语。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -109,7 +109,7 @@ def test_substitute_slip_marks_the_real_time_of_other_table_lessons(k9):
 def k12(env):
     """默认初中节次表(七节)+ 高中部节次表(八节);林师在 901 与高一甲都有英语。"""
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sid = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",
@@ -183,7 +183,7 @@ def _add_eighth_period(w, table, start, end):
 
 def _k12_with_junior_eighth(env, start, end):
     client, db = env
-    make_user(db, "s", PW, roles=[Role.scheduler])
+    grant_grades(db, make_user(db, "s", PW, roles=[Role.director]))
     client.post("/api/auth/login", json={"username": "s", "password": PW})
     sem = client.post("/api/semesters", json={
         "academic_year": 2026, "term": 1, "template_key": "junior_high",

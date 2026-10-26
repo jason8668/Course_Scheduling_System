@@ -25,9 +25,9 @@ function menuLink(name: string, label: string) {
   return () => h(RouterLink, { to: { name } }, { default: () => label })
 }
 
-// 纯教师帐号只看得到课表查询(其余页面的后端 API 需教学组长以上权限)
+// 纯教师帐号只看得到课表查询(其余页面的后端 API 需主任以上权限)
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 const menuOptions = computed(() => {
   const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
@@ -75,6 +75,9 @@ const menuOptions = computed(() => {
       ],
     },
     { label: menuLink('system', '系统管理'), key: 'system' },
+    ...(auth.hasRole('admin')
+      ? [{ label: menuLink('user-grades', '账号年级'), key: 'user-grades' }]
+      : []),
   ]
 })
 

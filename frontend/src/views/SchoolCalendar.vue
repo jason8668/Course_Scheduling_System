@@ -25,7 +25,7 @@ import { expandCalendarEvents, toISODate as toISO } from '@/utils/calendar'
 const message = useMessage()
 const auth = useAuthStore()
 const canManage = computed(() =>
-  auth.hasRole('admin') || auth.hasRole('scheduler') || auth.hasRole('director'))
+  auth.hasRole('admin') || auth.hasRole('director'))
 
 const TYPE_COLORS: Record<CalendarEventType, { bg: string; fg: string }> = {
   holiday: { bg: '#fdecea', fg: '#c0392b' },
