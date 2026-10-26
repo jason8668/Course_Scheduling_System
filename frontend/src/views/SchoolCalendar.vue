@@ -85,8 +85,8 @@ const monthFrames = computed(() => semesterMonths.value.map((m) => ({
   weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell): FrameCell => ({
     ...cell,
     inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
-    // 今天只在本月框内高亮：跨月补齐格里的同一天不再重复描边（10-26 同时出现在 10 月框与 11 月框补齐格的问题）。
-    isToday: cell.iso === todayIso && cell.inMonth,
+    // 今天标记：同一周在两处同时标（10-26 同时出现在 10 月框与 11 月框补齐格时，两处都标），不限本月。
+    isToday: cell.iso === todayIso,
     // 活动只在本月框内显示：跨月补齐格里的同一天不再重复出现活动。
     events: cell.inMonth ? (expandedByDate.value.get(cell.iso) ?? []) : [],
   }))),
@@ -103,16 +103,14 @@ function onChipClick(ev: CalendarEvent, e: MouseEvent) {
   openEdit(ev)
 }
 
-// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）；今天格仍保留深青描边。
+// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）。
+// 今天格的描边由 .is-today 的琥珀虚线 + 「今日」徽标承担，这里只上活动底色，不盖掉今天标记。
 function cellStyle(cell: FrameCell) {
   const ev = cell.events[0]
   if (!ev) return {}
   const c = TYPE_COLORS[ev.event_type]
-  return {
-    background: c.bg,
-    borderColor: cell.isToday ? '#0d5a6e' : c.fg,
-    borderWidth: '2px',
-  }
+  if (cell.isToday) return { background: c.bg }
+  return { background: c.bg, borderColor: c.fg, borderWidth: '2px' }
 }
 
 async function loadEvents() {
@@ -364,7 +362,9 @@ async function onDelete(ev: CalendarEvent) {
                 :style="cellStyle(cell)"
                 @click="onCellClick(cell)"
               >
-                <div class="frame-daynum">{{ cell.dayNum }}</div>
+                <div class="frame-daynum">
+                  {{ cell.dayNum }}<span v-if="cell.isToday" class="frame-today-badge">今日</span>
+                </div>
                 <div
                   v-for="ev in cell.events.slice(0, 2)" :key="ev.id"
                   class="frame-chip"
@@ -536,11 +536,16 @@ async function onDelete(ev: CalendarEvent) {
   min-height: 64px; border: 1px solid #e6edf0; border-radius: 8px;
   padding: 4px; cursor: pointer; overflow: hidden; background: #fff;
 }
-.frame-cell:hover { border-color: #0d5a6e; }
+.frame-cell:hover:not(.is-today) { border-color: #0d5a6e; }
 .frame-cell.is-out { opacity: 0.45; cursor: default; }
 .frame-cell.is-out:hover { border-color: #e6edf0; }
-.frame-cell.is-today { border: 2px solid #0d5a6e; background: rgba(13, 90, 110, 0.05); }
-.frame-daynum { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+/* 今天标记：琥珀虚线 + 「今日」徽标，与活动的实线彩色整格区分开（活动色的实线边框只在非今天格上）。 */
+.frame-cell.is-today { border: 2px dashed #d97706; background: rgba(217, 119, 6, 0.08); }
+.frame-daynum { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.frame-today-badge {
+  font-size: 10px; font-weight: 600; color: #fff; background: #d97706;
+  border-radius: 999px; padding: 0 5px; line-height: 1.6;
+}
 .frame-chip {
   font-size: 11px; line-height: 1.5; padding: 1px 5px; border-radius: 999px;
   margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

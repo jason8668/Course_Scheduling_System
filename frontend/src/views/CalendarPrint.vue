@@ -12,7 +12,7 @@ import {
   eventDateText, eventWeekText, groupEventsByMonth, monthsInRange, monthWeeks,
   resolveSemesterEnd, weekdayLabel, weekLabel,
 } from '@/utils/calendarList'
-import { expandCalendarEvents, toISODate } from '@/utils/calendar'
+import { expandCalendarEvents } from '@/utils/calendar'
 import { classLabel } from '@/utils/labels'
 
 // 校历打印页:独立一页供 A4 打印张贴,不套侧边栏(仿 TimetablePrint.vue 模式)。
@@ -28,16 +28,12 @@ const PRINT_COLORS: Record<CalendarEventType, { bg: string; fg: string }> = {
   other: { bg: '#eef3fb', fg: '#2b6cb0' },
 }
 
-// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）；今天格仍保留黑色描边。
-function cellStyle(cell: { isToday: boolean; events: CalendarEvent[] }) {
+// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）；打印页没有今天标记。
+function cellStyle(cell: { events: CalendarEvent[] }) {
   const ev = cell.events[0]
   if (!ev) return {}
   const c = PRINT_COLORS[ev.event_type]
-  return {
-    background: c.bg,
-    outline: `2px solid ${cell.isToday ? '#000' : c.fg}`,
-    outlineOffset: '-2px',
-  }
+  return { background: c.bg, outline: `2px solid ${c.fg}`, outlineOffset: '-2px' }
 }
 
 const semester = ref<PublicSemester | null>(null)
@@ -52,7 +48,6 @@ const monthGroups = computed(() => groupEventsByMonth(events.value))
 
 // ── 学期日历（月框）：与主页面一致，从开学第一天到最后一天 ──
 const WEEKDAY_HEADS = ['一', '二', '三', '四', '五', '六', '日']
-const todayIso = toISODate(new Date())
 const rangeStart = computed(() => semester.value?.start_date ?? null)
 const rangeEnd = computed(() =>
   resolveSemesterEnd(semester.value?.start_date ?? null, semester.value?.end_date ?? null))
@@ -67,8 +62,8 @@ const monthFrames = computed(() => semesterMonths.value.map((m) => ({
   weeks: monthWeeks(m.year, m.month).map((week) => week.map((cell) => ({
     ...cell,
     inRange: rangeStart.value! <= cell.iso && cell.iso <= rangeEnd.value!,
-    // 今天只在本月框内高亮：跨月补齐格里的同一天不再重复描边。
-    isToday: cell.iso === todayIso && cell.inMonth,
+    // 打印页不标今天：今天标记只在浏览时出现，打印出来不带。
+    isToday: false,
     // 活动只在本月框内显示：跨月补齐格里的同一天不再重复出现活动。
     events: cell.inMonth ? (expandedByDate.value.get(cell.iso) ?? []) : [],
   }))),
@@ -162,7 +157,7 @@ onMounted(async () => {
                 <td class="weekno-col">{{ weekLabel(rangeStart, week[0]!.iso) }}</td>
                 <td
                   v-for="cell in week" :key="cell.iso"
-                  :class="{ 'is-out': !cell.inRange, 'is-today': cell.isToday }"
+                  :class="{ 'is-out': !cell.inRange }"
                   :style="cellStyle(cell)"
                 >
                   <div class="f-day">{{ cell.dayNum }}</div>
@@ -261,7 +256,6 @@ onMounted(async () => {
 .frame-grid th { background: #eee; text-align: center; font-size: 13px; }
 .frame-grid td { height: 52px; }
 .frame-grid td.is-out { color: #999; }
-.frame-grid td.is-today { outline: 2px solid #000; outline-offset: -2px; }
 .f-day { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
 .f-ev { font-size: 11px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .foot { font-size: 12px; color: #444; margin-top: 16px; }
