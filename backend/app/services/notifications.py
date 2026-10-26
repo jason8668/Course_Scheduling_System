@@ -88,7 +88,11 @@ class DingTalkChannel:
     """钉钉群机器人:与 Email 相同走寄件匣模式——在交易内就把 Webhook/密钥/
     校名/文案全部备好(after_commit 阶段已不能再查 DB),commit 后只做 POST,
     交易 rollback 就不送。未设置 Webhook 时静默略过。内容是给全群看的广播,
-    只同步标题与摘要。只发调课/代课类型(见 _DINGTALK_TYPE_VALUES),请假不发。"""
+    只同步标题与摘要。只发调课/代课类型(见 _DINGTALK_TYPE_VALUES),请假不发。
+
+    群发没有“收件人”概念:站内通知正文里的“请于…”/“您”默认指收信人自己,
+    到了群里就指代不明(群里看不出请的是谁)。所以钉钉文案一律点出相关教师,
+    并把“您”换成名字——群里一眼看出谁代谁的课。"""
 
     key = "dingtalk"
 
@@ -103,7 +107,13 @@ class DingTalkChannel:
         school = app_settings.school_name(db)
         outbox = db.info.setdefault(_DINGTALK_OUTBOX_KEY, [])
         title = f"[{school}] {notification.title}"
-        text = f"### {notification.title}\n\n{notification.body or notification.title}"
+        body = notification.body or notification.title
+        if teacher is not None:
+            # 相关教师即这则通知的收信人(代课老师本人,或调课补课的原任教师);
+            # 代课/调课正文里的“您”指的都是收信人,换成名字后群里不再含糊。
+            body = body.replace("您", teacher.name)
+            body = f"**相关教师:{teacher.name}**\n\n{body}"
+        text = f"### {notification.title}\n\n{body}"
         outbox.append(_DingTalkMsg(cfg.webhook, cfg.secret, title, text))
 
 

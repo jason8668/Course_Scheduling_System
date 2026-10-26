@@ -80,6 +80,38 @@ def test_notification_broadcasts_to_dingtalk(admin, monkeypatch):
     webhook, secret, title, text = sent[0]
     assert webhook == HOOK and secret == "SECxyz"
     assert "代课通知" in title and "内容摘要" in text
+    # 群发要点出相关教师,否则群里看不出这则通知是请谁
+    assert "相关教师:王小明" in text
+
+
+def test_dingtalk_group_message_names_the_teacher(admin, monkeypatch):
+    client, db = admin
+    sent: list = []
+    monkeypatch.setattr(
+        notif, "send_dingtalk",
+        lambda webhook, secret, title, text: sent.append((webhook, secret, title, text)),
+    )
+    app_settings.save_dingtalk(db, webhook=HOOK, secret="SECxyz")
+    db.commit()
+
+    client.post("/api/semesters", json={
+        "academic_year": 2026, "term": 1, "template_key": "junior_high",
+        "start_date": SEM_START.isoformat(), "end_date": SEM_END.isoformat(),
+    })
+    sid = client.get("/api/semesters").json()[0]["id"]
+    teacher = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王小明"}).json()
+
+    # 调课补课通知正文里的“您”指收信人:群发时必须换成名字,否则群里含糊
+    from app.models.notification import NotificationType
+    notif.notify(db, semester_id=sid, teacher_id=teacher["id"],
+                 type=NotificationType.substitution_assigned,
+                 title="调课补课通知:2026-10-27 第一节",
+                 body="请您于 2026-10-27 第一节补上陈师的数学")
+    db.commit()
+    assert len(sent) == 1
+    assert "相关教师:王小明" in sent[0][3]
+    assert "请王小明于 2026-10-27 第一节补上陈师的数学" in sent[0][3]
+    assert "您" not in sent[0][3]
 
 
 def test_leave_does_not_broadcast_to_dingtalk(admin, monkeypatch):

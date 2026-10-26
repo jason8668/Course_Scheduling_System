@@ -142,7 +142,7 @@ def test_dingtalk(
             webhook, picked,
             title="排课系统测试消息",
             text="### 排课系统测试消息\n\n收到这则消息,代表钉钉群机器人设置正确。"
-                 "之后请假、调课、代课的通知会同步推送到这个群。",
+                 "之后调课、代课的通知会同步推送到这个群。",
         )
     except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"发送失败:{exc}") from exc
