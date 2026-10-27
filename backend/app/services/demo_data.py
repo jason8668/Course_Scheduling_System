@@ -13,6 +13,7 @@
 
 import json
 from dataclasses import dataclass, field
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -169,11 +170,14 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
     settings_service.save_school_name(db, spec["school_name"])
 
     # ── 学期与节次表(沿用既有的学制范本,示范资料不另造一套)──
+    # 学期起止必须带上:本周课表、校历、课时统计都靠它算第几周,不填就没有第几周。
     semester = template_service.create_semester_from_template(
         db,
         academic_year=spec["academic_year"],
         term=spec["term"],
         template_key=spec["template_key"],
+        start_date=date.fromisoformat(spec["start_date"]) if spec.get("start_date") else None,
+        end_date=date.fromisoformat(spec["end_date"]) if spec.get("end_date") else None,
     )
     sid = semester.id
 

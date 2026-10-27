@@ -88,6 +88,25 @@ def test_class_names_use_grade_plus_serial(admin_client):
     ]
 
 
+def test_demo_semester_has_dates_so_weeks_can_be_computed(admin_client):
+    """学期起止必须有:本周课表、校历、课时统计都靠它算第几周。
+
+    旧示范资料没填起止,学期就没有第几周,首页和校历看起来就是数据不对。
+    """
+    from datetime import date
+
+    from app.core.week_parity import week_number
+    from app.models.semester import Semester
+
+    client, db = admin_client
+    sid = client.post("/api/demo-data").json()["semester_id"]
+    sem = db.get(Semester, sid)
+    assert sem.start_date == date(2026, 9, 1)
+    assert sem.end_date == date(2027, 1, 31)
+    assert week_number(sem.start_date, date(2026, 9, 1)) == 1
+    assert week_number(sem.start_date, date(2026, 10, 27)) == 9
+
+
 def test_school_name_is_reported(admin_client):
     """校名回报给前端,供精灵与系统管理页显示「会建出哪一所学校」。"""
     client, _ = admin_client
