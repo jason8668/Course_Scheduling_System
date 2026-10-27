@@ -279,6 +279,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
 
     assignment_count = 0
     total_periods = 0
+    taught_subjects: dict[str, set[str]] = {}
     for cname, sname, periods in sorted(demand, key=sort_key):
         pool = pools[dept_of[sname]]
         hr = homeroom_by_class.get(cname)
@@ -302,8 +303,19 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
             AssignmentTeacher(teacher_id=teacher.model.id, is_lead=True)
         )
         teacher.assigned += periods
+        taught_subjects.setdefault(teacher.name, set()).add(sname)
         assignment_count += 1
         total_periods += periods
+    db.flush()
+
+    # 任教科目:教师档案的 subjects 是独立的一张表,配课不会自动写它,
+    # 不填的话基础资料里任教科目全空,调课推荐也分不出本科教师。
+    # 按实际配课回填:只填该教师真正教的科目,不按教研组整组带。
+    for plan in plans:
+        assert plan.model is not None
+        plan.model.subjects = [
+            subjects[sname] for sname in sorted(taught_subjects.get(plan.name, set()))
+        ]
     db.flush()
 
     # 标记设置精灵已完成。否则载完示范资料回到首页,路由守卫会因为

@@ -107,6 +107,31 @@ def test_demo_semester_has_dates_so_weeks_can_be_computed(admin_client):
     assert week_number(sem.start_date, date(2026, 10, 27)) == 9
 
 
+def test_demo_teachers_have_subjects_matching_assignments(admin_client):
+    """任教科目必须按实际配课回填:教师档案的 subjects 与配课是两张表,
+    配课不会自动写它,不填则基础资料任教科目全空、调课推荐分不出本科教师。"""
+    from app.models.assignment import AssignmentTeacher
+
+    client, db = admin_client
+    sid = client.post("/api/demo-data").json()["semester_id"]
+    for t in db.query(Teacher).filter(Teacher.semester_id == sid).all():
+        via_assignments = {
+            a.subject.name
+            for a in db.query(CourseAssignment)
+            .join(AssignmentTeacher, AssignmentTeacher.course_assignment_id == CourseAssignment.id)
+            .filter(
+                CourseAssignment.semester_id == sid,
+                AssignmentTeacher.teacher_id == t.id,
+            )
+            .all()
+        }
+        assert via_assignments, f"{t.name} 没有配课"
+        assert {s.name for s in t.subjects} == via_assignments, (
+            f"{t.name} 任教科目 {sorted(s.name for s in t.subjects)} "
+            f"与实际配课 {sorted(via_assignments)} 不一致"
+        )
+
+
 def test_school_name_is_reported(admin_client):
     """校名回报给前端,供精灵与系统管理页显示「会建出哪一所学校」。"""
     client, _ = admin_client
