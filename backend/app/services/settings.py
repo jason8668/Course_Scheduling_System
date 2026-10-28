@@ -35,6 +35,14 @@ DEFAULT_PATROL_LEGEND = (
 DINGTALK_WEBHOOK = "dingtalk_webhook"
 DINGTALK_SECRET = "dingtalk_secret"
 
+# 钉钉企业内部应用(个人上课提醒:工作通知一对一发给老师本人)
+DINGTALK_APP_KEY = "dingtalk_app_key"
+DINGTALK_APP_SECRET = "dingtalk_app_secret"
+DINGTALK_AGENT_ID = "dingtalk_agent_id"
+# 上课提醒提前分钟数(默认 15);管理员可在系统管理修改
+DINGTALK_REMINDER_LEAD_MINUTES = "dingtalk_reminder_lead_minutes"
+DEFAULT_REMINDER_LEAD_MINUTES = 15
+
 
 @dataclass(frozen=True, slots=True)
 class DingTalkConfig:
@@ -58,6 +66,45 @@ def save_dingtalk(db: Session, webhook: str, secret: str) -> None:
     # 空密钥视为「不变更」(同 SMTP 密码语义),避免每次保存都要重打
     if secret:
         set_value(db, DINGTALK_SECRET, secret.strip())
+
+
+@dataclass(frozen=True, slots=True)
+class DingTalkAppConfig:
+    app_key: str
+    app_secret: str
+    agent_id: str
+    lead_minutes: int
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.app_key and self.app_secret and self.agent_id)
+
+
+def dingtalk_app_config(db: Session) -> DingTalkAppConfig:
+    values = all_settings(db)
+    lead_raw = values.get(DINGTALK_REMINDER_LEAD_MINUTES, "")
+    try:
+        lead = int(lead_raw) if lead_raw else DEFAULT_REMINDER_LEAD_MINUTES
+    except (TypeError, ValueError):
+        lead = DEFAULT_REMINDER_LEAD_MINUTES
+    lead = min(max(lead, 1), 120)
+    return DingTalkAppConfig(
+        app_key=values.get(DINGTALK_APP_KEY, "").strip(),
+        app_secret=values.get(DINGTALK_APP_SECRET, "").strip(),
+        agent_id=values.get(DINGTALK_AGENT_ID, "").strip(),
+        lead_minutes=lead,
+    )
+
+
+def save_dingtalk_app(
+    db: Session, app_key: str, app_secret: str, agent_id: str, lead_minutes: int
+) -> None:
+    set_value(db, DINGTALK_APP_KEY, app_key.strip())
+    # 空密钥视为「不变更」(同群机器人加签密钥语义)
+    if app_secret:
+        set_value(db, DINGTALK_APP_SECRET, app_secret.strip())
+    set_value(db, DINGTALK_AGENT_ID, agent_id.strip())
+    set_value(db, DINGTALK_REMINDER_LEAD_MINUTES, str(int(lead_minutes)))
 
 
 # SMTP 设置的 key

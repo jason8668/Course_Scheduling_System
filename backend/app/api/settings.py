@@ -39,6 +39,21 @@ class DingTalkSettingsOut(BaseModel):
     has_secret: bool
 
 
+class DingTalkAppSettingsIn(BaseModel):
+    app_key: str = Field(default="", max_length=128)
+    app_secret: str = Field(default="", max_length=128, description="应用密钥;留空 = 不变更")
+    agent_id: str = Field(default="", max_length=32, description="企业内部应用的 agentId(数字)")
+    lead_minutes: int = Field(default=15, ge=1, le=120, description="上课提醒提前分钟数")
+
+
+class DingTalkAppSettingsOut(BaseModel):
+    app_key: str
+    agent_id: str
+    configured: bool
+    has_app_secret: bool
+    lead_minutes: int
+
+
 class PatrolSettings(BaseModel):
     # app_settings.value 栏位长度 500
     legend: str = Field(max_length=500, description="课堂巡视情况记录表下方的记录说明;留空则恢复默认")
@@ -147,6 +162,60 @@ def test_dingtalk(
     except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"发送失败:{exc}") from exc
     return {"sent": True}
+
+
+def _dingtalk_app_out(db: Session) -> DingTalkAppSettingsOut:
+    cfg = app_settings.dingtalk_app_config(db)
+    return DingTalkAppSettingsOut(
+        app_key=cfg.app_key, agent_id=cfg.agent_id, configured=cfg.configured,
+        has_app_secret=bool(cfg.app_secret), lead_minutes=cfg.lead_minutes,
+    )
+
+
+@router.get("/settings/dingtalk-app", response_model=DingTalkAppSettingsOut)
+def get_dingtalk_app(db: Session = Depends(get_db), _: User = Depends(admin_only)):
+    """钉钉企业内部应用设置(不回传密钥明文)。"""
+    return _dingtalk_app_out(db)
+
+
+@router.put("/settings/dingtalk-app", response_model=DingTalkAppSettingsOut)
+def put_dingtalk_app(
+    body: DingTalkAppSettingsIn, db: Session = Depends(get_db), user: User = Depends(admin_only)
+):
+    app_settings.save_dingtalk_app(
+        db, body.app_key, body.app_secret, body.agent_id, body.lead_minutes
+    )
+    db.add(AuditLog(
+        user_id=user.id, username=user.username, action="update_dingtalk_app",
+        target_type="app_setting", target_id=None,
+        detail="钉钉企业内部应用设置更新"[:500],
+    ))
+    db.commit()
+    return _dingtalk_app_out(db)
+
+
+@router.post("/settings/dingtalk-app/test", status_code=status.HTTP_200_OK)
+def test_dingtalk_app(
+    body: DingTalkAppSettingsIn | None = None,
+    db: Session = Depends(get_db), _: User = Depends(admin_only),
+):
+    """只取一次 access_token 验证企业应用三件套;不给任何老师发消息。可用表单上的值先测再存。"""
+    from app.services.dingtalk_app import DingTalkAppClient
+
+    cfg = app_settings.dingtalk_app_config(db)
+    app_key = (body.app_key if body and body.app_key else cfg.app_key).strip()
+    picked_secret = cfg.app_secret
+    if body and body.app_secret:
+        picked_secret = body.app_secret
+    agent_id = (body.agent_id if body and body.agent_id else cfg.agent_id).strip()
+    if not app_key or not picked_secret or not agent_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "请先填写 appKey、应用密钥与 agentId")
+    try:
+        client = DingTalkAppClient(app_key, picked_secret, agent_id)
+        _ = client.token
+    except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"验证失败:{exc}") from exc
+    return {"ok": True}
 
 
 @router.get("/settings/scheduling", response_model=SchedulingSettings)

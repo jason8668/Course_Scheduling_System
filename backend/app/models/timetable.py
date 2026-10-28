@@ -8,9 +8,19 @@ ScheduleEntry:一笔配课排入的格位(weekday × period_no,span 表连堂占
 """
 
 import enum
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -83,3 +93,29 @@ class ScheduleEntry(Base):
     def effective_room_id(self) -> int | None:
         """格位场地优先,未指定则沿用配课场地。"""
         return self.room_id if self.room_id is not None else self.assignment.room_id
+
+
+class ClassReminderLog(Base):
+    """上课提醒已发送记录(防重复)。
+
+    提醒任务每 5 分钟扫一次,同一格位同一天只发一次:以 (entry_id, class_date, teacher_id)
+    唯一约束兜底——即使任务重跑或 worker 重复执行,也不会对同一位老师发两次。
+    entry 被删时级联清掉(课表重排后旧记录不残留)。
+    """
+
+    __tablename__ = "class_reminder_logs"
+    __table_args__ = (
+        UniqueConstraint("entry_id", "class_date", "teacher_id", name="uq_class_reminder"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entry_id: Mapped[int] = mapped_column(
+        ForeignKey("schedule_entries.id", ondelete="CASCADE"), index=True
+    )
+    class_date: Mapped[date] = mapped_column(Date, index=True)
+    teacher_id: Mapped[int] = mapped_column(
+        ForeignKey("teachers.id", ondelete="CASCADE"), index=True
+    )
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

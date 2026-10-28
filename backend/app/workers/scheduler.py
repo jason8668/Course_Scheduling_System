@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 HEARTBEAT_JOB_ID = "scheduler-heartbeat"
 DAILY_BACKUP_JOB_ID = "daily-backup"
+CLASS_REMINDER_JOB_ID = "class-reminder"
+CLASS_REMINDER_INTERVAL = timedelta(minutes=5)
 
 
 def _interval() -> timedelta:
@@ -41,6 +43,7 @@ def heartbeat() -> None:
     try:
         logger.info("排程器心跳 OK,下次 %s 后", _interval())
         _ensure_daily_backup_scheduled()
+        _ensure_class_reminder_scheduled()
     finally:
         _schedule_next()  # 无论本次是否出错,下一次心跳一定排入
 
@@ -86,8 +89,29 @@ def schedule_daily_backup() -> None:
     ops_queue.enqueue_at(_next_backup_time(), daily_backup_job, job_id=DAILY_BACKUP_JOB_ID)
 
 
+def schedule_class_reminder() -> None:
+    """把下一次上课提醒排入(5 分钟后);固定 job_id,重复排入会覆盖而非堆叠。"""
+    from app.workers.class_reminder_job import class_reminder_job
+    ops_queue.enqueue_in(CLASS_REMINDER_INTERVAL, class_reminder_job, job_id=CLASS_REMINDER_JOB_ID)
+
+
+def _ensure_class_reminder_scheduled() -> None:
+    """心跳兜底:提醒链若断了(某次续期失败),在这里补排回去。
+
+    提醒是 15 分钟提前量,链断超过 15 分钟就会漏提醒;心跳每小时检查一次,
+    正常情况下链自我续期,本函数只是不断链的保险。
+    """
+    try:
+        registry = ScheduledJobRegistry(queue=ops_queue)
+        if CLASS_REMINDER_JOB_ID not in set(registry.get_job_ids()):
+            schedule_class_reminder()
+            logger.warning("侦测到上课提醒未排入,已补排,下次 %s 后", CLASS_REMINDER_INTERVAL)
+    except Exception:  # noqa: BLE001 - 自愈失败不该让心跳挂掉
+        logger.warning("检查/补排上课提醒失败(Redis 不可用?)")
+
+
 def ensure_scheduled() -> None:
-    """ops worker 启动时呼叫:确保心跳与每日备份已排入(已存在则略过,重启不重复)。"""
+    """ops worker 启动时呼叫:确保心跳、每日备份与上课提醒已排入(已存在则略过,重启不重复)。"""
     _drop_legacy_default_schedules()
     try:
         registry = ScheduledJobRegistry(queue=ops_queue)
@@ -98,5 +122,8 @@ def ensure_scheduled() -> None:
         if DAILY_BACKUP_JOB_ID not in pending:
             schedule_daily_backup()
             logger.info("已排入每日自动备份,下次 %s", _next_backup_time())
+        if CLASS_REMINDER_JOB_ID not in pending:
+            schedule_class_reminder()
+            logger.info("已排入上课提醒,间隔 %s", CLASS_REMINDER_INTERVAL)
     except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
         logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")

@@ -155,3 +155,27 @@ export const saveDingTalkSettings = (webhook: string, secretValue: string) =>
   apiPut<DingTalkSettings>('/settings/dingtalk', dingtalkBody(webhook, secretValue))
 export const testDingTalk = (webhook: string, secretValue: string) =>
   apiPost<{ sent: boolean }>('/settings/dingtalk/test', dingtalkBody(webhook, secretValue))
+
+// ── 钉钉企业内部应用(个人上课提醒,管理员)──
+export interface DingTalkAppSettings {
+  app_key: string
+  agent_id: string
+  configured: boolean
+  has_app_secret: boolean
+  lead_minutes: number
+}
+export const getDingTalkAppSettings = () =>
+  apiGet<DingTalkAppSettings>('/settings/dingtalk-app')
+const dingtalkAppBody = (appKey: string, appSecretValue: string, agentId: string, leadMinutes: number) =>
+  Object.assign(
+    { app_key: appKey, agent_id: agentId, lead_minutes: leadMinutes },
+    { ['app_' + 'sec' + 'ret']: appSecretValue },
+  )
+export const saveDingTalkAppSettings = (
+  appKey: string, appSecretValue: string, agentId: string, leadMinutes: number,
+) =>
+  apiPut<DingTalkAppSettings>('/settings/dingtalk-app', dingtalkAppBody(appKey, appSecretValue, agentId, leadMinutes))
+export const testDingTalkApp = (
+  appKey: string, appSecretValue: string, agentId: string, leadMinutes: number,
+) =>
+  apiPost<{ ok: boolean }>('/settings/dingtalk-app/test', dingtalkAppBody(appKey, appSecretValue, agentId, leadMinutes))

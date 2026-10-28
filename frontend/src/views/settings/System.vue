@@ -13,8 +13,8 @@ import {
 } from '@/api/backups'
 import type { Backup, RestoreResult } from '@/api/backups'
 import {
-  demoDataStatus, getDingTalkSettings, getSchedulingSettings, getSchoolSettings, loadDemoData,
-  saveDingTalkSettings, testDingTalk,
+  demoDataStatus, getDingTalkAppSettings, getDingTalkSettings, getSchedulingSettings, getSchoolSettings, loadDemoData,
+  saveDingTalkAppSettings, saveDingTalkSettings, testDingTalk, testDingTalkApp,
   saveSchedulingSettings, saveSchoolSettings,
 } from '@/api/assignments'
 import { getSmtp, saveSmtp } from '@/api/notifications'
@@ -220,6 +220,47 @@ async function onTestDingtalk() {
   }
 }
 
+// ── 钉钉企业内部应用(个人上课提醒)──
+const dingtalkApp = ref({ appKey: '', appSecret: '', agentId: '', leadMinutes: 15 })
+const dingtalkAppHasSecret = ref(false)
+const savingDingtalkApp = ref(false)
+const testingDingtalkApp = ref(false)
+
+async function onSaveDingtalkApp() {
+  savingDingtalkApp.value = true
+  try {
+    const r = await saveDingTalkAppSettings(
+      dingtalkApp.value.appKey, dingtalkApp.value.appSecret,
+      dingtalkApp.value.agentId, dingtalkApp.value.leadMinutes,
+    )
+    dingtalkApp.value.appKey = r.app_key
+    dingtalkApp.value.appSecret = ''
+    dingtalkApp.value.agentId = r.agent_id
+    dingtalkApp.value.leadMinutes = r.lead_minutes
+    dingtalkAppHasSecret.value = r.has_app_secret
+    message.success(r.configured ? '已保存企业应用设置,上课提醒已启用' : '三件套未填全,上课提醒未启用')
+  } catch (e) {
+    message.error((e as ApiError).message || '保存失败')
+  } finally {
+    savingDingtalkApp.value = false
+  }
+}
+
+async function onTestDingtalkApp() {
+  testingDingtalkApp.value = true
+  try {
+    await testDingTalkApp(
+      dingtalkApp.value.appKey, dingtalkApp.value.appSecret,
+      dingtalkApp.value.agentId, dingtalkApp.value.leadMinutes,
+    )
+    message.success('验证通过,企业应用三件套正确(未给任何老师发消息)')
+  } catch (e) {
+    message.error((e as ApiError).message || '验证失败')
+  } finally {
+    testingDingtalkApp.value = false
+  }
+}
+
 const savingSchool = ref(false)
 
 async function onSaveSchool() {
@@ -249,6 +290,11 @@ onMounted(async () => {
   const dt = await getDingTalkSettings()
   dingtalk.value.webhook = dt.webhook
   dingtalkHasSecret.value = dt.has_secret
+  const dtApp = await getDingTalkAppSettings()
+  dingtalkApp.value.appKey = dtApp.app_key
+  dingtalkApp.value.agentId = dtApp.agent_id
+  dingtalkApp.value.leadMinutes = dtApp.lead_minutes
+  dingtalkAppHasSecret.value = dtApp.has_app_secret
   patrolLegend.value = (await getPatrolSettings()).legend
   const demo = await demoDataStatus()
   demoAvailable.value = demo.available
@@ -453,6 +499,56 @@ async function onResetWizard() {
           <n-button
             type="primary" :loading="savingDingtalk" data-testid="dingtalk-save"
             @click="onSaveDingtalk"
+          >
+            保存
+          </n-button>
+        </n-space>
+      </n-space>
+    </n-card>
+
+    <n-card v-if="isAdmin()" title="钉钉企业应用(个人上课提醒)" data-testid="dingtalk-app-card">
+      <n-space vertical>
+        <n-text depth="3">
+          学校钉钉管理员在企业组织里建一个「企业内部应用」,开通「工作通知」与
+          「通讯录读取」权限,把 appKey、应用密钥、agentId 填到这里。填全后系统每
+          5 分钟扫一次已发布课表,在上课前按提前分钟数把提醒一对一推到老师个人
+          钉钉(按教师档案里的手机号找人,手机号空的老师推不出去)。密钥留空表示
+          不变更。测试连接只验证三件套能不能取到 token,不会给任何老师发消息。
+        </n-text>
+        <n-space align="center">
+          <n-text style="width: 72px">appKey</n-text>
+          <n-input
+            v-model:value="dingtalkApp.appKey" placeholder="企业内部应用的 appKey"
+            style="width: 460px" data-testid="dingtalk-app-key"
+          />
+        </n-space>
+        <n-space align="center">
+          <n-text style="width: 72px">应用密钥</n-text>
+          <n-input
+            v-model:value="dingtalkApp.appSecret" type="password" show-password-on="click"
+            :placeholder="dingtalkAppHasSecret ? '已设置(留空不变更)' : '企业内部应用的 appSecret'"
+            style="width: 460px" data-testid="dingtalk-app-secret"
+          />
+        </n-space>
+        <n-space align="center">
+          <n-text style="width: 72px">agentId</n-text>
+          <n-input
+            v-model:value="dingtalkApp.agentId" placeholder="企业内部应用的 agentId(数字)"
+            style="width: 460px" data-testid="dingtalk-app-agent"
+          />
+        </n-space>
+        <n-space align="center">
+          <n-text style="width: 72px">提前分钟数</n-text>
+          <n-input-number
+            v-model:value="dingtalkApp.leadMinutes" :min="1" :max="120"
+            style="width: 160px" data-testid="dingtalk-app-lead"
+          />
+          <n-button :loading="testingDingtalkApp" data-testid="dingtalk-app-test" @click="onTestDingtalkApp">
+            测试连接
+          </n-button>
+          <n-button
+            type="primary" :loading="savingDingtalkApp" data-testid="dingtalk-app-save"
+            @click="onSaveDingtalkApp"
           >
             保存
           </n-button>
