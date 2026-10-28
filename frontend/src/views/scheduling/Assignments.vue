@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   NAlert, NButton, NCard, NCheckbox, NDivider, NEmpty, NInputNumber, NModal, NPopconfirm,
-  NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText, useMessage,
+  NRadioButton, NRadioGroup, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
 import { computed, onMounted, ref } from 'vue'
@@ -53,7 +53,26 @@ const filteredAssignments = computed(() =>
         a.scheduling_unit.classes.some((c) => c.grade === gradeFilter.value)),
 )
 const subjectOptions = computed(() => subjects.value.map((s) => ({ label: s.name, value: s.id })))
-const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
+// 配课选老师默认只列本年级:目标班级/群组的年级 + 未填所属年级的老师
+// (未填不隐藏,避免旧数据补填之前选不到人);已选的老师始终保留,避免编辑旧配课时选中项消失
+const onlySameGrade = ref(true)
+const formGrades = computed<number[]>(() => {
+  if (form.value.target === 'single') {
+    const g = classes.value.find((c) => c.id === form.value.class_id)?.grade
+    return g == null ? [] : [g]
+  }
+  const unit = [...groups.value, ...alternates.value]
+    .find((u) => u.id === form.value.scheduling_unit_id)
+  return [...new Set((unit?.classes ?? []).map((c) => c.grade))]
+})
+const teacherOptions = computed(() => teachers.value
+  .filter((t) => {
+    if (!onlySameGrade.value || formGrades.value.length === 0) return true
+    if (form.value.teacher_ids.includes(t.id)) return true
+    const grades = t.grade_ids ?? []
+    return grades.length === 0 || grades.some((g) => formGrades.value.includes(g))
+  })
+  .map((t) => ({ label: t.name, value: t.id })))
 const roomOptions = computed(() => rooms.value.map((r) => ({ label: r.name, value: r.id })))
 const roomTypeOptions = Object.entries(ROOM_TYPE_LABELS).map(([value, label]) => ({ label, value }))
 const groupOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })))
@@ -463,6 +482,11 @@ function blockLabel(a: Assignment): string {
 
         <n-text>授课教师(可多位协同,第一位默认主教)</n-text>
         <n-select v-model:value="form.teacher_ids" data-testid="a-teachers" multiple :options="teacherOptions" filterable placeholder="选择教师" />
+        <n-space v-if="formGrades.length > 0" align="center">
+          <n-text depth="3">只看本年级教师</n-text>
+          <n-switch v-model:value="onlySameGrade" size="small" />
+          <n-text depth="3">关掉可看全部教师</n-text>
+        </n-space>
         <n-select
           v-if="form.teacher_ids.length > 1" v-model:value="form.lead_teacher_id"
           :options="leadOptions" placeholder="指定主教教师"

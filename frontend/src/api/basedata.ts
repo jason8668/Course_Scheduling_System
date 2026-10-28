@@ -33,6 +33,8 @@ export interface Teacher {
   email: string | null
   phone: string | null
   user_id: number | null
+  grade_ids: number[]
+  is_grade_director: boolean
 }
 export interface BindableAccount {
   id: number
@@ -102,6 +104,9 @@ export const createTeacher = (semesterId: number, body: Record<string, unknown>)
 export const updateTeacher = (id: number, body: Record<string, unknown>) =>
   request<Teacher>('PATCH', `/teachers/${id}`, body)
 export const deleteTeacher = (id: number) => request<void>('DELETE', `/teachers/${id}`)
+/** 全体升一年级:本学期全部教师所属年级 7→8、8→9、九年级→七年级(循环带新生) */
+export const promoteTeacherGrades = (semesterId: number) =>
+  apiPost<{ teachers_updated: number }>(`/teachers/promote-grades?semester_id=${semesterId}`, {})
 export const listBindableAccounts = (semesterId: number, currentTeacherId?: number) =>
   apiGet<BindableAccount[]>(
     `/teachers/bindable-accounts?semester_id=${semesterId}` +

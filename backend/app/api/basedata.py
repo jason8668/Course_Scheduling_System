@@ -40,6 +40,7 @@ from app.schemas.basedata import (
     TeacherAccountIn,
     TeacherAccountOut,
     TeacherDeleteImpact,
+    PromoteGradesOut,
     TeacherIn,
     TeacherOut,
     TeacherTimeRuleIn,
@@ -49,6 +50,7 @@ from app.schemas.semester import AvailableSlot, PeriodTableOut
 from app.schemas.timetable import UnavailableHitOut
 from app.services import grade_scopes
 from app.services import period_tables as pt_service
+from app.services import teacher_grades as teacher_grades_service
 from app.services import timetable_check
 
 router = APIRouter(tags=["basedata"])
@@ -60,6 +62,42 @@ editor = require_roles(Role.director)
 def _require_semester(db: Session, semester_id: int) -> None:
     if db.get(Semester, semester_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
+
+
+def _apply_director_toggle(
+    db: Session, teacher: Teacher, grade_ids: list[int], want_director: bool
+) -> None:
+    """教师档案里的年级主任开关:与账号年级页写同一批数据,两边互通。
+
+    开:绑定帐号授主任身份 + 年级范围 = 所属年级(主任管自己所属年级的排课)。
+    关:去主任身份 + 清空年级范围。
+    已是主任时改所属年级,范围跟着改;换绑帐号时旧帐号不动(管理员去账号年级页处理)。
+    管理员帐号不受此开关影响;未绑定帐号时开开关 422。
+    """
+    if teacher.user_id is None:
+        if want_director:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY, "请先绑定登录账号,再设为年级主任"
+            )
+        return
+    user = db.get(User, teacher.user_id)
+    if user is None or Role.admin.value in user.role_names:
+        return
+    if want_director:
+        if not grade_ids:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "请先选择所属年级,主任管自己所属年级的排课",
+            )
+        grade_scopes.set_user_grades(db, user.id, grade_ids)
+        if Role.director.value not in user.role_names:
+            user.roles.append(UserRole(role=Role.director.value))
+    else:
+        if Role.director.value in user.role_names:
+            db.query(UserRole).filter(
+                UserRole.user_id == user.id, UserRole.role == Role.director.value
+            ).delete()
+        grade_scopes.set_user_grades(db, user.id, [])
 
 
 def _resolve_subjects(db: Session, semester_id: int, ids: list[int]) -> list[Subject]:
@@ -398,9 +436,26 @@ def create_teacher(
         subjects=_resolve_subjects(db, semester_id, body.subject_ids),
     )
     db.add(teacher)
+    db.flush()
+    teacher_grades_service.set_teacher_grades(db, teacher.id, body.grade_ids)
+    _apply_director_toggle(db, teacher, body.grade_ids, body.is_grade_director)
     db.commit()
     db.refresh(teacher)
     return teacher
+
+
+@router.post("/teachers/promote-grades", response_model=PromoteGradesOut)
+def promote_grades(
+    semester_id: int = Query(...),
+    db: Session = Depends(get_db),
+    _: object = Depends(editor),
+):
+    """全体升一年级:本学期全部教师的所属年级 7→8、8→9、九年级→七年级(循环带新生)。
+    没填年级的不动;主任的年级范围跟着所属年级走。"""
+    _require_semester(db, semester_id)
+    out = teacher_grades_service.promote_semester_grades(db, semester_id)
+    db.commit()
+    return out
 
 
 @router.get("/teachers/{teacher_id}", response_model=TeacherOut)
@@ -432,6 +487,8 @@ def update_teacher(
     teacher.phone = body.phone
     teacher.user_id = body.user_id
     teacher.subjects = _resolve_subjects(db, teacher.semester_id, body.subject_ids)
+    teacher_grades_service.set_teacher_grades(db, teacher.id, body.grade_ids)
+    _apply_director_toggle(db, teacher, body.grade_ids, body.is_grade_director)
     db.commit()
     db.refresh(teacher)
     return teacher

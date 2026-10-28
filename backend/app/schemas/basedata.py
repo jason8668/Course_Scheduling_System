@@ -49,6 +49,8 @@ class TeacherIn(BaseModel):
     is_external: bool = False
     is_active: bool = True
     subject_ids: list[int] = []
+    grade_ids: list[int] = []  # 所属年级(多选,1~12);空 = 未填,沿用配课推导
+    is_grade_director: bool = False  # 教师档案里的年级主任开关(写绑定帐号的角色+年级范围)
     email: str | None = Field(default=None, max_length=128)
     phone: str | None = Field(default=None, max_length=32)
     user_id: int | None = None  # 绑定的登录帐号(空=不绑定)
@@ -57,6 +59,14 @@ class TeacherIn(BaseModel):
     @classmethod
     def _validate_email(cls, v: str | None) -> str | None:
         return _normalize_optional_email(v)
+
+    @field_validator("grade_ids")
+    @classmethod
+    def _validate_grades(cls, v: list[int]) -> list[int]:
+        for g in v:
+            if not 1 <= g <= 12:
+                raise ValueError("年级须在 1~12 之间")
+        return sorted(set(v))
 
 
 class TeacherOut(BaseModel):
@@ -71,9 +81,17 @@ class TeacherOut(BaseModel):
     is_external: bool
     is_active: bool
     subjects: list[SubjectBrief] = []
+    grade_ids: list[int] = []
+    is_grade_director: bool = False
     email: str | None = None
     phone: str | None = None
     user_id: int | None = None
+
+
+class PromoteGradesOut(BaseModel):
+    """全体升一年级的结果。"""
+
+    teachers_updated: int
 
 
 class BindableAccount(BaseModel):

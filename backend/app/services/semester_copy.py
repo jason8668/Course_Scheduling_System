@@ -21,14 +21,16 @@ from app.models.basedata import (
 from app.models.constraint import ConstraintConfig
 from app.models.period import Period, PeriodTable
 from app.models.semester import Semester
+from app.services import teacher_grades as teacher_grades_service
 
-# 各学制最高年级(进位后超过即毕业)
+# 各学制最高年级(进位后超过即毕业)。年级统一用绝对年级 1~12:
+# 小学最高 6、初中最高 9、高中最高 12(以前初中/高中写 3 是按学制内编号,与全校 7/8/9 口径不一致)。
 TRACK_MAX_GRADE = {
     ClassTrack.elementary.value: 6,
-    ClassTrack.junior_high.value: 3,
-    ClassTrack.senior_high.value: 3,
-    ClassTrack.comprehensive.value: 3,
-    ClassTrack.vocational.value: 3,
+    ClassTrack.junior_high.value: 9,
+    ClassTrack.senior_high.value: 12,
+    ClassTrack.comprehensive.value: 12,
+    ClassTrack.vocational.value: 12,
 }
 
 
@@ -122,6 +124,15 @@ def copy_semester(
                 )
             db.add(nt)
             db.flush()
+            # 所属年级跟着走:开升年级时与老师升年级同一规则(7→8、8→9、九年级→七年级循环带新生);
+            # 不开则原样复制。主任的年级范围跟着新所属年级走。
+            old_grades = t.grade_ids
+            new_grades = (
+                teacher_grades_service.promote_grades(old_grades)
+                if opts.grade_promotion else old_grades
+            )
+            teacher_grades_service.set_teacher_grades(db, nt.id, new_grades)
+            teacher_grades_service.sync_director_scopes(db, nt, new_grades)
             teacher_map[t.id] = nt.id
 
     if opts.rooms:

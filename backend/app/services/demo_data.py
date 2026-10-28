@@ -24,6 +24,7 @@ from app.models.basedata import ClassTrack, ClassUnit, Room, Subject, Teacher
 from app.models.semester import Semester
 from app.models.wizard import SINGLETON_ID, TOTAL_STEPS, WizardState
 from app.services import settings as settings_service
+from app.services import teacher_grades as teacher_grades_service
 from app.services import templates as template_service
 from app.services.assignments import get_or_create_single_unit
 
@@ -280,6 +281,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
     assignment_count = 0
     total_periods = 0
     taught_subjects: dict[str, set[str]] = {}
+    taught_grades: dict[str, set[int]] = {}
     for cname, sname, periods in sorted(demand, key=sort_key):
         pool = pools[dept_of[sname]]
         hr = homeroom_by_class.get(cname)
@@ -304,6 +306,7 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         )
         teacher.assigned += periods
         taught_subjects.setdefault(teacher.name, set()).add(sname)
+        taught_grades.setdefault(teacher.name, set()).add(class_models[cname].grade)
         assignment_count += 1
         total_periods += periods
     db.flush()
@@ -316,6 +319,12 @@ def generate(db: Session, spec: dict | None = None) -> DemoSummary:
         plan.model.subjects = [
             subjects[sname] for sname in sorted(taught_subjects.get(plan.name, set()))
         ]
+    # 所属年级:与任教科目同理,按实际配课回填(只填真正教的年级)。
+    for plan in plans:
+        assert plan.model is not None
+        teacher_grades_service.set_teacher_grades(
+            db, plan.model.id, sorted(taught_grades.get(plan.name, set()))
+        )
     db.flush()
 
     # 标记设置精灵已完成。否则载完示范资料回到首页,路由守卫会因为

@@ -6,12 +6,13 @@ import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
   createTeacher, createTeacherAccount, deleteTeacher, getTeacherAccount, getTeacherDeleteImpact,
-  listBindableAccounts, listSubjects, listTeachers, resetTeacherPassword,
+  listBindableAccounts, listSubjects, listTeachers, promoteTeacherGrades, resetTeacherPassword,
   setTeacherAccountActive, updateTeacher,
 } from '@/api/basedata'
 import type {
   BindableAccount, Subject, Teacher, TeacherAccount, TeacherDeleteImpact,
 } from '@/api/basedata'
+import { gradeLabel } from '@/api/substitutionLog'
 import TeacherTimeRules from './TeacherTimeRules.vue'
 
 const props = defineProps<{ semesterId: number }>()
@@ -22,12 +23,32 @@ const subjects = ref<Subject[]>([])
 const accounts = ref<BindableAccount[]>([])
 const search = ref('')
 const subjectOptions = computed(() => subjects.value.map((s) => ({ label: s.name, value: s.id })))
+const gradeOptions = Array.from({ length: 12 }, (_, i) => ({
+  label: gradeLabel(i + 1), value: i + 1,
+}))
 const accountOptions = computed(() =>
   accounts.value.map((a) => ({ label: `${a.display_name}(${a.username})`, value: a.id })),
 )
 
 async function reload() {
   items.value = await listTeachers(props.semesterId, search.value || undefined)
+}
+// 全体升一年级确认框里各年级会动的人数(一人多年级时各计一次)
+const promoteCounts = computed(() => {
+  const counts: Record<number, number> = {}
+  for (const t of items.value)
+    for (const g of t.grade_ids ?? [])
+      if (g === 7 || g === 8 || g === 9) counts[g] = (counts[g] ?? 0) + 1
+  return counts
+})
+async function promoteAll() {
+  try {
+    const r = await promoteTeacherGrades(props.semesterId)
+    message.success(`已升年级，${r.teachers_updated} 位教师的所属年级已调整`)
+    await reload()
+  } catch (e) {
+    message.error((e as ApiError).detail || '升年级失败')
+  }
 }
 onMounted(async () => {
   subjects.value = await listSubjects(props.semesterId)
@@ -38,13 +59,15 @@ const show = ref(false)
 const editingId = ref<number | null>(null)
 interface TeacherForm {
   name: string; base_periods: number; admin_title: string; admin_reduction: number
-  is_external: boolean; is_active: boolean; subject_ids: number[]
+  is_external: boolean; is_active: boolean; subject_ids: number[]; grade_ids: number[]
+  is_grade_director: boolean
   email: string; phone: string; user_id: number | null
 }
 function emptyForm(): TeacherForm {
   return {
     name: '', base_periods: 0, admin_title: '', admin_reduction: 0,
-    is_external: false, is_active: true, subject_ids: [],
+    is_external: false, is_active: true, subject_ids: [], grade_ids: [],
+    is_grade_director: false,
     email: '', phone: '', user_id: null,
   }
 }
@@ -144,6 +167,8 @@ async function openEdit(t: Teacher) {
     name: t.name, base_periods: t.base_periods, admin_title: t.admin_title ?? '',
     admin_reduction: t.admin_reduction, is_external: t.is_external, is_active: t.is_active,
     subject_ids: t.subjects.map((s) => s.id),
+    grade_ids: t.grade_ids ?? [],
+    is_grade_director: t.is_grade_director ?? false,
     email: t.email ?? '', phone: t.phone ?? '', user_id: t.user_id,
   }
   savedUserId.value = t.user_id
@@ -224,22 +249,41 @@ function openRules(t: Teacher) {
     <n-space>
       <n-input v-model:value="search" placeholder="搜寻教师姓名" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" data-testid="teacher-add" @click="openCreate">新增教师</n-button>
+      <n-popconfirm @positive-click="promoteAll">
+        <template #trigger>
+          <n-button data-testid="teacher-promote">全体升一年级</n-button>
+        </template>
+        <div style="max-width: 340px">
+          <div>把本学期全部教师的所属年级升一年：七年级→八年级，八年级→九年级，九年级→七年级（循环带新生）。</div>
+          <div style="margin-top: 6px">
+            七年级 {{ promoteCounts[7] ?? 0 }} 人、八年级 {{ promoteCounts[8] ?? 0 }} 人、
+            九年级 {{ promoteCounts[9] ?? 0 }} 人会动；没填年级的不动，主任的年级范围会跟着变。
+          </div>
+        </div>
+      </n-popconfirm>
     </n-space>
 
     <table class="data-table">
       <thead>
-        <tr><th>姓名</th><th>任教科目</th><th>基本课时</th><th>行政</th><th>帐号</th><th>状态</th><th>操作</th></tr>
+        <tr><th>姓名</th><th>任教科目</th><th>所属年级</th><th>基本课时</th><th>行政</th><th>帐号</th><th>状态</th><th>操作</th></tr>
       </thead>
       <tbody>
         <tr v-for="t in items" :key="t.id">
           <td>
             {{ t.name }}
             <n-tag v-if="t.is_external" size="tiny" type="warning" style="margin-left: 4px">外聘</n-tag>
+            <n-tag v-if="t.is_grade_director" size="tiny" type="success" style="margin-left: 4px">年级主任</n-tag>
           </td>
           <td>
             <n-space size="small">
               <n-tag v-for="s in t.subjects" :key="s.id" size="small">{{ s.name }}</n-tag>
               <n-text v-if="t.subjects.length === 0" depth="3">—</n-text>
+            </n-space>
+          </td>
+          <td>
+            <n-space size="small">
+              <n-tag v-for="g in (t.grade_ids ?? [])" :key="g" size="small" type="info">{{ gradeLabel(g) }}</n-tag>
+              <n-text v-if="(t.grade_ids ?? []).length === 0" depth="3">—</n-text>
             </n-space>
           </td>
           <td>{{ t.base_periods }}</td>
@@ -282,7 +326,7 @@ function openRules(t: Teacher) {
             </n-space>
           </td>
         </tr>
-        <tr v-if="items.length === 0"><td colspan="7"><n-text depth="3">尚无教师</n-text></td></tr>
+        <tr v-if="items.length === 0"><td colspan="8"><n-text depth="3">尚无教师</n-text></td></tr>
       </tbody>
     </table>
 
@@ -292,6 +336,13 @@ function openRules(t: Teacher) {
         <n-input v-model:value="form.name" data-testid="teacher-name" placeholder="如:王小明" />
         <n-text>任教科目</n-text>
         <n-select v-model:value="form.subject_ids" multiple :options="subjectOptions" placeholder="可多选" />
+        <n-text>所属年级</n-text>
+        <n-select v-model:value="form.grade_ids" multiple :options="gradeOptions" placeholder="可多选,空 = 未填" />
+        <n-space align="center">
+          <n-text>设为年级主任</n-text>
+          <n-switch v-model:value="form.is_grade_director" :disabled="!form.user_id || form.grade_ids.length === 0" />
+          <n-text depth="3">主任管自己所属年级的排课;需先绑定登录账号并选所属年级</n-text>
+        </n-space>
         <n-space>
           <n-space vertical style="flex: 1">
             <n-text>基本课时</n-text>
@@ -321,7 +372,7 @@ function openRules(t: Teacher) {
           </n-space>
           <n-space vertical style="flex: 1">
             <n-text>手机</n-text>
-            <n-input v-model:value="form.phone" placeholder="人工联络用" />
+            <n-input v-model:value="form.phone" placeholder="用于钉钉匹配与人工联络" />
           </n-space>
         </n-space>
         <n-text>绑定登录帐号(选填)</n-text>

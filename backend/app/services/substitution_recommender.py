@@ -69,9 +69,15 @@ def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> se
 
 
 def _teacher_grades(db: Session, semester_id: int) -> dict[int, set[int]]:
-    """每位教师所教的年级集合(由配课推导:配课的排课单位成员班的年级)。"""
+    """每位教师所属的年级集合。
+
+    档案优先:教师档案填了所属年级就以档案为准(整体替换,非并集——
+    档案修正后,陈旧的配课推导年级不应继续残留);没填的沿用配课推导
+    (配课的排课单位成员班的年级)。
+    """
     from app.models.assignment import AssignmentTeacher, CourseAssignment, SchedulingUnitMember
     from app.models.basedata import ClassUnit
+    from app.services.teacher_grades import teacher_grade_map
 
     rows = db.execute(
         select(AssignmentTeacher.teacher_id, ClassUnit.grade)
@@ -83,6 +89,8 @@ def _teacher_grades(db: Session, semester_id: int) -> dict[int, set[int]]:
     out: dict[int, set[int]] = {}
     for teacher_id, grade in rows:
         out.setdefault(teacher_id, set()).add(grade)
+    for teacher_id, grades in teacher_grade_map(db, semester_id).items():
+        out[teacher_id] = grades
     return out
 
 

@@ -75,9 +75,6 @@ const menuOptions = computed(() => {
       ],
     },
     { label: menuLink('system', '系统管理'), key: 'system' },
-    ...(auth.hasRole('admin')
-      ? [{ label: menuLink('user-grades', '账号年级'), key: 'user-grades' }]
-      : []),
   ]
 })
 

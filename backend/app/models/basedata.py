@@ -107,7 +107,42 @@ class Teacher(Base):
     time_rules: Mapped[list["TeacherTimeRule"]] = relationship(
         back_populates="teacher", cascade="all, delete-orphan", lazy="selectin"
     )
+    grade_rows: Mapped[list["TeacherGrade"]] = relationship(
+        back_populates="teacher", cascade="all, delete-orphan", lazy="selectin"
+    )
     user: Mapped["User | None"] = relationship(lazy="selectin")
+
+    @property
+    def grade_ids(self) -> list[int]:
+        """档案所属年级(多选);空 = 未填,调用方沿用配课推导。"""
+        return sorted(r.grade for r in self.grade_rows)
+
+    @property
+    def is_grade_director(self) -> bool:
+        """是否年级主任:以绑定帐号的主任身份为准,与账号年级页同一口径。
+        未绑定帐号的教师一定不是主任。"""
+        return self.user is not None and "director" in self.user.role_names
+
+
+class TeacherGrade(Base):
+    """教师所属年级(一行一个年级,多选即多行)。
+
+    与配课推导的年级不同:档案填了就以档案为准(整体替换,非并集),
+    没填才沿用配课推导——见 substitution_recommender._teacher_grades。
+    """
+
+    __tablename__ = "teacher_grades"
+    __table_args__ = (
+        UniqueConstraint("teacher_id", "grade", name="uq_teacher_grades"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    teacher_id: Mapped[int] = mapped_column(
+        ForeignKey("teachers.id", ondelete="CASCADE"), index=True
+    )
+    grade: Mapped[int] = mapped_column(Integer)
+
+    teacher: Mapped["Teacher"] = relationship(back_populates="grade_rows")
 
 
 class TeacherTimeRule(Base):

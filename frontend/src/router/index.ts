@@ -160,11 +160,6 @@ const routes = [
         name: 'system',
         component: () => import('@/views/settings/System.vue'),
       },
-      {
-        path: 'settings/user-grades',
-        name: 'user-grades',
-        component: () => import('@/views/settings/UserGrades.vue'),
-      },
     ],
   },
 ]

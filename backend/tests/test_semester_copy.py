@@ -29,7 +29,7 @@ def populated(env):
         json=[{"weekday": 1, "period_no": 2, "rule_type": "unavailable"}],
     )
     client.post(f"/api/rooms?semester_id={sid}", json={"name": "理化教室", "room_type": "special"})
-    for grade in (1, 2, 3):
+    for grade in (7, 8, 9):
         client.post(
             f"/api/class-units?semester_id={sid}",
             json={"grade": grade, "name": f"{grade}年甲", "track": "junior_high",
@@ -41,6 +41,28 @@ def populated(env):
 def _copy(client, sid, **kwargs):
     body = {"academic_year": 2027, "term": 1, **kwargs}
     return client.post(f"/api/semesters/{sid}/copy", json=body)
+
+
+def test_copy_promotes_teacher_grades(populated):
+    """复制学期开升年级时,教师所属年级跟着升(7→8、8→9、九年级→七年级循环)。"""
+    client, sid = populated
+    src = client.get(f"/api/teachers?semester_id={sid}").json()[0]
+    client.patch(f"/api/teachers/{src['id']}",
+                 json={"name": src["name"], "grade_ids": [7, 9]})
+    nid = _copy(client, sid, grade_promotion=True).json()["id"]
+    nt = client.get(f"/api/teachers?semester_id={nid}").json()[0]
+    assert nt["grade_ids"] == [7, 8]
+
+
+def test_copy_keeps_teacher_grades_without_promotion(populated):
+    """复制学期不开升年级时,教师所属年级原样复制。"""
+    client, sid = populated
+    src = client.get(f"/api/teachers?semester_id={sid}").json()[0]
+    client.patch(f"/api/teachers/{src['id']}",
+                 json={"name": src["name"], "grade_ids": [7, 9]})
+    nid = _copy(client, sid, grade_promotion=False).json()["id"]
+    nt = client.get(f"/api/teachers?semester_id={nid}").json()[0]
+    assert nt["grade_ids"] == [7, 9]
 
 
 def test_copy_all_and_counts(populated):
@@ -73,20 +95,20 @@ def test_copy_is_independent(populated):
 
 
 def test_grade_promotion_and_graduation(populated):
-    """验收:年级进位正确,毕业年级(初中三年级)移除。"""
+    """验收:年级进位正确,毕业年级(初中九年级)移除。"""
     client, sid = populated
     nid = _copy(client, sid, grade_promotion=True).json()["id"]
     classes = client.get(f"/api/class-units?semester_id={nid}").json()
     grades = sorted(c["grade"] for c in classes)
-    # 原 1,2,3 → 进位 2,3,(4 毕业移除)
-    assert grades == [2, 3]
+    # 原 7,8,9 → 进位 8,9,(九年级毕业移除)
+    assert grades == [8, 9]
 
 
 def test_no_promotion_keeps_grades(populated):
     client, sid = populated
     nid = _copy(client, sid, grade_promotion=False).json()["id"]
     grades = sorted(c["grade"] for c in client.get(f"/api/class-units?semester_id={nid}").json())
-    assert grades == [1, 2, 3]
+    assert grades == [7, 8, 9]
 
 
 def test_teacher_subjects_and_rules_copied(populated):
