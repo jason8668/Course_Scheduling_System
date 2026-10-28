@@ -514,18 +514,19 @@ async function onDelete(ev: CalendarEvent) {
 <style scoped>
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
 .cal-frames-title {
-  font-size: 17px; font-weight: 700; color: #0b4257; margin: 4px 0 12px;
-  padding-left: 10px; border-left: 4px solid #0d5a6e;
+  font-size: 17px; font-weight: 700; color: #1d1d1f; margin: 4px 0 12px;
+  padding-left: 10px; border-left: 4px solid #007aff;
 }
 .month-frames { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
 @media (max-width: 900px) { .month-frames { grid-template-columns: 1fr; } }
 .month-frame {
-  background: #fff; border-radius: 12px; padding: 12px;
-  box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16);
+  background: rgba(255, 255, 255, 0.72); border-radius: 16px; padding: 12px;
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -12px rgba(0, 90, 200, 0.18);
 }
-.month-frame-title { font-size: 15px; font-weight: 700; color: #0b4257; margin: 0 0 8px; }
+.month-frame-title { font-size: 15px; font-weight: 700; color: #1d1d1f; margin: 0 0 8px; }
 .frame-heads, .frame-week { display: grid; grid-template-columns: 44px repeat(7, 1fr); gap: 4px; }
-.frame-head { text-align: center; font-size: 12px; font-weight: 600; color: #0b4257; padding: 2px 0; }
+.frame-head { text-align: center; font-size: 12px; font-weight: 600; color: #1d1d1f; padding: 2px 0; }
 .frame-weekno-head { color: #5b6b73; font-weight: 500; }
 .frame-weekno {
   display: flex; align-items: center; justify-content: center;
@@ -536,7 +537,7 @@ async function onDelete(ev: CalendarEvent) {
   min-height: 64px; border: 1px solid #e6edf0; border-radius: 8px;
   padding: 4px; cursor: pointer; overflow: hidden; background: #fff;
 }
-.frame-cell:hover:not(.is-today) { border-color: #0d5a6e; }
+.frame-cell:hover:not(.is-today) { border-color: #007aff; }
 .frame-cell.is-out { opacity: 0.45; cursor: default; }
 .frame-cell.is-out:hover { border-color: #e6edf0; }
 /* 今天标记：琥珀虚线 + 「今日」徽标，与活动的实线彩色整格区分开（活动色的实线边框只在非今天格上）。 */
@@ -553,15 +554,15 @@ async function onDelete(ev: CalendarEvent) {
 .frame-more { font-size: 11px; color: #5b6b73; }
 .cal-month { margin-bottom: 28px; }
 .cal-month-title {
-  font-size: 17px; font-weight: 700; color: #0b4257; margin: 0 0 10px;
-  padding-left: 10px; border-left: 4px solid #0d5a6e;
+  font-size: 17px; font-weight: 700; color: #1d1d1f; margin: 0 0 10px;
+  padding-left: 10px; border-left: 4px solid #007aff;
 }
-.cal-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16); }
+.cal-table { width: 100%; border-collapse: collapse; background: rgba(255, 255, 255, 0.72); border-radius: 16px; overflow: hidden; -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -12px rgba(0, 90, 200, 0.18); }
 .cal-table th, .cal-table td { border-bottom: 1px solid #dde7ea; padding: 9px 10px; text-align: left; font-size: 14px; }
-.cal-table th { background: #e9f2f4; color: #0b4257; }
+.cal-table th { background: #eaf3ff; color: #0a4da6; }
 .cal-table tr:last-child td { border-bottom: none; }
 .col-date { white-space: nowrap; }
-.col-weekno { white-space: nowrap; color: #0b4257; }
+.col-weekno { white-space: nowrap; color: #86868b; }
 .col-week { white-space: nowrap; }
 .col-type { white-space: nowrap; }
 .col-note { max-width: 220px; }

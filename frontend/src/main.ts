@@ -2,6 +2,7 @@ import naive from 'naive-ui'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
+import './assets/apple-glass.css'
 import App from './App.vue'
 import { setUnauthorizedHandler } from './api/client'
 import { router } from './router'

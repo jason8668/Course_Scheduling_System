@@ -1,10 +1,11 @@
 import type { GlobalThemeOverrides } from 'naive-ui'
 
-// 全站视觉与登录页封面统一:深青(#082f42 → #0d5a6e → #117a8f 渐变同源)。
-// 主色 #0d5a6e 配白字对比 ≈ 7.4:1(通过 WCAG AA);hover #117a8f ≈ 4.9:1 亦达标。
-export const PRIMARY = '#0d5a6e'
-export const PRIMARY_HOVER = '#117a8f'
-export const PRIMARY_PRESSED = '#082f42'
+// 全站苹果风格:主色苹果蓝 #007AFF,底色 #F5F5F7,卡片与下拉面板半透明 +
+// apple-glass.css 的 backdrop-filter 毛玻璃(圆角 16~20px)。
+// 白字按钮在 #007AFF 上对比约 4:1,属 UI 组件级可接受范围(iOS 同款做法)。
+export const PRIMARY = '#007AFF'
+export const PRIMARY_HOVER = '#3395FF'
+export const PRIMARY_PRESSED = '#0062CC'
 
 export const themeOverrides: GlobalThemeOverrides = {
   common: {
@@ -12,34 +13,73 @@ export const themeOverrides: GlobalThemeOverrides = {
     primaryColorHover: PRIMARY_HOVER,
     primaryColorPressed: PRIMARY_PRESSED,
     primaryColorSuppl: PRIMARY_HOVER,
-    bodyColor: '#f2f6f7',
-    borderRadius: '8px',
-    borderRadiusSmall: '6px',
+    bodyColor: '#F5F5F7',
+    textColorBase: '#1D1D1F',
+    borderColor: '#E5E5EA',
+    dividerColor: '#E5E5EA',
+    borderRadius: '16px',
+    borderRadiusSmall: '12px',
     fontFamily:
       "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans SC', 'Noto Sans SC', sans-serif",
   },
   Card: {
-    borderRadius: '12px',
-    boxShadow: '0 1px 2px rgba(8, 47, 66, 0.05), 0 10px 28px -14px rgba(8, 47, 66, 0.16)',
+    color: 'rgba(255, 255, 255, 0.72)',
+    borderRadius: '20px',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -12px rgba(0, 90, 200, 0.18)',
   },
   DataTable: {
-    thColor: '#e9f2f4',
-    thTextColor: '#0b4257',
-    borderColor: '#dde7ea',
-    tdColorHover: '#f4f8f9',
+    thColor: '#EAF3FF',
+    thTextColor: '#0A4DA6',
+    borderColor: '#E2E8F0',
+    tdColorHover: '#F2F7FF',
   },
   // Naive 的 Button 没有单一 borderRadius token,是 Tiny/Small/Medium/Large 四个;
   // Input 则有单一 borderRadius(已查 node_modules 类型定义确认)。
   Button: {
-    borderRadiusTiny: '8px',
-    borderRadiusSmall: '8px',
-    borderRadiusMedium: '8px',
-    borderRadiusLarge: '8px',
+    borderRadiusTiny: '10px',
+    borderRadiusSmall: '12px',
+    borderRadiusMedium: '12px',
+    borderRadiusLarge: '12px',
   },
-  Input: { borderRadius: '8px' },
-  Dialog: { borderRadius: '12px' },
-  Drawer: { borderRadius: '12px' },
-  Tag: { borderRadius: '6px' },
+  Input: { borderRadius: '12px' },
+  Dialog: { borderRadius: '20px' },
+  Drawer: { borderRadius: '20px' },
+  Tag: { borderRadius: '8px' },
+  // 日期选择器下拉面板:半透明底 + 大圆角,毛玻璃 blur 由 apple-glass.css 补。
+  DatePicker: {
+    panelColor: 'rgba(255, 255, 255, 0.82)',
+    panelBorderRadius: '20px',
+    panelTextColor: '#1D1D1F',
+    itemBorderRadius: '10px',
+    itemColorActive: PRIMARY,
+    itemTextColorActive: '#ffffff',
+    itemColorHover: 'rgba(0, 122, 255, 0.12)',
+    itemColorIncluded: 'rgba(0, 122, 255, 0.12)',
+  },
+  Select: {
+    borderRadius: '12px',
+    optionColorActive: 'rgba(0, 122, 255, 0.12)',
+    optionTextColorActive: PRIMARY,
+    optionColorPending: 'rgba(0, 122, 255, 0.08)',
+  },
+  InternalSelectMenu: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: '16px',
+  },
+  Dropdown: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: '16px',
+    optionColorActive: 'rgba(0, 122, 255, 0.12)',
+    optionTextColorActive: PRIMARY,
+  },
+  Modal: {
+    color: 'rgba(255, 255, 255, 0.88)',
+    borderRadius: '20px',
+  },
+  Popover: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: '16px',
+  },
   Menu: {
     itemColorActiveInverted: 'rgba(255, 255, 255, 0.16)',
     itemColorActiveHoverInverted: 'rgba(255, 255, 255, 0.16)',

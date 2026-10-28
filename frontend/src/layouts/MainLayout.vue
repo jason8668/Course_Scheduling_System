@@ -113,7 +113,7 @@ async function onLogout() {
   <n-layout has-sider style="height: 100vh">
     <n-layout-sider
       collapse-mode="width"
-      style="background: linear-gradient(180deg, #082f42 0%, #0d5a6e 100%)"
+      style="background: linear-gradient(180deg, #04295e 0%, #0a56c6 100%)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -138,7 +138,7 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout>
-      <n-layout-header style="padding: 12px 24px; background: #fff; box-shadow: 0 1px 6px rgba(8, 47, 66, 0.07)">
+      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.8); box-shadow: 0 1px 6px rgba(0, 60, 150, 0.08)">
         <n-space justify="end" align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"

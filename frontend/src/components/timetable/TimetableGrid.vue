@@ -255,8 +255,8 @@ function onCellDrop(w: number, p: number, ev: DragEvent) {
   text-align: center; font-weight: 600; padding: 6px 4px;
   background: rgba(128, 128, 128, 0.1); border-radius: 4px;
 }
-.tg-head.is-today { background: #0d5a6e; color: #fff; }
-.tg-cell.is-today { background: rgba(13, 90, 110, 0.06); }
+.tg-head.is-today { background: #007aff; color: #fff; }
+.tg-cell.is-today { background: rgba(0, 122, 255, 0.06); }
 .tg-period {
   display: flex; flex-direction: column; justify-content: center;
   padding: 4px 6px; background: rgba(128, 128, 128, 0.06); border-radius: 4px;

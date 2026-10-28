@@ -1,0 +1,48 @@
+/* 苹果毛玻璃层:半透明底色由 theme.ts 的 token 给,这里只补 backdrop-filter。
+   注意:Naive 的下拉面板挂在 body 下(不在卡片里),所以面板类要单独列出,
+   否则卡片的 backdrop-filter 会把面板裁掉的问题不会出现,但面板本身没 blur。 */
+
+/* 底色带一点顶部蓝光,毛玻璃才看得出层次 */
+body {
+  background:
+    radial-gradient(640px 320px at 85% -60px, rgba(0, 122, 255, 0.13), rgba(0, 122, 255, 0) 70%),
+    #f5f5f7;
+}
+
+/* 卡片、日期面板、各类下拉/弹窗/抽屉统一毛玻璃 */
+.n-card,
+.n-date-panel,
+.n-time-panel,
+.n-select-menu,
+.n-base-select-menu,
+.n-internal-select-menu,
+.n-dropdown-menu,
+.n-modal,
+.n-drawer,
+.n-popover,
+.app-header {
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* 打印时毛玻璃无意义且半透明会印灰,强制实底白底 */
+@media print {
+  .n-card,
+  .n-date-panel,
+  .n-time-panel,
+  .n-select-menu,
+  .n-base-select-menu,
+  .n-internal-select-menu,
+  .n-dropdown-menu,
+  .n-modal,
+  .n-drawer,
+  .n-popover,
+  .app-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .n-card {
+    background: #fff;
+  }
+}

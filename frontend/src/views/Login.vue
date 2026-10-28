@@ -77,15 +77,16 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(135deg, #082f42 0%, #0d5a6e 55%, #117a8f 100%);
+  background: linear-gradient(135deg, #04295e 0%, #0a56c6 55%, #007aff 100%);
 }
 .login-shell {
   display: flex;
   width: min(1060px, 100%);
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 30, 90, 0.35);
 }
 .login-visual {
   position: relative;

@@ -300,7 +300,7 @@ onMounted(() => {
 
     <n-card v-if="semester" :title="`${semester.label} · 资料摘要`">
       <div class="stat-blocks">
-        <div class="stat-block" style="--stat-bg: #eef6f8; --stat-fg: #0d5a6e">
+        <div class="stat-block" style="--stat-bg: #eaf3ff; --stat-fg: #007aff">
           <div class="stat-value">{{ summary?.subjects ?? 0 }}</div>
           <div class="stat-label">科目</div>
         </div>
