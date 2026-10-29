@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NButton, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NMenu, NSpace, NTag, NText } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import type { MenuOption } from 'naive-ui'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import NotificationBell from '@/components/NotificationBell.vue'
@@ -29,7 +30,7 @@ function menuLink(name: string, label: string) {
 const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('director'))
 
-const menuOptions = computed(() => {
+const menuOptions = computed<MenuOption[]>(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
   const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
   const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
@@ -42,6 +43,9 @@ const menuOptions = computed(() => {
     {
       label: '基础资料',
       key: 'basedata-group',
+      // Mac 式扁平分组:小标题 + 下面平铺条目,不缩进、不折叠、不带箭头。
+      // Finder 边栏就是这样:分组标题只是灰色小字,不是可点开合的父目录。
+      type: 'group',
       children: [
         { label: menuLink('setup-flow', '开学建置'), key: 'setup-flow' },
         { label: menuLink('basedata', '教师/班级/科目/场地'), key: 'basedata' },
@@ -50,6 +54,7 @@ const menuOptions = computed(() => {
     {
       label: '排课作业',
       key: 'scheduling-group',
+      type: 'group',
       children: [
         { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
       ],
@@ -57,6 +62,7 @@ const menuOptions = computed(() => {
     {
       label: '调代课',
       key: 'substitution-group',
+      type: 'group',
       children: [
         { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
         { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
@@ -79,8 +85,10 @@ const menuThemeOverrides = {
   itemTextColorActive: '#007aff',
   itemTextColorChildActive: '#007aff',
   itemColorHover: 'rgba(0, 0, 0, 0.04)',
-  itemColorActive: 'rgba(0, 122, 255, 0.12)',
-  itemColorActiveHover: 'rgba(0, 122, 255, 0.16)',
+  // 选中底色由滑动指示条(半透明圆角框)负责,Naive 自带的选中底色须透明,
+  // 否则两层底色叠加,看不出框在移动。
+  itemColorActive: 'rgba(255, 255, 255, 0)',
+  itemColorActiveHover: 'rgba(255, 255, 255, 0)',
   arrowColor: 'rgba(60, 60, 67, 0.6)',
   arrowColorHover: '#007aff',
   arrowColorActive: '#007aff',
@@ -112,6 +120,50 @@ onMounted(async () => {
   }
 })
 
+// ── 滑动选中指示条(Jason 2026-10-29 要的 Mac/iOS 效果) ──
+// 点击菜单时,一个半透明圆角框从当前条目滑动到目标条目,而不是选中态瞬间跳变。
+// 实现:量选中条目的位置,把一个绝对定位的透明框移到那里,top/height 用 CSS 过渡动画。
+// Naive 自带的选中底色已在 theme-overrides 里设透明,避免两层叠加。
+const menuWrapRef = ref<HTMLElement | null>(null)
+const indicatorTop = ref(0)
+const indicatorHeight = ref(0)
+const indicatorVisible = ref(false)
+const indicatorReady = ref(false)
+const indicatorStyle = computed(() => ({
+  top: `${indicatorTop.value}px`,
+  height: `${indicatorHeight.value}px`,
+  opacity: indicatorVisible.value ? 1 : 0,
+  transition: indicatorReady.value
+    ? 'top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s'
+    : 'none',
+}))
+function updateIndicator() {
+  const wrap = menuWrapRef.value
+  if (!wrap) return
+  // 选中条目的类名是 Naive 的 n-menu-item-content--selected(源码确认)。
+  const el = wrap.querySelector('.n-menu-item-content--selected') as HTMLElement | null
+  if (!el) {
+    // 当前路由不在菜单里(例如被隐藏的旧页):指示条淡出,不指任何条目。
+    indicatorVisible.value = false
+    return
+  }
+  const wrapRect = wrap.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
+  indicatorTop.value = rect.top - wrapRect.top
+  indicatorHeight.value = rect.height
+  indicatorVisible.value = true
+  if (!indicatorReady.value) {
+    // 首帧先定位、不滑动,下一帧再开启动画,避免一进页面框从顶部飞下来。
+    requestAnimationFrame(() => { indicatorReady.value = true })
+  }
+}
+watch([activeKey, collapsed], () => nextTick(updateIndicator))
+onMounted(() => {
+  nextTick(updateIndicator)
+  window.addEventListener('resize', updateIndicator)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateIndicator))
+
 function onChangePassword() {
   router.push({ name: 'change-password' })
 }
@@ -137,14 +189,17 @@ async function onLogout() {
       <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
-      <n-menu
-        :value="activeKey"
-        :collapsed="collapsed"
-        :collapsed-width="64"
-        :options="menuOptions"
-        :theme-overrides="menuThemeOverrides"
-        :default-expanded-keys="['basedata-group', 'scheduling-group']"
-      />
+      <div ref="menuWrapRef" class="sider-menu-wrap">
+        <div class="menu-indicator" :style="indicatorStyle" />
+        <n-menu
+          :value="activeKey"
+          :collapsed="collapsed"
+          :collapsed-width="64"
+          :options="menuOptions"
+          :theme-overrides="menuThemeOverrides"
+          :default-expanded-keys="['basedata-group', 'scheduling-group']"
+        />
+      </div>
       <div v-if="version && !collapsed" class="version" data-testid="app-version">
         版本 {{ version }}
       </div>
@@ -181,4 +236,13 @@ async function onLogout() {
 <style scoped>
 .version { padding: 12px 20px; font-size: 12px; color: rgba(60, 60, 67, 0.6); }
 .update-link { text-decoration: none; }
+/* 滑动指示条:半透明圆角框,左右各留 8px 边距,像 Mac 边栏选中态那样不贴边。 */
+.sider-menu-wrap { position: relative; }
+.menu-indicator {
+  position: absolute; left: 8px; right: 8px;
+  border-radius: 10px; background: rgba(0, 122, 255, 0.12);
+  pointer-events: none;
+}
+/* 菜单整体抬到指示条上方(菜单底色透明),文字压在框上,框只当底色。 */
+.sider-menu-wrap :deep(.n-menu) { position: relative; z-index: 1; }
 </style>
