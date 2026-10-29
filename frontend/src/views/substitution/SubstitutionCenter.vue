@@ -595,13 +595,15 @@ const logSubstituteIds = computed(() => logEntries.value
 </template>
 
 <style scoped>
+/* 注意 Naive 的类名:内容区是 n-card-content(单横线),标题文字在 n-card-header__main 里
+   (见 MyHome.vue 同款注释,写错类名等于没生效)。 */
 .sub-center :deep(.n-card-header) {
   padding: 10px 16px 6px;
 }
-.sub-center :deep(.n-card-header__title) {
+.sub-center :deep(.n-card-header__main) {
   font-size: 15px;
 }
-.sub-center :deep(.n-card__content) {
+.sub-center :deep(.n-card-content) {
   padding: 12px 16px;
 }
 .sub-center :deep(.n-list-item) {

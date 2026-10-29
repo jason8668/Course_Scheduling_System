@@ -208,7 +208,7 @@ onMounted(() => { void loadAll() })
 </script>
 
 <template>
-  <n-space vertical size="medium" class="my-home" style="max-width: 960px">
+  <n-space vertical size="medium" class="my-home" style="max-width: 880px">
     <h1 style="margin: 0">
       我的
     </h1>
@@ -431,14 +431,17 @@ onMounted(() => { void loadAll() })
 </template>
 
 <style scoped>
-/* 精简排版:卡片与列表收紧,页面不摊太宽 */
+/* 精简排版:卡片与列表收紧,页面不摊太宽。
+   注意 Naive 的类名:内容区是 n-card-content(单横线),标题没有独立类名、
+   标题文字直接放在 n-card-header__main 里,写 n-card__content / n-card-header__title
+   命中不了任何元素(2026-10-29 踩过一次,当时等于没生效)。 */
 .my-home :deep(.n-card-header) {
   padding: 10px 16px 6px;
 }
-.my-home :deep(.n-card-header__title) {
+.my-home :deep(.n-card-header__main) {
   font-size: 15px;
 }
-.my-home :deep(.n-card__content) {
+.my-home :deep(.n-card-content) {
   padding: 12px 16px;
 }
 .my-home :deep(.n-list-item) {
