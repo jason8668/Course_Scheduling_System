@@ -176,8 +176,10 @@ def test_legacy_default_schedules_are_dropped_on_upgrade(monkeypatch):
 
     assert removed == [sched.HEARTBEAT_JOB_ID, sched.DAILY_BACKUP_JOB_ID]
     assert "some-other-job" not in removed, "只动自己的固定 job_id,别人的排程不碰"
-    # 清完之后,两个定时任务在 ops 上重新排好
-    assert ops.calls == ["heartbeat", "daily_backup_job"]
+    # 清完之后,全部定时任务在 ops 上重新排好(心跳、每日备份、上课提醒、假日同步)
+    assert ops.calls == [
+        "heartbeat", "daily_backup_job", "class_reminder_job", "holiday_sync_job",
+    ]
 
 
 def test_registry_helper_is_wired_to_the_real_rq_registry():

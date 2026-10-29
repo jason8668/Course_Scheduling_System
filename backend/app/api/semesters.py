@@ -29,6 +29,7 @@ from app.schemas.semester import (
 from app.schemas.wizard import SemesterSummary
 from app.services import period_tables as pt_service
 from app.services import templates as tpl
+from app.services.holidays import enqueue_semester_sync, sync_semester
 from app.services.semester_copy import CopyOptions, copy_semester
 
 router = APIRouter(tags=["semesters"])
@@ -118,6 +119,9 @@ def create_semester(
         db.add(semester)
     db.commit()
     db.refresh(semester)
+    # 创建绝不因假日接口失败而失败:同步任务丢进 ops 队列由 worker 跑,
+    # 没公布的年份以后每日任务再试;手动同步端点也可随时补跑。
+    enqueue_semester_sync(semester.id)
     return semester
 
 
@@ -153,7 +157,23 @@ def copy_to_new_semester(
     )
     db.commit()
     db.refresh(new)
+    enqueue_semester_sync(new.id)
     return new
+
+
+@router.post("/semesters/{semester_id}/sync-holidays")
+def sync_holidays(
+    semester_id: int,
+    db: Session = Depends(get_db),
+    _: object = Depends(editor),
+) -> dict:
+    """手动同步某学期的公共假日 + 传统节日(立即同步,供已建学期补跑与排障用)。
+
+    没公布的年份回 status=unpublished,传统节日照常建,公共假日保持原样;
+    接口失败同理,不抛 5xx,由每日任务继续重试。
+    """
+    semester = _get_semester(db, semester_id)
+    return {"semester_id": semester.id, "results": sync_semester(db, semester)}
 
 
 @router.get("/semesters/{semester_id}", response_model=SemesterOut)

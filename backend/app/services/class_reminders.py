@@ -101,6 +101,22 @@ def run_class_reminders(
                 continue
             starts_at = datetime.combine(today, start_time)
             members = assignment.scheduling_unit.members
+            # 放假那天/那节不上课,提醒也不发(口径与课时统计一致)
+            from app.services.holidays import is_holiday_on
+
+            _grades = {
+                m.class_unit.grade for m in members if m.class_unit is not None
+            }
+            _class_ids = {
+                m.class_unit.id for m in members if m.class_unit is not None
+            }
+            _span = entry.span or 1
+            if any(
+                is_holiday_on(db, tt.semester_id, today, entry.period_no + i, _grades, _class_ids)
+                for i in range(_span)
+            ):
+                skipped += 1
+                continue
             classes = [m.class_unit.name for m in members]
             room_obj = entry.room if entry.room is not None else assignment.room
             room = room_obj.name if room_obj is not None else None

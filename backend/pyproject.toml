@@ -25,6 +25,8 @@ dependencies = [
     # 钉钉群机器人发送(send_dingtalk 用)。之前只放在 dev 里,api 映像 pip install . 时
     # 不装 dev extra,线上一点测试消息就报 No module named 'httpx'。
     "httpx>=0.28,<1",
+    # 传统节日:农历换算 + 清明/冬至节气日(sxtwl,纯数据 + C 扩展,有 manylinux wheel)。
+    "sxtwl>=2.0,<3",
 ]
 
 [project.optional-dependencies]

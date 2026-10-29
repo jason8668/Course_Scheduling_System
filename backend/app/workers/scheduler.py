@@ -23,6 +23,8 @@ HEARTBEAT_JOB_ID = "scheduler-heartbeat"
 DAILY_BACKUP_JOB_ID = "daily-backup"
 CLASS_REMINDER_JOB_ID = "class-reminder"
 CLASS_REMINDER_INTERVAL = timedelta(minutes=5)
+HOLIDAY_SYNC_JOB_ID = "holiday-sync"
+HOLIDAY_SYNC_INTERVAL = timedelta(days=1)
 
 
 def _interval() -> timedelta:
@@ -44,6 +46,7 @@ def heartbeat() -> None:
         logger.info("排程器心跳 OK,下次 %s 后", _interval())
         _ensure_daily_backup_scheduled()
         _ensure_class_reminder_scheduled()
+        _ensure_holiday_sync_scheduled()
     finally:
         _schedule_next()  # 无论本次是否出错,下一次心跳一定排入
 
@@ -110,8 +113,25 @@ def _ensure_class_reminder_scheduled() -> None:
         logger.warning("检查/补排上课提醒失败(Redis 不可用?)")
 
 
+def schedule_holiday_sync() -> None:
+    """把下一次假日同步排入(24 小时后);固定 job_id,重复排入会覆盖而非堆叠。"""
+    from app.workers.holiday_sync_job import holiday_sync_job
+    ops_queue.enqueue_in(HOLIDAY_SYNC_INTERVAL, holiday_sync_job, job_id=HOLIDAY_SYNC_JOB_ID)
+
+
+def _ensure_holiday_sync_scheduled() -> None:
+    """心跳兜底:假日同步链若断了,在这里补排回去(假日公布时间不定,断链会漏更新)。"""
+    try:
+        registry = ScheduledJobRegistry(queue=ops_queue)
+        if HOLIDAY_SYNC_JOB_ID not in set(registry.get_job_ids()):
+            schedule_holiday_sync()
+            logger.warning("侦测到假日同步未排入,已补排,下次 %s 后", HOLIDAY_SYNC_INTERVAL)
+    except Exception:  # noqa: BLE001 - 自愈失败不该让心跳挂掉
+        logger.warning("检查/补排假日同步失败(Redis 不可用?)")
+
+
 def ensure_scheduled() -> None:
-    """ops worker 启动时呼叫:确保心跳、每日备份与上课提醒已排入(已存在则略过,重启不重复)。"""
+    """ops worker 启动时呼叫:确保心跳、备份、提醒与假日同步已排入(已存在则略过)。"""
     _drop_legacy_default_schedules()
     try:
         registry = ScheduledJobRegistry(queue=ops_queue)
@@ -125,5 +145,8 @@ def ensure_scheduled() -> None:
         if CLASS_REMINDER_JOB_ID not in pending:
             schedule_class_reminder()
             logger.info("已排入上课提醒,间隔 %s", CLASS_REMINDER_INTERVAL)
+        if HOLIDAY_SYNC_JOB_ID not in pending:
+            schedule_holiday_sync()
+            logger.info("已排入假日同步,间隔 %s", HOLIDAY_SYNC_INTERVAL)
     except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
         logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")
