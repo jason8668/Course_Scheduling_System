@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NTag, NText, useMessage,
+  NButton, NEmpty, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
@@ -80,37 +80,28 @@ async function remove(r: Room) {
   <n-space vertical>
     <n-space>
       <n-input v-model:value="search" placeholder="搜寻场地名称" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" @click="openCreate">新增场地</n-button>
+      <n-button type="primary" round @click="openCreate">新增场地</n-button>
     </n-space>
 
-    <table class="data-table">
-      <thead>
-        <tr><th>名称</th><th>类型</th><th>容量</th><th>适用科目</th><th>操作</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="r in items" :key="r.id">
-          <td>{{ r.name }}</td>
-          <td>{{ ROOM_TYPE_LABELS[r.room_type] }}</td>
-          <td>{{ r.capacity ?? '—' }}</td>
-          <td>
-            <n-space size="small">
-              <n-tag v-for="s in r.subjects" :key="s.id" size="small">{{ s.name }}</n-tag>
-              <n-text v-if="r.subjects.length === 0" depth="3">—</n-text>
-            </n-space>
-          </td>
-          <td>
-            <n-space>
-              <n-button size="tiny" @click="openEdit(r)">编辑</n-button>
-              <n-popconfirm @positive-click="remove(r)">
-                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
-                确定删除此场地?
-              </n-popconfirm>
-            </n-space>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0"><td colspan="5"><n-text depth="3">尚无场地</n-text></td></tr>
-      </tbody>
-    </table>
+    <div class="ios-card">
+      <n-empty v-if="items.length === 0" description="尚无场地" style="padding: 24px 0" />
+      <template v-else>
+        <div v-for="r in items" :key="r.id" class="ios-row">
+          <div class="ios-row-main">
+            <span class="ios-row-title">{{ r.name }}</span>
+            <span class="ios-row-sub" style="margin-left: 8px">
+              {{ ROOM_TYPE_LABELS[r.room_type] }} · 容量 {{ r.capacity ?? '—' }}
+              · {{ r.subjects.map((s) => s.name).join('、') || '适用科目不限' }}
+            </span>
+          </div>
+          <n-button size="small" text type="primary" @click="openEdit(r)">编辑</n-button>
+          <n-popconfirm @positive-click="remove(r)">
+            <template #trigger><n-button size="small" text type="error">删除</n-button></template>
+            确定删除此场地?
+          </n-popconfirm>
+        </div>
+      </template>
+    </div>
 
     <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑场地' : '新增场地'" style="max-width: 440px">
       <n-space vertical>
@@ -127,9 +118,3 @@ async function remove(r: Room) {
     </n-modal>
   </n-space>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td { border: 1px solid var(--n-border-color, #e0e0e0); padding: 8px 10px; text-align: left; }
-.data-table th { background: rgba(128,128,128,0.08); font-weight: 600; }
-</style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NDivider, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
+  NButton, NDivider, NEmpty, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
@@ -248,7 +248,7 @@ function openRules(t: Teacher) {
   <n-space vertical>
     <n-space>
       <n-input v-model:value="search" placeholder="搜寻教师姓名" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" data-testid="teacher-add" @click="openCreate">新增教师</n-button>
+      <n-button type="primary" round data-testid="teacher-add" @click="openCreate">新增教师</n-button>
       <n-popconfirm @positive-click="promoteAll">
         <template #trigger>
           <n-button data-testid="teacher-promote">全体升一年级</n-button>
@@ -263,72 +263,54 @@ function openRules(t: Teacher) {
       </n-popconfirm>
     </n-space>
 
-    <table class="data-table">
-      <thead>
-        <tr><th>姓名</th><th>任教科目</th><th>所属年级</th><th>基本课时</th><th>行政</th><th>帐号</th><th>状态</th><th>操作</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in items" :key="t.id">
-          <td>
-            {{ t.name }}
-            <n-tag v-if="t.is_external" size="tiny" type="warning" style="margin-left: 4px">外聘</n-tag>
-            <n-tag v-if="t.is_grade_director" size="tiny" type="success" style="margin-left: 4px">年级主任</n-tag>
-          </td>
-          <td>
-            <n-space size="small">
-              <n-tag v-for="s in t.subjects" :key="s.id" size="small">{{ s.name }}</n-tag>
-              <n-text v-if="t.subjects.length === 0" depth="3">—</n-text>
-            </n-space>
-          </td>
-          <td>
-            <n-space size="small">
-              <n-tag v-for="g in (t.grade_ids ?? [])" :key="g" size="small" type="info">{{ gradeLabel(g) }}</n-tag>
-              <n-text v-if="(t.grade_ids ?? []).length === 0" depth="3">—</n-text>
-            </n-space>
-          </td>
-          <td>{{ t.base_periods }}</td>
-          <td>{{ t.admin_title ? `${t.admin_title}(减 ${t.admin_reduction})` : '—' }}</td>
-          <td>
-            <n-tag v-if="t.user_id" size="small" type="info">已绑定</n-tag>
-            <n-text v-else depth="3">—</n-text>
-          </td>
-          <td>
-            <n-tag :type="t.is_active ? 'success' : 'default'" size="small">
+    <div class="ios-card">
+      <n-empty v-if="items.length === 0" description="尚无教师" style="padding: 24px 0" />
+      <template v-else>
+        <div v-for="t in items" :key="t.id" class="ios-row">
+          <div class="ios-row-main">
+            <span class="ios-row-title">
+              {{ t.name }}
+              <span v-if="t.is_external" class="ios-chip-warn ios-chip">外聘</span>
+              <span v-if="t.is_grade_director" class="ios-chip-green ios-chip">年级主任</span>
+            </span>
+            <span class="ios-row-sub" style="margin-left: 8px">
+              {{ t.subjects.map((s) => s.name).join('、') || '—' }}
+              · {{ (t.grade_ids ?? []).map((g) => gradeLabel(g)).join('、') || '未填年级' }}
+              · 基本课时 {{ t.base_periods }}
+              · {{ t.admin_title ? `${t.admin_title}(减 ${t.admin_reduction})` : '无行政' }}
+              · {{ t.user_id ? '已绑定帐号' : '无帐号' }}
+            </span>
+            <span :class="t.is_active ? 'ios-chip-green ios-chip' : 'ios-chip-gray ios-chip'" style="margin-left: 8px">
               {{ t.is_active ? '在职' : '离职' }}
-            </n-tag>
-          </td>
-          <td>
-            <n-space>
-              <n-button size="tiny" data-testid="teacher-edit" @click="openEdit(t)">编辑</n-button>
-              <n-button size="tiny" @click="openRules(t)">时段规则</n-button>
-              <n-popconfirm @positive-click="remove(t)">
-                <template #trigger>
-                  <n-button
-                    size="tiny" type="error" ghost data-testid="teacher-delete"
-                    @click="loadImpact(t)"
-                  >
-                    删除
-                  </n-button>
-                </template>
-                <div style="max-width: 320px" data-testid="teacher-delete-confirm">
-                  <div>确定删除教师「{{ t.name }}」?</div>
-                  <div v-if="impactText(t)" style="margin-top: 6px">
-                    将一并删除:<b>{{ impactText(t) }}</b>,之后查不回来。
-                  </div>
-                  <div v-if="t.user_id" style="margin-top: 6px">
-                    其登录帐号会一并<b>停用</b>(帐号保留,但无法再登录)。
-                  </div>
-                  <div style="margin-top: 6px">
-                    老师离职请改用:编辑里取消「在职」,并在帐号区块按「停用帐号」——历史纪录会完整保留。
-                  </div>
-                </div>
-              </n-popconfirm>
-            </n-space>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0"><td colspan="8"><n-text depth="3">尚无教师</n-text></td></tr>
-      </tbody>
-    </table>
+            </span>
+          </div>
+          <n-button size="small" text type="primary" data-testid="teacher-edit" @click="openEdit(t)">编辑</n-button>
+          <n-button size="small" text @click="openRules(t)">时段规则</n-button>
+          <n-popconfirm @positive-click="remove(t)">
+            <template #trigger>
+              <n-button
+                size="small" text type="error" data-testid="teacher-delete"
+                @click="loadImpact(t)"
+              >
+                删除
+              </n-button>
+            </template>
+            <div style="max-width: 320px" data-testid="teacher-delete-confirm">
+              <div>确定删除教师「{{ t.name }}」?</div>
+              <div v-if="impactText(t)" style="margin-top: 6px">
+                将一并删除:<b>{{ impactText(t) }}</b>,之后查不回来。
+              </div>
+              <div v-if="t.user_id" style="margin-top: 6px">
+                其登录帐号会一并<b>停用</b>(帐号保留,但无法再登录)。
+              </div>
+              <div style="margin-top: 6px">
+                老师离职请改用:编辑里取消「在职」,并在帐号区块按「停用帐号」——历史纪录会完整保留。
+              </div>
+            </div>
+          </n-popconfirm>
+        </div>
+      </template>
+    </div>
 
     <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑教师' : '新增教师'" style="max-width: 460px">
       <n-space vertical>
@@ -466,9 +448,3 @@ function openRules(t: Teacher) {
     </n-modal>
   </n-space>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td { border: 1px solid var(--n-border-color, #e0e0e0); padding: 8px 10px; text-align: left; }
-.data-table th { background: rgba(128,128,128,0.08); font-weight: 600; }
-</style>

@@ -1,12 +1,17 @@
 """全域系统设置:SMTP 寄信(M4-3)、排课相关规则。管理员专用。"""
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.core.db import get_db
 from app.models.audit import AuditLog
+from app.models.basedata import Teacher
+from app.models.timetable import ClassReminderLog
 from app.models.user import Role, User
 from app.schemas.notification import SmtpSettingsIn, SmtpSettingsOut
 from app.services import email as email_service
@@ -176,6 +181,63 @@ def _dingtalk_app_out(db: Session) -> DingTalkAppSettingsOut:
 def get_dingtalk_app(db: Session = Depends(get_db), _: User = Depends(admin_only)):
     """钉钉企业内部应用设置(不回传密钥明文)。"""
     return _dingtalk_app_out(db)
+
+
+class ReminderTeacherBrief(BaseModel):
+    id: int
+    name: str
+
+
+class DingTalkAppHealthOut(BaseModel):
+    configured: bool
+    lead_minutes: int
+    job_scheduled: bool | None
+    last_sent_at: datetime | None
+    sent_7d: int
+    teachers_with_phone: int
+    teachers_missing_phone: int
+    opted_out: list[ReminderTeacherBrief]
+    unresolved: list[ReminderTeacherBrief]
+
+
+@router.get("/settings/dingtalk-app/health", response_model=DingTalkAppHealthOut)
+def dingtalk_app_health(db: Session = Depends(get_db), _: User = Depends(admin_only)):
+    """上课提醒健康状态(只读):配置、排程任务、最近发送、关提醒与未解析教师。
+
+    不发任何消息、不改任何设置;排程状态查不到(Redis 不可达)时回 null 而不是报错。
+    教师计数为全部学期合计(提醒配置本身是全域的)。
+    """
+    cfg = app_settings.dingtalk_app_config(db)
+    job_scheduled: bool | None = None
+    try:
+        from rq.registry import ScheduledJobRegistry
+
+        from app.workers.queue import ops_queue
+        from app.workers.scheduler import CLASS_REMINDER_JOB_ID
+
+        job_scheduled = CLASS_REMINDER_JOB_ID in set(
+            ScheduledJobRegistry(queue=ops_queue).get_job_ids())
+    except Exception:  # noqa: BLE001 - Redis 不可达时健康页仍要能显示其余项目
+        job_scheduled = None
+    last_sent = db.query(func.max(ClassReminderLog.sent_at)).scalar()
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    sent_7d = db.query(func.count(ClassReminderLog.id)).filter(
+        ClassReminderLog.sent_at >= week_ago).scalar() or 0
+    teachers = db.query(Teacher).all()
+    with_phone = [t for t in teachers if (t.phone or "").strip()]
+    opted_out = [
+        ReminderTeacherBrief(id=t.id, name=t.name) for t in teachers if not t.reminder_enabled
+    ]
+    unresolved = [
+        ReminderTeacherBrief(id=t.id, name=t.name)
+        for t in with_phone if not (t.dingtalk_userid or "").strip()
+    ]
+    return DingTalkAppHealthOut(
+        configured=cfg.configured, lead_minutes=cfg.lead_minutes,
+        job_scheduled=job_scheduled, last_sent_at=last_sent, sent_7d=sent_7d,
+        teachers_with_phone=len(with_phone),
+        teachers_missing_phone=len(teachers) - len(with_phone),
+        opted_out=opted_out, unresolved=unresolved)
 
 
 @router.put("/settings/dingtalk-app", response_model=DingTalkAppSettingsOut)

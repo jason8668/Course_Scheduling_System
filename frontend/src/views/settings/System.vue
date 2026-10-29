@@ -24,6 +24,7 @@ import {
 } from '@/api/system'
 import type { UpdateStatus, UpgradeNotice } from '@/api/system'
 import { resetWizard } from '@/api/wizard'
+import ReminderHealthCard from '@/components/ReminderHealthCard.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWizardStore } from '@/stores/wizard'
 
@@ -555,6 +556,8 @@ async function onResetWizard() {
         </n-space>
       </n-space>
     </n-card>
+
+    <ReminderHealthCard v-if="isAdmin()" />
 
     <n-card v-if="isAdmin() && demoAvailable" title="示范资料" data-testid="demo-card">
       <n-space vertical>

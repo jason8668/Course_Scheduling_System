@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NCheckbox, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NTag, NText,
+  NButton, NCheckbox, NEmpty, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NText,
   useMessage,
 } from 'naive-ui'
 import { onMounted, ref } from 'vue'
@@ -88,36 +88,30 @@ async function remove(s: Subject) {
   <n-space vertical>
     <n-space>
       <n-input v-model:value="search" placeholder="搜寻科目名称" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" @click="openCreate">新增科目</n-button>
+      <n-button type="primary" round @click="openCreate">新增科目</n-button>
     </n-space>
 
-    <table class="data-table">
-      <thead>
-        <tr><th>名称</th><th>领域/群别</th><th>需要场地</th><th>默认连堂</th><th>主科</th><th>操作</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in items" :key="s.id">
-          <td>{{ s.name }}</td>
-          <td>{{ s.domain || '—' }}</td>
-          <td>{{ s.required_room_type ? ROOM_TYPE_LABELS[s.required_room_type] : '不限' }}</td>
-          <td>{{ s.default_block_size > 1 ? `${s.default_block_size} 连堂` : '一般' }}</td>
-          <td>
-            <n-tag v-if="s.is_major" size="small" type="info" :data-testid="`sub-major-${s.name}`">主科</n-tag>
-            <span v-else>—</span>
-          </td>
-          <td>
-            <n-space>
-              <n-button size="tiny" @click="openEdit(s)">编辑</n-button>
-              <n-popconfirm @positive-click="remove(s)">
-                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
-                确定删除此科目?
-              </n-popconfirm>
-            </n-space>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0"><td colspan="6"><n-text depth="3">尚无科目</n-text></td></tr>
-      </tbody>
-    </table>
+    <div class="ios-card">
+      <n-empty v-if="items.length === 0" description="尚无科目" style="padding: 24px 0" />
+      <template v-else>
+        <div v-for="s in items" :key="s.id" class="ios-row">
+          <div class="ios-row-main">
+            <span class="ios-row-title">{{ s.name }}</span>
+            <span class="ios-row-sub" style="margin-left: 8px">
+              {{ s.domain || '无领域' }}
+              · 场地 {{ s.required_room_type ? ROOM_TYPE_LABELS[s.required_room_type] : '不限' }}
+              · {{ s.default_block_size > 1 ? `${s.default_block_size} 连堂` : '一般' }}
+            </span>
+            <span v-if="s.is_major" class="ios-chip" style="margin-left: 8px" :data-testid="`sub-major-${s.name}`">主科</span>
+          </div>
+          <n-button size="small" text type="primary" @click="openEdit(s)">编辑</n-button>
+          <n-popconfirm @positive-click="remove(s)">
+            <template #trigger><n-button size="small" text type="error">删除</n-button></template>
+            确定删除此科目?
+          </n-popconfirm>
+        </div>
+      </template>
+    </div>
 
     <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑科目' : '新增科目'" style="max-width: 420px">
       <n-space vertical>
@@ -137,9 +131,3 @@ async function remove(s: Subject) {
     </n-modal>
   </n-space>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td { border: 1px solid var(--n-border-color, #e0e0e0); padding: 8px 10px; text-align: left; }
-.data-table th { background: rgba(128,128,128,0.08); font-weight: 600; }
-</style>

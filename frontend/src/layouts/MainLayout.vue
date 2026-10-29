@@ -47,6 +47,7 @@ const menuOptions = computed(() => {
       label: '基础资料',
       key: 'basedata-group',
       children: [
+        { label: menuLink('setup-flow', '开学建置'), key: 'setup-flow' },
         { label: menuLink('semesters', '学期与节次表'), key: 'semesters' },
         { label: menuLink('basedata', '教师/班级/科目/场地'), key: 'basedata' },
       ],
@@ -60,7 +61,6 @@ const menuOptions = computed(() => {
         { label: menuLink('workbench', '排课工作台'), key: 'workbench' },
         { label: menuLink('auto-schedule', '自动排课'), key: 'auto-schedule' },
         { label: menuLink('versions', '版本与发布'), key: 'versions' },
-        { label: menuLink('timetable-demo', '课表元件(示范)'), key: 'timetable-demo' },
       ],
     },
     {
@@ -68,6 +68,7 @@ const menuOptions = computed(() => {
       key: 'substitution-group',
       children: [
         { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
+        { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
         leaves,
         { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NText, useMessage,
+  NButton, NEmpty, NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
@@ -113,40 +113,31 @@ async function remove(c: ClassUnit) {
   <n-space vertical>
     <n-space>
       <n-input v-model:value="search" placeholder="搜寻班名" clearable style="width: 200px" @input="reload" />
-      <n-button type="primary" data-testid="class-add" @click="openCreate">新增班级</n-button>
+      <n-button type="primary" round data-testid="class-add" @click="openCreate">新增班级</n-button>
     </n-space>
 
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>年级</th><th>班名</th><th>学制</th><th>群科</th><th>班主任</th>
-          <th v-if="showPeriodTable">节次表</th><th>人数</th><th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="c in items" :key="c.id">
-          <td>{{ c.grade }}</td>
-          <td>{{ c.name }}</td>
-          <td>{{ TRACK_LABELS[c.track] }}</td>
-          <td>{{ c.department || '—' }}</td>
-          <td>{{ c.homeroom_teacher?.name || '—' }}</td>
-          <td v-if="showPeriodTable">{{ tableName(c.period_table_id) }}</td>
-          <td>{{ c.student_count ?? '—' }}</td>
-          <td>
-            <n-space>
-              <n-button size="tiny" @click="openEdit(c)">编辑</n-button>
-              <n-popconfirm @positive-click="remove(c)">
-                <template #trigger><n-button size="tiny" type="error" ghost>删除</n-button></template>
-                确定删除此班级?
-              </n-popconfirm>
-            </n-space>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0">
-          <td :colspan="showPeriodTable ? 8 : 7"><n-text depth="3">尚无班级</n-text></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="ios-card">
+      <n-empty v-if="items.length === 0" description="尚无班级" style="padding: 24px 0" />
+      <template v-else>
+        <div v-for="c in items" :key="c.id" class="ios-row">
+          <div class="ios-row-main">
+            <span class="ios-row-title">{{ c.name }}</span>
+            <span class="ios-row-sub" style="margin-left: 8px">
+              {{ c.grade }}年级 · {{ TRACK_LABELS[c.track] }}
+              · {{ c.department || '无群科' }}
+              · 班主任 {{ c.homeroom_teacher?.name || '—' }}
+              <template v-if="showPeriodTable"> · 节次表 {{ tableName(c.period_table_id) }}</template>
+              · {{ c.student_count ?? '—' }} 人
+            </span>
+          </div>
+          <n-button size="small" text type="primary" @click="openEdit(c)">编辑</n-button>
+          <n-popconfirm @positive-click="remove(c)">
+            <template #trigger><n-button size="small" text type="error">删除</n-button></template>
+            确定删除此班级?
+          </n-popconfirm>
+        </div>
+      </template>
+    </div>
 
     <n-modal v-model:show="show" preset="card" :title="editingId ? '编辑班级' : '新增班级'" style="max-width: 440px">
       <n-space vertical>
@@ -190,9 +181,3 @@ async function remove(c: ClassUnit) {
     </n-modal>
   </n-space>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td { border: 1px solid var(--n-border-color, #e0e0e0); padding: 8px 10px; text-align: left; }
-.data-table th { background: rgba(128,128,128,0.08); font-weight: 600; }
-</style>

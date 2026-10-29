@@ -81,6 +81,16 @@ const routes = [
         component: () => import('@/views/settings/Semesters.vue'),
       },
       {
+        path: 'setup-flow',
+        name: 'setup-flow',
+        component: () => import('@/views/setup/SetupFlow.vue'),
+      },
+      {
+        path: 'stats-center',
+        name: 'stats-center',
+        component: () => import('@/views/stats/StatsCenter.vue'),
+      },
+      {
         path: 'basedata',
         name: 'basedata',
         component: () => import('@/views/basedata/BaseData.vue'),
