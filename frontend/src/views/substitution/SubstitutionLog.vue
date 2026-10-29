@@ -103,8 +103,8 @@ function statusType(e: LogEntry): string {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <h2 style="margin: 0">调代课纪录</h2>
+  <div class="ios-page">
+    <h1 class="ios-title">调代课纪录</h1>
 
     <n-space align="center" :wrap="true">
       <n-select
@@ -152,7 +152,7 @@ function statusType(e: LogEntry): string {
       v-if="!entries.length && !loading" description="没有符合条件的纪录"
       data-testid="log-empty"
     />
-    <table v-else-if="entries.length" class="data-table" data-testid="log-table">
+    <table v-else-if="entries.length" class="ios-table" data-testid="log-table">
       <thead>
         <tr>
           <th>日期</th><th>节次</th><th>班级</th><th>科目</th>
@@ -172,14 +172,5 @@ function statusType(e: LogEntry): string {
         </tr>
       </tbody>
     </table>
-  </n-space>
+  </div>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-  white-space: nowrap;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
-</style>

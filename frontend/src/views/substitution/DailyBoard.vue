@@ -133,9 +133,9 @@ function statusType(e: LogEntry): string {
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <div class="ios-page">
     <n-space align="center" :wrap="true">
-      <h2 style="margin: 0">今日调代课看板</h2>
+      <h1 class="ios-title">今日调代课看板</h1>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 200px"
         placeholder="选择学期" @update:value="onSemesterChange"
@@ -182,7 +182,7 @@ function statusType(e: LogEntry): string {
       description="今日无调代课" data-testid="board-empty" style="padding: 40px 0"
     />
 
-    <table v-else-if="board?.entries.length" class="data-table" data-testid="board-table">
+    <table v-else-if="board?.entries.length" class="ios-table" data-testid="board-table">
       <thead>
         <tr>
           <th>节次</th><th>班级</th><th>科目</th><th>原任教师</th>
@@ -206,14 +206,9 @@ function statusType(e: LogEntry): string {
         </tr>
       </tbody>
     </table>
-  </n-space>
+  </div>
 </template>
 
 <style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
 .pending { color: #e08000; }
 </style>

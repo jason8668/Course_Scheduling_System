@@ -55,9 +55,9 @@ function ackTag(e: BoardEntry): { type: string; label: string } {
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <div class="ios-page">
     <n-space align="center">
-      <h2 style="margin: 0">通知确认看板</h2>
+      <h1 class="ios-title">通知确认看板</h1>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 220px"
         placeholder="选择学期" @update:value="onSemesterChange"
@@ -68,7 +68,7 @@ function ackTag(e: BoardEntry): { type: string; label: string } {
     </n-space>
 
     <n-empty v-if="!entries.length" description="没有符合条件的通知" />
-    <table v-else class="data-table" data-testid="board-table">
+    <table v-else class="ios-table" data-testid="board-table">
       <thead>
         <tr><th>教师</th><th>类型</th><th>内容</th><th>状态</th><th>操作</th></tr>
       </thead>
@@ -92,13 +92,5 @@ function ackTag(e: BoardEntry): { type: string; label: string } {
         </tr>
       </tbody>
     </table>
-  </n-space>
+  </div>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
-</style>

@@ -33,13 +33,15 @@ const canManage = computed(() =>
 const menuOptions = computed<MenuOption[]>(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
   const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
+  const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
   const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
-  // 纯教师帐号:只列已重排的三页(我的/仪表板/学校校历)。
-  // 课表查询、请假登记、我的代课课时尚未重排,菜单隐藏,路由保留。
-  if (!canManage.value) return [my, dashboard, schoolCalendar]
+  const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
+  // 纯教师帐号:只列已重排的五页。我的代课课时尚未重排,菜单隐藏,路由保留。
+  if (!canManage.value) return [my, dashboard, query, schoolCalendar, leaves]
   return [
     dashboard,
     schoolCalendar,
+    query,
     {
       label: '基础资料',
       key: 'basedata-group',
@@ -66,6 +68,10 @@ const menuOptions = computed<MenuOption[]>(() => {
       children: [
         { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
         { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
+        leaves,
+        { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
+        { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
+        { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },
     { label: menuLink('system', '系统管理'), key: 'system' },
@@ -99,10 +105,10 @@ const menuThemeOverrides = {
 // 重排完一块,再把它的入口放回菜单。不要把所有目录都打开,
 // 否则看不出哪些写了、哪些没写。
 // 已重排:我的 / 仪表板 / 学校校历 / 开学建置 / 教师班级科目场地 /
-// 排课中心 / 调代课中心 / 统计中心 / 系统管理。
+// 排课中心 / 调代课中心 / 统计中心 / 系统管理 / 课表查询 / 请假登记 /
+// 今日调代课 / 调代课纪录 / 通知确认看板。
 // 未重排(菜单隐藏):学期与节次表 / 配课管理 / 排课工作台 / 自动排课 /
-// 版本与发布 / 课表查询 / 请假登记 / 调代课处理 / 今日调代课 /
-// 调代课纪录 / 代课课时统计 / 教学课时统计 / 通知确认看板。
+// 版本与发布 / 调代课处理 / 代课课时统计 / 教学课时统计。
 
 // 版本号:回报问题时要知道对方是哪一版;升级后也靠它确认升级成功
 const version = ref('')

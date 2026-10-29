@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NButtonGroup, NCard, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
+  NButton, NButtonGroup, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
   useMessage,
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
@@ -156,9 +156,9 @@ const entries = computed<GridEntry[]>(() => {
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <div class="ios-page">
     <n-space align="center" :wrap="true">
-      <h1 style="margin: 0">课表查询</h1>
+      <h1 class="ios-title">课表查询</h1>
       <n-select
         v-if="semesters.length > 1" :value="sid" :options="semesterOptions"
         style="width: 200px" @update:value="load"
@@ -168,9 +168,13 @@ const entries = computed<GridEntry[]>(() => {
       </n-tag>
     </n-space>
 
-    <n-card v-if="!loading && !data" size="small">
+    <section v-if="!loading && !data" class="ios-section">
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-empty description="目前尚无已发布的课表" data-testid="tq-none" />
-    </n-card>
+        </div>
+      </div>
+    </section>
 
     <template v-else-if="data">
       <n-space align="center" :wrap="true">
@@ -244,14 +248,18 @@ const entries = computed<GridEntry[]>(() => {
         </template>
       </n-space>
 
-      <n-card size="small" data-testid="tq-grid">
+      <section class="ios-section" data-testid="tq-grid">
+        <div class="ios-card">
+          <div class="ios-card-body">
         <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />
         <TimetableGrid
           v-else
           :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
         />
-      </n-card>
+          </div>
+        </div>
+      </section>
       <n-text depth="3" style="font-size: 12px">课表为唯读查看;如有异动请洽教学组。</n-text>
     </template>
-  </n-space>
+  </div>
 </template>

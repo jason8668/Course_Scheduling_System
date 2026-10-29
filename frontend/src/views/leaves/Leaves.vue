@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NCard, NDatePicker, NEmpty, NInput, NPopconfirm, NSelect, NSpace, NSwitch,
+  NAlert, NButton, NDatePicker, NEmpty, NInput, NPopconfirm, NSelect, NSpace, NSwitch,
   NTag, NText, NTimePicker, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
@@ -152,9 +152,9 @@ function rangeText(l: LeaveRequest): string {
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <div class="ios-page">
     <n-space align="center">
-      <h2 style="margin: 0">请假登记</h2>
+      <h1 class="ios-title">请假登记</h1>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 220px"
         placeholder="选择学期" @update:value="onSemesterChange"
@@ -164,7 +164,10 @@ function rangeText(l: LeaveRequest): string {
     <n-empty v-if="!sid" description="尚无可登记请假的学期" />
 
     <template v-else>
-      <n-card :title="canManage ? '登记请假(可代教师登记)' : '登记我的请假'" size="small">
+      <section class="ios-section">
+        <div class="ios-section-title">{{ canManage ? '登记请假(可代教师登记)' : '登记我的请假' }}</div>
+        <div class="ios-card">
+          <div class="ios-card-body">
         <n-space vertical>
           <n-space align="center" :wrap="true">
             <template v-if="canManage">
@@ -215,38 +218,44 @@ function rangeText(l: LeaveRequest): string {
             </n-button>
           </div>
         </n-space>
-      </n-card>
+          </div>
+        </div>
+      </section>
 
       <n-alert v-if="truncated" type="warning" :bordered="false" data-testid="lv-truncated">
         只显示最新的 {{ MAX_LEAVE_ROWS }} 张假单,更早的未列出;要查更早的请到「调代课纪录」以日期区间查询。
       </n-alert>
 
       <n-empty v-if="!leaves.length" description="尚无请假纪录" />
-      <n-card
-        v-for="l in leaves" :key="l.id" size="small" data-testid="lv-card"
-        :title="`${l.teacher_name} · ${l.leave_type_label} · ${rangeText(l)}`"
+      <section
+        v-for="l in leaves" :key="l.id" class="ios-section" data-testid="lv-card"
       >
-        <template #header-extra>
-          <n-space align="center">
-            <n-tag v-if="l.status === 'cancelled'" type="default" size="small">已销假</n-tag>
-            <n-tag v-else type="warning" size="small" data-testid="lv-pending">
-              待处理 {{ l.pending_count }} 节
-            </n-tag>
-            <n-popconfirm v-if="l.status === 'registered'" @positive-click="onCancel(l)">
-              <template #trigger>
-                <n-button size="small" tertiary type="error" data-testid="lv-cancel">销假</n-button>
-              </template>
-              销假将取消所有受影响节次的处置,已被指派的代课教师会收到取消通知。确定?
-            </n-popconfirm>
-          </n-space>
-        </template>
+        <div class="ios-section-title">
+          <span>{{ `${l.teacher_name} · ${l.leave_type_label} · ${rangeText(l)}` }}</span>
+          <span>
+            <n-space align="center">
+              <n-tag v-if="l.status === 'cancelled'" type="default" size="small">已销假</n-tag>
+              <n-tag v-else type="warning" size="small" data-testid="lv-pending">
+                待处理 {{ l.pending_count }} 节
+              </n-tag>
+              <n-popconfirm v-if="l.status === 'registered'" @positive-click="onCancel(l)">
+                <template #trigger>
+                  <n-button size="small" tertiary type="error" data-testid="lv-cancel">销假</n-button>
+                </template>
+                销假将取消所有受影响节次的处置,已被指派的代课教师会收到取消通知。确定?
+              </n-popconfirm>
+            </n-space>
+          </span>
+        </div>
+        <div class="ios-card">
+          <div class="ios-card-body">
 
         <n-space vertical size="small">
           <n-text v-if="l.reason" depth="3">事由:{{ l.reason }}</n-text>
           <n-alert v-if="!l.affected_count" type="info" :bordered="false">
             这段期间没有课(周末,或课表尚未发布)
           </n-alert>
-          <table v-else class="data-table" data-testid="lv-affected">
+          <table v-else class="ios-table" data-testid="lv-affected">
             <thead>
               <tr><th>日期</th><th>节次</th><th>班级</th><th>科目</th><th>场地</th><th>状态</th></tr>
             </thead>
@@ -274,15 +283,9 @@ function rangeText(l: LeaveRequest): string {
           </table>
           <n-text depth="3">登记人:{{ l.created_by_name }}</n-text>
         </n-space>
-      </n-card>
+          </div>
+        </div>
+      </section>
     </template>
-  </n-space>
+  </div>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
-</style>
