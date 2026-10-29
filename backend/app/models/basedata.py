@@ -98,6 +98,9 @@ class Teacher(Base):
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # 钉钉企业内部应用 userid:由手机号解析后缓存(也可人工填);个人上课提醒就发给这个人
     dingtalk_userid: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # 个人上课提醒自配置(教师在「我的」页自改):开关默认开;提前分钟为空 = 跟随学校全局设置
+    reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    reminder_lead_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # 绑定的登录帐号(空=无帐号,如外聘师资);帐号删除时设为 NULL 保留教师主档
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True

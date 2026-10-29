@@ -25,6 +25,7 @@ from app.api import (
     substitution_log,
     substitution_stats,
     substitutions,
+    teachers,
     teaching_hours,
     system,
     timetables,
@@ -110,6 +111,7 @@ app.include_router(substitution_stats.router, prefix="/api")
 app.include_router(teaching_hours.router, prefix="/api")
 app.include_router(user_grades.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
+app.include_router(teachers.router, prefix="/api")
 app.include_router(settings_api.router, prefix="/api")
 app.include_router(backups.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")

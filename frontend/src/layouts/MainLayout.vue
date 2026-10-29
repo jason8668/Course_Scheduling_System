@@ -30,6 +30,7 @@ const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('director'))
 
 const menuOptions = computed(() => {
+  const my = { label: menuLink('my', '我的'), key: 'my' }
   const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
   // 请假是教师自己要做的事,纯教师帐号也看得到
   const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
@@ -37,7 +38,7 @@ const menuOptions = computed(() => {
   const myStats = { label: menuLink('substitution-stats', '我的代课课时'), key: 'substitution-stats' }
   const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
   const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
-  if (!canManage.value) return [dashboard, query, schoolCalendar, leaves, myStats]
+  if (!canManage.value) return [my, dashboard, query, schoolCalendar, leaves, myStats]
   return [
     dashboard,
     schoolCalendar,

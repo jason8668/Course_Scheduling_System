@@ -7,6 +7,9 @@
 防重复:同一格位、同一天、同一位老师只发一次,class_reminder_logs
 唯一约束兜底(任务重跑、worker 重复执行都不会发两次)。
 
+提醒窗口按教师自配置算:教师在「我的」页自设提前分钟则用自设值,
+未设则用学校全局值;教师关了提醒则直接跳过(计 opted_out,不算失败)。
+
 未配置企业应用时静默不做(与群机器人通道同款语义);单个老师失败
 (没手机号、查不到 userid、发送失败)只记日志并跳过,不影响其他老师。
 """
@@ -62,7 +65,7 @@ def run_class_reminders(
     now: datetime | None = None,
     client: DingTalkAppClient | None = None,
 ) -> dict:
-    """扫一遍已发布课表,把 15 分钟(设置可调)内要上的课推给老师。回传计数。"""
+    """扫一遍已发布课表,把各教师提前量内要上的课推给老师。回传计数。"""
     cfg = app_settings.dingtalk_app_config(db)
     if not cfg.configured:
         return {"sent": 0, "skipped": 0, "reason": "not_configured"}
@@ -71,9 +74,8 @@ def run_class_reminders(
     now_wall = (now or clock.school_now()).replace(tzinfo=None)
     today = now_wall.date()
     weekday = today.isoweekday()  # 1=周一,与节次表/格位 weekday 口径一致
-    lead = timedelta(minutes=cfg.lead_minutes)
 
-    sent = skipped = 0
+    sent = skipped = opted_out = 0
     timetables = db.scalars(
         select(Timetable).where(Timetable.status == TimetableStatus.published.value)
     ).all()
@@ -98,9 +100,6 @@ def run_class_reminders(
                 skipped += 1
                 continue
             starts_at = datetime.combine(today, start_time)
-            delta = starts_at - now_wall
-            if delta < timedelta(0) or delta > lead:
-                continue
             members = assignment.scheduling_unit.members
             classes = [m.class_unit.name for m in members]
             room_obj = entry.room if entry.room is not None else assignment.room
@@ -118,6 +117,18 @@ def run_class_reminders(
                     )
                 )
                 if already is not None:
+                    continue
+                if teacher.reminder_enabled is False:
+                    opted_out += 1
+                    continue
+                # 窗口按教师自设提前分钟算,未设则用学校全局值
+                teacher_lead = (
+                    teacher.reminder_lead_minutes
+                    if teacher.reminder_lead_minutes is not None
+                    else cfg.lead_minutes
+                )
+                delta = starts_at - now_wall
+                if delta < timedelta(0) or delta > timedelta(minutes=teacher_lead):
                     continue
                 userid = teacher.dingtalk_userid
                 if not userid and teacher.phone:
@@ -149,4 +160,4 @@ def run_class_reminders(
                 )
                 db.commit()
                 sent += 1
-    return {"sent": sent, "skipped": skipped}
+    return {"sent": sent, "skipped": skipped, "opted_out": opted_out}

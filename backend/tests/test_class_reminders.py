@@ -148,6 +148,43 @@ def test_normalize_mobile():
     assert normalize_mobile("8613800000000") == "13800000000"
 
 
+def test_opted_out_teacher_skipped(db):
+    ctx = _seed(db)
+    ctx["teacher"].reminder_enabled = False
+    db.commit()
+    client = FakeClient({"13800000000": "zhangsan"})
+    result = run_class_reminders(db, now=datetime.combine(MON, time(7, 50)), client=client)
+    assert result["sent"] == 0 and result["opted_out"] == 1
+    assert client.sent == []
+
+
+def test_self_lead_15_sends_at_12_min(db):
+    ctx = _seed(db)
+    ctx["teacher"].reminder_lead_minutes = 15
+    db.commit()
+    client = FakeClient({"13800000000": "zhangsan"})
+    # 12 分钟前:自设 15 分钟在窗口内,能收到
+    assert run_class_reminders(db, now=datetime.combine(MON, time(7, 48)), client=client)["sent"] == 1
+
+
+def test_self_lead_10_misses_at_12_min(db):
+    ctx = _seed(db)
+    ctx["teacher"].reminder_lead_minutes = 10
+    db.commit()
+    client = FakeClient({"13800000000": "zhangsan"})
+    # 12 分钟前:自设 10 分钟窗口外,收不到
+    assert run_class_reminders(db, now=datetime.combine(MON, time(7, 48)), client=client)["sent"] == 0
+
+
+def test_empty_lead_falls_back_to_global(db):
+    _seed(db)
+    app_settings.save_dingtalk_app(db, "key", "sec", "123456", 5)
+    db.commit()
+    client = FakeClient({"13800000000": "zhangsan"})
+    # 自设为空时回落全局值 5 分钟,10 分钟前收不到(证明读的是全局,不是写死的 15)
+    assert run_class_reminders(db, now=datetime.combine(MON, time(7, 50)), client=client)["sent"] == 0
+
+
 @pytest.fixture
 def admin(env):
     client, db = env
@@ -204,3 +241,89 @@ def test_dingtalk_app_test_endpoint(admin, monkeypatch):
         "app_key": "key1", "app_secret": "sec1", "agent_id": "123456", "lead_minutes": 15,
     })
     assert r.status_code == 200 and r.json() == {"ok": True}
+
+
+@pytest.fixture
+def teacher_env(env):
+    client, db = env
+    user = make_user(db, "teacher1", PW, roles=[Role.teacher])
+    client.post("/api/auth/login", json={"username": "teacher1", "password": PW})
+    sem = Semester(
+        academic_year=2026, term=1,
+        start_date=MON - timedelta(days=30), end_date=MON + timedelta(days=60),
+    )
+    db.add(sem)
+    db.flush()
+    teacher = Teacher(
+        semester_id=sem.id, name="王小明", phone="13800000000", user_id=user.id
+    )
+    db.add(teacher)
+    db.commit()
+    return client, db, sem, teacher
+
+
+def test_reminder_preference_roundtrip(teacher_env):
+    client, db, sem, teacher = teacher_env
+    url = f"/api/teachers/me/reminder-preference?semester_id={sem.id}"
+    r = client.get(url)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["bound"] is True and body["reminder_enabled"] is True
+    assert body["reminder_lead_minutes"] is None and body["global_lead_minutes"] == 15
+    assert body["phone"] == "13800000000" and body["dingtalk_bound"] is False
+
+    r = client.put(url, json={"reminder_enabled": False, "reminder_lead_minutes": 10})
+    body = r.json()
+    assert body["reminder_enabled"] is False and body["reminder_lead_minutes"] == 10
+
+    # 缺省字段不改:只送开关,提前分钟仍是 10
+    r = client.put(url, json={"reminder_enabled": True})
+    assert r.json()["reminder_lead_minutes"] == 10
+
+    # 提前分钟越界被 422 挡下
+    r = client.put(url, json={"reminder_enabled": True, "reminder_lead_minutes": 0})
+    assert r.status_code == 422
+    r = client.put(url, json={"reminder_enabled": True, "reminder_lead_minutes": 121})
+    assert r.status_code == 422
+
+    # 显式 null 回到跟随学校设置
+    r = client.put(url, json={"reminder_enabled": True, "reminder_lead_minutes": None})
+    assert r.json()["reminder_lead_minutes"] is None
+
+
+def test_reminder_preference_phone_change_clears_userid(teacher_env):
+    client, db, sem, teacher = teacher_env
+    teacher.dingtalk_userid = "zhangsan"
+    db.commit()
+    url = f"/api/teachers/me/reminder-preference?semester_id={sem.id}"
+    r = client.put(url, json={"reminder_enabled": True, "phone": "13900000000"})
+    assert r.json()["phone"] == "13900000000" and r.json()["dingtalk_bound"] is False
+    db.expire_all()
+    assert db.get(Teacher, teacher.id).dingtalk_userid is None
+
+    # 同号重填不清空
+    teacher.dingtalk_userid = "lisi"
+    db.commit()
+    r = client.put(url, json={"reminder_enabled": True, "phone": "13900000000"})
+    assert r.json()["dingtalk_bound"] is True
+
+
+def test_reminder_preference_unbound(env):
+    client, db = env
+    make_user(db, "teacher2", PW, roles=[Role.teacher])
+    client.post("/api/auth/login", json={"username": "teacher2", "password": PW})
+    sem = Semester(
+        academic_year=2026, term=1,
+        start_date=MON - timedelta(days=30), end_date=MON + timedelta(days=60),
+    )
+    db.add(sem)
+    db.commit()
+    url = f"/api/teachers/me/reminder-preference?semester_id={sem.id}"
+    # 未绑定回默认值 + bound=False,不报错(与 notifications/mine 回空清单同一惯例)
+    body = client.get(url).json()
+    assert body["bound"] is False and body["reminder_enabled"] is True
+    assert body["reminder_lead_minutes"] is None and body["phone"] is None
+    assert body["dingtalk_bound"] is False
+    # 未绑定不能写
+    r = client.put(url, json={"reminder_enabled": False})
+    assert r.status_code == 404

@@ -71,6 +71,11 @@ const routes = [
         component: () => import('@/views/Dashboard.vue'),
       },
       {
+        path: 'my',
+        name: 'my',
+        component: () => import('@/views/teacher/MyHome.vue'),
+      },
+      {
         path: 'settings/semesters',
         name: 'semesters',
         component: () => import('@/views/settings/Semesters.vue'),
@@ -174,7 +179,7 @@ const AUTH_PAGES = new Set(['login', 'change-password'])
 // 全域守卫:管控登录、强制改密、首次登录引导至设置精灵
 // 纯教师帐号可进入的页面(请假是教师自己要做的事;课表打印页是查课表后打印自己/班级课表用)
 const TEACHER_PAGES = new Set([
-  'dashboard', 'school-calendar', 'calendar-print',
+  'dashboard', 'my', 'school-calendar', 'calendar-print',
   'timetable-query', 'timetable-print', 'leaves', 'substitution-stats',
 ])
 
