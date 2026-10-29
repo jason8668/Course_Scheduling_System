@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NCard, NCollapse, NCollapseItem, NDatePicker, NEmpty, NInput, NList, NListItem,
-  NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText, NTimePicker, useMessage,
+  NAlert, NButton, NCollapse, NCollapseItem, NDatePicker, NEmpty, NInput,
+  NPopconfirm, NSelect, NSpace, NSwitch, NText, NTimePicker, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { listSemesters } from '@/api/semesters'
@@ -208,142 +208,149 @@ onMounted(() => { void loadAll() })
 </script>
 
 <template>
-  <n-space vertical size="medium" class="my-home" style="max-width: 880px">
-    <h1 style="margin: 0">
+  <div class="ios-page">
+    <h1 class="ios-title">
       我的
     </h1>
-    <n-alert v-if="preference && !preference.bound" type="warning" title="尚未绑定教师档案">
+    <div v-if="me || semester" class="ios-subtitle">
+      {{ me?.name }}{{ me && semester ? ' · ' : '' }}{{ semester?.label }}
+    </div>
+
+    <n-alert v-if="preference && !preference.bound" type="warning" title="尚未绑定教师档案" style="margin-top: 16px">
       系统里还没有把你的账号对应到教师档案，请联系管理员开通；课表与提醒需要绑定后才能显示。
     </n-alert>
-    <n-alert v-if="!semester && !loading" type="info" title="暂无学期">
+    <n-alert v-if="!semester && !loading" type="info" title="暂无学期" style="margin-top: 16px">
       还没有建立学期，请联系管理员。
     </n-alert>
 
-    <n-card title="本周我的课表" :loading="loading">
-      <n-empty v-if="!weekData || !me" description="暂无已发布课表或尚未绑定教师档案" />
-      <table v-else style="width: 100%; border-collapse: collapse">
-        <thead>
-          <tr>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              节次
-            </th>
-            <th
-              v-for="d in gridWeekdays" :key="d"
-              style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee"
-            >
-              周{{ WEEKDAYS[d - 1] }}
-              <n-tag v-if="d === todayIso" type="primary" size="small" style="margin-left: 4px">
-                今天
-              </n-tag>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in gridPeriods" :key="p">
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5; white-space: nowrap">
-              {{ periodLabel(gridWeekdays[0] ?? 1, p) }}
-            </td>
-            <td
-              v-for="d in gridWeekdays" :key="d"
-              style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5; vertical-align: top"
-            >
-              <div v-for="e in cellEntries(d, p)" :key="e.id" style="margin-bottom: 2px">
-                <n-text strong>
-                  {{ e.subject }}
-                </n-text>
-                <n-text depth="3" style="margin-left: 6px">
-                  {{ e.classes.join('、') }}{{ e.room ? ` · ${e.room}` : '' }}
-                </n-text>
-                <n-tag
-                  v-if="parityLabel(e.week_parity)" size="small" style="margin-left: 4px"
-                >
-                  {{ parityLabel(e.week_parity) }}
-                </n-tag>
+    <section class="ios-section">
+      <div class="ios-section-title">
+        <span>本周课表</span>
+      </div>
+      <div class="ios-card">
+        <n-empty v-if="!weekData || !me" description="暂无已发布课表或尚未绑定教师档案" style="padding: 24px 0" />
+        <table v-else class="ios-table">
+          <thead>
+            <tr>
+              <th>节次</th>
+              <th
+                v-for="d in gridWeekdays" :key="d"
+                :style="d === todayIso ? 'background: rgba(0,122,255,0.06)' : ''"
+              >
+                周{{ WEEKDAYS[d - 1] }}
+                <span v-if="d === todayIso" class="ios-chip" style="margin-left: 4px">今天</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in gridPeriods" :key="p">
+              <td style="white-space: nowrap; color: rgba(60,60,67,0.6)">
+                {{ periodLabel(gridWeekdays[0] ?? 1, p) }}
+              </td>
+              <td
+                v-for="d in gridWeekdays" :key="d"
+                :style="d === todayIso ? 'background: rgba(0,122,255,0.06)' : ''"
+              >
+                <div v-for="e in cellEntries(d, p)" :key="e.id" style="margin-bottom: 2px">
+                  <n-text strong style="font-size: 15px">
+                    {{ e.subject }}
+                  </n-text>
+                  <n-text depth="3" style="margin-left: 6px; font-size: 13px">
+                    {{ e.classes.join('、') }}{{ e.room ? ` · ${e.room}` : '' }}
+                  </n-text>
+                  <span
+                    v-if="parityLabel(e.week_parity)" class="ios-chip-gray ios-chip"
+                    style="margin-left: 4px"
+                  >
+                    {{ parityLabel(e.week_parity) }}
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ios-section" style="animation-delay: 60ms">
+      <div class="ios-section-title">
+        <span>通知</span>
+        <span v-if="notifications.filter((n) => !n.read_at).length" class="ios-chip-warn ios-chip">
+          {{ notifications.filter((n) => !n.read_at).length }} 条未读
+        </span>
+      </div>
+      <div class="ios-card">
+        <n-empty v-if="!notifications.length" description="暂无通知" style="padding: 24px 0" />
+        <template v-else>
+          <div v-for="n in notifications" :key="n.id" class="ios-row">
+            <span v-if="!n.read_at" class="ios-dot" />
+            <div class="ios-row-main">
+              <div style="display: flex; align-items: baseline; gap: 8px">
+                <span class="ios-row-title">{{ n.title }}</span>
+                <span class="ios-row-sub">{{ n.created_at?.slice(0, 16) }}</span>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </n-card>
+              <div class="ios-row-sub">
+                {{ n.body }}
+              </div>
+              <n-space style="margin-top: 4px">
+                <n-button v-if="!n.read_at" size="small" text type="primary" @click="onMarkRead(n.id)">
+                  标为已读
+                </n-button>
+                <n-button v-if="!n.acknowledged_at" size="small" text type="primary" @click="onAcknowledge(n.id)">
+                  确认收到
+                </n-button>
+                <span v-else class="ios-chip-green ios-chip">已确认</span>
+              </n-space>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
 
-    <n-card title="通知" :loading="loading">
-      <n-empty v-if="!notifications.length" description="暂无通知" />
-      <n-list v-else>
-        <n-list-item v-for="n in notifications" :key="n.id">
-          <n-space vertical size="small" style="width: 100%">
-            <n-space align="center">
-              <n-tag v-if="!n.read_at" type="warning" size="small">
-                未读
-              </n-tag>
-              <n-text strong>
-                {{ n.title }}
-              </n-text>
-              <n-text depth="3" style="font-size: 12px">
-                {{ n.created_at?.slice(0, 16) }}
-              </n-text>
-            </n-space>
-            <n-text depth="2">
-              {{ n.body }}
-            </n-text>
-            <n-space>
-              <n-button v-if="!n.read_at" size="small" @click="onMarkRead(n.id)">
-                标为已读
-              </n-button>
-              <n-button v-if="!n.acknowledged_at" size="small" type="primary" @click="onAcknowledge(n.id)">
-                确认收到
-              </n-button>
-              <n-tag v-else size="small" type="success">
-                已确认
-              </n-tag>
-            </n-space>
+    <section class="ios-section" style="animation-delay: 120ms">
+      <div class="ios-section-title">
+        <span>我的请假</span>
+      </div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-space align="end" :wrap="true">
+            <n-select
+              v-model:value="leaveForm.leaveType" :options="Object.entries(leaveTypes).map(([v, l]) => ({ label: l, value: v }))"
+              placeholder="假别" style="width: 140px"
+            />
+            <n-date-picker v-model:value="leaveForm.startDate" type="date" placeholder="开始日期" style="width: 160px" />
+            <n-date-picker v-model:value="leaveForm.endDate" type="date" placeholder="结束日期" style="width: 160px" />
+            <n-time-picker v-model:value="leaveForm.startTime" placeholder="开始时间(可空)" format="HH:mm" style="width: 140px" />
+            <n-time-picker v-model:value="leaveForm.endTime" placeholder="结束时间(可空)" format="HH:mm" style="width: 140px" />
+            <n-input v-model:value="leaveForm.reason" placeholder="事由(可空)" style="width: 200px" />
           </n-space>
-        </n-list-item>
-      </n-list>
-    </n-card>
-
-    <n-card title="我的请假" :loading="loading">
-      <n-space vertical>
-        <n-space align="end" :wrap="true">
-          <n-select
-            v-model:value="leaveForm.leaveType" :options="Object.entries(leaveTypes).map(([v, l]) => ({ label: l, value: v }))"
-            placeholder="假别" style="width: 140px"
-          />
-          <n-date-picker v-model:value="leaveForm.startDate" type="date" placeholder="开始日期" style="width: 160px" />
-          <n-date-picker v-model:value="leaveForm.endDate" type="date" placeholder="结束日期" style="width: 160px" />
-          <n-time-picker v-model:value="leaveForm.startTime" placeholder="开始时间(可空)" format="HH:mm" style="width: 140px" />
-          <n-time-picker v-model:value="leaveForm.endTime" placeholder="结束时间(可空)" format="HH:mm" style="width: 140px" />
-          <n-input v-model:value="leaveForm.reason" placeholder="事由(可空)" style="width: 200px" />
-          <n-button type="primary" :loading="submittingLeave" @click="submitLeave">
+          <n-button type="primary" round :loading="submittingLeave" style="margin-top: 12px" @click="submitLeave">
             登记请假
           </n-button>
-        </n-space>
-        <n-empty v-if="!leaves.length" description="暂无请假记录" />
-        <n-list v-else>
-          <n-list-item v-for="l in leaves" :key="l.id">
-            <n-space vertical size="small" style="width: 100%">
-              <n-space align="center" :wrap="true">
-                <n-text strong>
-                  {{ l.leave_type_label }}
-                </n-text>
-                <n-text>{{ l.start_date }} ~ {{ l.end_date }}</n-text>
-                <n-tag :type="l.status === 'registered' ? 'info' : 'default'" size="small">
+        </div>
+        <n-empty v-if="!leaves.length" description="暂无请假记录" style="padding: 12px 0 24px" />
+        <template v-else>
+          <div v-for="l in leaves" :key="l.id" class="ios-row">
+            <div class="ios-row-main">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+                <span class="ios-row-title">{{ l.leave_type_label }}</span>
+                <span class="ios-row-sub">{{ l.start_date }} ~ {{ l.end_date }}</span>
+                <span :class="l.status === 'registered' ? 'ios-chip' : 'ios-chip-gray ios-chip'">
                   {{ l.status === 'registered' ? '已登记' : '已销假' }}
-                </n-tag>
-                <n-text depth="3" style="font-size: 12px">
-                  影响 {{ l.affected_count }} 节 · 待处理 {{ l.pending_count }} 节
-                </n-text>
+                </span>
+                <span class="ios-row-sub">影响 {{ l.affected_count }} 节 · 待处理 {{ l.pending_count }} 节</span>
                 <n-popconfirm
                   v-if="l.status === 'registered'" @positive-click="onCancelLeave(l.id)"
                 >
                   <template #trigger>
-                    <n-button size="small">
+                    <n-button size="small" text type="primary">
                       销假
                     </n-button>
                   </template>
                   确认销假吗？已上过的节次不受影响，其余待处理节次会取消。
                 </n-popconfirm>
-              </n-space>
-              <n-collapse v-if="l.affected_periods.length">
+              </div>
+              <n-collapse v-if="l.affected_periods.length" style="margin-top: 4px">
                 <n-collapse-item title="受影响节次" :name="l.id">
                   <n-space vertical size="small">
                     <n-text v-for="ap in l.affected_periods" :key="ap.id" depth="2" style="font-size: 13px">
@@ -353,99 +360,85 @@ onMounted(() => { void loadAll() })
                   </n-space>
                 </n-collapse-item>
               </n-collapse>
-            </n-space>
-          </n-list-item>
-        </n-list>
-      </n-space>
-    </n-card>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
 
-    <n-card title="我的代课" :loading="loading">
-      <n-empty v-if="!stats" description="暂无本月代课统计" />
-      <n-space v-else vertical>
-        <n-text>
-          本月我代别人：{{ stats.summaries[0]?.handled_count ?? 0 }} 节
-          （计入课时 {{ stats.summaries[0]?.billable_count ?? 0 }} 节）
-        </n-text>
-        <n-text depth="3" style="font-size: 13px">
-          被代课的情况在上方“我的请假”里看：每单的影响节次会显示代课人。
-        </n-text>
-        <n-list v-if="stats.details.length">
-          <n-list-item v-for="(d, i) in stats.details" :key="i">
-            <n-text style="font-size: 13px">
+    <section class="ios-section" style="animation-delay: 180ms">
+      <div class="ios-section-title">
+        <span>我的代课</span>
+      </div>
+      <div class="ios-card">
+        <n-empty v-if="!stats" description="暂无本月代课统计" style="padding: 24px 0" />
+        <template v-else>
+          <div class="ios-card-body">
+            <n-text style="font-size: 15px">
+              本月我代别人：{{ stats.summaries[0]?.handled_count ?? 0 }} 节
+              （计入课时 {{ stats.summaries[0]?.billable_count ?? 0 }} 节）
+            </n-text>
+            <div class="ios-row-sub" style="margin-top: 2px">
+              被代课的情况在上方“我的请假”里看：每单的影响节次会显示代课人。
+            </div>
+          </div>
+          <div v-for="(d, i) in stats.details" :key="i" class="ios-row">
+            <span style="font-size: 13px">
               {{ d.date }} {{ d.period_name }} · {{ d.class_names }}《{{ d.subject_name }}》
               · 代 {{ d.absent_teacher_name }}老师的课
-            </n-text>
-          </n-list-item>
-        </n-list>
-      </n-space>
-    </n-card>
+            </span>
+          </div>
+        </template>
+      </div>
+    </section>
 
-    <n-card title="提醒设置" :loading="loading">
-      <n-empty v-if="!preference" description="暂无提醒设置" />
-      <n-space v-else vertical>
-        <n-alert v-if="!preference.bound" type="warning">
-          尚未绑定教师档案，提醒设置需要绑定后才能保存。
-        </n-alert>
-        <n-space align="center">
-          <n-text>上课提醒</n-text>
-          <n-switch v-model:value="remindEnabled" :disabled="!preference.bound" />
-          <n-text depth="3" style="font-size: 13px">
-            {{ remindEnabled ? '开' : '关' }}（关了就不会收到上课提醒）
-          </n-text>
-        </n-space>
-        <n-space align="center" :wrap="true">
-          <n-text>提前</n-text>
-          <n-select
-            v-model:value="leadSelect" :disabled="!preference.bound || !remindEnabled"
-            :options="[
-              { label: `跟随学校设置（${preference.global_lead_minutes}分钟）`, value: 'follow' },
-              { label: '5 分钟', value: 5 },
-              { label: '10 分钟', value: 10 },
-              { label: '15 分钟', value: 15 },
-              { label: '30 分钟', value: 30 },
-            ]" style="width: 220px"
-          />
-          <n-text depth="3" style="font-size: 13px">
-            每节课前推到你的个人钉钉
-          </n-text>
-        </n-space>
-        <n-space align="center" :wrap="true">
-          <n-text>手机号</n-text>
-          <n-input
-            v-model:value="remindPhone" :disabled="!preference.bound" placeholder="钉钉通讯录里的手机号"
-            style="width: 200px"
-          />
-          <n-tag :type="preference.dingtalk_bound ? 'success' : 'warning'" size="small">
-            {{ preference.dingtalk_bound ? '钉钉已绑定' : '钉钉未绑定' }}
-          </n-tag>
-          <n-text depth="3" style="font-size: 13px">
-            手机号变了会重新匹配钉钉，改完下次提醒时生效
-          </n-text>
-        </n-space>
-        <n-button type="primary" :loading="savingPref" :disabled="!preference.bound" @click="savePref">
-          保存提醒设置
-        </n-button>
-      </n-space>
-    </n-card>
-  </n-space>
+    <section class="ios-section" style="animation-delay: 240ms">
+      <div class="ios-section-title">
+        <span>提醒设置</span>
+      </div>
+      <div class="ios-card">
+        <n-empty v-if="!preference" description="暂无提醒设置" style="padding: 24px 0" />
+        <template v-else>
+          <n-alert v-if="!preference.bound" type="warning" style="margin: 12px 16px 0">
+            尚未绑定教师档案，提醒设置需要绑定后才能保存。
+          </n-alert>
+          <div class="ios-row">
+            <span class="ios-row-main" style="font-size: 15px">上课提醒</span>
+            <n-switch v-model:value="remindEnabled" :disabled="!preference.bound" />
+          </div>
+          <div class="ios-row">
+            <span class="ios-row-main" style="font-size: 15px">提前</span>
+            <n-select
+              v-model:value="leadSelect" :disabled="!preference.bound || !remindEnabled"
+              :options="[
+                { label: `跟随学校设置（${preference.global_lead_minutes}分钟）`, value: 'follow' },
+                { label: '5 分钟', value: 5 },
+                { label: '10 分钟', value: 10 },
+                { label: '15 分钟', value: 15 },
+                { label: '30 分钟', value: 30 },
+              ]" style="width: 220px"
+            />
+          </div>
+          <div class="ios-row">
+            <span class="ios-row-main" style="font-size: 15px">手机号</span>
+            <n-input
+              v-model:value="remindPhone" :disabled="!preference.bound" placeholder="钉钉通讯录里的手机号"
+              style="width: 200px"
+            />
+            <span :class="preference.dingtalk_bound ? 'ios-chip-green ios-chip' : 'ios-chip-warn ios-chip'">
+              {{ preference.dingtalk_bound ? '钉钉已绑定' : '钉钉未绑定' }}
+            </span>
+          </div>
+          <div class="ios-card-body">
+            <div class="ios-row-sub" style="margin-bottom: 8px">
+              关了就不会收到上课提醒；手机号变了会重新匹配钉钉，改完下次提醒时生效。
+            </div>
+            <n-button type="primary" round :loading="savingPref" :disabled="!preference.bound" @click="savePref">
+              保存提醒设置
+            </n-button>
+          </div>
+        </template>
+      </div>
+    </section>
+  </div>
 </template>
-
-<style scoped>
-/* 精简排版:卡片与列表收紧,页面不摊太宽。
-   注意 Naive 的类名:内容区是 n-card-content(单横线),标题没有独立类名、
-   标题文字直接放在 n-card-header__main 里,写 n-card__content / n-card-header__title
-   命中不了任何元素(2026-10-29 踩过一次,当时等于没生效)。 */
-.my-home :deep(.n-card-header) {
-  padding: 10px 16px 6px;
-}
-.my-home :deep(.n-card-header__main) {
-  font-size: 15px;
-}
-.my-home :deep(.n-card-content) {
-  padding: 12px 16px;
-}
-.my-home :deep(.n-list-item) {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-</style>

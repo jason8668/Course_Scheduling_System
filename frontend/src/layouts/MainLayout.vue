@@ -112,7 +112,7 @@ async function onLogout() {
   <n-layout has-sider style="height: 100vh">
     <n-layout-sider
       collapse-mode="width"
-      style="background: linear-gradient(180deg, #04295e 0%, #0a56c6 100%)"
+      style="background: rgba(255, 255, 255, 0.72); backdrop-filter: saturate(180%) blur(20px); border-right: 1px solid rgba(0, 0, 0, 0.06)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -120,11 +120,10 @@ async function onLogout() {
       @collapse="collapsed = true"
       @expand="collapsed = false"
     >
-      <div style="padding: 18px 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; color: #fff; white-space: nowrap; overflow: hidden">
+      <div style="padding: 18px 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; color: #000; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
       <n-menu
-        inverted
         :value="activeKey"
         :collapsed="collapsed"
         :collapsed-width="64"
@@ -137,7 +136,7 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout>
-      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.8); box-shadow: 0 1px 6px rgba(0, 60, 150, 0.08)">
+      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.8); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06)">
         <n-space justify="end" align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
@@ -165,6 +164,6 @@ async function onLogout() {
 </template>
 
 <style scoped>
-.version { padding: 12px 20px; font-size: 12px; color: rgba(255, 255, 255, 0.65); }
+.version { padding: 12px 20px; font-size: 12px; color: rgba(60, 60, 67, 0.6); }
 .update-link { text-decoration: none; }
 </style>

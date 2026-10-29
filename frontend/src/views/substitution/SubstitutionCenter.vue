@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
-  NButton, NCard, NCollapse, NCollapseItem, NDatePicker, NEmpty, NList, NListItem,
-  NSelect, NSpace, NSwitch, NTag, NText, useMessage,
+  NButton, NCollapse, NCollapseItem, NDatePicker, NEmpty,
+  NSelect, NSpace, NSwitch, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -311,11 +311,15 @@ const logSubstituteIds = computed(() => logEntries.value
 </script>
 
 <template>
-  <n-space vertical size="medium" class="sub-center">
-    <n-space align="center" :wrap="true">
-      <h1 style="margin: 0">
-        调代课中心
-      </h1>
+  <div class="ios-page">
+    <h1 class="ios-title">
+      调代课中心
+    </h1>
+    <div class="ios-subtitle">
+      一天的事情集中在这里处理，不用来回换页面
+    </div>
+
+    <n-space align="center" :wrap="true" style="margin-top: 16px">
       <n-select
         v-model:value="sid" :options="semesterOptions" placeholder="学期"
         style="width: 220px" @update:value="onSemesterChange"
@@ -328,55 +332,48 @@ const logSubstituteIds = computed(() => logEntries.value
         刷新
       </n-button>
     </n-space>
-    <n-space>
-      <n-tag type="warning" size="large">
-        待处理 {{ pendingTotal }} 节
-      </n-tag>
-      <n-tag type="info" size="large">
-        {{ dateIso }} 已安排 {{ boardCount }} 节
-      </n-tag>
-      <n-tag type="success" size="large">
-        {{ dateIso }} 请假 {{ absentToday }} 人
-      </n-tag>
+    <n-space style="margin-top: 12px">
+      <span class="ios-chip-warn ios-chip">待处理 {{ pendingTotal }} 节</span>
+      <span class="ios-chip">{{ dateIso }} 已安排 {{ boardCount }} 节</span>
+      <span class="ios-chip-green ios-chip">{{ dateIso }} 请假 {{ absentToday }} 人</span>
     </n-space>
 
-    <n-card title="待处理代课" :loading="loading">
-      <template #header-extra>
+    <section class="ios-section">
+      <div class="ios-section-title">
+        <span>待处理代课</span>
         <RouterLink :to="{ name: 'substitutions' }">
           <n-button size="small" text type="primary">
             调课对调去原页面 →
           </n-button>
         </RouterLink>
-      </template>
+      </div>
       <n-empty v-if="!activeLeaves.length" description="没有待处理的假单" />
-      <n-list v-else>
-        <n-list-item v-for="l in activeLeaves" :key="l.id">
-          <n-space vertical size="small" style="width: 100%">
+      <div v-else style="display: flex; flex-direction: column; gap: 12px">
+        <div v-for="l in activeLeaves" :key="l.id" class="ios-card">
+          <div class="ios-row">
+            <div class="ios-row-main">
+              <span class="ios-row-title">{{ l.teacher_name }} · {{ l.leave_type_label }}</span>
+              <span class="ios-row-sub" style="margin-left: 8px">{{ l.start_date }} ~ {{ l.end_date }}</span>
+              <span class="ios-chip-warn ios-chip" style="margin-left: 8px">待处理 {{ pendingOf(l).length }} 节</span>
+            </div>
+            <n-button size="small" text type="primary" @click="openBatch(l)">
+              整批指派
+            </n-button>
+            <n-button
+              v-if="substituteIds(l).length" size="small" text type="primary"
+              @click="printSlips('substitute', substituteIds(l))"
+            >
+              印代课单
+            </n-button>
+            <n-button
+              v-if="swapIds(l).length" size="small" text type="primary"
+              @click="printSlips('swap', swapIds(l))"
+            >
+              印调课单
+            </n-button>
+          </div>
+          <div v-if="batchLeaveId === l.id" style="padding: 10px 16px; border-top: 1px solid rgba(0,0,0,0.06)">
             <n-space align="center" :wrap="true">
-              <n-text strong>
-                {{ l.teacher_name }} · {{ l.leave_type_label }}
-              </n-text>
-              <n-text>{{ l.start_date }} ~ {{ l.end_date }}</n-text>
-              <n-tag type="warning" size="small">
-                待处理 {{ pendingOf(l).length }} 节
-              </n-tag>
-              <n-button size="small" type="primary" ghost @click="openBatch(l)">
-                整批指派
-              </n-button>
-              <n-button
-                v-if="substituteIds(l).length" size="small"
-                @click="printSlips('substitute', substituteIds(l))"
-              >
-                印代课单
-              </n-button>
-              <n-button
-                v-if="swapIds(l).length" size="small"
-                @click="printSlips('swap', swapIds(l))"
-              >
-                印调课单
-              </n-button>
-            </n-space>
-            <n-space v-if="batchLeaveId === l.id" align="center" :wrap="true">
               <n-select
                 v-model:value="batchTeacher" :options="teacherOptions" placeholder="代课老师"
                 style="width: 160px" filterable
@@ -387,7 +384,7 @@ const logSubstituteIds = computed(() => logEntries.value
               />
               <n-text>计入课时</n-text>
               <n-switch v-model:value="batchCounts" />
-              <n-button size="small" type="primary" :loading="batchBusy" @click="runBatch(l)">
+              <n-button size="small" type="primary" round :loading="batchBusy" @click="runBatch(l)">
                 一次派完
               </n-button>
               <n-text v-if="batchDone !== null" depth="3" style="font-size: 12px">
@@ -399,215 +396,183 @@ const logSubstituteIds = computed(() => logEntries.value
                 {{ s.date }} {{ s.period_name }}派不成：{{ s.reason }}
               </n-text>
             </n-space>
-            <n-space vertical size="small">
-              <n-space
-                v-for="p in pendingOf(l)" :key="p.id" vertical size="small"
-                style="border-left: 3px solid #f0a020; padding-left: 8px"
-              >
-                <n-space align="center" :wrap="true">
-                  <n-text>
-                    {{ p.date }} {{ p.period_name }} · {{ p.class_names }}《{{ p.subject_name }}》
+          </div>
+          <template v-for="p in pendingOf(l)" :key="p.id">
+            <div class="ios-row">
+              <span class="ios-row-main" style="border-left: 3px solid #ff9500; padding-left: 8px; font-size: 15px">
+                {{ p.date }} {{ p.period_name }} · {{ p.class_names }}《{{ p.subject_name }}》
+              </span>
+              <n-button size="small" text type="primary" @click="openPeriod(p)">
+                {{ openPeriodId === p.id ? '收起' : '指派' }}
+              </n-button>
+            </div>
+            <div v-if="openPeriodId === p.id" style="padding: 4px 16px 12px; border-top: 1px solid rgba(0,0,0,0.06)">
+              <n-space align="center" :wrap="true">
+                <n-text>计入课时</n-text>
+                <n-switch v-model:value="countsHours" />
+                <n-select
+                  v-model:value="otherType" :options="otherTypeOptions" placeholder="其他处置(自习/停课…)"
+                  style="width: 180px" clearable
+                />
+                <n-button
+                  v-if="otherType" size="small" round @click="assign(p, otherType)"
+                >
+                  设为{{ subTypes[otherType] }}
+                </n-button>
+              </n-space>
+              <n-text v-if="loadingRec" depth="3">
+                正在找推荐人选…
+              </n-text>
+              <n-text v-else-if="rec && !rec.candidates.length" depth="3">
+                {{ rec.no_candidate_hint || '暂无推荐人选' }}
+              </n-text>
+              <n-space v-else vertical size="small" style="margin-top: 8px">
+                <n-space
+                  v-for="c in rec?.candidates ?? []" :key="c.teacher_id"
+                  align="center" :wrap="true"
+                >
+                  <n-text strong>
+                    {{ c.teacher_name }}
                   </n-text>
-                  <n-button size="small" type="primary" @click="openPeriod(p)">
-                    {{ openPeriodId === p.id ? '收起' : '指派' }}
+                  <span v-if="c.same_grade" class="ios-chip-green ios-chip">同年级</span>
+                  <span v-if="c.same_subject" class="ios-chip">同科目</span>
+                  <span v-if="c.at_school_that_day" class="ios-chip-gray ios-chip">当天在校</span>
+                  <n-text depth="3" style="font-size: 12px">
+                    本月已代 {{ c.sub_periods_this_month }} 节
+                  </n-text>
+                  <n-button size="small" text type="primary" @click="assign(p, 'substitute', c)">
+                    指派代课
                   </n-button>
                 </n-space>
-                <n-space v-if="openPeriodId === p.id" vertical size="small">
-                  <n-space align="center" :wrap="true">
-                    <n-text>计入课时</n-text>
-                    <n-switch v-model:value="countsHours" />
-                    <n-select
-                      v-model:value="otherType" :options="otherTypeOptions" placeholder="其他处置(自习/停课…)"
-                      style="width: 180px" clearable
-                    />
-                    <n-button
-                      v-if="otherType" size="small" @click="assign(p, otherType)"
-                    >
-                      设为{{ subTypes[otherType] }}
-                    </n-button>
-                  </n-space>
-                  <n-text v-if="loadingRec" depth="3">
-                    正在找推荐人选…
+              </n-space>
+            </div>
+          </template>
+          <n-collapse v-if="resolvedOf(l).length" style="padding: 0 16px 8px">
+            <n-collapse-item :title="`已处置 ${resolvedOf(l).length} 节`" :name="l.id">
+              <n-space vertical size="small">
+                <n-space
+                  v-for="p in resolvedOf(l)" :key="p.id" align="center" :wrap="true"
+                >
+                  <n-text depth="2" style="font-size: 13px">
+                    {{ p.date }} {{ p.period_name }} · {{ p.class_names }}《{{ p.subject_name }}》
+                    {{ dispositionText(l, p) }}
                   </n-text>
-                  <n-text v-else-if="rec && !rec.candidates.length" depth="3">
-                    {{ rec.no_candidate_hint || '暂无推荐人选' }}
-                  </n-text>
-                  <n-space v-else vertical size="small">
-                    <n-space
-                      v-for="c in rec?.candidates ?? []" :key="c.teacher_id"
-                      align="center" :wrap="true"
-                    >
-                      <n-text strong>
-                        {{ c.teacher_name }}
-                      </n-text>
-                      <n-tag v-if="c.same_grade" size="small" type="success">
-                        同年级
-                      </n-tag>
-                      <n-tag v-if="c.same_subject" size="small" type="info">
-                        同科目
-                      </n-tag>
-                      <n-tag v-if="c.at_school_that_day" size="small">
-                        当天在校
-                      </n-tag>
-                      <n-text depth="3" style="font-size: 12px">
-                        本月已代 {{ c.sub_periods_this_month }} 节
-                      </n-text>
-                      <n-button size="small" type="primary" @click="assign(p, 'substitute', c)">
-                        指派代课
-                      </n-button>
-                    </n-space>
-                  </n-space>
+                  <n-button size="small" text @click="clear(p)">
+                    撤销
+                  </n-button>
                 </n-space>
               </n-space>
-            </n-space>
-            <n-collapse v-if="resolvedOf(l).length">
-              <n-collapse-item :title="`已处置 ${resolvedOf(l).length} 节`" :name="l.id">
-                <n-space vertical size="small">
-                  <n-space
-                    v-for="p in resolvedOf(l)" :key="p.id" align="center" :wrap="true"
-                  >
-                    <n-text depth="2" style="font-size: 13px">
-                      {{ p.date }} {{ p.period_name }} · {{ p.class_names }}《{{ p.subject_name }}》
-                      {{ dispositionText(l, p) }}
-                    </n-text>
-                    <n-button size="small" @click="clear(p)">
-                      撤销
-                    </n-button>
-                  </n-space>
-                </n-space>
-              </n-collapse-item>
-            </n-collapse>
-          </n-space>
-        </n-list-item>
-      </n-list>
-    </n-card>
+            </n-collapse-item>
+          </n-collapse>
+        </div>
+      </div>
+    </section>
 
-    <n-card :title="`${dateIso} 当日看板`" :loading="loading">
-      <template #header-extra>
+    <section class="ios-section" style="animation-delay: 60ms">
+      <div class="ios-section-title">
+        <span>{{ dateIso }} 当日看板</span>
         <n-space>
-          <n-button size="small" @click="printDailyBoard">
+          <n-button size="small" text type="primary" @click="printDailyBoard">
             打印今日板
           </n-button>
-          <n-button size="small" @click="printPatrol">
+          <n-button size="small" text type="primary" @click="printPatrol">
             打印巡视表
           </n-button>
         </n-space>
-      </template>
-      <n-empty v-if="!board || !board.entries.length" description="当天没有调代课安排" />
-      <table v-else style="width: 100%; border-collapse: collapse">
-        <thead>
-          <tr>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              节次
-            </th>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              班级
-            </th>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              科目
-            </th>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              请假教师
-            </th>
-            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
-              安排
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="e in board.entries" :key="e.affected_period_id + e.row_kind">
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5">
-              {{ e.period_name }}
-            </td>
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5">
-              {{ e.class_names }}
-            </td>
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5">
-              {{ e.subject_name }}
-            </td>
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5">
-              {{ e.absent_teacher_name }}
-            </td>
-            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5">
-              {{ e.handler_name ? `${e.sub_type_label ?? ''} → ${e.handler_name}` : e.status_label }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </n-card>
+      </div>
+      <div class="ios-card">
+        <n-empty v-if="!board || !board.entries.length" description="当天没有调代课安排" style="padding: 24px 0" />
+        <table v-else class="ios-table">
+          <thead>
+            <tr>
+              <th>节次</th>
+              <th>班级</th>
+              <th>科目</th>
+              <th>请假教师</th>
+              <th>安排</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="e in board.entries" :key="e.affected_period_id + e.row_kind">
+              <td>{{ e.period_name }}</td>
+              <td>{{ e.class_names }}</td>
+              <td>{{ e.subject_name }}</td>
+              <td>{{ e.absent_teacher_name }}</td>
+              <td>{{ e.handler_name ? `${e.sub_type_label ?? ''} → ${e.handler_name}` : e.status_label }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <n-card title="请假登记" :loading="loading">
-      <n-space align="end" :wrap="true">
-        <n-select
-          v-model:value="lfTeacher" :options="teacherOptions" placeholder="请假老师"
-          style="width: 160px" filterable
-        />
-        <n-select
-          v-model:value="lfType" :options="leaveTypeOptions" placeholder="假别"
-          style="width: 140px"
-        />
-        <n-date-picker v-model:value="lfStart" type="date" placeholder="开始日期" style="width: 160px" />
-        <n-date-picker v-model:value="lfEnd" type="date" placeholder="结束日期" style="width: 160px" />
-        <n-button type="primary" :loading="submittingLeave" @click="submitLeave">
-          登记请假
-        </n-button>
-      </n-space>
-      <n-text depth="3" style="font-size: 12px">
-        管理员代登；老师自己请假仍在「请假登记」页。登记后受影响节次会出现在上方待处理里。
-      </n-text>
-    </n-card>
+    <section class="ios-section" style="animation-delay: 120ms">
+      <div class="ios-section-title">
+        <span>请假登记</span>
+      </div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-space align="end" :wrap="true">
+            <n-select
+              v-model:value="lfTeacher" :options="teacherOptions" placeholder="请假老师"
+              style="width: 160px" filterable
+            />
+            <n-select
+              v-model:value="lfType" :options="leaveTypeOptions" placeholder="假别"
+              style="width: 140px"
+            />
+            <n-date-picker v-model:value="lfStart" type="date" placeholder="开始日期" style="width: 160px" />
+            <n-date-picker v-model:value="lfEnd" type="date" placeholder="结束日期" style="width: 160px" />
+            <n-button type="primary" round :loading="submittingLeave" @click="submitLeave">
+              登记请假
+            </n-button>
+          </n-space>
+          <div class="ios-row-sub" style="margin-top: 8px">
+            管理员代登；老师自己请假仍在「请假登记」页。登记后受影响节次会出现在上方待处理里。
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <n-card title="调代课纪录" :loading="loading">
-      <n-space align="center" :wrap="true">
-        <n-date-picker
-          v-model:value="logRange" type="daterange" placeholder="日期范围"
-          style="width: 260px" @update:value="reloadLog"
-        />
-        <n-select
-          v-model:value="logTeacher" :options="teacherOptions"
-          placeholder="老师(清空=全部)" style="width: 160px" filterable clearable @update:value="reloadLog"
-        />
-        <n-button
-          v-if="logSubstituteIds.length" size="small"
-          @click="printSlips('substitute', logSubstituteIds)"
-        >
-          印代课单
-        </n-button>
-        <n-button
-          v-if="logSwapIds.length" size="small"
-          @click="printSlips('swap', logSwapIds)"
-        >
-          印调课单
-        </n-button>
-      </n-space>
-      <n-empty v-if="!logEntries.length" description="该范围内没有纪录" style="margin-top: 12px" />
-      <n-list v-else style="margin-top: 8px">
-        <n-list-item v-for="e in logEntries" :key="e.affected_period_id + e.row_kind">
-          <n-text style="font-size: 13px">
-            {{ e.date }} {{ e.period_name }} · {{ e.class_names }}《{{ e.subject_name }}》
-            · {{ e.absent_teacher_name }} {{ e.leave_type_label }}
-            {{ e.handler_name ? `→ ${e.handler_name}(${e.sub_type_label ?? ''})` : `（${e.status_label}）` }}
-          </n-text>
-        </n-list-item>
-      </n-list>
-    </n-card>
-  </n-space>
+    <section class="ios-section" style="animation-delay: 180ms">
+      <div class="ios-section-title">
+        <span>调代课纪录</span>
+      </div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-space align="center" :wrap="true">
+            <n-date-picker
+              v-model:value="logRange" type="daterange" placeholder="日期范围"
+              style="width: 260px" @update:value="reloadLog"
+            />
+            <n-select
+              v-model:value="logTeacher" :options="teacherOptions"
+              placeholder="老师(清空=全部)" style="width: 160px" filterable clearable @update:value="reloadLog"
+            />
+            <n-button
+              v-if="logSubstituteIds.length" size="small" text type="primary"
+              @click="printSlips('substitute', logSubstituteIds)"
+            >
+              印代课单
+            </n-button>
+            <n-button
+              v-if="logSwapIds.length" size="small" text type="primary"
+              @click="printSlips('swap', logSwapIds)"
+            >
+              印调课单
+            </n-button>
+          </n-space>
+        </div>
+        <n-empty v-if="!logEntries.length" description="该范围内没有纪录" style="padding: 12px 0 24px" />
+        <template v-else>
+          <div v-for="e in logEntries" :key="e.affected_period_id + e.row_kind" class="ios-row">
+            <span style="font-size: 13px">
+              {{ e.date }} {{ e.period_name }} · {{ e.class_names }}《{{ e.subject_name }}》
+              · {{ e.absent_teacher_name }} {{ e.leave_type_label }}
+              {{ e.handler_name ? `→ ${e.handler_name}(${e.sub_type_label ?? ''})` : `（${e.status_label}）` }}
+            </span>
+          </div>
+        </template>
+      </div>
+    </section>
+  </div>
 </template>
-
-<style scoped>
-/* 注意 Naive 的类名:内容区是 n-card-content(单横线),标题文字在 n-card-header__main 里
-   (见 MyHome.vue 同款注释,写错类名等于没生效)。 */
-.sub-center :deep(.n-card-header) {
-  padding: 10px 16px 6px;
-}
-.sub-center :deep(.n-card-header__main) {
-  font-size: 15px;
-}
-.sub-center :deep(.n-card-content) {
-  padding: 12px 16px;
-}
-.sub-center :deep(.n-list-item) {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-</style>

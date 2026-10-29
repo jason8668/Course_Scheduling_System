@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
 import './assets/apple-glass.css'
+import './assets/ios-layout.css'
 import App from './App.vue'
 import { setUnauthorizedHandler } from './api/client'
 import { router } from './router'
