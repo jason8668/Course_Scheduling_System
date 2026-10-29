@@ -31,24 +31,19 @@ const canManage = computed(() =>
 
 const menuOptions = computed(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
-  const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
-  // 请假是教师自己要做的事,纯教师帐号也看得到
-  const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
-  // 教师可查自己的代课课时
-  const myStats = { label: menuLink('substitution-stats', '我的代课课时'), key: 'substitution-stats' }
   const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
   const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
-  if (!canManage.value) return [my, dashboard, query, schoolCalendar, leaves, myStats]
+  // 纯教师帐号:只列已重排的三页(我的/仪表板/学校校历)。
+  // 课表查询、请假登记、我的代课课时尚未重排,菜单隐藏,路由保留。
+  if (!canManage.value) return [my, dashboard, schoolCalendar]
   return [
     dashboard,
     schoolCalendar,
-    query,
     {
       label: '基础资料',
       key: 'basedata-group',
       children: [
         { label: menuLink('setup-flow', '开学建置'), key: 'setup-flow' },
-        { label: menuLink('semesters', '学期与节次表'), key: 'semesters' },
         { label: menuLink('basedata', '教师/班级/科目/场地'), key: 'basedata' },
       ],
     },
@@ -57,10 +52,6 @@ const menuOptions = computed(() => {
       key: 'scheduling-group',
       children: [
         { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
-        { label: menuLink('assignments', '配课管理'), key: 'assignments' },
-        { label: menuLink('workbench', '排课工作台'), key: 'workbench' },
-        { label: menuLink('auto-schedule', '自动排课'), key: 'auto-schedule' },
-        { label: menuLink('versions', '版本与发布'), key: 'versions' },
       ],
     },
     {
@@ -69,13 +60,6 @@ const menuOptions = computed(() => {
       children: [
         { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
         { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
-        leaves,
-        { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
-        { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
-        { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
-        { label: menuLink('substitution-stats', '代课课时统计'), key: 'substitution-stats' },
-        { label: menuLink('teaching-hours', '教学课时统计'), key: 'teaching-hours' },
-        { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },
     { label: menuLink('system', '系统管理'), key: 'system' },
@@ -83,6 +67,34 @@ const menuOptions = computed(() => {
 })
 
 const activeKey = computed(() => route.name as string)
+
+// 边栏 iOS 毛玻璃配色:亮底 + 苹果蓝选中态,深色字,分组标题灰字。
+// 注意:Naive 菜单本身背景默认透明,真正的不透明层是 sider 的底色,
+// 所以透明度由 sider 的 rgba 控制,不是菜单。
+const menuThemeOverrides = {
+  color: 'rgba(255, 255, 255, 0)',
+  groupTextColor: 'rgba(60, 60, 67, 0.6)',
+  itemTextColor: '#1c1c1e',
+  itemTextColorHover: '#1c1c1e',
+  itemTextColorActive: '#007aff',
+  itemTextColorChildActive: '#007aff',
+  itemColorHover: 'rgba(0, 0, 0, 0.04)',
+  itemColorActive: 'rgba(0, 122, 255, 0.12)',
+  itemColorActiveHover: 'rgba(0, 122, 255, 0.16)',
+  arrowColor: 'rgba(60, 60, 67, 0.6)',
+  arrowColorHover: '#007aff',
+  arrowColorActive: '#007aff',
+}
+
+// 菜单显隐规则(Jason 2026-10-29 定):菜单只列已按 iOS 语言重排的页,
+// 未重排的旧页不显示(路由保留,直接输地址仍能进,功能没删);
+// 重排完一块,再把它的入口放回菜单。不要把所有目录都打开,
+// 否则看不出哪些写了、哪些没写。
+// 已重排:我的 / 仪表板 / 学校校历 / 开学建置 / 教师班级科目场地 /
+// 排课中心 / 调代课中心 / 统计中心 / 系统管理。
+// 未重排(菜单隐藏):学期与节次表 / 配课管理 / 排课工作台 / 自动排课 /
+// 版本与发布 / 课表查询 / 请假登记 / 调代课处理 / 今日调代课 /
+// 调代课纪录 / 代课课时统计 / 教学课时统计 / 通知确认看板。
 
 // 版本号:回报问题时要知道对方是哪一版;升级后也靠它确认升级成功
 const version = ref('')
@@ -114,7 +126,7 @@ async function onLogout() {
   <n-layout has-sider style="height: 100vh">
     <n-layout-sider
       collapse-mode="width"
-      style="background: rgba(255, 255, 255, 0.72); backdrop-filter: saturate(180%) blur(20px); border-right: 1px solid rgba(0, 0, 0, 0.06)"
+      style="background: rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border-right: 1px solid rgba(0, 0, 0, 0.06)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -122,7 +134,7 @@ async function onLogout() {
       @collapse="collapsed = true"
       @expand="collapsed = false"
     >
-      <div style="padding: 18px 16px; font-weight: 700; font-size: 16px; letter-spacing: 1px; color: #000; white-space: nowrap; overflow: hidden">
+      <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
       <n-menu
@@ -130,6 +142,7 @@ async function onLogout() {
         :collapsed="collapsed"
         :collapsed-width="64"
         :options="menuOptions"
+        :theme-overrides="menuThemeOverrides"
         :default-expanded-keys="['basedata-group', 'scheduling-group']"
       />
       <div v-if="version && !collapsed" class="version" data-testid="app-version">
@@ -138,7 +151,7 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout>
-      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.8); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06)">
+      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.65); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06)">
         <n-space justify="end" align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"

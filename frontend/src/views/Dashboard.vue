@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NCard, NEmpty, NSelect, NSpace, NStatistic, NTag, NText } from 'naive-ui'
+import { NButton, NEmpty, NSelect, NSpace, NStatistic, NTag, NText } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listSemesters } from '@/api/semesters'
@@ -242,13 +242,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <h1 style="margin: 0">仪表板</h1>
+  <div class="ios-page">
+    <h1 class="ios-title">仪表板</h1>
 
-    <n-card data-testid="dash-week" :title="weekTitle">
-      <template #header-extra>
-        <n-text depth="3" style="font-size: 13px">{{ weekRangeLabel }}</n-text>
-      </template>
+    <section class="ios-section" data-testid="dash-week">
+      <div class="ios-section-title"><span>{{ weekTitle }}</span><span style="font-size: 13px; font-weight: 400">{{ weekRangeLabel }}</span></div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space v-if="!weekLoading && weekData" vertical>
         <n-text v-if="noStartDate" type="warning" style="font-size: 13px">
           学期未设定开始日期，无法计算周次
@@ -279,12 +279,17 @@ onMounted(() => {
         data-testid="dash-week-none"
       />
       <n-text v-else depth="3">加载中…</n-text>
-    </n-card>
+        </div>
+      </div>
+    </section>
 
-    <n-card
+    <section
       v-if="weekMe && (hoursMonth || hoursSemester)"
-      data-testid="dash-hours" title="我的课时"
+      class="ios-section" data-testid="dash-hours"
     >
+      <div class="ios-section-title">我的课时</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space align="center">
         <n-statistic
           v-if="hoursMonth" label="本月已上课时数"
@@ -296,9 +301,14 @@ onMounted(() => {
         />
         <n-text depth="3" style="font-size: 13px">统计至今天（未来日期不计入已上课时）</n-text>
       </n-space>
-    </n-card>
+        </div>
+      </div>
+    </section>
 
-    <n-card v-if="semester" :title="`${semester.label} · 资料摘要`">
+    <section v-if="semester" class="ios-section">
+      <div class="ios-section-title">{{ semester.label }} · 资料摘要</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <div class="stat-blocks">
         <div class="stat-block" style="--stat-bg: #eaf3ff; --stat-fg: #007aff">
           <div class="stat-value">{{ summary?.subjects ?? 0 }}</div>
@@ -317,9 +327,13 @@ onMounted(() => {
           <div class="stat-label">场地</div>
         </div>
       </div>
-    </n-card>
+        </div>
+      </div>
+    </section>
 
-    <n-card v-else-if="!loading">
+    <section v-else-if="!loading" class="ios-section">
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-empty description="尚未建立任何学期资料">
         <template #extra>
           <n-button type="primary" @click="router.push({ name: 'wizard' })">
@@ -327,9 +341,14 @@ onMounted(() => {
           </n-button>
         </template>
       </n-empty>
-    </n-card>
+        </div>
+      </div>
+    </section>
 
-    <n-card v-if="semester && board" data-testid="dash-today" :title="`今日调代课 · ${boardDateLabel}`">
+    <section v-if="semester && board" class="ios-section" data-testid="dash-today">
+      <div class="ios-section-title">今日调代课 · {{ boardDateLabel }}</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space v-if="board.entries.length" vertical>
         <n-space align="center">
           <n-statistic label="今日异动" :value="board.entries.length" />
@@ -345,8 +364,10 @@ onMounted(() => {
         </div>
       </n-space>
       <n-empty v-else description="今日无调代课" data-testid="dash-noboard" />
-    </n-card>
-  </n-space>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>
 
 <style scoped>

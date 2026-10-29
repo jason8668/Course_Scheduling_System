@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NCard, NCheckbox, NInput, NInputNumber, NPopconfirm, NSpace, NTag, NText,
+  NAlert, NButton, NCheckbox, NInput, NInputNumber, NPopconfirm, NSpace, NTag, NText,
   NUpload,
   useDialog, useMessage,
 } from 'naive-ui'
@@ -366,10 +366,13 @@ async function onResetWizard() {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <h1 style="margin: 0">系统管理</h1>
+  <div class="ios-page">
+    <h1 class="ios-title">系统管理</h1>
 
-    <n-card v-if="isAdmin()" title="系统版本" data-testid="version-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="version-card">
+      <div class="ios-section-title">系统版本</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-alert
           v-if="upgradeNotice" :type="upgradeNotice.error ? 'error' : 'success'"
@@ -449,9 +452,12 @@ async function onResetWizard() {
           </n-text>
         </n-space>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="学校信息" data-testid="school-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="school-card">
+      <div class="ios-section-title">学校信息</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           校名会显示在介面、导出的课表(Excel / PDF / PNG)、代课通知信与 A4 公告单上。
@@ -471,9 +477,12 @@ async function onResetWizard() {
           </n-button>
         </n-space>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="钉钉通知" data-testid="dingtalk-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="dingtalk-card">
+      <div class="ios-section-title">钉钉通知</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           在钉钉群里添加「自定义机器人」(群设置 → 机器人),安全设置选「加签」,
@@ -505,9 +514,12 @@ async function onResetWizard() {
           </n-button>
         </n-space>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="钉钉企业应用(个人上课提醒)" data-testid="dingtalk-app-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="dingtalk-app-card">
+      <div class="ios-section-title">钉钉企业应用(个人上课提醒)</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           学校钉钉管理员在企业组织里建一个「企业内部应用」,开通「工作通知」与
@@ -555,11 +567,14 @@ async function onResetWizard() {
           </n-button>
         </n-space>
       </n-space>
-    </n-card>
+    </div></div></section>
 
     <ReminderHealthCard v-if="isAdmin()" />
 
-    <n-card v-if="isAdmin() && demoAvailable" title="示范资料" data-testid="demo-card">
+    <section v-if="isAdmin() && demoAvailable" class="ios-section" data-testid="demo-card">
+      <div class="ios-section-title">示范资料</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           一键建立一所完整的示范初中「{{ demoSchool || '示范初中' }}」,让你不必先手 key
@@ -580,9 +595,12 @@ async function onResetWizard() {
           </n-button>
         </div>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="通知信件(SMTP)" data-testid="smtp-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="smtp-card">
+      <div class="ios-section-title">通知信件(SMTP)</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-space align="center">
           <n-text depth="3">
@@ -624,9 +642,12 @@ async function onResetWizard() {
           </n-button>
         </div>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="资料备份与还原" data-testid="backup-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="backup-card">
+      <div class="ios-section-title">资料备份与还原</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-space align="center">
           <n-text depth="3">
@@ -649,7 +670,7 @@ async function onResetWizard() {
         </n-space>
 
         <n-text v-if="!backups.length" depth="3">尚无备份。</n-text>
-        <table v-else class="data-table" data-testid="backup-table">
+        <table v-else class="ios-table" data-testid="backup-table">
           <thead>
             <tr><th>时间</th><th>来源</th><th>大小</th><th>操作</th></tr>
           </thead>
@@ -681,9 +702,12 @@ async function onResetWizard() {
           </tbody>
         </table>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="排课设置" data-testid="scheduling-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="scheduling-card">
+      <div class="ios-section-title">排课设置</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           超课时上限依各县市/各校规定自订。上限是「应授节数 + N」——应授本身因身分而异
@@ -710,9 +734,12 @@ async function onResetWizard() {
           </n-button>
         </div>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card v-if="isAdmin()" title="课堂巡视情况记录表" data-testid="patrol-card">
+    <section v-if="isAdmin()" class="ios-section" data-testid="patrol-card">
+      <div class="ios-section-title">课堂巡视情况记录表</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
           印在课堂巡视情况记录表下方的「记录说明」。授课情形、学生学习的代码各校不同,请改成贵校的写法;
@@ -730,9 +757,12 @@ async function onResetWizard() {
           </n-button>
         </div>
       </n-space>
-    </n-card>
+    </div></div></section>
 
-    <n-card title="设置精灵">
+    <section class="ios-section">
+      <div class="ios-section-title">设置精灵</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">重新执行首次设置的引导流程(不会删除既有资料)。</n-text>
         <n-popconfirm @positive-click="onResetWizard">
@@ -742,14 +772,7 @@ async function onResetWizard() {
           确定重新启动设置精灵?
         </n-popconfirm>
       </n-space>
-    </n-card>
-  </n-space>
+    </div></div></section>
+  </div>
 </template>
 
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
-</style>

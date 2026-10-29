@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NCard, NDatePicker, NEmpty, NForm, NFormItem,
+  NAlert, NButton, NDatePicker, NEmpty, NForm, NFormItem,
   NInput, NInputNumber, NModal, NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText,
   useMessage,
 } from 'naive-ui'
@@ -304,9 +304,9 @@ async function onDelete(ev: CalendarEvent) {
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <div class="ios-page">
     <n-space align="center" :wrap="true">
-      <h1 style="margin: 0">学校校历</h1>
+      <h1 class="ios-title">学校校历</h1>
       <n-select
         v-if="semesters.length" :value="sid" :options="semesterOptions"
         style="width: 220px" data-testid="cal-semester" @update:value="onSemesterChange"
@@ -326,7 +326,9 @@ async function onDelete(ev: CalendarEvent) {
     <n-empty v-if="!loading && sid === null" description="尚无可用学期" />
 
     <template v-else-if="sid !== null">
-      <n-card data-testid="cal-overview">
+      <section class="ios-section" data-testid="cal-overview">
+        <div class="ios-card">
+          <div class="ios-card-body">
         <n-space :wrap="true" size="large" align="center">
           <n-text strong>{{ semester?.label }}</n-text>
           <n-text v-if="semesterRange" depth="3">{{ semesterRange }}</n-text>
@@ -337,10 +339,12 @@ async function onDelete(ev: CalendarEvent) {
             :style="{ background: TYPE_COLORS[k].bg, color: TYPE_COLORS[k].fg }"
           >{{ CALENDAR_EVENT_TYPE_LABELS[k] }} {{ typeCounts.get(k) ?? 0 }}</span>
         </n-space>
-      </n-card>
+          </div>
+        </div>
+      </section>
 
       <div v-if="semesterMonths.length" data-testid="cal-month-frames">
-        <h2 class="cal-frames-title">学期日历</h2>
+        <div class="ios-section-title">学期日历</div>
         <n-text v-if="semester && !semester.end_date" depth="3">
           结束日期未设定，按开学起 20 周显示。
         </n-text>
@@ -388,8 +392,8 @@ async function onDelete(ev: CalendarEvent) {
       </n-empty>
 
       <div v-else data-testid="cal-groups">
-        <section v-for="group in monthGroups" :key="group.month" class="cal-month">
-          <h2 class="cal-month-title">{{ group.month }}</h2>
+        <section v-for="group in monthGroups" :key="group.month" class="ios-section">
+          <div class="ios-section-title">{{ group.month }}</div>
           <table class="cal-table">
             <thead>
               <tr>
@@ -508,15 +512,11 @@ async function onDelete(ev: CalendarEvent) {
         </n-space>
       </template>
     </n-modal>
-  </n-space>
+  </div>
 </template>
 
 <style scoped>
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
-.cal-frames-title {
-  font-size: 17px; font-weight: 700; color: #1d1d1f; margin: 4px 0 12px;
-  padding-left: 10px; border-left: 4px solid #007aff;
-}
 .month-frames { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
 @media (max-width: 900px) { .month-frames { grid-template-columns: 1fr; } }
 .month-frame {
@@ -552,11 +552,7 @@ async function onDelete(ev: CalendarEvent) {
   margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .frame-more { font-size: 11px; color: #5b6b73; }
-.cal-month { margin-bottom: 28px; }
-.cal-month-title {
-  font-size: 17px; font-weight: 700; color: #1d1d1f; margin: 0 0 10px;
-  padding-left: 10px; border-left: 4px solid #007aff;
-}
+
 .cal-table { width: 100%; border-collapse: collapse; background: rgba(255, 255, 255, 0.72); border-radius: 16px; overflow: hidden; -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -12px rgba(0, 90, 200, 0.18); }
 .cal-table th, .cal-table td { border-bottom: 1px solid #dde7ea; padding: 9px 10px; text-align: left; font-size: 14px; }
 .cal-table th { background: #eaf3ff; color: #0a4da6; }

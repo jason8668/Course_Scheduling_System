@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NCard, NSpace, NTag, NText } from 'naive-ui'
+import { NButton, NSpace, NTag, NText } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { getReminderHealth } from '@/api/reminderHealth'
 import type { ReminderHealth } from '@/api/reminderHealth'
@@ -28,7 +28,10 @@ function fmtTime(s: string | null): string {
 </script>
 
 <template>
-  <n-card title="上课提醒健康" data-testid="reminder-health-card">
+  <section class="ios-section" data-testid="reminder-health-card">
+    <div class="ios-section-title">上课提醒健康</div>
+    <div class="ios-card">
+      <div class="ios-card-body">
     <n-space vertical>
       <n-text depth="3">
         提醒链一眼看完：配置、排程任务、最近发送、关提醒与未解析的老师。全部学期合计；只读，不发消息。
@@ -71,5 +74,5 @@ function fmtTime(s: string | null): string {
         </n-button>
       </n-space>
     </n-space>
-  </n-card>
+  </div></div></section>
 </template>
