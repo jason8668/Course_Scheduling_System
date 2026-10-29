@@ -886,18 +886,22 @@ onUnmounted(() => {
               <span v-if="a.block_rules.length" class="ios-chip-gray ios-chip" style="margin-left: 4px">
                 {{ a.block_rules.map((b) => `${b.block_size}连堂×${b.count_per_week}`).join('、') }}
               </span>
-            </div>
-            <n-button size="small" text type="primary" @click="openEdit(a)">
-              编辑
-            </n-button>
-            <n-popconfirm @positive-click="removeAssignment(a)">
-              <template #trigger>
-                <n-button size="small" text type="error">
-                  删除
+              <!-- 操作跟在标题信息后面,不再推到行尾:原来标题在左、按钮在右,
+                   整行被 flex:1 撑满,中间一大片空白,看着像两截。 -->
+              <span style="margin-left: 8px; white-space: nowrap">
+                <n-button size="small" text type="primary" @click="openEdit(a)">
+                  编辑
                 </n-button>
-              </template>
-              确定删除这笔配课?
-            </n-popconfirm>
+                <n-popconfirm @positive-click="removeAssignment(a)">
+                  <template #trigger>
+                    <n-button size="small" text type="error" style="margin-left: 8px">
+                      删除
+                    </n-button>
+                  </template>
+                  确定删除这笔配课?
+                </n-popconfirm>
+              </span>
+            </div>
           </div>
         </template>
         <div v-if="alternates.length" style="padding: 10px 16px; border-top: 1px solid rgba(0,0,0,0.06)">

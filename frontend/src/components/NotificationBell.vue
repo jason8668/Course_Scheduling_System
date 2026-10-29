@@ -75,7 +75,12 @@ const TYPE_TAG: Record<string, string> = {
   <n-popover trigger="click" placement="bottom-end" @update:show="onOpen">
     <template #trigger>
       <n-badge :value="unread" :max="99" data-testid="notif-badge">
-        <n-button quaternary circle data-testid="notif-bell">🔔</n-button>
+        <button
+          type="button" class="bell-btn" :class="{ 'has-unread': unread > 0 }"
+          data-testid="notif-bell" aria-label="通知"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
+        </button>
       </n-badge>
     </template>
 
@@ -111,3 +116,24 @@ const TYPE_TAG: Record<string, string> = {
     </div>
   </n-popover>
 </template>
+
+<style scoped>
+/* 顶栏玻璃圆钮:与「校历」玻璃药丸同一种材质,无未读时是中性玻璃,
+   有未读时透出苹果蓝,铃铛用描边线条图标,不用 emoji,与整站风格统一。 */
+.bell-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #1c1c1e; cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5));
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(30, 60, 120, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.bell-btn:hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.65)); }
+.bell-btn.has-unread {
+  color: #007aff;
+  background: linear-gradient(180deg, rgba(0, 122, 255, 0.16), rgba(0, 122, 255, 0.08));
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+</style>

@@ -18,6 +18,9 @@ const ROLE_LABELS: Record<string, string> = {
   teacher: '教师',
 }
 const roleLabels = computed(() => (auth.user?.roles ?? []).map((r) => ROLE_LABELS[r] ?? r))
+// 顶栏只显示一次:管理员帐号的显示名本身就是「系统管理员」,与角色标签重字,
+// 重的那个不画,只留与名字不同的角色(例如教务主任)。
+const otherRoleLabels = computed(() => roleLabels.value.filter((l) => l !== auth.user?.display_name))
 
 // 手机尺寸默认收合侧边栏:390px 宽的萤幕若被 220px 侧栏占去,课表几乎没有空间
 const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
@@ -248,9 +251,7 @@ async function onLogout() {
           </n-button>
           <notification-bell />
           <n-text v-if="auth.user">{{ auth.user.display_name }}</n-text>
-          <n-tag v-for="label in roleLabels" :key="label" type="info" size="small">
-            {{ label }}
-          </n-tag>
+          <span v-for="label in otherRoleLabels" :key="label" class="ios-chip">{{ label }}</span>
           <n-button text size="small" data-testid="header-change-password" @click="onChangePassword">
             修改密码
           </n-button>
