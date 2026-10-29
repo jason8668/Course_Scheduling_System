@@ -104,8 +104,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <h2 style="margin: 0">{{ canManage ? '代课课时统计' : '我的代课课时' }}</h2>
+  <div class="ios-page">
+    <h1 class="ios-title">{{ canManage ? '代课课时统计' : '我的代课课时' }}</h1>
 
     <n-space align="center" :wrap="true">
       <n-select
@@ -154,7 +154,7 @@ onMounted(async () => {
 
     <template v-else-if="report?.details.length">
       <!-- 汇总:每位教师 -->
-      <table v-if="canManage" class="data-table" data-testid="stats-summary">
+      <table v-if="canManage" class="ios-table" data-testid="stats-summary">
         <thead>
           <tr>
             <th>教师</th><th>代课节数</th><th>{{ hasDaily ? '课时计费节数' : '计费节数' }}</th>
@@ -181,7 +181,7 @@ onMounted(async () => {
       </table>
 
       <!-- 明细:逐节 -->
-      <table class="data-table" data-testid="stats-detail">
+      <table class="ios-table" data-testid="stats-detail">
         <thead>
           <tr>
             <th v-if="canManage">教师</th>
@@ -209,14 +209,5 @@ onMounted(async () => {
         </tbody>
       </table>
     </template>
-  </n-space>
+  </div>
 </template>
-
-<style scoped>
-.data-table { border-collapse: collapse; width: 100%; }
-.data-table th, .data-table td {
-  border: 1px solid var(--n-border-color, #e0e0e0); padding: 6px 10px; text-align: left;
-  white-space: nowrap;
-}
-.data-table th { background: rgba(128, 128, 128, 0.08); font-weight: 600; }
-</style>

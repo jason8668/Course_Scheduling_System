@@ -34,13 +34,12 @@ const menuOptions = computed<MenuOption[]>(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
   const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
   const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
-  const schoolCalendar = { label: menuLink('school-calendar', '学校校历'), key: 'school-calendar' }
   const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
-  // 纯教师帐号:只列已重排的五页。我的代课课时尚未重排,菜单隐藏,路由保留。
-  if (!canManage.value) return [my, dashboard, query, schoolCalendar, leaves]
+  // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
+  // 纯教师帐号:只列已重排的四页。我的代课课时尚未重排,菜单隐藏,路由保留。
+  if (!canManage.value) return [my, dashboard, query, leaves]
   return [
     dashboard,
-    schoolCalendar,
     query,
     {
       label: '基础资料',
@@ -71,6 +70,8 @@ const menuOptions = computed<MenuOption[]>(() => {
         leaves,
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
         { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
+        { label: menuLink('substitution-stats', '代课课时统计'), key: 'substitution-stats' },
+        { label: menuLink('teaching-hours', '教学课时统计'), key: 'teaching-hours' },
         { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },
@@ -104,11 +105,12 @@ const menuThemeOverrides = {
 // 未重排的旧页不显示(路由保留,直接输地址仍能进,功能没删);
 // 重排完一块,再把它的入口放回菜单。不要把所有目录都打开,
 // 否则看不出哪些写了、哪些没写。
-// 已重排:我的 / 仪表板 / 学校校历 / 开学建置 / 教师班级科目场地 /
+// 已重排:我的 / 仪表板 / 开学建置 / 教师班级科目场地 /
 // 排课中心 / 调代课中心 / 统计中心 / 系统管理 / 课表查询 / 请假登记 /
-// 今日调代课 / 调代课纪录 / 通知确认看板。
+// 今日调代课 / 调代课纪录 / 代课课时统计 / 教学课时统计 / 通知确认看板。
+// 校历已重排,但 Jason 定为顶栏按钮(不在菜单里单列模块)。
 // 未重排(菜单隐藏):学期与节次表 / 配课管理 / 排课工作台 / 自动排课 /
-// 版本与发布 / 调代课处理 / 代课课时统计 / 教学课时统计。
+// 版本与发布 / 调代课处理。
 
 // 版本号:回报问题时要知道对方是哪一版;升级后也靠它确认升级成功
 const version = ref('')
@@ -184,7 +186,7 @@ async function onLogout() {
   <n-layout has-sider style="height: 100vh">
     <n-layout-sider
       collapse-mode="width"
-      style="background: rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border-right: 1px solid rgba(0, 0, 0, 0.06)"
+      style="background: rgba(255, 255, 255, 0.5); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -192,6 +194,10 @@ async function onLogout() {
       @collapse="collapsed = true"
       @expand="collapsed = false"
     >
+      <!-- 边栏悬浮圆角玻璃(Jason 2026-10-29 照片定的 Liquid Glass 效果):
+        不再是贴满左边的整列,而是一块圆角玻璃板悬浮在页面底色上——
+        四周留 12px 缝隙、20px 圆角、半透明 + 模糊 + 柔和阴影,
+        就像控制中心里一块玻璃小组件盖在壁纸上。收合后同样是一块窄玻璃板。 -->
       <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
@@ -220,15 +226,21 @@ async function onLogout() {
           >
             <n-tag type="warning" size="small" round>有新版本 {{ newVersion }}</n-tag>
           </router-link>
+          <n-button
+            text type="primary" size="small" data-testid="header-calendar"
+            @click="router.push({ name: 'school-calendar' })"
+          >
+            校历
+          </n-button>
           <notification-bell />
           <n-text v-if="auth.user">{{ auth.user.display_name }}</n-text>
           <n-tag v-for="label in roleLabels" :key="label" type="info" size="small">
             {{ label }}
           </n-tag>
-          <n-button size="small" data-testid="header-change-password" @click="onChangePassword">
+          <n-button text size="small" data-testid="header-change-password" @click="onChangePassword">
             修改密码
           </n-button>
-          <n-button size="small" @click="onLogout">退出登录</n-button>
+          <n-button text size="small" @click="onLogout">退出登录</n-button>
         </n-space>
       </n-layout-header>
 

@@ -3,7 +3,7 @@
 // 时间可按本周、一学期或自选日期;结果可按年级打印。
 // 口径:已发布课表按日期展开、叠加请假调代课、未来日期不计入「已上」。
 import {
-  NButton, NDatePicker, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTable, NTag, NText,
+  NButton, NDatePicker, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -95,8 +95,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <h2 style="margin: 0">教学课时统计</h2>
+  <div class="ios-page">
+    <h1 class="ios-title">教学课时统计</h1>
 
     <n-space align="center" :wrap="true">
       <n-select
@@ -133,7 +133,7 @@ onMounted(async () => {
       <n-tag type="info" data-testid="hours-total">合计 {{ report.total_periods }} 节</n-tag>
     </n-space>
 
-    <n-table v-if="report?.teachers.length" :bordered="true" :single-line="false" data-testid="hours-table">
+    <table v-if="report?.teachers.length" class="ios-table" data-testid="hours-table">
       <thead>
         <tr>
           <th>教师</th>
@@ -155,7 +155,7 @@ onMounted(async () => {
           </td>
         </tr>
       </tbody>
-    </n-table>
+    </table>
     <n-empty v-else-if="report && !loading" description="该范围内没有已上课时（可能尚无已发布课表）" />
-  </n-space>
+  </div>
 </template>

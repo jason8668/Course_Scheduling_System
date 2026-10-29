@@ -311,10 +311,10 @@ async function onDelete(ev: CalendarEvent) {
         v-if="semesters.length" :value="sid" :options="semesterOptions"
         style="width: 220px" data-testid="cal-semester" @update:value="onSemesterChange"
       />
-      <n-button v-if="canManage && sid !== null" type="primary" data-testid="cal-add" @click="openCreate()">
+      <n-button v-if="canManage && sid !== null" type="primary" round data-testid="cal-add" @click="openCreate()">
         新增活动
       </n-button>
-      <n-button v-if="sid !== null" data-testid="cal-print" @click="openPrint">
+      <n-button v-if="sid !== null" text data-testid="cal-print" @click="openPrint">
         打印校历
       </n-button>
     </n-space>
