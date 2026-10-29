@@ -69,19 +69,10 @@ const menuOptions = computed<MenuOption[]>(() => {
         { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
         { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
-        { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },
-    {
-      label: '统计',
-      key: 'stats-group',
-      type: 'group',
-      children: [
-        { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
-        { label: menuLink('substitution-stats', '代课课时统计'), key: 'substitution-stats' },
-        { label: menuLink('teaching-hours', '教学课时统计'), key: 'teaching-hours' },
-      ],
-    },
+    // 统计中心单列顶层:统计组只剩它一个孩子,成组就是多余一层(与排课中心同例)。
+    { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
     { label: menuLink('system', '系统管理'), key: 'system' },
   ]
 })
@@ -117,8 +108,10 @@ const menuThemeOverrides = {
 // 调代课处理 / 今日调代课 / 调代课纪录 / 代课课时统计 / 教学课时统计 /
 // 通知确认看板。
 // 菜单分组(Jason 2026-10-29 定):调代课组拆为调代课 + 统计两组;
-// 统计中心已覆盖代课课时统计/教学课时统计/通知确认看板的功能,
-// 但三页先留着不藏,去重另定。
+// 统计去重(Jason 2026-10-30 定:按构思做,简单明了):统计中心已覆盖
+// 代课课时统计/教学课时统计/通知确认看板的功能,三页退出菜单(路由保留,
+// 直接输地址仍能进,功能没删);统计组只剩统计中心一个孩子,成组多余一层,
+// 故统计中心单列顶层(与排课中心同例)。
 // 仪表板不再挂「查看完整课表」入口卡:课表查询已回菜单,挂着就是多余一处
 // (Jason 2026-10-30 定:内容不冗余,能简单尽量简单)。
 // 校历已重排,但 Jason 定为顶栏按钮(不在菜单里单列模块)。
