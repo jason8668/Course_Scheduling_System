@@ -273,6 +273,14 @@ onMounted(() => {
             weekAffected.map((e) => `周${WEEKDAY_CN[e.weekday - 1]}第${e.period_no}节 ${e.subject}`).join('、')
           }}）
         </n-text>
+        <n-space style="margin-top: 4px">
+          <n-button
+            text type="primary" data-testid="dash-query-link"
+            @click="router.push({ name: 'timetable-query' })"
+          >
+            查看完整课表（按班级 / 教师 / 场地，可导出打印）→
+          </n-button>
+        </n-space>
       </n-space>
       <n-empty
         v-else-if="!weekLoading" description="本周课表：尚无已发布的课表"
