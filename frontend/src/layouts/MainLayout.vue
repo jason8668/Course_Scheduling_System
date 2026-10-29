@@ -32,15 +32,17 @@ const canManage = computed(() =>
 
 const menuOptions = computed<MenuOption[]>(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
-  const dashboard = { label: menuLink('dashboard', '首页'), key: 'dashboard' }
+  const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
+  const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
   const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
   // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
-  // 课表查询(Jason 2026-10-29 定):查课表只留首页一处,课表查询不进菜单,
-  // 路由保留,首页本周卡片给「查看完整课表」入口链接(按班级/教师/场地/导出打印都在里面)。
-  // 纯教师帐号:只列已重排的三页。我的代课课时尚未重排,菜单隐藏,路由保留。
-  if (!canManage.value) return [my, dashboard, leaves]
+  // 仪表板与课表查询(Jason 2026-10-29 23:59 定):两个都要在菜单里,缺一不可——
+  // 之前把课表查询移出菜单、把仪表板改名首页,他找不到,作废,全部调回来。
+  // 纯教师帐号:只列已重排的四页。我的代课课时尚未重排,菜单隐藏,路由保留。
+  if (!canManage.value) return [my, dashboard, query, leaves]
   return [
     dashboard,
+    query,
     {
       label: '基础资料',
       key: 'basedata-group',
@@ -107,16 +109,14 @@ const menuThemeOverrides = {
 // 未重排的旧页不显示(路由保留,直接输地址仍能进,功能没删);
 // 重排完一块,再把它的入口放回菜单。不要把所有目录都打开,
 // 否则看不出哪些写了、哪些没写。
-// 已重排:我的 / 首页 / 开学建置 / 学期与节次表 / 基础数据 /
-// 排课中心 / 调代课中心 / 统计中心 / 系统管理 / 请假登记 /
+// 已重排:我的 / 仪表板 / 开学建置 / 学期与节次表 / 基础数据 /
+// 排课中心 / 调代课中心 / 统计中心 / 系统管理 / 课表查询 / 请假登记 /
 // 调代课处理 / 今日调代课 / 调代课纪录 / 代课课时统计 / 教学课时统计 /
 // 通知确认看板。
 // 菜单分组(Jason 2026-10-29 定):调代课组拆为调代课 + 统计两组;
 // 统计中心已覆盖代课课时统计/教学课时统计/通知确认看板的功能,
 // 但三页先留着不藏,去重另定。
-// 课表查询已重排,但 Jason 定:查课表只留首页一处,课表查询不进菜单
-// (路由保留,首页本周卡片给入口链接);首页内容完整保留
-// (本周课表 + 我的课时 + 资料摘要 + 今日调代课)。
+// 仪表板本周卡片末尾有「查看完整课表」入口链接,指向课表查询。
 // 校历已重排,但 Jason 定为顶栏按钮(不在菜单里单列模块)。
 // 排课旧页(配课管理 / 排课工作台 / 自动排课 / 版本与发布)功能已由排课中心
 // 覆盖,不再放回菜单,路由保留(直接输地址仍能进)。
@@ -194,11 +194,11 @@ async function onLogout() {
 <template>
   <n-layout
     has-sider
-    style="height: 100vh; background: linear-gradient(180deg, #DDE9FC 0%, #EAF1FD 30%, #F5F5F7 60%, #F5F5F7 100%)"
+    style="height: 100vh; background: linear-gradient(180deg, #C7D9F6 0%, #DDE7F8 30%, #E9EBF2 65%, #F5F5F7 100%)"
   >
     <n-layout-sider
       collapse-mode="width"
-      style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.45)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.85); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)"
+      style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.35)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 12px 40px rgba(30, 60, 120, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95)"
       :collapsed-width="64"
       :width="220"
       show-trigger
