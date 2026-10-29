@@ -146,7 +146,11 @@ def ensure_scheduled() -> None:
             schedule_class_reminder()
             logger.info("已排入上课提醒,间隔 %s", CLASS_REMINDER_INTERVAL)
         if HOLIDAY_SYNC_JOB_ID not in pending:
-            schedule_holiday_sync()
-            logger.info("已排入假日同步,间隔 %s", HOLIDAY_SYNC_INTERVAL)
+            # 首次排入立即跑一次(已建学期马上补假日),跑完任务自己续期 24 小时后;
+            # 心跳兜底仍用 24 小时后(断链补排不急于一时,假日不是分钟级任务)。
+            from app.workers.holiday_sync_job import holiday_sync_job
+
+            ops_queue.enqueue(holiday_sync_job, job_id=HOLIDAY_SYNC_JOB_ID)
+            logger.info("已排入假日同步(首次立即跑,之后间隔 %s)", HOLIDAY_SYNC_INTERVAL)
     except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
         logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")
