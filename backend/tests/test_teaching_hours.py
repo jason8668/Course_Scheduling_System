@@ -181,6 +181,28 @@ def test_substitute_moves_hours(db, w):
     assert _by_grade(db, w, w["start"], w["start"] + timedelta(days=20), "林师") == {7: 7}
 
 
+def test_substitute_total_split(db, w):
+    """代课拆分:代课教师的代课节数单独计,自己的课不计入代课。"""
+    _leave(db, w, "王师", w["start"] + timedelta(days=7), 1, "substitute", "林师")
+    rows, _s, _e = hours_service.compute(db, w["sem"], w["start"], w["start"] + timedelta(days=20))
+    by_name = {r.teacher_name: r for r in rows}
+    assert by_name["林师"].total == 7
+    assert by_name["林师"].substitute_total == 1
+    assert by_name["王师"].total == 4
+    assert by_name["王师"].substitute_total == 0
+
+
+def test_swap_substitute_total(db, w):
+    """对调:代对方那节算代课,补课那节算自己的课,不算代课。"""
+    _leave(db, w, "陈师", w["start"] + timedelta(days=14), 1, "swap", "林师",
+           swap_date=w["start"] + timedelta(days=16), swap_period_no=1,
+           subject="数学", class_names="801")
+    rows, _s, _e = hours_service.compute(db, w["sem"], w["start"], w["start"] + timedelta(days=20))
+    by_name = {r.teacher_name: r for r in rows}
+    assert by_name["林师"].substitute_total == 1
+    assert by_name["陈师"].substitute_total == 0
+
+
 def test_self_study_removes_hours(db, w):
     """自习:缺课教师扣掉,无人加上。"""
     _leave(db, w, "林师", w["start"] + timedelta(days=9), 1, "self_study",

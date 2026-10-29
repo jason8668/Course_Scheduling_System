@@ -64,6 +64,7 @@ def _out(
             TeacherHoursOut(
                 teacher_id=r.teacher_id, teacher_name=r.teacher_name, total=r.total,
                 by_grade={str(g): n for g, n in sorted(r.by_grade.items())},
+                substitute_total=r.substitute_total,
             )
             for r in rows
         ],

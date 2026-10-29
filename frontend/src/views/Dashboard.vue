@@ -291,14 +291,20 @@ onMounted(() => {
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space align="center">
-        <n-statistic
-          v-if="hoursMonth" label="本月已上课时数"
-          :value="hoursMonth.teachers[0]?.total ?? 0"
-        />
-        <n-statistic
-          v-if="hoursSemester" label="本学期已上课时数"
-          :value="hoursSemester.teachers[0]?.total ?? 0"
-        />
+        <div v-if="hoursMonth">
+          <n-statistic
+            label="本月已上课时数"
+            :value="hoursMonth.teachers[0]?.total ?? 0"
+          />
+          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursMonth.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
+        </div>
+        <div v-if="hoursSemester">
+          <n-statistic
+            label="本学期已上课时数"
+            :value="hoursSemester.teachers[0]?.total ?? 0"
+          />
+          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursSemester.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
+        </div>
         <n-text depth="3" style="font-size: 13px">统计至今天（未来日期不计入已上课时）</n-text>
       </n-space>
         </div>

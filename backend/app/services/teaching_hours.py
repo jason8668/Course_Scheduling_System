@@ -44,6 +44,8 @@ class TeacherHours:
     teacher_name: str
     total: int = 0
     by_grade: dict[int, int] = field(default_factory=dict)
+    # 其中代课节数:替别人上的课(代课/对调中代对方那节);对调补课算自己的课,不计入
+    substitute_total: int = 0
 
 
 def _published_timetable(db: Session, semester_id: int) -> Timetable | None:
@@ -125,6 +127,8 @@ def compute(
 
     # (教师, 日期, 节次) -> 年级集合;底数先按已发布课表展开
     slots: dict[tuple[int, date, int], set[int]] = {}
+    # 同格来源:base=自己的课,substitute=替别人代的课;被扣掉的格不计(只按现存格查)
+    slot_origin: dict[tuple[int, date, int], str] = {}
     holidays = _holidays(db, semester.id)
     for e in entries:
         a = e.assignment
@@ -152,6 +156,7 @@ def compute(
                             continue
                         for tid in teacher_ids:
                             slots.setdefault((tid, d, p), set()).update(member_grades)
+                            slot_origin.setdefault((tid, d, p), "base")
             d += timedelta(days=1)
 
     # 请假调代课异动:先找底数里对应的那格(拿年级),再扣/加
@@ -202,6 +207,7 @@ def compute(
             slots.pop((absent, ap.date, ap.period_no), None)
             if sub.handler_teacher_id is not None and (teacher_id is None or sub.handler_teacher_id == teacher_id):
                 slots[(sub.handler_teacher_id, ap.date, ap.period_no)] = grades
+                slot_origin[(sub.handler_teacher_id, ap.date, ap.period_no)] = "substitute"
         elif sub.type in (SubstitutionType.self_study.value, SubstitutionType.cancel.value):
             slots.pop((absent, ap.date, ap.period_no), None)
         elif sub.type == SubstitutionType.merge.value:
@@ -211,6 +217,7 @@ def compute(
             slots.pop((absent, ap.date, ap.period_no), None)
             if sub.handler_teacher_id is not None and (teacher_id is None or sub.handler_teacher_id == teacher_id):
                 slots[(sub.handler_teacher_id, ap.date, ap.period_no)] = grades
+                slot_origin[(sub.handler_teacher_id, ap.date, ap.period_no)] = "substitute"
             if sub.swap_date is not None:
                 makeup.append(sub)
 
@@ -227,6 +234,7 @@ def compute(
         slots.pop((handler, sub.swap_date, swap_period), None)
         if teacher_id is None or absent == teacher_id:
             slots[(absent, sub.swap_date, swap_period)] = grades
+            slot_origin[(absent, sub.swap_date, swap_period)] = "base"
 
     hours: dict[int, TeacherHours] = {}
     for (tid, _d, _p), grades in slots.items():
@@ -236,6 +244,8 @@ def compute(
             continue
         h = hours.setdefault(tid, TeacherHours(teacher_id=tid, teacher_name=teachers[tid]))
         h.total += 1
+        if slot_origin.get((tid, _d, _p)) == "substitute":
+            h.substitute_total += 1
         for g in grades:
             h.by_grade[g] = h.by_grade.get(g, 0) + 1
     out = sorted(hours.values(), key=lambda h: h.teacher_name)

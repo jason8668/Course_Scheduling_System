@@ -8,6 +8,7 @@ export interface TeacherHours {
   teacher_name: string
   total: number
   by_grade: Record<string, number>
+  substitute_total: number
 }
 
 export interface TeachingHoursReport {

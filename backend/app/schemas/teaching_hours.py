@@ -6,6 +6,7 @@ class TeacherHoursOut(BaseModel):
     teacher_name: str
     total: int
     by_grade: dict[str, int] = {}
+    substitute_total: int = 0
 
 
 class TeachingHoursOut(BaseModel):
