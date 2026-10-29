@@ -55,6 +55,7 @@ const menuOptions = computed(() => {
       label: '排课作业',
       key: 'scheduling-group',
       children: [
+        { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
         { label: menuLink('assignments', '配课管理'), key: 'assignments' },
         { label: menuLink('workbench', '排课工作台'), key: 'workbench' },
         { label: menuLink('auto-schedule', '自动排课'), key: 'auto-schedule' },

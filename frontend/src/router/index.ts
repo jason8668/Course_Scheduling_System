@@ -86,6 +86,11 @@ const routes = [
         component: () => import('@/views/basedata/BaseData.vue'),
       },
       {
+        path: 'scheduling-center',
+        name: 'scheduling-center',
+        component: () => import('@/views/scheduling/SchedulingCenter.vue'),
+      },
+      {
         path: 'scheduling/assignments',
         name: 'assignments',
         component: () => import('@/views/scheduling/Assignments.vue'),
