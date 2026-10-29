@@ -243,7 +243,7 @@ onMounted(() => {
 
 <template>
   <div class="ios-page">
-    <h1 class="ios-title">仪表板</h1>
+    <h1 class="ios-title">首页</h1>
 
     <section class="ios-section" data-testid="dash-week">
       <div class="ios-section-title"><span>{{ weekTitle }}</span><span style="font-size: 13px; font-weight: 400">{{ weekRangeLabel }}</span></div>

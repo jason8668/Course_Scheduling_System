@@ -32,7 +32,7 @@ const canManage = computed(() =>
 
 const menuOptions = computed<MenuOption[]>(() => {
   const my = { label: menuLink('my', '我的'), key: 'my' }
-  const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
+  const dashboard = { label: menuLink('dashboard', '首页'), key: 'dashboard' }
   const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
   const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
   // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
@@ -50,7 +50,7 @@ const menuOptions = computed<MenuOption[]>(() => {
       children: [
         { label: menuLink('setup-flow', '开学建置'), key: 'setup-flow' },
         { label: menuLink('semesters', '学期与节次表'), key: 'semesters' },
-        { label: menuLink('basedata', '教师/班级/科目/场地'), key: 'basedata' },
+        { label: menuLink('basedata', '基础数据'), key: 'basedata' },
       ],
     },
     { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
@@ -60,14 +60,21 @@ const menuOptions = computed<MenuOption[]>(() => {
       type: 'group',
       children: [
         { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
-        { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
         leaves,
         { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
         { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
+        { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
+      ],
+    },
+    {
+      label: '统计',
+      key: 'stats-group',
+      type: 'group',
+      children: [
+        { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
         { label: menuLink('substitution-stats', '代课课时统计'), key: 'substitution-stats' },
         { label: menuLink('teaching-hours', '教学课时统计'), key: 'teaching-hours' },
-        { label: menuLink('notification-board', '通知确认看板'), key: 'notification-board' },
       ],
     },
     { label: menuLink('system', '系统管理'), key: 'system' },
@@ -100,10 +107,13 @@ const menuThemeOverrides = {
 // 未重排的旧页不显示(路由保留,直接输地址仍能进,功能没删);
 // 重排完一块,再把它的入口放回菜单。不要把所有目录都打开,
 // 否则看不出哪些写了、哪些没写。
-// 已重排:我的 / 仪表板 / 开学建置 / 学期与节次表 / 教师班级科目场地 /
+// 已重排:我的 / 首页 / 开学建置 / 学期与节次表 / 基础数据 /
 // 排课中心 / 调代课中心 / 统计中心 / 系统管理 / 课表查询 / 请假登记 /
 // 调代课处理 / 今日调代课 / 调代课纪录 / 代课课时统计 / 教学课时统计 /
 // 通知确认看板。
+// 菜单分组(Jason 2026-10-29 定):调代课组拆为调代课 + 统计两组;
+// 统计中心已覆盖代课课时统计/教学课时统计/通知确认看板的功能,
+// 但三页先留着不藏,去重另定。
 // 校历已重排,但 Jason 定为顶栏按钮(不在菜单里单列模块)。
 // 排课旧页(配课管理 / 排课工作台 / 自动排课 / 版本与发布)功能已由排课中心
 // 覆盖,不再放回菜单,路由保留(直接输地址仍能进)。

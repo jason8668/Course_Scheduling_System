@@ -26,7 +26,7 @@ describe('Dashboard', () => {
       global: { plugins: [createPinia(), makeRouter()] },
     })
     await flushPromises()
-    expect(wrapper.text()).toContain('仪表板')
+    expect(wrapper.text()).toContain('首页')
     expect(wrapper.text()).toContain('尚未建立任何学期资料')
   })
 })
