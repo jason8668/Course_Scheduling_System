@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NCard, NEmpty, NModal, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
+  NAlert, NButton, NEmpty, NModal, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
@@ -314,9 +314,9 @@ function candidateTagType(c: Candidate): string {
   <!-- 视窗要放在 n-space 外面:n-space 会把每个子节点包一层没有 key 的 div,假单卡片数量一变,
        视窗就跟著换位置重挂,正式建置下会关不掉(v1.2.14 在「学期与节次表」踩过)。 -->
   <div>
-    <n-space vertical size="large">
+    <div class="ios-page">
       <n-space align="center">
-        <h2 style="margin: 0">调代课处理</h2>
+        <h1 class="ios-title">调代课处理</h1>
         <n-select
           :value="sid" :options="semesterOptions" style="width: 220px"
           placeholder="选择学期" @update:value="onSemesterChange"
@@ -327,35 +327,38 @@ function candidateTagType(c: Candidate): string {
       <n-empty v-else-if="!activeLeaves.length" description="目前没有待处理的请假" />
 
       <template v-else>
-        <n-card
-          v-for="l in activeLeaves" :key="l.id" size="small" data-testid="sub-leave"
-          :title="`${l.teacher_name} · ${l.leave_type_label} · 待处理 ${l.pending_count} 节`"
+        <section
+          v-for="l in activeLeaves" :key="l.id" class="ios-section" data-testid="sub-leave"
         >
-          <template
-            v-if="pendingOf(l).length > 1 || swapIds(l).length || substituteIds(l).length"
-            #header-extra
-          >
-            <n-space size="small">
-              <n-button
-                v-if="pendingOf(l).length > 1" size="small" type="primary" ghost
-                data-testid="sub-batch-open" @click="openBatch(l)"
-              >
-                整批指派代课
-              </n-button>
-              <n-button
-                v-if="swapIds(l).length" size="small" data-testid="sub-print-leave"
-                @click="printSlips('swap', swapIds(l))"
-              >
-                打印调课单({{ swapIds(l).length }} 节)
-              </n-button>
-              <n-button
-                v-if="substituteIds(l).length" size="small" data-testid="sub-print-leave-sub"
-                @click="printSlips('substitute', substituteIds(l))"
-              >
-                打印代课单({{ substituteIds(l).length }} 节)
-              </n-button>
-            </n-space>
-          </template>
+          <div class="ios-section-title">
+            <span>{{ `${l.teacher_name} · ${l.leave_type_label} · 待处理 ${l.pending_count} 节` }}</span>
+            <span
+              v-if="pendingOf(l).length > 1 || swapIds(l).length || substituteIds(l).length"
+            >
+              <n-space size="small">
+                <n-button
+                  v-if="pendingOf(l).length > 1" size="small" type="primary" ghost
+                  data-testid="sub-batch-open" @click="openBatch(l)"
+                >
+                  整批指派代课
+                </n-button>
+                <n-button
+                  v-if="swapIds(l).length" size="small" data-testid="sub-print-leave"
+                  @click="printSlips('swap', swapIds(l))"
+                >
+                  打印调课单({{ swapIds(l).length }} 节)
+                </n-button>
+                <n-button
+                  v-if="substituteIds(l).length" size="small" data-testid="sub-print-leave-sub"
+                  @click="printSlips('substitute', substituteIds(l))"
+                >
+                  打印代课单({{ substituteIds(l).length }} 节)
+                </n-button>
+              </n-space>
+            </span>
+          </div>
+          <div class="ios-card">
+            <div class="ios-card-body">
           <n-space vertical size="small">
             <div v-for="p in l.affected_periods" :key="p.id" data-testid="sub-period">
               <n-space align="center" :wrap="false">
@@ -401,10 +404,11 @@ function candidateTagType(c: Candidate): string {
               </n-space>
 
               <!-- 展开:代课推荐 + 其他处置 -->
-              <n-card
-                v-if="openId === p.id" size="small" embedded style="margin: 8px 0 8px 40px"
+              <div
+                v-if="openId === p.id" class="ios-card" style="margin: 8px 0 8px 40px"
                 data-testid="sub-panel"
               >
+                <div class="ios-card-body">
                 <n-space vertical size="small">
                   <n-text v-if="loadingRec" depth="3">计算可代教师中…</n-text>
 
@@ -535,12 +539,15 @@ function candidateTagType(c: Candidate): string {
                     </template>
                   </div>
                 </n-space>
-              </n-card>
+                </div>
+              </div>
             </div>
           </n-space>
-        </n-card>
+            </div>
+          </div>
+        </section>
       </template>
-    </n-space>
+    </div>
 
     <n-modal
       v-model:show="batchShow" preset="card" style="max-width: 560px"

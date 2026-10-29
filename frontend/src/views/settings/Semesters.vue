@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NCard, NCheckbox, NDatePicker, NDivider, NEmpty, NInputNumber, NModal,
+  NButton, NCheckbox, NDatePicker, NEmpty, NInputNumber, NModal,
   NPopconfirm, NSelect, NSpace, NSwitch, NTag, NText, useMessage,
 } from 'naive-ui'
 import { academicYearLabel } from '@/utils/labels'
@@ -205,10 +205,13 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
 
 <template>
   <div>
-    <n-space vertical size="large">
-      <h1 style="margin: 0">学期与节次表</h1>
+    <div class="ios-page">
+      <h1 class="ios-title">学期与节次表</h1>
 
-      <n-card title="建立学期">
+      <section class="ios-section">
+        <div class="ios-section-title">建立学期</div>
+        <div class="ios-card">
+          <div class="ios-card-body">
         <n-space align="center" :wrap="true">
           <n-text>学年度</n-text>
           <n-input-number v-model:value="form.academic_year" :min="2000" :max="2100" style="width: 120px" />
@@ -236,37 +239,44 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
         <n-text depth="3" style="font-size: 13px">
           起讫日期依贵校校历填写;请假展开节次、今日看板与调代课都以它为准。
         </n-text>
-      </n-card>
+          </div>
+        </div>
+      </section>
 
       <n-empty v-if="!loading && semesters.length === 0" description="尚未建立任何学期" />
 
-      <n-card v-for="sem in semesters" :key="sem.id">
-        <n-space justify="space-between" align="center">
-          <n-space align="center">
-            <strong>{{ sem.label }}</strong>
-            <n-tag :type="statusType[sem.status]" size="small">{{ STATUS_LABELS[sem.status] }}</n-tag>
-            <n-text v-if="sem.start_date && sem.end_date" depth="3" data-testid="sem-range">
-              {{ sem.start_date }} ~ {{ sem.end_date }}
-            </n-text>
-            <n-tag v-else type="warning" size="small" data-testid="sem-no-range">
-              尚未设置起讫日期(无法登记请假)
-            </n-tag>
-          </n-space>
-          <n-space>
-            <n-button size="tiny" data-testid="sem-edit" @click="openEdit(sem)">编辑学期</n-button>
-            <n-button size="tiny" data-testid="copy-semester" @click="openCopy(sem)">
-              复制到新学期
-            </n-button>
-            <n-popconfirm @positive-click="onDeleteSemester(sem.id)">
-              <template #trigger>
-                <n-button size="tiny" type="error" ghost>删除学期</n-button>
-              </template>
-              确定删除此学期?其节次表将一并移除。
-            </n-popconfirm>
-          </n-space>
-        </n-space>
-
-        <n-divider style="margin: 12px 0" />
+      <section v-for="sem in semesters" :key="sem.id" class="ios-section">
+        <div class="ios-section-title">
+          <span>
+            <n-space align="center">
+              <strong>{{ sem.label }}</strong>
+              <n-tag :type="statusType[sem.status]" size="small">{{ STATUS_LABELS[sem.status] }}</n-tag>
+              <n-text v-if="sem.start_date && sem.end_date" depth="3" data-testid="sem-range">
+                {{ sem.start_date }} ~ {{ sem.end_date }}
+              </n-text>
+              <n-tag v-else type="warning" size="small" data-testid="sem-no-range">
+                尚未设置起讫日期(无法登记请假)
+              </n-tag>
+            </n-space>
+          </span>
+          <span>
+            <n-space>
+              <n-button size="tiny" data-testid="sem-edit" @click="openEdit(sem)">编辑学期</n-button>
+              <n-button size="tiny" data-testid="copy-semester" @click="openCopy(sem)">
+                复制到新学期
+              </n-button>
+              <n-popconfirm @positive-click="onDeleteSemester(sem.id)">
+                <template #trigger>
+                  <n-button size="tiny" type="error" ghost>删除学期</n-button>
+                </template>
+                确定删除此学期?其节次表将一并移除。
+              </n-popconfirm>
+            </n-space>
+          </span>
+        </div>
+        <div class="ios-card">
+          <div class="ios-card-body">
+        <div style="height: 1px; background: rgba(0, 0, 0, 0.06); margin: 0 0 12px" />
 
         <n-space vertical size="small">
           <n-space
@@ -292,8 +302,10 @@ const statusType: Record<string, 'default' | 'success' | 'warning'> = {
           </n-space>
           <n-button size="small" dashed @click="openAddTable(sem.id)">+ 新增节次表</n-button>
         </n-space>
-      </n-card>
-    </n-space>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <!-- 视窗放在排版容器外面:n-space 会把每个子节点包一层没有 key 的 div,
          学期卡片数量一变(载入完成、新增、删除)视窗就跟著换位置重挂,
