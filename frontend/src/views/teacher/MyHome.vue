@@ -208,7 +208,7 @@ onMounted(() => { void loadAll() })
 </script>
 
 <template>
-  <n-space vertical size="large">
+  <n-space vertical size="medium" class="my-home" style="max-width: 960px">
     <h1 style="margin: 0">
       我的
     </h1>
@@ -224,12 +224,12 @@ onMounted(() => { void loadAll() })
       <table v-else style="width: 100%; border-collapse: collapse">
         <thead>
           <tr>
-            <th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee">
+            <th style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee">
               节次
             </th>
             <th
               v-for="d in gridWeekdays" :key="d"
-              style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee"
+              style="text-align: left; padding: 4px 6px; border-bottom: 1px solid #eee"
             >
               周{{ WEEKDAYS[d - 1] }}
               <n-tag v-if="d === todayIso" type="primary" size="small" style="margin-left: 4px">
@@ -240,14 +240,14 @@ onMounted(() => { void loadAll() })
         </thead>
         <tbody>
           <tr v-for="p in gridPeriods" :key="p">
-            <td style="padding: 6px 8px; border-bottom: 1px solid #f5f5f5; white-space: nowrap">
+            <td style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5; white-space: nowrap">
               {{ periodLabel(gridWeekdays[0] ?? 1, p) }}
             </td>
             <td
               v-for="d in gridWeekdays" :key="d"
-              style="padding: 6px 8px; border-bottom: 1px solid #f5f5f5; vertical-align: top"
+              style="padding: 4px 6px; border-bottom: 1px solid #f5f5f5; vertical-align: top"
             >
-              <div v-for="e in cellEntries(d, p)" :key="e.id" style="margin-bottom: 4px">
+              <div v-for="e in cellEntries(d, p)" :key="e.id" style="margin-bottom: 2px">
                 <n-text strong>
                   {{ e.subject }}
                 </n-text>
@@ -429,3 +429,20 @@ onMounted(() => { void loadAll() })
     </n-card>
   </n-space>
 </template>
+
+<style scoped>
+/* 精简排版:卡片与列表收紧,页面不摊太宽 */
+.my-home :deep(.n-card-header) {
+  padding: 10px 16px 6px;
+}
+.my-home :deep(.n-card-header__title) {
+  font-size: 15px;
+}
+.my-home :deep(.n-card__content) {
+  padding: 12px 16px;
+}
+.my-home :deep(.n-list-item) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+</style>

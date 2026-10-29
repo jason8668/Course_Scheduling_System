@@ -65,15 +65,18 @@ def _require_semester(db: Session, semester_id: int) -> None:
 
 
 def _apply_director_toggle(
-    db: Session, teacher: Teacher, grade_ids: list[int], want_director: bool
+    db: Session, teacher: Teacher, grade_ids: list[int], want_director: bool | None
 ) -> None:
     """教师档案里的年级主任开关:与账号年级页写同一批数据,两边互通。
 
     开:绑定帐号授主任身份 + 年级范围 = 所属年级(主任管自己所属年级的排课)。
     关:去主任身份 + 清空年级范围。
+    没传开关(None):不动角色与范围——改教师其他字段时不该悄悄降级帐号。
     已是主任时改所属年级,范围跟着改;换绑帐号时旧帐号不动(管理员去账号年级页处理)。
     管理员帐号不受此开关影响;未绑定帐号时开开关 422。
     """
+    if want_director is None:
+        return
     if teacher.user_id is None:
         if want_director:
             raise HTTPException(

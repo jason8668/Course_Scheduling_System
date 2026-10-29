@@ -50,7 +50,7 @@ class TeacherIn(BaseModel):
     is_active: bool = True
     subject_ids: list[int] = []
     grade_ids: list[int] = []  # 所属年级(多选,1~12);空 = 未填,沿用配课推导
-    is_grade_director: bool = False  # 教师档案里的年级主任开关(写绑定帐号的角色+年级范围)
+    is_grade_director: bool | None = None  # 教师档案里的年级主任开关(写绑定帐号的角色+年级范围);没传 = 不动开关,显式 true/false 才授/收
     email: str | None = Field(default=None, max_length=128)
     phone: str | None = Field(default=None, max_length=32)
     user_id: int | None = None  # 绑定的登录帐号(空=不绑定)

@@ -66,6 +66,7 @@ const menuOptions = computed(() => {
       label: '调代课',
       key: 'substitution-group',
       children: [
+        { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
         leaves,
         { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
         { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },

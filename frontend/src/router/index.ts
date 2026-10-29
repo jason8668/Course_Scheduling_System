@@ -116,6 +116,11 @@ const routes = [
         component: () => import('@/views/leaves/Leaves.vue'),
       },
       {
+        path: 'substitution-center',
+        name: 'substitution-center',
+        component: () => import('@/views/substitution/SubstitutionCenter.vue'),
+      },
+      {
         path: 'substitutions',
         name: 'substitutions',
         component: () => import('@/views/substitution/Substitutions.vue'),
