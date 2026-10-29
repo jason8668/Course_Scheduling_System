@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NCard, NForm, NFormItem, NInput, NSpace, NText, useMessage } from 'naive-ui'
+import { NButton, NForm, NFormItem, NInput, NSpace, NText, useMessage } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
@@ -49,10 +49,12 @@ async function onSubmit() {
 
 <template>
   <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px">
-    <n-card title="变更密码" style="max-width: 420px">
-      <n-text v-if="forced" depth="3" style="display: block; margin-bottom: 12px" data-testid="cp-forced">
-        这是您的首次登录,请设置新密码后继续使用系统。
-      </n-text>
+    <div class="ios-card" style="width: 100%; max-width: 420px">
+      <div class="ios-card-body">
+        <h1 class="ios-title" style="margin-bottom: 8px">变更密码</h1>
+        <n-text v-if="forced" depth="3" style="display: block; margin-bottom: 12px" data-testid="cp-forced">
+          这是您的首次登录,请设置新密码后继续使用系统。
+        </n-text>
       <n-form @submit.prevent="onSubmit">
         <n-form-item label="原密码">
           <n-input
@@ -85,6 +87,7 @@ async function onSubmit() {
           </n-button>
         </n-space>
       </n-form>
-    </n-card>
+      </div>
+    </div>
   </div>
 </template>

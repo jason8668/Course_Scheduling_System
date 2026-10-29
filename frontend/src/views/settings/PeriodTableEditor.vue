@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  NButton, NCard, NInput, NPopconfirm, NPopselect, NSpace, NSpin, NText, useMessage,
+  NButton, NInput, NPopconfirm, NPopselect, NSpace, NSpin, NText, useMessage,
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -120,22 +120,23 @@ async function save() {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <n-space align="center" justify="space-between">
-      <h1 style="margin: 0">节次表:{{ tableName }}</h1>
-      <n-space>
-        <n-button @click="router.back()">返回</n-button>
-        <n-button type="primary" :loading="saving" @click="save">储存</n-button>
+  <!-- 格子表需要宽幅,故 ios-page 不限 880px(与排课中心同例);格子本身是功能格,保留原边框样式,只换外壳。 -->
+  <div class="ios-page" style="max-width: none">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <h1 class="ios-title">节次表:{{ tableName }}</h1>
+      <n-space :wrap="false">
+        <n-button text @click="router.back()">返回</n-button>
+        <n-button type="primary" round :loading="saving" @click="save">储存</n-button>
       </n-space>
-    </n-space>
+    </div>
 
-    <n-text depth="3">
+    <p class="ios-subtitle">
       点击格子可变更节次类型。只有「一般课」的格位会参与排课;周三下午等不排课时段请设为「固定用途」。
-    </n-text>
+    </p>
 
     <n-spin :show="loading">
-      <n-card>
-        <div style="overflow-x: auto">
+      <div class="ios-card">
+        <div class="ios-card-body" style="overflow-x: auto">
           <table class="period-grid">
             <thead>
               <tr>
@@ -180,9 +181,9 @@ async function save() {
           </table>
         </div>
         <n-button size="small" dashed style="margin-top: 12px" @click="addRow">+ 新增节次列</n-button>
-      </n-card>
+      </div>
     </n-spin>
-  </n-space>
+  </div>
 </template>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NAlert, NSelect, NSpace, NTabPane, NTabs } from 'naive-ui'
+import { NAlert, NSelect, NTabPane, NTabs } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { listSemesters } from '@/api/semesters'
 import type { SemesterListItem } from '@/api/semesters'
@@ -23,22 +23,22 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-space vertical size="large">
-    <n-space align="center">
-      <h1 style="margin: 0">基础资料</h1>
+  <div class="ios-page">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <h1 class="ios-title">基础资料</h1>
       <n-select
         v-model:value="currentId"
         :options="semesterOptions"
         placeholder="选择学期"
         style="width: 240px"
       />
-    </n-space>
+    </div>
 
-    <n-alert v-if="!currentId" type="info">
+    <n-alert v-if="!currentId" type="info" style="margin-top: 16px">
       请先于「学期与节次表」建立学期,再回此页维护教师、班级、科目与场地。
     </n-alert>
 
-    <n-tabs v-else type="line" animated>
+    <n-tabs v-else type="line" animated style="margin-top: 8px">
       <n-tab-pane name="teachers" tab="教师">
         <TeachersTab :key="`t-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
@@ -55,5 +55,5 @@ onMounted(async () => {
         <ImportTab :key="`i-${currentId}`" :semester-id="currentId" />
       </n-tab-pane>
     </n-tabs>
-  </n-space>
+  </div>
 </template>
