@@ -53,14 +53,7 @@ const menuOptions = computed<MenuOption[]>(() => {
         { label: menuLink('basedata', '教师/班级/科目/场地'), key: 'basedata' },
       ],
     },
-    {
-      label: '排课作业',
-      key: 'scheduling-group',
-      type: 'group',
-      children: [
-        { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
-      ],
-    },
+    { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
     {
       label: '调代课',
       key: 'substitution-group',
@@ -186,10 +179,13 @@ async function onLogout() {
 </script>
 
 <template>
-  <n-layout has-sider style="height: 100vh">
+  <n-layout
+    has-sider
+    style="height: 100vh; background: linear-gradient(180deg, #DDE9FC 0%, #EAF1FD 30%, #F5F5F7 60%, #F5F5F7 100%)"
+  >
     <n-layout-sider
       collapse-mode="width"
-      style="background: rgba(255, 255, 255, 0.5); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08)"
+      style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.45)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.85); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)"
       :collapsed-width="64"
       :width="220"
       show-trigger
@@ -199,8 +195,10 @@ async function onLogout() {
     >
       <!-- 边栏悬浮圆角玻璃(Jason 2026-10-29 照片定的 Liquid Glass 效果):
         不再是贴满左边的整列,而是一块圆角玻璃板悬浮在页面底色上——
-        四周留 12px 缝隙、20px 圆角、半透明 + 模糊 + 柔和阴影,
-        就像控制中心里一块玻璃小组件盖在壁纸上。收合后同样是一块窄玻璃板。 -->
+        四周留 12px 缝隙、20px 圆角、上亮下暗的玻璃渐变 + 顶部内高光 + 柔和阴影。
+        玻璃要透出东西才像玻璃:应用壳底色改成顶部淡蓝到底部灰白的渐变,
+        面板透过模糊把这层淡蓝晕进来,而不是对著一块平色底发呆。
+        收合后同样是一块窄玻璃板。 -->
       <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
         {{ collapsed ? '排课' : '排课与调代课系统' }}
       </div>
@@ -212,7 +210,7 @@ async function onLogout() {
           :collapsed-width="64"
           :options="menuOptions"
           :theme-overrides="menuThemeOverrides"
-          :default-expanded-keys="['basedata-group', 'scheduling-group']"
+          :default-expanded-keys="['basedata-group']"
         />
       </div>
       <div v-if="version && !collapsed" class="version" data-testid="app-version">
@@ -220,8 +218,8 @@ async function onLogout() {
       </div>
     </n-layout-sider>
 
-    <n-layout>
-      <n-layout-header class="app-header" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.65); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06)">
+    <n-layout style="background: transparent">
+      <n-layout-header class="app-header" style="padding: 12px 24px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)">
         <n-space justify="end" align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
@@ -230,7 +228,7 @@ async function onLogout() {
             <n-tag type="warning" size="small" round>有新版本 {{ newVersion }}</n-tag>
           </router-link>
           <n-button
-            text type="primary" size="small" data-testid="header-calendar"
+            class="glass-btn" size="small" data-testid="header-calendar"
             @click="router.push({ name: 'school-calendar' })"
           >
             校历
@@ -266,4 +264,20 @@ async function onLogout() {
 }
 /* 菜单整体抬到指示条上方(菜单底色透明),文字压在框上,框只当底色。 */
 .sider-menu-wrap :deep(.n-menu) { position: relative; z-index: 1; }
+/* 顶栏校历毛玻璃药丸按钮:光看两个字没人知道能按,做成圆角玻璃片才像按钮。
+   上亮下暗渐变 + 模糊 + 白边 + 顶部内高光 + 柔和阴影,跟边栏同一块玻璃。 */
+.n-button.glass-btn {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.55));
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #007aff;
+  padding: 0 16px;
+}
+.n-button.glass-btn:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7));
+  color: #007aff;
+}
 </style>
