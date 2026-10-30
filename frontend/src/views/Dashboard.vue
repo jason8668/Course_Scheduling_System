@@ -17,7 +17,9 @@ import type { TeachingHoursReport } from '@/api/teachingHours'
 import { dutyNameForDate, getDutyRoster } from '@/api/duty'
 import type { DutyRoster } from '@/api/duty'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
+import TeacherHomeSections from '@/components/teacher/TeacherHomeSections.vue'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
+import { useAuthStore } from '@/stores/auth'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
 import { addDays, eventCoversPeriod, expandCalendarEvents, mondayOf, toISODate, weekdayOf } from '@/utils/calendar'
 
@@ -25,6 +27,9 @@ const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '�
 const WEEKDAY_CN = ['一', '二', '三', '四', '五', '六', '日']
 
 const router = useRouter()
+const auth = useAuthStore()
+const canManage = computed(() =>
+  auth.hasRole('admin') || auth.hasRole('director'))
 const semester = ref<SemesterListItem | null>(null)
 const summary = ref<SemesterSummary | null>(null)
 const board = ref<DailyBoard | null>(null)
@@ -259,6 +264,37 @@ onMounted(() => {
 <template>
   <div class="ios-page">
     <h1 class="ios-title">仪表板</h1>
+    <div v-if="weekMe && weekSemester" class="ios-subtitle">
+      {{ weekMe.name }} · {{ weekSemester.label }}
+    </div>
+
+    <section
+      v-if="weekMe && (hoursMonth || hoursSemester)"
+      class="ios-section" data-testid="dash-hours"
+    >
+      <div class="ios-section-title">我的课时</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+      <n-space align="center">
+        <div v-if="hoursMonth">
+          <n-statistic
+            label="本月已上课时数"
+            :value="hoursMonth.teachers[0]?.total ?? 0"
+          />
+          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursMonth.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
+        </div>
+        <div v-if="hoursSemester">
+          <n-statistic
+            label="本学期已上课时数"
+            :value="hoursSemester.teachers[0]?.total ?? 0"
+          />
+          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursSemester.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
+        </div>
+        <n-text depth="3" style="font-size: 13px">统计至今天（未来日期不计入已上课时）</n-text>
+      </n-space>
+        </div>
+      </div>
+    </section>
 
     <section class="ios-section" data-testid="dash-week">
       <div class="ios-section-title"><span>{{ weekTitle }}</span><span style="font-size: 13px; font-weight: 400">{{ weekRangeLabel }}</span></div>
@@ -301,34 +337,6 @@ onMounted(() => {
       </div>
     </section>
 
-    <section
-      v-if="weekMe && (hoursMonth || hoursSemester)"
-      class="ios-section" data-testid="dash-hours"
-    >
-      <div class="ios-section-title">我的课时</div>
-      <div class="ios-card">
-        <div class="ios-card-body">
-      <n-space align="center">
-        <div v-if="hoursMonth">
-          <n-statistic
-            label="本月已上课时数"
-            :value="hoursMonth.teachers[0]?.total ?? 0"
-          />
-          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursMonth.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
-        </div>
-        <div v-if="hoursSemester">
-          <n-statistic
-            label="本学期已上课时数"
-            :value="hoursSemester.teachers[0]?.total ?? 0"
-          />
-          <n-text depth="3" style="font-size: 13px">其中代课 {{ hoursSemester.teachers[0]?.substitute_total ?? 0 }} 节</n-text>
-        </div>
-        <n-text depth="3" style="font-size: 13px">统计至今天（未来日期不计入已上课时）</n-text>
-      </n-space>
-        </div>
-      </div>
-    </section>
-
     <section v-if="semester" class="ios-section">
       <div class="ios-section-title">{{ semester.label }} · 资料摘要</div>
       <div class="ios-card">
@@ -355,7 +363,7 @@ onMounted(() => {
       </div>
     </section>
 
-    <section v-else-if="!loading" class="ios-section">
+    <section v-else-if="!loading && canManage" class="ios-section">
       <div class="ios-card">
         <div class="ios-card-body">
       <n-empty description="尚未建立任何学期资料">
@@ -391,6 +399,12 @@ onMounted(() => {
         </div>
       </div>
     </section>
+
+    <!-- 原「我的」页的功能(除课表外)都并到这里:只给绑定了教师档案的人显示,
+      管理员看不到这些个人节,仪表板对管理员仍是概览(课表+资料摘要+今日调代课)。
+      排布:看(课时、课表) → 待处理(今日调代课、通知) → 办事(请假、代课、调课、值日)
+      → 设置(提醒设置在最后);资料摘要是管理员视角,教师看不到,留在原位不动。 -->
+    <TeacherHomeSections v-if="weekMe && weekSemester" :semester-id="weekSemester.id" />
   </div>
 </template>
 

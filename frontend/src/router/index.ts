@@ -73,7 +73,7 @@ const routes = [
       {
         path: 'my',
         name: 'my',
-        component: () => import('@/views/teacher/MyHome.vue'),
+        redirect: { name: 'dashboard' },
       },
       {
         path: 'settings/semesters',

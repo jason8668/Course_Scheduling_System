@@ -46,8 +46,15 @@ const semester = computed(() => semesters.value.find((s) => s.id === sid.value) 
 const semesterOptions = computed(() =>
   semesters.value.map((s) => ({ label: s.label, value: s.id })))
 
-// 一页一览:本学期全部活动(后端不传范围即返回全部),按开始月份分组。
-const monthGroups = computed(() => groupEventsByMonth(eventsRaw.value))
+// 下面按月列表只列手动建的活动:系统自动同步的假日/传统节日
+// (备注以“系统自动同步”开头)只在上方日历格里显示,不再逐条列出,
+// 否则一学期十来条节日把真正的活动淹没,列表也失去编辑意义
+// (自动事件本就不该手动删,下次同步还会补回来)。
+const AUTO_NOTE_PREFIX = '系统自动同步'
+const manualEvents = computed(() =>
+  eventsRaw.value.filter((ev) => !(ev.note ?? '').startsWith(AUTO_NOTE_PREFIX)))
+const autoEventCount = computed(() => eventsRaw.value.length - manualEvents.value.length)
+const monthGroups = computed(() => groupEventsByMonth(manualEvents.value))
 const typeCounts = computed(() => {
   const m = new Map<CalendarEventType, number>()
   for (const ev of eventsRaw.value) m.set(ev.event_type, (m.get(ev.event_type) ?? 0) + 1)
@@ -391,7 +398,14 @@ async function onDelete(ev: CalendarEvent) {
         </template>
       </n-empty>
 
-      <div v-else data-testid="cal-groups">
+      <n-text v-else-if="autoEventCount && !monthGroups.length" depth="3" style="font-size: 13px">
+        下面只列手动添加的活动；系统自动同步的 {{ autoEventCount }} 条假日与传统节日只在上方日历格里显示，不再逐条列出。
+      </n-text>
+
+      <div v-if="monthGroups.length" data-testid="cal-groups">
+        <n-text v-if="autoEventCount" depth="3" style="font-size: 13px">
+          下面只列手动添加的活动；系统自动同步的假日与传统节日只在上方日历格里显示。
+        </n-text>
         <section v-for="group in monthGroups" :key="group.month" class="ios-section">
           <div class="ios-section-title">{{ group.month }}</div>
           <table class="cal-table">

@@ -2,7 +2,7 @@
 import { NButton, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NMenu, NSpace, NTag, NText } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import NotificationBell from '@/components/NotificationBell.vue'
 import { getUpdateStatus, getVersion } from '@/api/system'
@@ -25,8 +25,21 @@ const otherRoleLabels = computed(() => roleLabels.value.filter((l) => l !== auth
 // 手机尺寸默认收合侧边栏:390px 宽的萤幕若被 220px 侧栏占去,课表几乎没有空间
 const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
 
-function menuLink(name: string, label: string) {
-  return () => h(RouterLink, { to: { name } }, { default: () => label })
+// 收合后看不到的根因(Jason 2026-10-30 截图):菜单项原来没有图标,
+// 标签又是 RouterLink 组件不是纯文字,Naive 收合模式下悬浮提示取不到文字,
+// 只剩一个空方块,点都不知道点的是哪页。
+// 修复:标签改回纯文字(收合提示能正常显示),收合时每项显示首字小方块,
+// 展开时首字隐藏、外观与原来一致;点选改走 router.push,不再靠 RouterLink。
+function menuItem(key: string, label: string): MenuOption {
+  return {
+    label,
+    key,
+    icon: () => h('span', { class: 'menu-char-icon' }, label[0]),
+  }
+}
+function onMenuSelect(key: string) {
+  if (key.endsWith('-group')) return
+  router.push({ name: key })
 }
 
 // 纯教师帐号只看得到课表查询(其余页面的后端 API 需主任以上权限)
@@ -34,15 +47,16 @@ const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('director'))
 
 const menuOptions = computed<MenuOption[]>(() => {
-  const my = { label: menuLink('my', '我的'), key: 'my' }
-  const dashboard = { label: menuLink('dashboard', '仪表板'), key: 'dashboard' }
-  const query = { label: menuLink('timetable-query', '课表查询'), key: 'timetable-query' }
-  const leaves = { label: menuLink('leaves', '请假登记'), key: 'leaves' }
+  // 「我的」已并进仪表板(2026-10-30 Jason 定):教师菜单不再单列「我的」,
+  // 路由 /my 改重定向到仪表板,旧通知里的 /my 链接落点仍在仪表板,不会断。
+  const dashboard = menuItem('dashboard', '仪表板')
+  const query = menuItem('timetable-query', '课表查询')
+  const leaves = menuItem('leaves', '请假登记')
   // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
   // 仪表板与课表查询(Jason 2026-10-29 23:59 定):两个都要在菜单里,缺一不可——
   // 之前把课表查询移出菜单、把仪表板改名首页,他找不到,作废,全部调回来。
-  // 纯教师帐号:只列已重排的四页。我的代课课时尚未重排,菜单隐藏,路由保留。
-  if (!canManage.value) return [my, dashboard, query, leaves]
+  // 纯教师帐号:只列已重排的三页(仪表板已含原「我的」全部功能)。
+  if (!canManage.value) return [dashboard, query, leaves]
   return [
     dashboard,
     query,
@@ -53,27 +67,27 @@ const menuOptions = computed<MenuOption[]>(() => {
       // Finder 边栏就是这样:分组标题只是灰色小字,不是可点开合的父目录。
       type: 'group',
       children: [
-        { label: menuLink('setup-flow', '开学建置'), key: 'setup-flow' },
-        { label: menuLink('semesters', '学期与节次表'), key: 'semesters' },
-        { label: menuLink('basedata', '基础数据'), key: 'basedata' },
+        menuItem('setup-flow', '开学建置'),
+        menuItem('semesters', '学期与节次表'),
+        menuItem('basedata', '基础数据'),
       ],
     },
-    { label: menuLink('scheduling-center', '排课中心'), key: 'scheduling-center' },
+    menuItem('scheduling-center', '排课中心'),
     {
       label: '调代课',
       key: 'substitution-group',
       type: 'group',
       children: [
-        { label: menuLink('substitution-center', '调代课中心'), key: 'substitution-center' },
+        menuItem('substitution-center', '调代课中心'),
         leaves,
-        { label: menuLink('substitutions', '调代课处理'), key: 'substitutions' },
-        { label: menuLink('daily-board', '今日调代课'), key: 'daily-board' },
-        { label: menuLink('substitution-log', '调代课纪录'), key: 'substitution-log' },
+        menuItem('substitutions', '调代课处理'),
+        menuItem('daily-board', '今日调代课'),
+        menuItem('substitution-log', '调代课纪录'),
       ],
     },
     // 统计中心单列顶层:统计组只剩它一个孩子,成组就是多余一层(与排课中心同例)。
-    { label: menuLink('stats-center', '统计中心'), key: 'stats-center' },
-    { label: menuLink('system', '系统管理'), key: 'system' },
+    menuItem('stats-center', '统计中心'),
+    menuItem('system', '系统管理'),
   ]
 })
 
@@ -221,6 +235,7 @@ async function onLogout() {
           :options="menuOptions"
           :theme-overrides="menuThemeOverrides"
           :default-expanded-keys="['basedata-group']"
+          @update:value="onMenuSelect"
         />
       </div>
       <div v-if="version && !collapsed" class="version" data-testid="app-version">
@@ -272,6 +287,14 @@ async function onLogout() {
 }
 /* 菜单整体抬到指示条上方(菜单底色透明),文字压在框上,框只当底色。 */
 .sider-menu-wrap :deep(.n-menu) { position: relative; z-index: 1; }
+/* 收合首字图标:展开时隐藏(外观与原来一致),收合时显示首字,光看方块也能认出是哪页。 */
+.sider-menu-wrap :deep(.menu-char-icon) { display: none; }
+.sider-menu-wrap :deep(.n-menu--collapsed .menu-char-icon) {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(0, 122, 255, 0.12); color: #007aff;
+  font-size: 13px; font-weight: 600;
+}
 /* 顶栏校历毛玻璃药丸按钮:光看两个字没人知道能按,做成圆角玻璃片才像按钮。
    上亮下暗渐变 + 模糊 + 白边 + 顶部内高光 + 柔和阴影,跟边栏同一块玻璃。 */
 .n-button.glass-btn {
