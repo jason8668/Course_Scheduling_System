@@ -8,7 +8,7 @@ import { listAssignments } from '@/api/assignments'
 import type { Assignment } from '@/api/assignments'
 import { listClassUnits, listTeachers } from '@/api/basedata'
 import type { ClassUnit, Teacher } from '@/api/basedata'
-import { getMyTeacher } from '@/api/timetables'
+import { getMyTeacher, getPublishedTimetable } from '@/api/timetables'
 import {
   approveTeacherSwap, createTeacherSwap, listTeacherSwaps, rejectTeacherSwap,
 } from '@/api/teacherSwaps'
@@ -58,15 +58,55 @@ async function load() {
   }
   loading.value = true
   try {
-    ;[swaps.value, teachers.value, classes.value, assignments.value] = await Promise.all([
-      listTeacherSwaps(sid),
-      listTeachers(sid),
-      listClassUnits(sid),
-      listAssignments(sid),
-    ])
-    if (!props.admin) me.value = await getMyTeacher(sid)
-  } catch (e) {
-    message.error((e as ApiError).detail ?? '载入调课失败')
+    // 调课列表本身是教师可用接口,失败才报错。
+    // 表单下拉数据与列表分开:下拉失败只留空,不弹错、不拖垮列表。
+    try {
+      swaps.value = await listTeacherSwaps(sid)
+    } catch (e) {
+      message.error((e as ApiError).detail ?? '载入调课失败')
+    }
+    if (props.admin) {
+      // 管理员/主任:仍用主任专用接口(他们有权限)。
+      ;[teachers.value, classes.value, assignments.value] = await Promise.all([
+        listTeachers(sid),
+        listClassUnits(sid),
+        listAssignments(sid),
+      ]).catch(() => [[], [], []] as [Teacher[], ClassUnit[], Assignment[]])
+    } else {
+      // 教师:原来这里也调 listTeachers/listClassUnits/listAssignments,
+      // 那三支都要主任权限,纯教师帐号一律 403,Promise.all 一挂就整块弹
+      // 「载入调课失败」或「权限不足」——这就是仪表板刷新报错的根因。
+      // 改用已发布课表(教师可用、注释写明「教师端只需这一支」):
+      // 它自带全部班级、教师与条目(条目含 course_assignment_id、班级、教师),
+      // 足够拼出调课表单的班级/配课/教师下拉,不用再碰主任接口。
+      try {
+        const pub = await getPublishedTimetable(sid)
+        if (pub) {
+          teachers.value = pub.teachers.map((t) => ({ id: t.id, name: t.name })) as Teacher[]
+          classes.value = pub.classes.map((c) => ({ id: c.id, name: c.name })) as ClassUnit[]
+          const byId = new Map<number, Assignment>()
+          for (const e of pub.entries) {
+            if (byId.has(e.course_assignment_id)) continue
+            byId.set(e.course_assignment_id, {
+              id: e.course_assignment_id,
+              subject: { name: e.subject },
+              teachers: e.teacher_ids.map((tid, i) => ({
+                teacher_id: tid, name: e.teachers[i] ?? `#${tid}`,
+              })),
+              scheduling_unit: {
+                classes: e.class_ids.map((cid, i) => ({ id: cid, name: e.classes[i] ?? `#${cid}` })),
+              },
+            } as unknown as Assignment)
+          }
+          assignments.value = [...byId.values()]
+        }
+      } catch {
+        teachers.value = []
+        classes.value = []
+        assignments.value = []
+      }
+      me.value = await getMyTeacher(sid).catch(() => null)
+    }
   } finally {
     loading.value = false
   }

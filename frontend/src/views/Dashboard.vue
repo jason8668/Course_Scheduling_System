@@ -17,6 +17,7 @@ import type { TeachingHoursReport } from '@/api/teachingHours'
 import { dutyNameForDate, getDutyRoster } from '@/api/duty'
 import type { DutyRoster } from '@/api/duty'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
+import NotificationWidget from '@/components/teacher/NotificationWidget.vue'
 import TeacherHomeSections from '@/components/teacher/TeacherHomeSections.vue'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -263,9 +264,15 @@ onMounted(() => {
 
 <template>
   <div class="ios-page">
-    <h1 class="ios-title">仪表板</h1>
-    <div v-if="weekMe && weekSemester" class="ios-subtitle">
-      {{ weekMe.name }} · {{ weekSemester.label }}
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap">
+      <div>
+        <h1 class="ios-title">仪表板</h1>
+        <div v-if="weekMe && weekSemester" class="ios-subtitle">
+          {{ weekMe.name }} · {{ weekSemester.label }}
+        </div>
+      </div>
+      <!-- 通知放仪表板右上角小框,点开看全部;只给绑定教师档案的人显示。 -->
+      <NotificationWidget v-if="weekMe && weekSemester" :semester-id="weekSemester.id" />
     </div>
 
     <section
@@ -319,8 +326,9 @@ onMounted(() => {
           :periods="weekPeriods" :num-weekdays="numWeekdays" :entries="weekEntries"
           :highlight-weekday="highlightWeekday" readonly
         />
-        <n-text v-if="weekDutyText" depth="3" style="font-size: 13px" data-testid="dash-duty">
-          行政值日: {{ weekDutyText }}
+        <!-- 同课表查询页:值日行一直画,没排轮值时明写尚未安排,不藏整行。 -->
+        <n-text depth="3" style="font-size: 13px" data-testid="dash-duty">
+          行政值日: {{ weekDutyText || '尚未安排（请管理员在系统管理页排每周轮值）' }}
         </n-text>
         <n-text v-if="weekAffected.length" depth="3" style="font-size: 12px">
           校历活动占用：{{ weekAffected.length }} 节课受影响（{{
@@ -400,11 +408,12 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- 原「我的」页的功能(除课表外)都并到这里:只给绑定了教师档案的人显示,
-      管理员看不到这些个人节,仪表板对管理员仍是概览(课表+资料摘要+今日调代课)。
-      排布:看(课时、课表) → 待处理(今日调代课、通知) → 办事(请假、代课、调课、值日)
-      → 设置(提醒设置在最后);资料摘要是管理员视角,教师看不到,留在原位不动。 -->
-    <TeacherHomeSections v-if="weekMe && weekSemester" :semester-id="weekSemester.id" />
+    <!-- 仪表板教师个人节(2026-10-30 再定):请假/代课/调课已搬到调课管理页,
+      通知已改成右上角小框,故这里只剩行政值日(只给行政岗位/管理员显示)
+      与提醒设置(最后);管理员看不到这些个人节,仪表板对管理员仍是概览。 -->
+    <TeacherHomeSections
+      v-if="weekMe && weekSemester" :semester-id="weekSemester.id" :teacher-id="weekMe.id"
+    />
   </div>
 </template>
 

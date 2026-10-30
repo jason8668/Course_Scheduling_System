@@ -12,6 +12,7 @@ import {
 } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import type { ApiError } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
 import { listSemesters } from '@/api/semesters'
 import {
   WEEKDAY_LABELS, approveDutySwap, createDutySwapRequest, deleteDutyOverride,
@@ -19,8 +20,21 @@ import {
 } from '@/api/duty'
 import type { DutyRoster } from '@/api/duty'
 
-const props = defineProps<{ semesterId?: number | null; admin: boolean }>()
+const props = defineProps<{ semesterId?: number | null; admin: boolean; teacherId?: number | null }>()
 const message = useMessage()
+const auth = useAuthStore()
+
+// 值日只给行政岗位显示(Jason 2026-10-30 定):普通老师没有这个模块。
+// 判断:管理员模式一律显示;教师模式下,本人是轮值人选(行政岗位,roster.eligible 里有他)
+// 或帐号本身是管理员/主任,才显示;否则等 roster 载入后整个节隐藏。
+// roster 未载入前先不画,避免先闪一下再消失。
+const showSection = computed(() => {
+  if (props.admin) return true
+  if (auth.hasRole('admin') || auth.hasRole('director')) return true
+  if (roster.value === null) return false
+  if (props.teacherId === null || props.teacherId === undefined) return true
+  return roster.value.eligible.some((t) => t.id === props.teacherId)
+})
 
 const roster = ref<DutyRoster | null>(null)
 const loading = ref(false)
@@ -147,7 +161,7 @@ async function onReject(id: number) {
 </script>
 
 <template>
-  <section class="ios-section" data-testid="duty-section">
+  <section v-if="showSection" class="ios-section" data-testid="duty-section">
     <div class="ios-section-title">
       <span>行政值日</span>
       <span class="ios-row-sub">全校共用一位,不算课时,当天照常上课</span>

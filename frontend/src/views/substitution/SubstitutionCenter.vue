@@ -527,7 +527,7 @@ const logSubstituteIds = computed(() => logEntries.value
             </n-button>
           </n-space>
           <div class="ios-row-sub" style="margin-top: 8px">
-            管理员代登；老师自己请假仍在「请假登记」页。登记后受影响节次会出现在上方待处理里。
+            管理员代登；老师自己请假仍在「调课管理」页。登记后受影响节次会出现在上方待处理里。
           </div>
         </div>
       </div>

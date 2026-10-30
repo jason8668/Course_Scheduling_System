@@ -11,6 +11,8 @@ import type { AffectedPeriod, LeaveRequest } from '@/api/leaves'
 import { listSemesters } from '@/api/semesters'
 import { publishedSemesters } from '@/api/timetables'
 import { useAuthStore } from '@/stores/auth'
+import MySubstitutionSection from '@/components/teacher/MySubstitutionSection.vue'
+import TeacherSwapSection from '@/components/scheduling/TeacherSwapSection.vue'
 
 const auth = useAuthStore()
 const message = useMessage()
@@ -154,7 +156,7 @@ function rangeText(l: LeaveRequest): string {
 <template>
   <div class="ios-page">
     <n-space align="center">
-      <h1 class="ios-title">请假登记</h1>
+      <h1 class="ios-title">调课管理</h1>
       <n-select
         :value="sid" :options="semesterOptions" style="width: 220px"
         placeholder="选择学期" @update:value="onSemesterChange"
@@ -286,6 +288,12 @@ function rangeText(l: LeaveRequest): string {
           </div>
         </div>
       </section>
+
+      <!-- 2026-10-30 Jason 定:仪表板上的我的代课与老师调课搬到这里,
+        本页改名调课管理(请假 + 代课 + 调课都在这一页办)。
+        我的代课只给教师本人看;老师调课:教师发起/确认自己的,管理员只看全部不批。 -->
+      <MySubstitutionSection v-if="!canManage" :semester-id="sid" />
+      <TeacherSwapSection :semester-id="sid" :admin="canManage" />
     </template>
   </div>
 </template>

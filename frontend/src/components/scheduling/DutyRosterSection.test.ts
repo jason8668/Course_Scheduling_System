@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { NMessageProvider } from 'naive-ui'
 import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
@@ -23,6 +24,7 @@ describe('DutyRosterSection', () => {
     vi.stubGlobal('fetch', vi.fn(() =>
       Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(roster) })))
     const wrapper = mount(NMessageProvider, {
+      global: { plugins: [createPinia()] },
       slots: { default: () => h(DutyRosterSection, { semesterId: 1, admin: true }) },
     })
     await flushPromises()

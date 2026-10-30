@@ -270,8 +270,10 @@ const entries = computed<GridEntry[]>(() => {
           v-else
           :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
         />
-        <n-text v-if="dutyText" depth="3" style="font-size: 13px" data-testid="tq-duty">
-          行政值日: {{ dutyText }}
+        <!-- 值日行一直画:没排轮值时 dutyText 为空,之前 v-if 把整行藏掉,
+          看起来就像「值日信息没有写进去」;现在没排就明写尚未安排。 -->
+        <n-text depth="3" style="font-size: 13px" data-testid="tq-duty">
+          行政值日: {{ dutyText || '尚未安排（请管理员在系统管理页排每周轮值）' }}
         </n-text>
           </div>
         </div>

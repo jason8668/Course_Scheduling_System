@@ -28,13 +28,15 @@ const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
 // 收合后看不到的根因(Jason 2026-10-30 截图):菜单项原来没有图标,
 // 标签又是 RouterLink 组件不是纯文字,Naive 收合模式下悬浮提示取不到文字,
 // 只剩一个空方块,点都不知道点的是哪页。
-// 修复:标签改回纯文字(收合提示能正常显示),收合时每项显示首字小方块,
-// 展开时首字隐藏、外观与原来一致;点选改走 router.push,不再靠 RouterLink。
+// 修复:标签改回纯文字(收合提示能正常显示),收合时每项显示前两字小方块,
+// 展开时隐藏、外观与原来一致;点选改走 router.push,不再靠 RouterLink。
+// 前两字(Jason 2026-10-30 再定:一个字太小看不清,改成两个字、字调大,
+// 例如仪表板→仪表、课表查询→课表,64px 收合宽放得下)。
 function menuItem(key: string, label: string): MenuOption {
   return {
     label,
     key,
-    icon: () => h('span', { class: 'menu-char-icon' }, label[0]),
+    icon: () => h('span', { class: 'menu-char-icon' }, label.slice(0, 2)),
   }
 }
 function onMenuSelect(key: string) {
@@ -51,7 +53,7 @@ const menuOptions = computed<MenuOption[]>(() => {
   // 路由 /my 改重定向到仪表板,旧通知里的 /my 链接落点仍在仪表板,不会断。
   const dashboard = menuItem('dashboard', '仪表板')
   const query = menuItem('timetable-query', '课表查询')
-  const leaves = menuItem('leaves', '请假登记')
+  const leaves = menuItem('leaves', '调课管理')
   // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
   // 仪表板与课表查询(Jason 2026-10-29 23:59 定):两个都要在菜单里,缺一不可——
   // 之前把课表查询移出菜单、把仪表板改名首页,他找不到,作废,全部调回来。
@@ -287,13 +289,13 @@ async function onLogout() {
 }
 /* 菜单整体抬到指示条上方(菜单底色透明),文字压在框上,框只当底色。 */
 .sider-menu-wrap :deep(.n-menu) { position: relative; z-index: 1; }
-/* 收合首字图标:展开时隐藏(外观与原来一致),收合时显示首字,光看方块也能认出是哪页。 */
+/* 收合两字图标:展开时隐藏(外观与原来一致),收合时显示前两字,光看方块也能认出是哪页。 */
 .sider-menu-wrap :deep(.menu-char-icon) { display: none; }
 .sider-menu-wrap :deep(.n-menu--collapsed .menu-char-icon) {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 44px; height: 28px; border-radius: 8px;
   background: rgba(0, 122, 255, 0.12); color: #007aff;
-  font-size: 13px; font-weight: 600;
+  font-size: 15px; font-weight: 600;
 }
 /* 顶栏校历毛玻璃药丸按钮:光看两个字没人知道能按,做成圆角玻璃片才像按钮。
    上亮下暗渐变 + 模糊 + 白边 + 顶部内高光 + 柔和阴影,跟边栏同一块玻璃。 */

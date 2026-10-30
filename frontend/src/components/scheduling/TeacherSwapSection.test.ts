@@ -14,6 +14,43 @@ const swaps = [{
 }]
 
 describe('TeacherSwapSection', () => {
+  it('教师模式不调主任接口,用已发布课表拼下拉,也不弹载入失败', async () => {
+    // 教师模式下 listTeachers/listClassUnits/listAssignments 一律 403,
+    // 之前 Promise.all 一挂就弹「载入调课失败/权限不足」;现在教师走已发布课表。
+    const called: string[] = []
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      called.push(url)
+      if (url.includes('/teacher-swaps')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(swaps) })
+      }
+      if (url.includes('/published/timetable')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({
+          entries: [{
+            id: 1, course_assignment_id: 1, weekday: 1, period_no: 1, span: 1, locked: false,
+            subject: '语文', teachers: ['李老师'], classes: ['七(1)班'], unit_type: 'single',
+            unit_name: '', room: null, teacher_ids: [1], class_ids: [1], room_id: null,
+          }],
+          classes: [{ id: 1, name: '七(1)班', grade: 7, period_table_id: null }],
+          teachers: [{ id: 1, name: '李老师' }, { id: 2, name: '王老师' }],
+          rooms: [], period_tables: [],
+        }) })
+      }
+      if (url.includes('/published/my-teacher')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ id: 2, name: '王老师' }) })
+      }
+      return Promise.resolve({ ok: false, status: 403, json: () => Promise.resolve({ detail: '权限不足' }) })
+    }))
+    const wrapper = mount(NMessageProvider, {
+      slots: { default: () => h(TeacherSwapSection, { semesterId: 1, admin: false }) },
+    })
+    await flushPromises()
+    expect(called.some((u) => u.includes('/teachers') && !u.includes('my-teacher'))).toBe(false)
+    expect(called.some((u) => u.includes('/class-units'))).toBe(false)
+    expect(called.some((u) => u.includes('/assignments'))).toBe(false)
+    expect(wrapper.find('[data-testid="swap-row"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('载入调课失败')
+  })
+
   it('管理员模式列出调课记录', async () => {
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (url.includes('/teacher-swaps')) {
