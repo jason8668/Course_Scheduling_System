@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NMenu, NSpace, NTag, NText } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NMenu, NSpace, NTag, NText } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -24,6 +24,15 @@ const otherRoleLabels = computed(() => roleLabels.value.filter((l) => l !== auth
 
 // 手机尺寸默认收合侧边栏:390px 宽的萤幕若被 220px 侧栏占去,课表几乎没有空间
 const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
+// 手机适配(2026-10-30 菜单精简+手机适配):窄屏不再留 80px 收合边栏占地方,
+// 边栏改成抽屉——平时完全不占屏,点左上角菜单钮才滑出来,选完自动收回。
+// 桌面端仍用原来的悬浮玻璃边栏,逻辑不动。
+const isMobile = ref(typeof window !== 'undefined' && window.innerWidth < 768)
+const drawerOpen = ref(false)
+function onResize() {
+  isMobile.value = window.innerWidth < 768
+  if (!isMobile.value) drawerOpen.value = false
+}
 
 // 收合后看不到的根因(Jason 2026-10-30 截图):菜单项原来没有图标,
 // 标签又是 RouterLink 组件不是纯文字,Naive 收合模式下悬浮提示取不到文字,
@@ -41,6 +50,7 @@ function menuItem(key: string, label: string): MenuOption {
 }
 function onMenuSelect(key: string) {
   if (key.endsWith('-group')) return
+  drawerOpen.value = false
   router.push({ name: key })
 }
 
@@ -83,7 +93,9 @@ const menuOptions = computed<MenuOption[]>(() => {
         menuItem('substitution-center', '调代课中心'),
         leaves,
         menuItem('substitutions', '调代课处理'),
-        menuItem('daily-board', '今日调代课'),
+        // 今日调代课退出菜单(2026-10-30 菜单精简):当日看板的内容已在调代课中心
+        // (当日已安排/请假人数 + 待处理),入口改放调代课中心顶部的「今日看板」按钮,
+        // 路由保留,直接输地址仍能进,功能没删。
         menuItem('substitution-log', '调代课纪录'),
       ],
     },
@@ -191,8 +203,12 @@ watch([activeKey, collapsed], () => nextTick(updateIndicator))
 onMounted(() => {
   nextTick(updateIndicator)
   window.addEventListener('resize', updateIndicator)
+  window.addEventListener('resize', onResize)
 })
-onBeforeUnmount(() => window.removeEventListener('resize', updateIndicator))
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIndicator)
+  window.removeEventListener('resize', onResize)
+})
 
 function onChangePassword() {
   router.push({ name: 'change-password' })
@@ -210,6 +226,7 @@ async function onLogout() {
     style="height: 100vh; background: linear-gradient(180deg, #C7D9F6 0%, #DDE7F8 30%, #E9EBF2 65%, #F5F5F7 100%)"
   >
     <n-layout-sider
+      v-if="!isMobile"
       collapse-mode="width"
       style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.35)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 12px 40px rgba(30, 60, 120, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95)"
       :collapsed-width="80"
@@ -247,7 +264,12 @@ async function onLogout() {
 
     <n-layout style="background: transparent">
       <n-layout-header class="app-header" style="padding: 12px 24px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)">
-        <n-space justify="end" align="center">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+          <n-button v-if="isMobile" text size="large" data-testid="header-menu" @click="drawerOpen = true">
+            ☰ 菜单
+          </n-button>
+          <span v-else />
+          <n-space align="center">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
             data-testid="update-badge"
@@ -267,14 +289,27 @@ async function onLogout() {
             修改密码
           </n-button>
           <n-button text size="small" @click="onLogout">退出登录</n-button>
-        </n-space>
+          </n-space>
+        </div>
       </n-layout-header>
 
-      <n-layout-content content-style="padding: 24px" style="background: transparent">
+      <n-layout-content :content-style="isMobile ? 'padding: 12px' : 'padding: 24px'" style="background: transparent">
         <router-view />
       </n-layout-content>
     </n-layout>
   </n-layout>
+
+  <!-- 手机抽屉菜单:窄屏才出现,点选后自动收回 -->
+  <n-drawer v-model:show="drawerOpen" placement="left" :width="260" data-testid="mobile-menu-drawer">
+    <n-drawer-content title="排课与调代课系统">
+      <n-menu
+        :value="activeKey"
+        :options="menuOptions"
+        :theme-overrides="menuThemeOverrides"
+        @update:value="onMenuSelect"
+      />
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <style scoped>

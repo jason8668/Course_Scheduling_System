@@ -331,6 +331,11 @@ const logSubstituteIds = computed(() => logEntries.value
       <n-button :loading="loading" @click="reloadAll">
         刷新
       </n-button>
+      <RouterLink :to="{ name: 'daily-board', query: { semester_id: sid, date: dateIso } }">
+        <n-button data-testid="center-daily-board">
+          今日看板 →
+        </n-button>
+      </RouterLink>
     </n-space>
     <n-space style="margin-top: 12px">
       <span class="ios-chip-warn ios-chip">待处理 {{ pendingTotal }} 节</span>
