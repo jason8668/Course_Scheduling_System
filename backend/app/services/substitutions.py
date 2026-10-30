@@ -312,20 +312,31 @@ def _clear_swap(sub: Substitution) -> None:
     sub.swap_entry_id = None
 
 
+def _cn_date(d) -> str:
+    """群广播口径的日期:10月30日(用户 2026-10-30 给的模板原样)。"""
+    return f"{d.month}月{d.day}日"
+
+
 def _notify_handler(
     db: Session, affected: AffectedPeriod, sub: Substitution, handler: Teacher
 ) -> None:
     absent = affected.leave_request.teacher
     type_cn = SUBSTITUTION_TYPE_CN[sub.type]
-    where = f"{affected.date} {affected.period_name}({affected.class_names}{affected.subject_name})"
+    # 群广播口径(Jason 2026-10-30 给的模板原样):第一句就说清谁代谁的课,
+    # 不用第二人称“您”,站内/Email/钉钉群三处同一正文,不再由钉钉层改写。
+    slot = (
+        f"{_cn_date(affected.date)} {affected.period_name},"
+        f"{affected.class_names}《{affected.subject_name}》"
+    )
     if sub.type == SubstitutionType.swap.value:
         body = (
-            f"请于 {where} 代 {absent.name} 一节;"
-            f"{absent.name} 将于 {sub.swap_date} {sub.swap_period_name} 补您的"
-            f"{sub.swap_class_names}{sub.swap_subject_name}"
+            f"{slot},{absent.name}老师与{handler.name}老师对调:"
+            f"{handler.name}老师代{absent.name}老师上这节,"
+            f"{absent.name}老师于{_cn_date(sub.swap_date)} {sub.swap_period_name}"
+            f"补{handler.name}老师{sub.swap_class_names}的《{sub.swap_subject_name}》。"
         )
     else:
-        body = f"请于 {where} {type_cn} {absent.name} 的课"
+        body = f"{slot},{absent.name}老师调课,由{handler.name}老师{type_cn}。"
     notifications.notify(
         db, semester_id=affected.semester_id, teacher_id=handler.id,
         type=NotificationType.substitution_assigned,
@@ -334,15 +345,12 @@ def _notify_handler(
     )
     if sub.type == SubstitutionType.swap.value:
         # 调课多了一个要到场的人:请假的甲得回来补乙那节。只通知乙,甲就会漏掉补课。
+        # 群广播同一正文(对调整件事),标题仍指向补课那节,方便原任一眼找到自己的补课。
         notifications.notify(
             db, semester_id=affected.semester_id, teacher_id=absent.id,
             type=NotificationType.substitution_assigned,
             title=f"调课补课通知:{sub.swap_date} {sub.swap_period_name}",
-            body=(
-                f"{handler.name} 将于 {where} 代您上课;"
-                f"请您于 {sub.swap_date} {sub.swap_period_name} 补上 {handler.name} 的"
-                f"{sub.swap_class_names}{sub.swap_subject_name}"
-            ),
+            body=body,
         )
 
 
@@ -356,20 +364,31 @@ def clear(db: Session, affected: AffectedPeriod, *, actor_name: str) -> None:
     if sub is None:
         return
     if sub.handler_teacher_id is not None:
+        handler = db.get(Teacher, sub.handler_teacher_id)
+        absent = affected.leave_request.teacher
+        slot = (
+            f"{_cn_date(affected.date)} {affected.period_name},"
+            f"{affected.class_names}《{affected.subject_name}》"
+        )
         notifications.notify(
             db, semester_id=affected.semester_id, teacher_id=sub.handler_teacher_id,
             type=NotificationType.substitution_cancelled,
             title=f"原订{SUBSTITUTION_TYPE_CN[sub.type]}已取消",
-            body=f"{actor_name} 取消了 {affected.date} {affected.period_name} 的处置",
+            body=(
+                f"{slot},原定由{handler.name if handler else ''}老师代"
+                f"{absent.name}老师的课已取消,{absent.name}老师正常上课。"
+            ),
         )
     if sub.type == SubstitutionType.swap.value:
+        absent = affected.leave_request.teacher
         notifications.notify(
             db, semester_id=affected.semester_id, teacher_id=affected.leave_request.teacher_id,
             type=NotificationType.substitution_cancelled,
             title="原订调课已取消",
             body=(
-                f"{actor_name} 取消了 {affected.date} {affected.period_name} 的调课;"
-                f"您不必于 {sub.swap_date} {sub.swap_period_name} 补课"
+                f"{_cn_date(sub.swap_date)} {sub.swap_period_name},"
+                f"{sub.swap_class_names}《{sub.swap_subject_name}》,原定调课已取消,"
+                f"{absent.name}老师不必补课。"
             ),
         )
     db.delete(sub)

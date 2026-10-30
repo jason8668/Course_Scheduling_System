@@ -80,11 +80,11 @@ def test_notification_broadcasts_to_dingtalk(admin, monkeypatch):
     webhook, secret, title, text = sent[0]
     assert webhook == HOOK and secret == "SECxyz"
     assert "代课通知" in title and "内容摘要" in text
-    # 群发要点出相关教师,否则群里看不出这则通知是请谁
-    assert "相关教师:王小明" in text
+    # 群广播口径(Jason 2026-10-30 模板):正文原样送群,不再贴“相关教师:”标
+    assert "相关教师:" not in text
 
 
-def test_dingtalk_group_message_names_the_teacher(admin, monkeypatch):
+def test_dingtalk_group_message_is_broadcast_wording(admin, monkeypatch):
     client, db = admin
     sent: list = []
     monkeypatch.setattr(
@@ -101,16 +101,16 @@ def test_dingtalk_group_message_names_the_teacher(admin, monkeypatch):
     sid = client.get("/api/semesters").json()[0]["id"]
     teacher = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王小明"}).json()
 
-    # 调课补课通知正文里的“您”指收信人:群发时必须换成名字,否则群里含糊
+    # 群广播正文原样送群:第一句说清谁代谁的课,正文里没有第二人称“您”
     from app.models.notification import NotificationType
     notif.notify(db, semester_id=sid, teacher_id=teacher["id"],
                  type=NotificationType.substitution_assigned,
-                 title="调课补课通知:2026-10-27 第一节",
-                 body="请您于 2026-10-27 第一节补上陈师的数学")
+                 title="代课通知",
+                 body="10月30日 第1节,七年级1班《数学》,王小明老师调课,由李小红老师代课。")
     db.commit()
     assert len(sent) == 1
-    assert "相关教师:王小明" in sent[0][3]
-    assert "请王小明于 2026-10-27 第一节补上陈师的数学" in sent[0][3]
+    assert "由李小红老师代课" in sent[0][3]
+    assert "相关教师:" not in sent[0][3]
     assert "您" not in sent[0][3]
 
 

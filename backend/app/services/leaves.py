@@ -291,11 +291,15 @@ def cancel(db: Session, leave: LeaveRequest, *, actor_name: str) -> list[Affecte
     for handler_id, periods in by_handler.items():
         detail = "、".join(f"{p.date} {p.period_name}({p.class_names}{p.subject_name})"
                            for p in periods)
+        handler = db.get(Teacher, handler_id)
         notifications.notify(
             db, semester_id=leave.semester_id, teacher_id=handler_id,
             type=NotificationType.substitution_cancelled,
             title=f"原订代课已取消({leave.teacher.name} 销假)",
-            body=f"以下 {len(periods)} 节课不需要您代课了:{detail}",
+            body=(
+                f"以下 {len(periods)} 节课原定由{handler.name if handler else ''}老师代"
+                f"{leave.teacher.name}老师的课已取消,{leave.teacher.name}老师正常上课:{detail}"
+            ),
         )
 
     notifications.notify(
