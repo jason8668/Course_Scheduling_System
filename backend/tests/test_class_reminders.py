@@ -308,6 +308,28 @@ def test_reminder_preference_phone_change_clears_userid(teacher_env):
     assert r.json()["dingtalk_bound"] is True
 
 
+def test_reminder_preference_save_matches_dingtalk_immediately(teacher_env, monkeypatch):
+    """2026-10-30 定:保存提醒设置时立刻匹配一次钉钉,绑上当场显示已绑定,
+    不用等到下一节课;查不到也不让保存失败。"""
+    from app.services import settings as app_settings
+    from app.services.dingtalk_app import DingTalkAppClient
+
+    client, db, sem, teacher = teacher_env
+    app_settings.save_dingtalk_app(db, "key", "sec", "123456", 15)
+    db.commit()  # set_value 本身不提交,API 用另一 session,须先提交才看得到配置
+    monkeypatch.setattr(DingTalkAppClient, "get_userid", lambda self, mobile: "matched-user")
+    url = f"/api/teachers/me/reminder-preference?semester_id={sem.id}"
+    r = client.put(url, json={"reminder_enabled": True, "phone": "13900000000"})
+    assert r.json()["dingtalk_bound"] is True
+    db.expire_all()
+    assert db.get(Teacher, teacher.id).dingtalk_userid == "matched-user"
+
+    # 查不到:保存仍成功,仍回未绑定
+    monkeypatch.setattr(DingTalkAppClient, "get_userid", lambda self, mobile: None)
+    r = client.put(url, json={"reminder_enabled": True, "phone": "13700000000"})
+    assert r.status_code == 200 and r.json()["dingtalk_bound"] is False
+
+
 def test_reminder_preference_unbound(env):
     client, db = env
     make_user(db, "teacher2", PW, roles=[Role.teacher])

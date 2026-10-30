@@ -51,6 +51,52 @@ describe('TeacherSwapSection', () => {
     expect(wrapper.text()).not.toContain('载入调课失败')
   })
 
+  it('教师发起表单只列自己的课,对调老师不含自己', async () => {
+    // 登录老师是王老师(id 2):已发布课表里李老师的语文课不是他的,
+    // 王老师自己的数学课才是;对调下拉应有李老师、没有王老师。
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.includes('/teacher-swaps')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      if (url.includes('/published/timetable')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({
+          entries: [
+            {
+              id: 1, course_assignment_id: 1, weekday: 1, period_no: 1, span: 1, locked: false,
+              subject: '语文', teachers: ['李老师'], classes: ['七(1)班'], unit_type: 'single',
+              unit_name: '', room: null, teacher_ids: [1], class_ids: [1], room_id: null,
+            },
+            {
+              id: 2, course_assignment_id: 2, weekday: 1, period_no: 1, span: 1, locked: false,
+              subject: '数学', teachers: ['王老师'], classes: ['七(2)班'], unit_type: 'single',
+              unit_name: '', room: null, teacher_ids: [2], class_ids: [2], room_id: null,
+            },
+          ],
+          classes: [
+            { id: 1, name: '七(1)班', grade: 7, period_table_id: null },
+            { id: 2, name: '七(2)班', grade: 7, period_table_id: null },
+          ],
+          teachers: [{ id: 1, name: '李老师' }, { id: 2, name: '王老师' }],
+          rooms: [], period_tables: [],
+        }) })
+      }
+      if (url.includes('/published/my-teacher')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ id: 2, name: '王老师' }) })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+    }))
+    const wrapper = mount(NMessageProvider, {
+      slots: { default: () => h(TeacherSwapSection, { semesterId: 1, admin: false }) },
+    })
+    await flushPromises()
+    // 旧的班级/配课/原任下拉已不存在,新表单只有我的课 + 对调老师
+    expect(wrapper.find('[data-testid="swap-class"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="swap-assignment"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="swap-original"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="swap-my-entry"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="swap-handler"]').exists()).toBe(true)
+  })
+
   it('管理员模式列出调课记录', async () => {
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (url.includes('/teacher-swaps')) {

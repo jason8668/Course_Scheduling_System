@@ -39,7 +39,15 @@ async function savePref() {
       reminder_lead_minutes: lead,
       phone: remindPhone.value.trim() || null,
     })
-    message.success('提醒设置已保存')
+    // 保存时后端已立刻匹配过一次钉钉:绑上当场报已绑定,没绑上当场说明原因,
+    // 不用等到下一节课才知道。
+    if (preference.value.phone && preference.value.dingtalk_bound) {
+      message.success('提醒设置已保存,钉钉已绑定')
+    } else if (preference.value.phone) {
+      message.warning('提醒设置已保存,但钉钉未绑定:手机号可能不在企业通讯录,或钉钉应用未配置,请联系管理员核对')
+    } else {
+      message.success('提醒设置已保存')
+    }
   } catch (e) {
     message.error((e as Error).message || '保存失败')
   } finally {
@@ -98,7 +106,7 @@ watch(() => props.semesterId, () => { void loadAll() })
           </div>
           <div class="ios-card-body">
             <div class="ios-row-sub" style="margin-bottom: 8px">
-              关了就不会收到上课提醒；手机号变了会重新匹配钉钉，改完下次提醒时生效。
+              关了就不会收到上课提醒；保存时立刻匹配一次钉钉,绑上马上显示已绑定,没绑上多半是手机号不在企业通讯录,或钉钉应用未配置。
             </div>
             <n-button type="primary" round :loading="savingPref" :disabled="!preference.bound" @click="savePref">
               保存提醒设置

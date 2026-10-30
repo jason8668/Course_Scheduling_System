@@ -28,19 +28,32 @@ const semesters = ref<{ id: number; label: string }[]>([])
 const selectedSemesterId = ref<number | null>(props.semesterId ?? null)
 const effectiveSemesterId = computed(() => props.semesterId ?? selectedSemesterId.value)
 
-// 发起表单:换课那节 + 可选补课那节
+// 发起表单(教师模式,Jason 2026-10-30 定):老师只能调自己的课,不能帮别人调,
+// 所以不再选配课/原任/别人的课——只选「日期、节次、我自己的那节课、对调老师」,
+// 原任固定就是本人,后端本来就要求发起人是原任或换课其中一方且原任是该配课的任课教师。
+// 我的课与对方的课都从已发布课表条目拼:一条条目可能带多个班,按班展开成一行。
+interface SwapEntryChoice {
+  key: string
+  classId: number
+  className: string
+  assignmentId: number
+  subject: string
+}
 const swapDateTs = ref<number | null>(null)
 const swapPeriod = ref<number | null>(null)
-const swapClass = ref<number | null>(null)
-const swapAssignment = ref<number | null>(null)
-const swapOriginal = ref<number | null>(null)
+const swapMyEntryKey = ref<string | null>(null)
 const swapHandler = ref<number | null>(null)
 const note = ref('')
 const withMakeup = ref(false)
 const makeupDateTs = ref<number | null>(null)
 const makeupPeriod = ref<number | null>(null)
-const makeupClass = ref<number | null>(null)
-const makeupAssignment = ref<number | null>(null)
+const makeupEntryKey = ref<string | null>(null)
+interface TimetableEntryChoice extends SwapEntryChoice {
+  weekday: number
+  period: number
+  teacherIds: number[]
+}
+const allEntries = ref<TimetableEntryChoice[]>([])
 
 function localDate(ts: number) {
   const d = new Date(ts)
@@ -99,11 +112,23 @@ async function load() {
             } as unknown as Assignment)
           }
           assignments.value = [...byId.values()]
+          // 按班展开的条目:一条目多班时,每个班一行,调课表单按班选课用
+          allEntries.value = pub.entries.flatMap((e) => e.class_ids.map((cid, i) => ({
+            key: `${e.course_assignment_id}-${cid}-${e.weekday}-${e.period_no}`,
+            classId: cid,
+            className: e.classes[i] ?? `#${cid}`,
+            assignmentId: e.course_assignment_id,
+            subject: e.subject,
+            weekday: e.weekday,
+            period: e.period_no,
+            teacherIds: e.teacher_ids,
+          })))
         }
       } catch {
         teachers.value = []
         classes.value = []
         assignments.value = []
+        allEntries.value = []
       }
       me.value = await getMyTeacher(sid).catch(() => null)
     }
@@ -120,15 +145,27 @@ if (props.semesterId === null || props.semesterId === undefined) {
   }).catch(() => {})
 }
 
-const teacherOptions = computed(() => teachers.value.map((t) => ({ label: t.name, value: t.id })))
-const classOptions = computed(() => classes.value.map((c) => ({ label: c.name, value: c.id })))
-function assignmentOptionsFor(classId: number | null) {
-  return assignments.value
-    .filter((a) => classId === null || a.scheduling_unit.classes.some((c) => c.id === classId))
-    .map((a) => ({ label: `${a.subject.name}(${a.teachers.map((t) => t.name).join('、')})`, value: a.id }))
+// 对调老师:只能选别人,不能选自己
+const counterpartOptions = computed(() => teachers.value
+  .filter((t) => me.value === null || t.id !== me.value.id)
+  .map((t) => ({ label: t.name, value: t.id })))
+function weekdayOf(ts: number | null): number | null {
+  if (ts === null) return null
+  const d = new Date(ts).getDay()
+  return d === 0 ? 7 : d
 }
-const swapAssignmentOptions = computed(() => assignmentOptionsFor(swapClass.value))
-const makeupAssignmentOptions = computed(() => assignmentOptionsFor(makeupClass.value))
+function entriesFor(teacherId: number | null, dateTs: number | null, period: number | null) {
+  if (teacherId === null || dateTs === null || period === null) return []
+  const wd = weekdayOf(dateTs)
+  return allEntries.value
+    .filter((e) => e.teacherIds.includes(teacherId) && e.weekday === wd && e.period === period)
+    .map((e) => ({ label: `${e.className} ${e.subject}`, value: e.key }))
+}
+const swapMyEntryOptions = computed(() => entriesFor(me.value?.id ?? null, swapDateTs.value, swapPeriod.value))
+const makeupEntryOptions = computed(() => entriesFor(swapHandler.value, makeupDateTs.value, makeupPeriod.value))
+function findEntry(key: string | null) {
+  return allEntries.value.find((e) => e.key === key) ?? null
+}
 function teacherName(id: number) {
   return teachers.value.find((t) => t.id === id)?.name ?? `#${id}`
 }
@@ -142,28 +179,29 @@ const statusLabel: Record<string, string> = { pending: '待对方确认', approv
 
 async function onCreate() {
   const sid = effectiveSemesterId.value
+  const myEntry = findEntry(swapMyEntryKey.value)
   if (sid === null || sid === undefined || swapDateTs.value === null || !swapPeriod.value
-    || !swapClass.value || !swapAssignment.value || !swapOriginal.value || !swapHandler.value) {
-    message.warning('请把换课那节填完整(日期、节次、班级、配课、原任、换课)')
+    || !myEntry || !me.value || !swapHandler.value) {
+    message.warning('请把换课那节填完整(日期、节次、我自己的课、对调老师)')
     return
   }
-  if (withMakeup.value && (makeupDateTs.value === null || !makeupPeriod.value
-    || !makeupClass.value || !makeupAssignment.value)) {
-    message.warning('补课四项要填全(日期、节次、班级、配课)')
+  const makeupEntry = withMakeup.value ? findEntry(makeupEntryKey.value) : null
+  if (withMakeup.value && (makeupDateTs.value === null || !makeupPeriod.value || !makeupEntry)) {
+    message.warning('补课三项要填全(日期、节次、对方的课)')
     return
   }
   try {
     await createTeacherSwap(sid, {
       class_date: localDate(swapDateTs.value),
       period_no: swapPeriod.value,
-      class_unit_id: swapClass.value,
-      course_assignment_id: swapAssignment.value,
-      original_teacher_id: swapOriginal.value,
+      class_unit_id: myEntry.classId,
+      course_assignment_id: myEntry.assignmentId,
+      original_teacher_id: me.value.id,
       handler_teacher_id: swapHandler.value,
       makeup_date: withMakeup.value && makeupDateTs.value ? localDate(makeupDateTs.value) : null,
       makeup_period_no: withMakeup.value ? makeupPeriod.value : null,
-      makeup_class_unit_id: withMakeup.value ? makeupClass.value : null,
-      makeup_assignment_id: withMakeup.value ? makeupAssignment.value : null,
+      makeup_class_unit_id: withMakeup.value ? makeupEntry!.classId : null,
+      makeup_assignment_id: withMakeup.value ? makeupEntry!.assignmentId : null,
       note: note.value.trim() || null,
     })
     message.success('已发起,对方确认后即生效')
@@ -205,19 +243,23 @@ async function onDecide(row: TeacherSwap, approve: boolean) {
           <div v-if="!admin">
             <n-text strong>发起调课</n-text>
             <div class="ios-row-sub">
-              换课那节:原任教师的课由换课教师上;补课可选,填了就是原任去上对方的课。
+              只能调自己的课:选日期、节次后,下拉只列你那节的课(班级+科目),再选对调老师就行,
+              原任就是你本人,不用再选。补课可选,填了就是你去上对方那节课。
               事后补登:已经上过的课,日期填过去那天,对方点确认即补记录。
             </div>
+            <n-alert v-if="me === null" type="warning" style="margin-top: 8px">
+              你的账号尚未绑定教师档案,无法发起调课,请联系管理员开通。
+            </n-alert>
             <n-space vertical size="small" style="margin-top: 8px">
               <n-space align="center" :wrap="true">
                 <n-date-picker v-model:value="swapDateTs" type="date" placeholder="日期" style="width: 160px" data-testid="swap-date" />
                 <n-select v-model:value="swapPeriod" :options="Array.from({ length: 12 }, (_, i) => ({ label: `第${i + 1}节`, value: i + 1 }))" placeholder="节次" style="width: 110px" data-testid="swap-period" />
-                <n-select v-model:value="swapClass" :options="classOptions" placeholder="班级" style="width: 140px" data-testid="swap-class" />
-                <n-select v-model:value="swapAssignment" :options="swapAssignmentOptions" placeholder="配课(科目)" style="width: 220px" data-testid="swap-assignment" />
-              </n-space>
-              <n-space align="center" :wrap="true">
-                <n-select v-model:value="swapOriginal" :options="teacherOptions" placeholder="原任教师" style="width: 160px" data-testid="swap-original" />
-                <n-select v-model:value="swapHandler" :options="teacherOptions" placeholder="换课教师" style="width: 160px" data-testid="swap-handler" />
+                <n-select
+                  v-model:value="swapMyEntryKey" :options="swapMyEntryOptions"
+                  :placeholder="swapDateTs && swapPeriod ? '我的课(这节你没有课就选不到)' : '先选日期和节次,再选我的课'"
+                  style="width: 220px" data-testid="swap-my-entry"
+                />
+                <n-select v-model:value="swapHandler" :options="counterpartOptions" placeholder="对调老师" style="width: 160px" data-testid="swap-handler" />
                 <n-input v-model:value="note" placeholder="备注(可选,如口头已通知)" style="width: 220px" data-testid="swap-note" />
               </n-space>
               <n-space align="center" :wrap="true">
@@ -226,11 +268,14 @@ async function onDecide(row: TeacherSwap, approve: boolean) {
                 <template v-if="withMakeup">
                   <n-date-picker v-model:value="makeupDateTs" type="date" placeholder="补课日期" style="width: 160px" data-testid="swap-makeup-date" />
                   <n-select v-model:value="makeupPeriod" :options="Array.from({ length: 12 }, (_, i) => ({ label: `第${i + 1}节`, value: i + 1 }))" placeholder="补课节次" style="width: 110px" data-testid="swap-makeup-period" />
-                  <n-select v-model:value="makeupClass" :options="classOptions" placeholder="补课班级" style="width: 140px" data-testid="swap-makeup-class" />
-                  <n-select v-model:value="makeupAssignment" :options="makeupAssignmentOptions" placeholder="补课配课" style="width: 220px" data-testid="swap-makeup-assignment" />
+                  <n-select
+                    v-model:value="makeupEntryKey" :options="makeupEntryOptions"
+                    :placeholder="swapHandler ? '对方的课' : '先选对调老师,再选对方的课'"
+                    style="width: 220px" data-testid="swap-makeup-entry"
+                  />
                 </template>
               </n-space>
-              <n-button type="primary" round data-testid="swap-create" @click="onCreate">发起调课</n-button>
+              <n-button type="primary" round :disabled="me === null" data-testid="swap-create" @click="onCreate">发起调课</n-button>
             </n-space>
           </div>
           <div style="margin-top: 16px">
