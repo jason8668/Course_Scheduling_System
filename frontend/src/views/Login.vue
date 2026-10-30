@@ -77,16 +77,19 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(135deg, #04295e 0%, #0a56c6 55%, #007aff 100%);
+  /* 2026-10-30 Jason 定:登录页深蓝太重,改成登录后同一套淡蓝渐变,
+     与 MainLayout 应用壳底色完全一致,进出系统不换底色。 */
+  background: linear-gradient(180deg, #C7D9F6 0%, #DDE7F8 30%, #E9EBF2 65%, #F5F5F7 100%);
 }
 .login-shell {
   display: flex;
   width: min(1060px, 100%);
   background: rgba(255, 255, 255, 0.88);
   -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 30, 90, 0.35);
+  box-shadow: 0 12px 40px rgba(30, 60, 120, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 .login-visual {
   position: relative;

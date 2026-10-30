@@ -13,7 +13,8 @@ const emit = defineEmits<{ imported: [] }>()
 const message = useMessage()
 
 const entity = ref<ImportEntity>('subjects')
-const createAccounts = ref(false)
+// 默认勾选:导入教师时自动建号,老师不用单独申请帐号
+const createAccounts = ref(true)
 // 既有教师改为更新而非报错:每学年职务异动要改几十位老师(用户回报 #18)
 const updateExisting = ref(false)
 const selectedFile = ref<File | null>(null)
@@ -89,14 +90,17 @@ async function onUpload() {
     <n-space vertical>
       <n-text strong>③ 上传填好的档案</n-text>
       <n-checkbox v-if="isTeacher" v-model:checked="createAccounts">
-        同时建立教师登录帐号(默认密码,首次登录需更改)
+        自动为每位教师建立登录帐号(帐号=姓名,初始密码 admin,首次登录强制改密码;重名自动加数字后缀)
       </n-checkbox>
+      <n-text v-if="isTeacher && createAccounts" depth="3" style="font-size: 13px">
+        Excel 里「登录帐号」那列留空就自动用姓名,填了就用填的值;老师拿到帐号就能自己登录,不用单独申请。
+      </n-text>
       <n-checkbox v-if="isTeacher" v-model:checked="updateExisting" data-testid="import-update">
         既有教师改为更新资料(以姓名＋身分末四码比对)
       </n-checkbox>
       <n-text v-if="isTeacher && updateExisting" depth="3" style="font-size: 13px">
         只覆盖有填的栏位,空白保留原值;行政职称填「无」代表卸任,数字栏要归零请填 0。
-        既有教师的登录帐号不会在这里建立。
+        既有教师若尚未绑定帐号,勾选建立帐号时也会自动补建(帐号=姓名)。
       </n-text>
       <n-upload :max="1" :default-upload="false" accept=".xlsx" @change="onFileChange">
         <n-button>选择档案</n-button>

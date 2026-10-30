@@ -169,18 +169,26 @@ def test_create_account_rejects_short_password(sched):
     assert r.status_code == 400 and "至少" in r.json()["detail"]
 
 
+def _login_as_admin(client, db):
+    """2026-10-30 新规则:重设密码只有系统管理员能调,主任会 403。"""
+    make_user(db, "adminuser", PW, roles=[Role.admin])
+    client.post("/api/auth/logout")
+    assert client.post(
+        "/api/auth/login", json={"username": "adminuser", "password": PW}
+    ).status_code == 200
+
+
 def test_reset_teacher_password(sched):
-    """重设后:新密码可登录、旧密码不行,且对方下次登录要自行改密码。"""
+    """管理员恢复默认密码后:默认密码可登录、旧密码不行,且对方下次登录要自行改密码。"""
     client, sid, db = sched
     t = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王老师"}).json()
     client.post(
         f"/api/teachers/{t['id']}/account",
         json={"username": "wang001", "password": "oldpassword1"},
     )
+    _login_as_admin(client, db)
 
-    r = client.post(
-        f"/api/teachers/{t['id']}/account/reset-password", json={"password": "newpassword1"}
-    )
+    r = client.post(f"/api/teachers/{t['id']}/account/reset-password", json={})
     assert r.status_code == 200 and r.json()["must_change_password"] is True
 
     client.post("/api/auth/logout")
@@ -188,8 +196,17 @@ def test_reset_teacher_password(sched):
         "/api/auth/login", json={"username": "wang001", "password": "oldpassword1"}
     ).status_code == 401
     assert client.post(
-        "/api/auth/login", json={"username": "wang001", "password": "newpassword1"}
+        "/api/auth/login", json={"username": "wang001", "password": "admin"}
     ).status_code == 200
+
+
+def test_reset_password_director_is_forbidden(sched):
+    """主任调重设密码直接 403,只有系统管理员能帮别人恢复默认密码。"""
+    client, sid, db = sched
+    t = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王老师"}).json()
+    client.post(f"/api/teachers/{t['id']}/account", json={"username": "wang001"})
+    r = client.post(f"/api/teachers/{t['id']}/account/reset-password", json={})
+    assert r.status_code == 403
 
 
 def test_reset_password_refuses_non_teacher_account(sched):
@@ -199,13 +216,15 @@ def test_reset_password_refuses_non_teacher_account(sched):
     t = client.post(
         f"/api/teachers?semester_id={sid}", json={"name": "主任老师", "user_id": boss.id}
     ).json()
+    _login_as_admin(client, db)
     r = client.post(f"/api/teachers/{t['id']}/account/reset-password", json={})
     assert r.status_code == 403 and "系统管理员" in r.json()["detail"]
 
 
 def test_reset_password_without_account_is_404(sched):
-    client, sid, _ = sched
+    client, sid, db = sched
     t = client.post(f"/api/teachers?semester_id={sid}", json={"name": "王老师"}).json()
+    _login_as_admin(client, db)
     r = client.post(f"/api/teachers/{t['id']}/account/reset-password", json={})
     assert r.status_code == 404 and "尚未绑定" in r.json()["detail"]
 

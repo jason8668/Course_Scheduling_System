@@ -212,7 +212,7 @@ async function onLogout() {
     <n-layout-sider
       collapse-mode="width"
       style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.35)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 12px 40px rgba(30, 60, 120, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95)"
-      :collapsed-width="64"
+      :collapsed-width="80"
       :width="220"
       show-trigger
       :collapsed="collapsed"
@@ -233,7 +233,7 @@ async function onLogout() {
         <n-menu
           :value="activeKey"
           :collapsed="collapsed"
-          :collapsed-width="64"
+          :collapsed-width="80"
           :options="menuOptions"
           :theme-overrides="menuThemeOverrides"
           :default-expanded-keys="['basedata-group']"
@@ -289,11 +289,22 @@ async function onLogout() {
 }
 /* 菜单整体抬到指示条上方(菜单底色透明),文字压在框上,框只当底色。 */
 .sider-menu-wrap :deep(.n-menu) { position: relative; z-index: 1; }
-/* 收合两字图标:展开时隐藏(外观与原来一致),收合时显示前两字,光看方块也能认出是哪页。 */
+/* 收合两字图标:展开时隐藏(外观与原来一致),收合时显示前两字,光看方块也能认出是哪页。
+   2026-10-30 截图教训:64px 收合宽里塞 44px 徽章 + 左右边距,两个字被挤成上下两行,
+   根本没法看。修法:收合宽放宽到 80px;徽章 white-space: nowrap 绝不换行;
+   图标格本身定宽 48px 且不收缩,菜单项内容居中、左右内边距清零,
+   这样两个字永远横排一行,悬浮提示仍显示全名,认得出是哪页。 */
 .sider-menu-wrap :deep(.menu-char-icon) { display: none; }
+.sider-menu-wrap :deep(.n-menu--collapsed .n-menu-item-content) {
+  display: flex; justify-content: center; padding-left: 0; padding-right: 0;
+}
+.sider-menu-wrap :deep(.n-menu--collapsed .n-menu-item-content__icon) {
+  width: 48px; flex-shrink: 0; margin-right: 0;
+}
 .sider-menu-wrap :deep(.n-menu--collapsed .menu-char-icon) {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 28px; border-radius: 8px;
+  width: 48px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  white-space: nowrap; overflow: hidden;
   background: rgba(0, 122, 255, 0.12); color: #007aff;
   font-size: 15px; font-weight: 600;
 }

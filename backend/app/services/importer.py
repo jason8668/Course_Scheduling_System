@@ -69,7 +69,7 @@ TEMPLATE_DEFS: dict[str, dict] = {
             ("行政职称", "选填;更新时填「无」代表卸任", "教学组长"),
             ("行政减课", "选填,数字", "4"),
             ("外聘", "选填:是/否,默认否", "否"),
-            ("登录帐号", "选填,勾选建立帐号时使用", "wang001"),
+            ("登录帐号", "选填,留空则自动用姓名作帐号(重名加数字后缀);填了就用填的值", "王小明"),
             ("Email", "选填,调代课通知寄送用", "wang@example.edu.tw"),
             ("手机", "选填,人工联络用", "0912345678"),
         ],
@@ -276,8 +276,18 @@ def _import_teachers(
     `update_existing` 为真时,档案里已存在的教师(姓名＋身分末四码相同)改为更新而非报错——
     每学年职务异动要改几十位老师,逐笔手改不切实际(用户回报 #18)。
     更新时**只覆盖有填的栏位**,空白保留原值;要清掉行政职称请填「无」或「-」,
-    数字栏要归零请填 0。既有教师的登录帐号一律不在这里处理(避免误建),
-    请改用教师编辑界面的「建立登录帐号」。
+    数字栏要归零请填 0。
+
+    自动建号(Jason 2026-10-30 定,中文名方案,取代旧的拼音方案):
+    勾选建立帐号时,每位教师自动有登录帐号,不用单独申请:
+    帐号 = 姓名(中文直接作帐号,数据库与登录接口均无字符集限制,只限长度),
+    初始密码 = admin(即 settings.default_import_password),
+    首次登录强制改密码(must_change_password=True,已有机制)。
+    Excel 第 8 列「登录帐号」仍可用:填了就用填的值(重复仍报错);
+    留空才自动用姓名。重名自动加数字后缀(王伟、王伟2、王伟3……),
+    手填帐号重复不自动改,仍报错(避免悄悄改掉管理员指定的帐号)。
+    既有教师更新时,若尚未绑定帐号且勾选建号,也会自动补建(旧规则
+    「既有教师不在这里建号」已随自动建号作废)。
     """
     result = ImportResult()
     subjects = {
@@ -294,6 +304,18 @@ def _import_teachers(
     seen_usernames: set[str] = set()
     pending: list[tuple[Teacher, str | None]] = []   # 新增:(teacher, username or None)
     updates: list[tuple[Teacher, dict, list[Subject] | None]] = []  # 更新:(教师, 栏位, 科目)
+    # 既有教师更新时自动补建的帐号:(教师, username)
+    auto_update_accounts: list[tuple[Teacher, str]] = []
+
+    def _auto_username(base: str) -> str:
+        """姓名作帐号,重名加数字后缀;调用方已保证 base 非空。"""
+        candidate = base
+        n = 2
+        while candidate in existing_usernames or candidate in seen_usernames:
+            candidate = f"{base}{n}"
+            n += 1
+        seen_usernames.add(candidate)
+        return candidate
 
     for idx, row in _data_rows(file_bytes):
         name = _cell(row, 0)
@@ -330,11 +352,26 @@ def _import_teachers(
         external_cell = _cell(row, 6)
 
         username = _cell(row, 7)
-        if create_accounts and username and current is None:
-            if username in existing_usernames or username in seen_usernames:
-                result.errors.append(f"第 {idx} 列:登录帐号「{username}」重复")
-                continue
-            seen_usernames.add(username)
+        if create_accounts and current is None:
+            if username:
+                # 手填帐号:重复仍报错,不自动改
+                if username in existing_usernames or username in seen_usernames:
+                    result.errors.append(f"第 {idx} 列:登录帐号「{username}」重复")
+                    continue
+                seen_usernames.add(username)
+            else:
+                # 留空:自动用姓名作帐号,重名加后缀
+                username = _auto_username(name)
+        elif create_accounts and current is not None and current.user_id is None:
+            # 既有教师更新、尚未绑定帐号:自动补建,手填优先,留空用姓名
+            if username:
+                if username in existing_usernames or username in seen_usernames:
+                    result.errors.append(f"第 {idx} 列:登录帐号「{username}」重复")
+                    continue
+                seen_usernames.add(username)
+            else:
+                username = _auto_username(name)
+            auto_update_accounts.append((current, username))
 
         email = _cell(row, 8)
         if email and not is_valid_email(email):
@@ -388,6 +425,17 @@ def _import_teachers(
             setattr(teacher, attr, value)
         if new_subjects is not None:
             teacher.subjects = new_subjects
+    for teacher, username in auto_update_accounts:
+        user = User(
+            username=username,
+            password_hash=hash_password(settings.default_import_password),
+            display_name=teacher.name,
+            must_change_password=True,
+            roles=[UserRole(role=Role.teacher.value)],
+        )
+        db.add(user)
+        db.flush()
+        teacher.user_id = user.id
     db.commit()
     result.imported = len(pending)
     result.updated = len(updates)

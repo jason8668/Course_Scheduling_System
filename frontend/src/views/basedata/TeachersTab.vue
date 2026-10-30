@@ -5,30 +5,28 @@ import {
 import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
-  createTeacher, createTeacherAccount, deleteTeacher, getTeacherAccount, getTeacherDeleteImpact,
-  listBindableAccounts, listSubjects, listTeachers, promoteTeacherGrades, resetTeacherPassword,
-  setTeacherAccountActive, updateTeacher,
+  createTeacher, deleteTeacher, getTeacherAccount, getTeacherDeleteImpact,
+  listSubjects, listTeachers, promoteTeacherGrades, resetTeacherPassword,
+  updateTeacher,
 } from '@/api/basedata'
 import type {
-  BindableAccount, Subject, Teacher, TeacherAccount, TeacherDeleteImpact,
+  Subject, Teacher, TeacherAccount, TeacherDeleteImpact,
 } from '@/api/basedata'
 import { gradeLabel } from '@/api/substitutionLog'
+import { useAuthStore } from '@/stores/auth'
 import TeacherTimeRules from './TeacherTimeRules.vue'
 
 const props = defineProps<{ semesterId: number }>()
 const message = useMessage()
+const auth = useAuthStore()
 
 const items = ref<Teacher[]>([])
 const subjects = ref<Subject[]>([])
-const accounts = ref<BindableAccount[]>([])
 const search = ref('')
 const subjectOptions = computed(() => subjects.value.map((s) => ({ label: s.name, value: s.id })))
 const gradeOptions = Array.from({ length: 12 }, (_, i) => ({
   label: gradeLabel(i + 1), value: i + 1,
 }))
-const accountOptions = computed(() =>
-  accounts.value.map((a) => ({ label: `${a.display_name}(${a.username})`, value: a.id })),
-)
 
 async function reload() {
   items.value = await listTeachers(props.semesterId, search.value || undefined)
@@ -73,92 +71,32 @@ function emptyForm(): TeacherForm {
 }
 const form = ref<TeacherForm>(emptyForm())
 
-// 事后补开登录帐号(导入时没勾、或后来才要用系统的老师);savedUserId 是「已存档」的绑定,
-// 下拉选单改了还没存不算,重设密码要以存档状态为准
-const savedUserId = ref<number | null>(null)
-const newUsername = ref('')
-const newPassword = ref('')
+// 手动侧(Jason 2026-10-30 定):手动建号已取消,手动绑定/停用/自设密码也不再提供;
+// 这里只读显示已绑帐号,只有系统管理员能帮别人恢复默认密码,其他人连按钮都看不到。
 const accountBusy = ref(false)
-// 停用的帐号不会出现在「可绑定帐号」清单里,所以编辑时直接问这位教师的帐号
 const boundAccount = ref<TeacherAccount | null>(null)
 
 async function loadBoundAccount(teacherId: number) {
   boundAccount.value = await getTeacherAccount(teacherId)
-  savedUserId.value = boundAccount.value?.id ?? null
-}
-
-async function onToggleAccountActive() {
-  if (editingId.value === null || !boundAccount.value) return
-  const next = !boundAccount.value.is_active
-  accountBusy.value = true
-  try {
-    boundAccount.value = await setTeacherAccountActive(editingId.value, next)
-    message.success(next
-      ? '已启用帐号,这位老师可以再登录了'
-      : '已停用帐号,这位老师无法再登录;资料与纪录都保留')
-  } catch (e) {
-    message.error((e as ApiError).detail || '变更帐号状态失败')
-  } finally {
-    accountBusy.value = false
-  }
-}
-
-async function onCreateAccount() {
-  const username = newUsername.value.trim()
-  if (!username || editingId.value === null) {
-    message.warning('请输入登录帐号')
-    return
-  }
-  accountBusy.value = true
-  try {
-    const acc = await createTeacherAccount(editingId.value, username, newPassword.value || undefined)
-    boundAccount.value = acc
-    savedUserId.value = acc.id
-    form.value.user_id = acc.id
-    newUsername.value = ''
-    message.success(newPassword.value
-      ? `已建立帐号 ${acc.username},密码为你刚才输入的值;老师首次登录须自行修改`
-      : `已建立帐号 ${acc.username},使用系统默认密码;老师首次登录须自行修改`)
-    newPassword.value = ''
-  } catch (e) {
-    message.error((e as ApiError).detail || '建立帐号失败')
-    return
-  } finally {
-    // 只在送出期间锁住按钮;下面的清单重载是背景工作,不该让「停用帐号」按钮一直是停用状态
-    accountBusy.value = false
-  }
-  await loadAccounts(editingId.value)
-  await reload()
 }
 
 async function onResetPassword() {
   if (editingId.value === null) return
   accountBusy.value = true
   try {
-    await resetTeacherPassword(editingId.value, newPassword.value || undefined)
-    message.success(newPassword.value
-      ? '密码已重设为你刚才输入的值;老师下次登录须自行修改'
-      : '密码已重设为系统默认密码;老师下次登录须自行修改')
-    newPassword.value = ''
+    await resetTeacherPassword(editingId.value)
+    message.success('密码已恢复为系统默认密码;老师下次登录须自行修改')
   } catch (e) {
-    message.error((e as ApiError).detail || '重设密码失败')
+    message.error((e as ApiError).detail || '恢复默认密码失败')
   } finally {
     accountBusy.value = false
   }
-}
-
-async function loadAccounts(currentTeacherId?: number) {
-  accounts.value = await listBindableAccounts(props.semesterId, currentTeacherId)
 }
 
 async function openCreate() {
   editingId.value = null
   form.value = emptyForm()
   boundAccount.value = null
-  savedUserId.value = null
-  newUsername.value = ''
-  newPassword.value = ''
-  await loadAccounts()
   show.value = true
 }
 async function openEdit(t: Teacher) {
@@ -171,11 +109,8 @@ async function openEdit(t: Teacher) {
     is_grade_director: t.is_grade_director ?? false,
     email: t.email ?? '', phone: t.phone ?? '', user_id: t.user_id,
   }
-  savedUserId.value = t.user_id
   boundAccount.value = null
-  newUsername.value = ''
-  newPassword.value = ''
-  await Promise.all([loadAccounts(t.id), t.user_id ? loadBoundAccount(t.id) : Promise.resolve()])
+  if (t.user_id) await loadBoundAccount(t.id)
   show.value = true
 }
 
@@ -357,16 +292,7 @@ function openRules(t: Teacher) {
             <n-input v-model:value="form.phone" placeholder="用于钉钉匹配与人工联络" />
           </n-space>
         </n-space>
-        <n-text>绑定登录帐号(选填)</n-text>
-        <n-select
-          v-model:value="form.user_id"
-          data-testid="teacher-account"
-          :options="accountOptions"
-          clearable
-          placeholder="绑定后此教师可用该帐号登录查课表/请假"
-        />
-
-        <!-- 导入时没建帐号的老师,在这里直接补一个;已经有帐号的则可重设密码 -->
+        <!-- 手动侧只剩管理员恢复默认密码:帐号只读显示,不再提供手动绑定/建号/停用/自设密码 -->
         <template v-if="editingId !== null">
           <n-divider style="margin: 4px 0" />
           <template v-if="boundAccount">
@@ -378,54 +304,20 @@ function openRules(t: Teacher) {
               >
                 {{ boundAccount.is_active ? '可登录' : '已停用' }}
               </n-tag>
-              <n-button
-                size="tiny" :loading="accountBusy"
-                data-testid="teacher-account-toggle" @click="onToggleAccountActive"
-              >
-                {{ boundAccount.is_active ? '停用帐号' : '启用帐号' }}
-              </n-button>
             </n-space>
-            <n-text v-if="!boundAccount.is_active" depth="3" style="font-size: 13px">
-              停用中:这位老师无法登录,但请假、调代课等历史纪录都保留。离职教师建议用这个方式,不要删除。
-            </n-text>
-            <n-space align="center">
-              <n-input
-                key="reset-password"
-                v-model:value="newPassword" type="password" show-password-on="click"
-                placeholder="新密码(留空=系统默认密码)" style="width: 230px"
-                data-testid="teacher-reset-password"
-              />
+            <n-space v-if="auth.hasRole('admin')" align="center">
               <n-popconfirm @positive-click="onResetPassword">
                 <template #trigger>
                   <n-button size="small" :loading="accountBusy" data-testid="teacher-reset-submit">
-                    重设密码
+                    恢复默认密码
                   </n-button>
                 </template>
-                重设后这位老师目前的登录状态会失效,下次登录必须自行改密码。确定重设?
+                恢复为系统默认密码后,这位老师目前的登录状态会失效,下次登录必须自行改密码。确定恢复?
               </n-popconfirm>
             </n-space>
           </template>
           <template v-else>
-            <n-text depth="3">没有帐号?直接建立一个(自动绑定这位老师,首次登录须改密码)</n-text>
-            <n-space align="center">
-              <n-input
-                key="new-username"
-                v-model:value="newUsername" placeholder="登录帐号" style="width: 160px"
-                data-testid="teacher-new-username"
-              />
-              <n-input
-                key="new-password"
-                v-model:value="newPassword" type="password" show-password-on="click"
-                placeholder="默认密码(留空=系统默认)" style="width: 210px"
-                data-testid="teacher-new-password"
-              />
-              <n-button
-                size="small" :loading="accountBusy"
-                data-testid="teacher-create-account" @click="onCreateAccount"
-              >
-                建立帐号
-              </n-button>
-            </n-space>
+            <n-text depth="3">无帐号:请通过导入建立(导入教师时自动建号,帐号=姓名,初始密码 admin)。</n-text>
           </template>
         </template>
 

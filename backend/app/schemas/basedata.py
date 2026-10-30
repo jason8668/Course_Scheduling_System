@@ -104,9 +104,11 @@ class BindableAccount(BaseModel):
 
 
 class TeacherAccountIn(BaseModel):
-    """为既有教师补开登录帐号(导入时没勾、或后来才需要用系统的老师)。"""
+    """为既有教师补开登录帐号(导入时没勾、或后来才需要用系统的老师)。
+    帐号支持中文:数据库 String(64) 与登录接口均无字符集限制,只限长度;
+    这里原来 min_length=3 会挡住两字姓名(如王伟),已放宽到 1。"""
 
-    username: str = Field(min_length=3, max_length=64)
+    username: str = Field(min_length=1, max_length=64)
     password: str = Field(default="", max_length=128)  # 空=用部署设置的默认密码
 
 

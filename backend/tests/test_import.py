@@ -185,8 +185,10 @@ def test_import_teachers_update_mode_still_rejects_duplicate_rows(scheduler_env)
     assert any("重复" in e for e in body["errors"])
 
 
-def test_import_teachers_update_does_not_touch_login_account(scheduler_env):
-    """既有教师的登录帐号不在导入时建立(避免误建);新教师仍可建立。"""
+def test_import_teachers_update_auto_creates_account_if_missing(scheduler_env):
+    """2026-10-30 中文名自动建号:既有教师更新时若尚未绑定帐号,
+    勾选建号也会自动补建(帐号=姓名,旧规则「既有教师不在这里建号」已作废);
+    新教师照旧。"""
     client, sid = scheduler_env
     _seed_wang(client, sid)
     rows = [
@@ -199,8 +201,26 @@ def test_import_teachers_update_does_not_touch_login_account(scheduler_env):
     teachers = client.get(f"/api/teachers?semester_id={sid}").json()
     wang = next(t for t in teachers if t["name"] == "王小明")
     chen = next(t for t in teachers if t["name"] == "陈小美")
-    assert wang["user_id"] is None      # 既有教师不会被偷建帐号
+    assert wang["user_id"] is not None  # 既有教师未绑定时自动补建
     assert chen["user_id"] is not None  # 新教师照旧
+
+
+def test_import_teachers_auto_account_from_chinese_name(scheduler_env):
+    """中文名自动建号:帐号列留空,帐号=姓名,初始密码 admin,首登强制改密码;
+    重名自动加数字后缀(王伟、王伟2)。"""
+    client, sid = scheduler_env
+    rows = [
+        _teacher_row("王伟", "1111", "", "", "", "", "", ""),
+        _teacher_row("王伟", "2222", "", "", "", "", "", ""),
+    ]
+    body = upload(client, "teachers", sid, rows, ncols=11, create_accounts=True).json()
+    assert body == {"imported": 2, "updated": 0, "errors": []}
+    client.post("/api/auth/logout")
+    for username in ("王伟", "王伟2"):
+        login = client.post("/api/auth/login", json={"username": username, "password": "admin"})
+        assert login.status_code == 200, username
+        assert login.json()["must_change_password"] is True
+        client.post("/api/auth/logout")
 
 
 def test_import_teachers_unknown_subject(scheduler_env):

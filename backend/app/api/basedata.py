@@ -57,6 +57,8 @@ router = APIRouter(tags=["basedata"])
 
 viewer = require_roles(Role.director)
 editor = require_roles(Role.director)
+# 只有系统管理员能帮别人恢复密码(Jason 2026-10-30 定:手动侧只剩这一项)
+admin_only = require_roles(Role.admin)
 
 
 def _require_semester(db: Session, semester_id: int) -> None:
@@ -311,20 +313,15 @@ def reset_teacher_password(
     teacher_id: int,
     body: ResetPasswordIn,
     db: Session = Depends(get_db),
-    _: object = Depends(editor),
+    _: object = Depends(admin_only),
 ) -> User:
-    """重设教师帐号的密码;重设后对方下次登录必须自行改密码。
-
-    密码指纹变了,该帐号既有的登录状态会立即失效。
+    """管理员帮别人恢复默认密码(Jason 2026-10-30 定:手动侧只剩这一项,
+    且只能恢复默认密码,不能自设新密码;主任/组长调这支会 403)。
+    重设后对方下次登录必须自行改密码;密码指纹变了,该帐号既有的登录状态会立即失效。
+    body.password 即便传了也会被忽略,一律恢复为系统默认密码。
     """
     _, user = _teacher_account(db, teacher_id)
-    password = body.password or settings.default_import_password
-    # 长度规则只管自填密码:系统默认密码是初始密码(首次登录强制修改),比照管理员种子帐号不设限
-    if body.password and len(password) < settings.min_password_length:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            f"密码至少需 {settings.min_password_length} 个字元",
-        )
+    password = settings.default_import_password
     user.password_hash = hash_password(password)
     user.must_change_password = True
     user.failed_login_attempts = 0
