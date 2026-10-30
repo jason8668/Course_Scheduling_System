@@ -25,6 +25,7 @@ from app.models.basedata import (
 )
 from app.models.calendar import SchoolCalendarEvent
 from app.models.constraint import ConstraintConfig
+from app.models.duty import DutyOverride, DutyPattern, DutyReminderLog, DutySwapRequest
 from app.models.leave import (
     LEAVE_TYPE_CN,
     AffectedPeriod,
@@ -36,11 +37,13 @@ from app.models.leave import (
 from app.models.notification import Notification, NotificationType
 from app.models.period import Period, PeriodTable, PeriodType
 from app.models.semester import Semester, SemesterStatus
+from app.models.special_day import SpecialDayEntry, SpecialDayReminderLog, SpecialDayRule
 from app.models.substitution import (
     SUBSTITUTION_TYPE_CN,
     Substitution,
     SubstitutionType,
 )
+from app.models.teacher_swap import TeacherSwap, TeacherSwapReminderLog
 from app.models.timetable import ScheduleEntry, Timetable, TimetableStatus
 from app.models.user import Role, User, UserRole
 from app.models.wizard import WizardState
@@ -87,4 +90,13 @@ __all__ = [
     "SubstitutionType",
     "SUBSTITUTION_TYPE_CN",
     "SchoolCalendarEvent",
+    "SpecialDayRule",
+    "SpecialDayEntry",
+    "SpecialDayReminderLog",
+    "DutyPattern",
+    "DutyOverride",
+    "DutySwapRequest",
+    "DutyReminderLog",
+    "TeacherSwap",
+    "TeacherSwapReminderLog",
 ]

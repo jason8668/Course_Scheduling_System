@@ -9,6 +9,7 @@ import {
   copySemester, createSemester, deleteSemester, listTemplates,
 } from '@/api/semesters'
 import type { CopyOptions, SemesterListItem, Template } from '@/api/semesters'
+import HelpTip from '@/components/HelpTip.vue'
 
 const props = defineProps<{
   semesters: SemesterListItem[]
@@ -167,8 +168,10 @@ async function onDelete() {
         <n-text>带班级</n-text>
         <n-switch v-model:value="copyOpts.classes" size="small" />
         <n-text>带软约束权重</n-text>
+        <HelpTip testid="help-copy-constraint">软约束是排课时尽量满足的偏好，例如教师偏好时段、同科目分散在不同日、主科优先排上午，权重越大越优先满足。勾上就把旧学期调过的权重一起复制过来，不勾则新学期用默认值。</HelpTip>
         <n-switch v-model:value="copyOpts.constraint_config" size="small" />
         <n-text>升一年级（7→8、8→9、9→7）</n-text>
+        <HelpTip testid="help-copy-promotion">开新学期时老师跟着学生升一年级：七年级老师升到八年级、八年级升到九年级，九年级老师回到七年级带新生。年级主任的年级范围也跟着走。不勾则老师年级原样复制。</HelpTip>
         <n-switch v-model:value="copyOpts.grade_promotion" size="small" />
         <n-button size="small" round @click="onCopy">
           复制开新学期

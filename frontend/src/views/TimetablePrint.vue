@@ -7,6 +7,8 @@ import type { PeriodCell } from '@/components/timetable/types'
 import { getPublishedTimetable } from '@/api/timetables'
 import type { PublishedTimetable } from '@/api/timetables'
 import { getSchoolSettings } from '@/api/assignments'
+import { dutyNameForWeekday, getDutyRoster } from '@/api/duty'
+import type { DutyRoster } from '@/api/duty'
 
 // 课表打印页(班级/教师/场地三种视角共用):独立一页供 A4 打印张贴,不套侧边栏。
 // 显示逻辑与课表查询页一致(节次表选择、跨节次表补列与时间注记、单双周并列),
@@ -18,6 +20,7 @@ const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
 
 const route = useRoute()
 const data = ref<PublishedTimetable | null>(null)
+const dutyRoster = ref<DutyRoster | null>(null)
 const schoolName = ref('')
 const loading = ref(true)
 const printedAt = new Date().toLocaleString('zh-CN', { hour12: false })
@@ -173,6 +176,7 @@ onMounted(async () => {
   const sid = Number(route.query.semester_id)
   try {
     data.value = await getPublishedTimetable(sid)
+    dutyRoster.value = await getDutyRoster(sid).catch(() => null)
   } finally {
     loading.value = false
   }
@@ -238,6 +242,14 @@ onMounted(async () => {
                 </template>
               </td>
             </template>
+          </tr>
+          <tr>
+            <td class="pcol">
+              <div class="pname">行政值日</div>
+            </td>
+            <td v-for="w in weekdays" :key="`duty-${w}`">
+              {{ dutyNameForWeekday(dutyRoster, w) ?? '—' }}
+            </td>
           </tr>
         </tbody>
       </table>

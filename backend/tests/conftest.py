@@ -22,17 +22,20 @@ from app.api import (
     basedata,
     calendar,
     demo,
+    duty,
     exports,
     imports,
     leaves,
     notifications,
     semesters,
     solver,
+    special_days,
     substitution_log,
     substitution_stats,
     substitutions,
     system,
     teaching_hours,
+    teacher_swaps,
     teachers,
     timetables,
     user_grades,
@@ -107,6 +110,9 @@ def env():
     application.include_router(demo.router, prefix="/api")
     application.include_router(system.router, prefix="/api")
     application.include_router(calendar.router, prefix="/api")
+    application.include_router(special_days.router, prefix="/api")
+    application.include_router(duty.router, prefix="/api")
+    application.include_router(teacher_swaps.router, prefix="/api")
 
     @application.get("/api/_protected")
     def _protected(user: User = Depends(get_active_user)) -> dict:

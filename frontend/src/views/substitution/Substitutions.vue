@@ -16,6 +16,7 @@ import {
 import type {
   BatchSkip, Candidate, Recommendation, SwapOption, SwapOptions, SwapPartner,
 } from '@/api/substitutions'
+import HelpTip from '@/components/HelpTip.vue'
 
 const message = useMessage()
 
@@ -342,6 +343,7 @@ function candidateTagType(c: Candidate): string {
                 >
                   整批指派代课
                 </n-button>
+                <HelpTip v-if="pendingOf(l).length > 1" testid="help-sub-batch">把这张假单还没处理的节次一次指派给同一位代课老师，不用一节一节指。已经处理过的节次不会更动，代课老师自己有课的节次会跳过，留给你另外找人。</HelpTip>
                 <n-button
                   v-if="swapIds(l).length" size="small" data-testid="sub-print-leave"
                   @click="printSlips('swap', swapIds(l))"
@@ -423,6 +425,7 @@ function candidateTagType(c: Candidate): string {
                     <template v-else>
                       <n-space align="center">
                         <n-text depth="3">代课课时</n-text>
+                        <HelpTip testid="help-sub-counts">计入：这节代课算进代课课时统计；不计：只是替上课，不算代课工作量。这个开关只影响代课课时统计，不影响仪表板上的已上总数——实际上了课，仪表板都计。</HelpTip>
                         <n-switch v-model:value="countsHours" size="small" />
                         <n-text depth="3">{{ countsHours ? '计入' : '不计' }}</n-text>
                       </n-space>
@@ -447,6 +450,7 @@ function candidateTagType(c: Candidate): string {
 
                   <n-space size="small" style="margin-top: 8px">
                     <n-text depth="3">或改采:</n-text>
+                    <HelpTip testid="help-sub-alt">调课：请另一位老师来上这一节，请假老师往后找一天补回对方一节，不计代课课时。并班：两个班合到一节上。自习：学生自习，不安排老师。不处理：这节直接停课，不安排人。</HelpTip>
                     <n-button
                       size="tiny" :type="swapOpen ? 'primary' : 'default'"
                       data-testid="sub-swap" @click="toggleSwap(p)"

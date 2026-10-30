@@ -15,6 +15,7 @@ from app.api import (
     basedata,
     calendar,
     demo,
+    duty,
     exports,
     health,
     imports,
@@ -22,9 +23,11 @@ from app.api import (
     notifications,
     semesters,
     solver,
+    special_days,
     substitution_log,
     substitution_stats,
     substitutions,
+    teacher_swaps,
     teachers,
     teaching_hours,
     system,
@@ -119,3 +122,6 @@ app.include_router(imports.router, prefix="/api")
 app.include_router(wizard.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(calendar.router, prefix="/api")
+app.include_router(special_days.router, prefix="/api")
+app.include_router(duty.router, prefix="/api")
+app.include_router(teacher_swaps.router, prefix="/api")

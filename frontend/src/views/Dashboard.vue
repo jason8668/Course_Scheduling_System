@@ -14,6 +14,8 @@ import { getMyTeacher, getPublishedTimetable, publishedSemesters } from '@/api/t
 import type { NamedBrief, PublicSemester, PublishedTimetable } from '@/api/timetables'
 import { getMyTeachingHours } from '@/api/teachingHours'
 import type { TeachingHoursReport } from '@/api/teachingHours'
+import { dutyNameForDate, getDutyRoster } from '@/api/duty'
+import type { DutyRoster } from '@/api/duty'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
@@ -56,6 +58,7 @@ const weekSemester = ref<PublicSemester | null>(null)
 const weekData = ref<PublishedTimetable | null>(null)
 const weekMe = ref<NamedBrief | null>(null)
 const weekEvents = ref<CalendarEvent[]>([])
+const weekDuty = ref<DutyRoster | null>(null)
 const weekTeacherId = ref<number | null>(null)
 const weekLoading = ref(true)
 
@@ -196,6 +199,16 @@ const weekShaped = computed(() => {
   }
 })
 const weekEntries = computed(() => weekShaped.value.entries)
+const weekDutyText = computed(() => {
+  if (!weekDuty.value) return ''
+  const parts: string[] = []
+  for (let w = 1; w <= numWeekdays.value; w++) {
+    const dateStr = toISODate(addDays(weekMonday, w - 1))
+    const name = dutyNameForDate(weekDuty.value, dateStr, w)
+    if (name) parts.push(`周${WEEKDAY_CN[w - 1]} ${name}`)
+  }
+  return parts.join(' · ')
+})
 const weekAffected = computed(() => weekShaped.value.affected)
 
 async function loadWeek() {
@@ -204,14 +217,16 @@ async function loadWeek() {
     if (!semesters.length) return
     weekSemester.value = semesters[0]
     const sid = semesters[0].id
-    const [data, me, events] = await Promise.all([
+    const [data, me, events, duty] = await Promise.all([
       getPublishedTimetable(sid),
       getMyTeacher(sid).catch(() => null),
       listCalendarEvents(sid, toISODate(weekMonday), toISODate(weekSunday)).catch(() => [] as CalendarEvent[]),
+      getDutyRoster(sid).catch(() => null),
     ])
     weekData.value = data
     weekMe.value = me
     weekEvents.value = events
+    weekDuty.value = duty
     weekTeacherId.value = me?.id ?? data?.teachers[0]?.id ?? null
     // 教师本人的课时卡:本月 + 本学期已上课时数;失败时整卡隐藏,不拖垮仪表板
     if (me) {
@@ -268,6 +283,9 @@ onMounted(() => {
           :periods="weekPeriods" :num-weekdays="numWeekdays" :entries="weekEntries"
           :highlight-weekday="highlightWeekday" readonly
         />
+        <n-text v-if="weekDutyText" depth="3" style="font-size: 13px" data-testid="dash-duty">
+          行政值日: {{ weekDutyText }}
+        </n-text>
         <n-text v-if="weekAffected.length" depth="3" style="font-size: 12px">
           校历活动占用：{{ weekAffected.length }} 节课受影响（{{
             weekAffected.map((e) => `周${WEEKDAY_CN[e.weekday - 1]}第${e.period_no}节 ${e.subject}`).join('、')

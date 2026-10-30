@@ -16,6 +16,8 @@ import { getMyStats } from '@/api/substitutionStats'
 import type { MonthlyReport } from '@/api/substitutionStats'
 import { getReminderPreference, saveReminderPreference } from '@/api/teacherHome'
 import type { ReminderPreference } from '@/api/teacherHome'
+import DutyRosterSection from '@/components/scheduling/DutyRosterSection.vue'
+import TeacherSwapSection from '@/components/scheduling/TeacherSwapSection.vue'
 
 const message = useMessage()
 const loading = ref(true)
@@ -440,5 +442,9 @@ onMounted(() => { void loadAll() })
         </template>
       </div>
     </section>
+
+    <DutyRosterSection v-if="semester" :semester-id="semester.id" :admin="false" />
+
+    <TeacherSwapSection v-if="semester" :semester-id="semester.id" :admin="false" />
   </div>
 </template>

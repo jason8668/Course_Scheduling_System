@@ -24,7 +24,10 @@ import {
 } from '@/api/system'
 import type { UpdateStatus, UpgradeNotice } from '@/api/system'
 import { resetWizard } from '@/api/wizard'
+import HelpTip from '@/components/HelpTip.vue'
 import ReminderHealthCard from '@/components/ReminderHealthCard.vue'
+import DutyRosterSection from '@/components/scheduling/DutyRosterSection.vue'
+import TeacherSwapSection from '@/components/scheduling/TeacherSwapSection.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWizardStore } from '@/stores/wizard'
 
@@ -552,6 +555,7 @@ async function onResetWizard() {
         </n-space>
         <n-space align="center">
           <n-text style="width: 72px">提前分钟数</n-text>
+          <HelpTip testid="help-dingtalk-lead">学校默认值：每节课前提前这么多分钟推提醒。老师可以在「我的」页自设提前分钟或关掉提醒，自设的优先于这里，未设的用这里。</HelpTip>
           <n-input-number
             v-model:value="dingtalkApp.leadMinutes" :min="1" :max="120"
             style="width: 160px" data-testid="dingtalk-app-lead"
@@ -570,6 +574,10 @@ async function onResetWizard() {
     </div></div></section>
 
     <ReminderHealthCard v-if="isAdmin()" />
+
+    <DutyRosterSection v-if="isAdmin()" :admin="true" />
+
+    <TeacherSwapSection v-if="isAdmin()" :admin="true" />
 
     <section v-if="isAdmin() && demoAvailable" class="ios-section" data-testid="demo-card">
       <div class="ios-section-title">示范资料</div>

@@ -10,6 +10,8 @@ import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
 import { getMyTeacher, getPublishedTimetable, publishedSemesters } from '@/api/timetables'
 import type { NamedBrief, PublicSemester, PublishedTimetable } from '@/api/timetables'
+import { dutyNameForWeekday, getDutyRoster } from '@/api/duty'
+import type { DutyRoster } from '@/api/duty'
 import {
   exportBatchZip, exportSchoolWorkbook, exportTimetable,
 } from '@/api/exports'
@@ -19,6 +21,7 @@ import { useAuthStore } from '@/stores/auth'
 const semesters = ref<PublicSemester[]>([])
 const sid = ref<number | null>(null)
 const data = ref<PublishedTimetable | null>(null)
+const dutyRoster = ref<DutyRoster | null>(null)
 const me = ref<NamedBrief | null>(null)
 const loading = ref(true)
 
@@ -86,7 +89,9 @@ const roomOptions = computed(() =>
 
 async function load(id: number) {
   sid.value = id
-  ;[data.value, me.value] = await Promise.all([getPublishedTimetable(id), getMyTeacher(id)])
+  ;[data.value, me.value, dutyRoster.value] = await Promise.all([
+    getPublishedTimetable(id), getMyTeacher(id), getDutyRoster(id).catch(() => null),
+  ])
   const d = data.value
   if (!d) return
   classId.value = d.classes[0]?.id ?? null
@@ -138,6 +143,15 @@ const periods = computed<PeriodCell[]>(() => {
   return [...base, ...extraRows(
     shownEntries.value, data.value?.classes ?? [], data.value?.period_tables ?? [], activeTable.value,
   ) as PeriodCell[]]
+})
+
+const dutyText = computed(() => {
+  const parts: string[] = []
+  for (let w = 1; w <= numWeekdays.value; w++) {
+    const name = dutyNameForWeekday(dutyRoster.value, w)
+    if (name) parts.push(`周${['一', '二', '三', '四', '五', '六', '日'][w - 1]} ${name}`)
+  }
+  return parts.join(' · ')
 })
 
 const entries = computed<GridEntry[]>(() => {
@@ -256,6 +270,9 @@ const entries = computed<GridEntry[]>(() => {
           v-else
           :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
         />
+        <n-text v-if="dutyText" depth="3" style="font-size: 13px" data-testid="tq-duty">
+          行政值日: {{ dutyText }}
+        </n-text>
           </div>
         </div>
       </section>

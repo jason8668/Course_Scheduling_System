@@ -29,12 +29,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.week_parity import runs_in_week, week_number
-from app.models.basedata import Teacher
+from app.models.assignment import CourseAssignment
+from app.models.basedata import ClassUnit, Teacher
 from app.models.calendar import SchoolCalendarEvent
 from app.models.leave import AffectedPeriod, AffectedStatus, LeaveRequest, LeaveStatus
 from app.models.semester import Semester
 from app.models.substitution import Substitution, SubstitutionType
 from app.models.timetable import ScheduleEntry, Timetable
+from app.services.special_days import (
+    load_active_rules as _load_special_rules,
+    load_holidays as _load_special_holidays,
+    overrides_for_date as _special_overrides,
+)
 from app.services.substitution_log import school_today
 
 
@@ -125,39 +131,81 @@ def compute(
         select(ScheduleEntry).where(ScheduleEntry.timetable_id == tt.id)
     ).all()
 
-    # (教师, 日期, 节次) -> 年级集合;底数先按已发布课表展开
+    # (教师, 日期, 节次) -> 年级集合;底数先按已发布课表展开,再套特殊日覆盖。
+    # 展开顺序:主课表 -> 特殊日替换(未填节次沿用主课表,放假优先) -> 请假调代课异动(在下面)。
+    # 按班逐格展开:跑班群组一格多班时,各班的特殊日/放假分别判,年级集合取并集,
+    # 总数仍按 (教师,日期,节次) 计一次,与旧口径一致。
     slots: dict[tuple[int, date, int], set[int]] = {}
     # 同格来源:base=自己的课,substitute=替别人代的课;被扣掉的格不计(只按现存格查)
     slot_origin: dict[tuple[int, date, int], str] = {}
     holidays = _holidays(db, semester.id)
-    for e in entries:
-        a = e.assignment
-        if a is None:
-            continue
-        member_grades: set[int] = set()
-        member_class_ids: set[int] = set()
-        for m in a.scheduling_unit.members:
-            if m.class_unit is not None:
-                member_grades.add(m.class_unit.grade)
-                member_class_ids.add(m.class_unit.id)
-        teacher_ids = [at.teacher_id for at in a.teachers]
-        if teacher_id is not None:
-            teacher_ids = [t for t in teacher_ids if t == teacher_id]
-        if not teacher_ids:
-            continue
-        d = eff_start
-        while d <= eff_end:
-            if d.isoweekday() == e.weekday:
-                wn = week_number(semester.start_date, d)
-                parity = None if wn is None else ("odd" if wn % 2 == 1 else "even")
-                if runs_in_week(a.week_parity, parity):
-                    for p in range(e.period_no, e.period_no + (e.span or 1)):
-                        if _is_holiday(holidays, member_grades, member_class_ids, d, p):
+    classes_by_id = {
+        c.id: c for c in db.scalars(
+            select(ClassUnit).where(ClassUnit.semester_id == semester.id)
+        ).all()
+    }
+    special_rules = _load_special_rules(db, semester.id)
+    special_holidays = _load_special_holidays(db, semester.id)
+    override_assignments: dict[int, object] = {}
+
+    def _add_slot(tids: list[int], d: date, p: int, grade: int) -> None:
+        for tid in tids:
+            if teacher_id is not None and tid != teacher_id:
+                continue
+            slots.setdefault((tid, d, p), set()).add(grade)
+            slot_origin.setdefault((tid, d, p), "base")
+
+    d = eff_start
+    while d <= eff_end:
+        overrides = _special_overrides(special_rules, classes_by_id, special_holidays, d)
+        covered: set[tuple[int, int]] = set()
+        wn = week_number(semester.start_date, d)
+        parity = None if wn is None else ("odd" if wn % 2 == 1 else "even")
+        for e in entries:
+            if e.weekday != d.isoweekday():
+                continue
+            a = e.assignment
+            if a is None:
+                continue
+            if not runs_in_week(a.week_parity, parity):
+                continue
+            teacher_ids = [at.teacher_id for at in a.teachers]
+            for m in a.scheduling_unit.members:
+                if m.class_unit is None:
+                    continue
+                cls = m.class_unit
+                for p in range(e.period_no, e.period_no + (e.span or 1)):
+                    covered.add((cls.id, p))
+                    if _is_holiday(holidays, {cls.grade}, {cls.id}, d, p):
+                        continue
+                    ov = overrides.get((cls.id, p))
+                    if ov is not None:
+                        if ov.course_assignment_id is None:
                             continue
-                        for tid in teacher_ids:
-                            slots.setdefault((tid, d, p), set()).update(member_grades)
-                            slot_origin.setdefault((tid, d, p), "base")
-            d += timedelta(days=1)
+                        oa = override_assignments.get(ov.course_assignment_id)
+                        if oa is None:
+                            oa = db.get(CourseAssignment, ov.course_assignment_id)
+                            override_assignments[ov.course_assignment_id] = oa
+                        if oa is None:
+                            continue
+                        _add_slot([at.teacher_id for at in oa.teachers], d, p, cls.grade)
+                    else:
+                        _add_slot(teacher_ids, d, p, cls.grade)
+        # 特殊日新增的格(主课表那天那节本来没课,如整日重排填了空节次)
+        for (class_id, p), ov in overrides.items():
+            if (class_id, p) in covered or ov.course_assignment_id is None:
+                continue
+            cls = classes_by_id.get(class_id)
+            if cls is None or _is_holiday(holidays, {cls.grade}, {cls.id}, d, p):
+                continue
+            oa = override_assignments.get(ov.course_assignment_id)
+            if oa is None:
+                oa = db.get(CourseAssignment, ov.course_assignment_id)
+                override_assignments[ov.course_assignment_id] = oa
+            if oa is None:
+                continue
+            _add_slot([at.teacher_id for at in oa.teachers], d, p, cls.grade)
+        d += timedelta(days=1)
 
     # 请假调代课异动:先找底数里对应的那格(拿年级),再扣/加
     def base_grades(tid: int, d: date, p: int) -> set[int]:
@@ -235,6 +283,25 @@ def compute(
         if teacher_id is None or absent == teacher_id:
             slots[(absent, sub.swap_date, swap_period)] = grades
             slot_origin[(absent, sub.swap_date, swap_period)] = "base"
+
+    # 老师自主调课(生效的):在请假异动之后套,故与请假同节冲突时调课优先。
+    # 口径与请假对调同款:换课节换课教师计代课,补课节原任教师计自己的课。
+    # 注意:这里是按 (教师,日期,节次) 格算,与请假对调同款;跑班群组
+    # 同节多班、特殊日同节重叠时,调课只换整格,不拆班,属已知近似。
+    from app.services import teacher_swaps as _ts
+
+    for st in _ts.swap_teachings(db, semester.id):
+        if not (eff_start <= st.class_date <= eff_end):
+            continue
+        cls = classes_by_id.get(st.class_unit_id)
+        grades = {cls.grade} if cls is not None else base_grades(
+            st.original_teacher_id, st.class_date, st.period_no)
+        if not grades:
+            grades = base_grades(st.original_teacher_id, st.class_date, st.period_no)
+        slots.pop((st.original_teacher_id, st.class_date, st.period_no), None)
+        if teacher_id is None or st.handler_teacher_id == teacher_id:
+            slots[(st.handler_teacher_id, st.class_date, st.period_no)] = grades
+            slot_origin[(st.handler_teacher_id, st.class_date, st.period_no)] = st.origin
 
     hours: dict[int, TeacherHours] = {}
     for (tid, _d, _p), grades in slots.items():
