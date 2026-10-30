@@ -7,6 +7,7 @@ import { classLabel } from '@/utils/labels'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import SpecialDaySection from '@/components/scheduling/SpecialDaySection.vue'
+import WorkdayCopySection from '@/components/scheduling/WorkdayCopySection.vue'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { DragData, DropFeedback, GridEntry, PeriodCell } from '@/components/timetable/types'
 import type { ApiError } from '@/api/client'
@@ -1277,6 +1278,8 @@ onUnmounted(() => {
     </section>
 
     <SpecialDaySection :semester-id="sid" />
+
+    <WorkdayCopySection :semester-id="sid" />
 
     <section id="sc-result" class="ios-section" style="animation-delay: 240ms">
       <div class="ios-section-title">

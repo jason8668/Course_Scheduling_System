@@ -19,6 +19,8 @@ from app.models.semester import Semester
 from app.models.timetable import ScheduleEntry, Timetable, TimetableStatus
 from app.models.user import Role, User
 from app.schemas.timetable import (
+    ActualDayOut,
+    ActualSlotOut,
     CheckIssueOut,
     CheckRequest,
     CheckResponse,
@@ -38,8 +40,7 @@ from app.schemas.timetable import (
     TimetableRename,
 )
 from app.services import conflict_checker as cc
-from app.services import grade_scopes
-from app.services import timetable_check
+from app.services import grade_scopes, timetable_check
 from app.services import timetable_publish as pub
 from app.services.teachers import current_teacher
 
@@ -390,6 +391,42 @@ def published_timetable(
             for p in tables
         ],
     )
+
+
+@router.get("/published/actual", response_model=list[ActualDayOut])
+def published_actual(
+    semester_id: int = Query(...),
+    from_date: str = Query(...),
+    to_date: str = Query(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_active_user),
+):
+    """实际课表:某日期区间内每天真正要上的课(已叠加特殊日、请假代课、老师调课、放假;
+    调休上班日未复制课表时 workday_pending 为真)。教师端可用,不限年级。"""
+    from datetime import date as _date
+
+    from app.services import actual_timetable as _actual
+
+    sem = db.get(Semester, semester_id)
+    if sem is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
+    try:
+        start = _date.fromisoformat(from_date)
+        end = _date.fromisoformat(to_date)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "日期格式须为 YYYY-MM-DD") from exc
+    if end < start or (end - start).days > 31:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "日期区间最多 31 天")
+    days = _actual.compute(db, sem, start, end)
+    return [
+        ActualDayOut(
+            date=d.date, weekday=d.weekday, published=d.published,
+            holiday_titles=d.holiday_titles, workday_title=d.workday_title,
+            workday_pending=d.workday_pending,
+            slots=[ActualSlotOut(**vars(s)) for s in d.slots],
+        )
+        for d in days
+    ]
 
 
 # ── 冲突检查(不写入)────────────────

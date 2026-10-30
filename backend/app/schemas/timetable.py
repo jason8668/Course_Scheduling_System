@@ -185,3 +185,27 @@ class PublishedTimetableOut(BaseModel):
     teachers: list[NamedBrief] = []
     rooms: list[NamedBrief] = []
     period_tables: list[PublicPeriodTable] = []
+
+
+class ActualSlotOut(BaseModel):
+    """实际课表一格(班级×节次):已叠加特殊日、请假代课、老师调课、放假。"""
+
+    period_no: int
+    class_unit_id: int
+    class_name: str
+    subject: str
+    teacher_ids: list[int] = []
+    teacher_names: list[str] = []
+    room_name: str | None = None
+    origin: str = "base"
+    note: str = ""
+
+
+class ActualDayOut(BaseModel):
+    date: date
+    weekday: int
+    published: bool
+    holiday_titles: list[str] = []
+    workday_title: str | None = None
+    workday_pending: bool = False
+    slots: list[ActualSlotOut] = []

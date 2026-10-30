@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton, NEmpty, NSelect, NSpace, NStatistic, NTag, NText } from 'naive-ui'
+import { NAlert, NButton, NEmpty, NSelect, NSpace, NStatistic, NTag, NText } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listSemesters } from '@/api/semesters'
@@ -8,10 +8,14 @@ import { getDailyBoard } from '@/api/substitutionLog'
 import type { DailyBoard } from '@/api/substitutionLog'
 import { getSemesterSummary } from '@/api/wizard'
 import type { SemesterSummary } from '@/api/wizard'
-import { CALENDAR_EVENT_TYPE_LABELS, listCalendarEvents } from '@/api/calendar'
-import type { CalendarEvent } from '@/api/calendar'
-import { getMyTeacher, getPublishedTimetable, publishedSemesters } from '@/api/timetables'
-import type { NamedBrief, PublicSemester, PublishedTimetable } from '@/api/timetables'
+import { CALENDAR_EVENT_TYPE_LABELS, listCalendarEvents, listWorkdays } from '@/api/calendar'
+import type { CalendarEvent, Workday } from '@/api/calendar'
+import {
+  getActualTimetable, getMyTeacher, getPublishedTimetable, publishedSemesters,
+} from '@/api/timetables'
+import type {
+  ActualDay, NamedBrief, PublicSemester, PublishedTimetable,
+} from '@/api/timetables'
 import { getMyTeachingHours } from '@/api/teachingHours'
 import type { TeachingHoursReport } from '@/api/teachingHours'
 import { dutyNameForDate, getDutyRoster } from '@/api/duty'
@@ -217,18 +221,33 @@ const weekDutyText = computed(() => {
 })
 const weekAffected = computed(() => weekShaped.value.affected)
 
+const pendingWorkdays = ref<Workday[]>([])
+const actualWeek = ref<ActualDay[]>([])
+const weekWorkdays = computed(() => actualWeek.value.filter((d) => d.workday_title))
+function weekWorkdaySlots(day: ActualDay) {
+  const tid = effectiveTeacherId.value
+  if (tid == null) return day.slots
+  return day.slots.filter((s) => s.teacher_ids.includes(tid))
+}
+
 async function loadWeek() {
   try {
     const semesters = await publishedSemesters()
     if (!semesters.length) return
     weekSemester.value = semesters[0]
     const sid = semesters[0].id
-    const [data, me, events, duty] = await Promise.all([
+    const todayStr = toISODate(new Date())
+    const in14Str = toISODate(addDays(new Date(), 14))
+    const [data, me, events, duty, wds, actual] = await Promise.all([
       getPublishedTimetable(sid),
       getMyTeacher(sid).catch(() => null),
       listCalendarEvents(sid, toISODate(weekMonday), toISODate(weekSunday)).catch(() => [] as CalendarEvent[]),
       getDutyRoster(sid).catch(() => null),
+      listWorkdays(sid, todayStr, in14Str).catch(() => [] as Workday[]),
+      getActualTimetable(sid, toISODate(weekMonday), toISODate(weekSunday)).catch(() => [] as ActualDay[]),
     ])
+    pendingWorkdays.value = wds.filter((w) => !w.has_copy)
+    actualWeek.value = actual
     weekData.value = data
     weekMe.value = me
     weekEvents.value = events
@@ -381,6 +400,49 @@ onMounted(() => {
           </n-button>
         </template>
       </n-empty>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="canManage && pendingWorkdays.length" class="ios-section" data-testid="dash-workdays">
+      <div class="ios-section-title">调休日待复制课表</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-alert type="warning" style="margin-bottom: 8px">
+            {{ pendingWorkdays.length }} 个调休上班日在 14 天内还没复制课表,实际课表那天会是空的。
+          </n-alert>
+          <div v-for="w in pendingWorkdays" :key="w.date" class="ios-row">
+            <div class="ios-row-main">
+              <div class="ios-row-title">{{ w.date }} {{ w.title }}</div>
+            </div>
+          </div>
+          <n-button type="primary" @click="router.push({ name: 'scheduling-center' })">
+            去排课中心复制
+          </n-button>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="weekWorkdays.length" class="ios-section" data-testid="dash-week-workdays">
+      <div class="ios-section-title">本周调休日实际课表</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <div v-for="d in weekWorkdays" :key="d.date">
+            <div class="ios-row-title" style="margin-top: 8px">
+              {{ d.date }} {{ d.workday_title }}
+              <n-tag v-if="d.workday_pending" type="warning" size="small">尚未复制课表</n-tag>
+            </div>
+            <n-empty v-if="!weekWorkdaySlots(d).length" description="这天没有你的课" />
+            <div v-for="s in weekWorkdaySlots(d)" :key="`${s.class_unit_id}-${s.period_no}`" class="ios-row">
+              <div class="ios-row-main">
+                <div class="ios-row-title">
+                  第{{ s.period_no }}节 {{ s.subject }} · {{ s.class_name }}
+                  <span v-if="s.room_name"> · {{ s.room_name }}</span>
+                </div>
+                <div v-if="s.note" class="ios-row-sub">{{ s.note }}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

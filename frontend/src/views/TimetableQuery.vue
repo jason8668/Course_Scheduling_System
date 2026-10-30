@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import {
-  NButton, NButtonGroup, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
+  NAlert, NButton, NButtonGroup, NDatePicker, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace, NTag, NText,
   useMessage,
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
-import { getMyTeacher, getPublishedTimetable, publishedSemesters } from '@/api/timetables'
-import type { NamedBrief, PublicSemester, PublishedTimetable } from '@/api/timetables'
-import { dutyNameForWeekday, getDutyRoster } from '@/api/duty'
+import {
+  getActualTimetable, getMyTeacher, getPublishedTimetable, publishedSemesters,
+} from '@/api/timetables'
+import type {
+  ActualDay, NamedBrief, PublicSemester, PublishedTimetable,
+} from '@/api/timetables'
+import { dutyNameForDate, dutyNameForWeekday, getDutyRoster } from '@/api/duty'
 import type { DutyRoster } from '@/api/duty'
 import {
   exportBatchZip, exportSchoolWorkbook, exportTimetable,
@@ -35,6 +40,59 @@ const classId = ref<number | null>(null)
 const teacherId = ref<number | null>(null)
 const roomId = ref<number | null>(null)
 const exporting = ref(false)
+
+// 实际课表模式:周课表是模板,某天实际是叠加了特殊日、请假代课、老师调课、放假后的那天真课表。
+const mode = ref<'week' | 'day'>('week')
+const router = useRouter()
+const actualDateTs = ref<number | null>(null)
+const actualDay = ref<ActualDay | null>(null)
+const actualLoading = ref(false)
+function localDate(ts: number): string {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+async function loadActual() {
+  if (sid.value === null || actualDateTs.value === null) {
+    actualDay.value = null
+    return
+  }
+  actualLoading.value = true
+  try {
+    const ds = localDate(actualDateTs.value)
+    const days = await getActualTimetable(sid.value, ds, ds)
+    actualDay.value = days[0] ?? null
+  } catch {
+    actualDay.value = null
+  } finally {
+    actualLoading.value = false
+  }
+}
+watch([mode, actualDateTs, sid], () => {
+  if (mode.value === 'day' && actualDateTs.value === null) {
+    actualDateTs.value = new Date().getTime()
+  }
+  if (mode.value === 'day') void loadActual()
+})
+const ORIGIN_LABELS: Record<string, string> = {
+  base: '正常', substitute: '代课', special: '特殊日', teacher_swap: '老师调课',
+  self_study: '自习', cancelled: '已取消', holiday: '放假', pending: '待处理', merge: '并班',
+}
+const ORIGIN_TAG: Record<string, string> = {
+  base: 'default', substitute: 'warning', special: 'info', teacher_swap: 'info',
+  self_study: 'default', cancelled: 'error', holiday: 'error', pending: 'error', merge: 'warning',
+}
+const actualSlots = computed(() => {
+  const slots = actualDay.value?.slots ?? []
+  if (view.value === 'class') return classId.value ? slots.filter((s) => s.class_unit_id === classId.value) : []
+  if (view.value === 'teacher') return teacherId.value ? slots.filter((s) => s.teacher_ids.includes(teacherId.value!)) : []
+  // 场地视角:实际槽位只带场地名,按名匹配(同名场地极少,名重复时以课表模板为准)
+  const roomName = data.value?.rooms.find((r) => r.id === roomId.value)?.name
+  return roomName ? slots.filter((s) => s.room_name === roomName) : []
+})
+const actualDuty = computed(() => {
+  if (!actualDay.value) return ''
+  return dutyNameForDate(dutyRoster.value, actualDay.value.date, actualDay.value.weekday) ?? ''
+})
 
 const targetId = computed(() =>
   view.value === 'class' ? classId.value
@@ -215,6 +273,20 @@ const entries = computed<GridEntry[]>(() => {
       </n-space>
 
       <n-space align="center" :wrap="true">
+        <n-radio-group v-model:value="mode">
+          <n-radio-button value="week" data-testid="tq-mode-week">周课表(模板)</n-radio-button>
+          <n-radio-button value="day" data-testid="tq-mode-day">某天实际课表</n-radio-button>
+        </n-radio-group>
+        <n-date-picker
+          v-if="mode === 'day'" v-model:value="actualDateTs" type="date"
+          placeholder="选日期" style="width: 160px" data-testid="tq-actual-date"
+        />
+        <n-text v-if="mode === 'day'" depth="3" style="font-size: 12px">
+          实际课表已叠加特殊日、请假代课、老师调课和放假,看到的就是那天真要上的课。
+        </n-text>
+      </n-space>
+
+      <n-space align="center" :wrap="true">
         <n-text depth="3" style="font-size: 13px">导出目前课表:</n-text>
         <n-button-group>
           <n-button
@@ -262,7 +334,53 @@ const entries = computed<GridEntry[]>(() => {
         </template>
       </n-space>
 
-      <section class="ios-section" data-testid="tq-grid">
+      <section v-if="mode === 'day'" class="ios-section" data-testid="tq-actual">
+        <div class="ios-card">
+          <div class="ios-card-body">
+            <n-text v-if="actualLoading">加载中…</n-text>
+            <n-empty v-else-if="!actualDay || !actualDay.published" description="该学期尚未发布课表,暂无实际课表" />
+            <template v-else>
+              <n-alert
+                v-if="actualDay.holiday_titles.length" type="error" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 放假({{ actualDay.holiday_titles.join('、') }}),以下为取消的课。
+              </n-alert>
+              <n-alert
+                v-if="actualDay.workday_pending" type="warning" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),还没复制课表。
+                <n-button size="small" type="primary" @click="router.push({ name: 'scheduling-center' })">
+                  去排课中心复制
+                </n-button>
+              </n-alert>
+              <n-alert
+                v-else-if="actualDay.workday_title" type="info" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),以下为复制的课表。
+              </n-alert>
+              <n-empty v-if="!actualSlots.length" description="这天没有课" />
+              <div v-for="s in actualSlots" :key="`${s.class_unit_id}-${s.period_no}`" class="ios-row" data-testid="tq-actual-row">
+                <div class="ios-row-main">
+                  <div class="ios-row-title">
+                    第{{ s.period_no }}节 {{ s.subject }}
+                    <span v-if="view === 'class'"> · {{ s.teacher_names.join('、') || '—' }}</span>
+                    <span v-else> · {{ s.class_name }}</span>
+                    <span v-if="s.room_name"> · {{ s.room_name }}</span>
+                  </div>
+                  <div v-if="s.note" class="ios-row-sub">{{ s.note }}</div>
+                </div>
+                <n-tag :type="(ORIGIN_TAG[s.origin] ?? 'default') as never" size="small">
+                  {{ ORIGIN_LABELS[s.origin] ?? s.origin }}
+                </n-tag>
+              </div>
+              <n-text depth="3" style="font-size: 13px" data-testid="tq-actual-duty">
+                行政值日: {{ actualDuty || '尚未安排（请管理员在系统管理页排每周轮值）' }}
+              </n-text>
+            </template>
+          </div>
+        </div>
+      </section>
+      <section v-else class="ios-section" data-testid="tq-grid">
         <div class="ios-card">
           <div class="ios-card-body">
         <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />

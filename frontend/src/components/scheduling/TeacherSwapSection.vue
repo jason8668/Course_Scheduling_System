@@ -163,6 +163,28 @@ function entriesFor(teacherId: number | null, dateTs: number | null, period: num
 }
 const swapMyEntryOptions = computed(() => entriesFor(me.value?.id ?? null, swapDateTs.value, swapPeriod.value))
 const makeupEntryOptions = computed(() => entriesFor(swapHandler.value, makeupDateTs.value, makeupPeriod.value))
+// 节次只列老师有课的节数(Jason 2026-10-30 定):先选日期,节次下拉只出那天(星期)
+// 本人有课的节次;没课的节根本选不了,也就不会出现「选了第5节却无数据」。
+// 补课同理:先选对调老师和补课日期,节次只出对方那天有课的节次。
+function periodsFor(teacherId: number | null, dateTs: number | null) {
+  if (teacherId === null || dateTs === null) return []
+  const wd = weekdayOf(dateTs)
+  const periods = [...new Set(
+    allEntries.value
+      .filter((e) => e.teacherIds.includes(teacherId) && e.weekday === wd)
+      .map((e) => e.period),
+  )].sort((a, b) => a - b)
+  return periods.map((p) => ({ label: `第${p}节`, value: p }))
+}
+const swapPeriodOptions = computed(() => periodsFor(me.value?.id ?? null, swapDateTs.value))
+const makeupPeriodOptions = computed(() => periodsFor(swapHandler.value, makeupDateTs.value))
+// 换了上游就清掉下游已选的值,否则旧选择留在框里、选项又是空的,
+// 框里会直接显示旧的 key(如 506-50-5-2),看起来像跳了别的数据。
+watch(swapDateTs, () => { swapPeriod.value = null; swapMyEntryKey.value = null })
+watch(swapPeriod, () => { swapMyEntryKey.value = null })
+watch(makeupDateTs, () => { makeupPeriod.value = null; makeupEntryKey.value = null })
+watch(makeupPeriod, () => { makeupEntryKey.value = null })
+watch(swapHandler, () => { makeupEntryKey.value = null; makeupPeriod.value = null })
 function findEntry(key: string | null) {
   return allEntries.value.find((e) => e.key === key) ?? null
 }
@@ -243,9 +265,10 @@ async function onDecide(row: TeacherSwap, approve: boolean) {
           <div v-if="!admin">
             <n-text strong>发起调课</n-text>
             <div class="ios-row-sub">
-              只能调自己的课:选日期、节次后,下拉只列你那节的课(班级+科目),再选对调老师就行,
-              原任就是你本人,不用再选。补课可选,填了就是你去上对方那节课。
-              事后补登:已经上过的课,日期填过去那天,对方点确认即补记录。
+              只能调自己的课:先选日期,节次只列你那天有课的节,没课的节选不了;
+              再选那节的课(班级+科目),最后选对调老师就行,原任就是你本人,不用再选。
+              补课可选,填了就是你去上对方那节课。事后补登:已经上过的课,日期填过去那天,
+              对方点确认即补记录。
             </div>
             <n-alert v-if="me === null" type="warning" style="margin-top: 8px">
               你的账号尚未绑定教师档案,无法发起调课,请联系管理员开通。
@@ -253,10 +276,14 @@ async function onDecide(row: TeacherSwap, approve: boolean) {
             <n-space vertical size="small" style="margin-top: 8px">
               <n-space align="center" :wrap="true">
                 <n-date-picker v-model:value="swapDateTs" type="date" placeholder="日期" style="width: 160px" data-testid="swap-date" />
-                <n-select v-model:value="swapPeriod" :options="Array.from({ length: 12 }, (_, i) => ({ label: `第${i + 1}节`, value: i + 1 }))" placeholder="节次" style="width: 110px" data-testid="swap-period" />
+                <n-select
+                  v-model:value="swapPeriod" :options="swapPeriodOptions" :disabled="swapDateTs === null"
+                  :placeholder="swapDateTs === null ? '先选日期' : (swapPeriodOptions.length ? '节次(只列你有课的节)' : '这天你没有课')"
+                  style="width: 170px" data-testid="swap-period"
+                />
                 <n-select
                   v-model:value="swapMyEntryKey" :options="swapMyEntryOptions"
-                  :placeholder="swapDateTs && swapPeriod ? '我的课(这节你没有课就选不到)' : '先选日期和节次,再选我的课'"
+                  :placeholder="swapDateTs && swapPeriod ? '我的课' : '先选日期和节次,再选我的课'"
                   style="width: 220px" data-testid="swap-my-entry"
                 />
                 <n-select v-model:value="swapHandler" :options="counterpartOptions" placeholder="对调老师" style="width: 160px" data-testid="swap-handler" />
@@ -267,7 +294,11 @@ async function onDecide(row: TeacherSwap, approve: boolean) {
                 <input v-model="withMakeup" type="checkbox" data-testid="swap-with-makeup" />
                 <template v-if="withMakeup">
                   <n-date-picker v-model:value="makeupDateTs" type="date" placeholder="补课日期" style="width: 160px" data-testid="swap-makeup-date" />
-                  <n-select v-model:value="makeupPeriod" :options="Array.from({ length: 12 }, (_, i) => ({ label: `第${i + 1}节`, value: i + 1 }))" placeholder="补课节次" style="width: 110px" data-testid="swap-makeup-period" />
+                  <n-select
+                    v-model:value="makeupPeriod" :options="makeupPeriodOptions" :disabled="makeupDateTs === null || swapHandler === null"
+                    :placeholder="makeupDateTs === null || swapHandler === null ? '先选对调老师和补课日期' : (makeupPeriodOptions.length ? '补课节次(只列对方有课的节)' : '对方这天没有课')"
+                    style="width: 190px" data-testid="swap-makeup-period"
+                  />
                   <n-select
                     v-model:value="makeupEntryKey" :options="makeupEntryOptions"
                     :placeholder="swapHandler ? '对方的课' : '先选对调老师,再选对方的课'"

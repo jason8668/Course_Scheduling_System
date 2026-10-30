@@ -160,6 +160,31 @@ export const checkTimetable = (id: number) => apiGet<TimetableCheck>(`/timetable
 export const publishTimetable = (id: number, force = false) =>
   apiPost<Timetable>(`/timetables/${id}/publish${force ? '?force=true' : ''}`)
 
+export interface ActualSlot {
+  period_no: number
+  class_unit_id: number
+  class_name: string
+  subject: string
+  teacher_ids: number[]
+  teacher_names: string[]
+  room_name: string | null
+  origin: string
+  note: string
+}
+export interface ActualDay {
+  date: string
+  weekday: number
+  published: boolean
+  holiday_titles: string[]
+  workday_title: string | null
+  workday_pending: boolean
+  slots: ActualSlot[]
+}
+export const getActualTimetable = (semesterId: number, from: string, to: string) =>
+  apiGet<ActualDay[]>(
+    `/published/actual?semester_id=${semesterId}&from_date=${from}&to_date=${to}`,
+  )
+
 export const publishedSemesters = () => apiGet<PublicSemester[]>('/published/semesters')
 export const getPublishedTimetable = (semesterId: number) =>
   apiGet<PublishedTimetable | null>(`/published/timetable?semester_id=${semesterId}`)

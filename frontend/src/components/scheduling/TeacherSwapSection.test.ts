@@ -97,6 +97,37 @@ describe('TeacherSwapSection', () => {
     expect(wrapper.find('[data-testid="swap-handler"]').exists()).toBe(true)
   })
 
+  it('没选日期时节次选不了,先选日期才出有课的节', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.includes('/teacher-swaps')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      if (url.includes('/published/timetable')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({
+          entries: [{
+            id: 2, course_assignment_id: 2, weekday: 1, period_no: 1, span: 1, locked: false,
+            subject: '数学', teachers: ['王老师'], classes: ['七(2)班'], unit_type: 'single',
+            unit_name: '', room: null, teacher_ids: [2], class_ids: [2], room_id: null,
+          }],
+          classes: [{ id: 2, name: '七(2)班', grade: 7, period_table_id: null }],
+          teachers: [{ id: 1, name: '李老师' }, { id: 2, name: '王老师' }],
+          rooms: [], period_tables: [],
+        }) })
+      }
+      if (url.includes('/published/my-teacher')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ id: 2, name: '王老师' }) })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+    }))
+    const wrapper = mount(NMessageProvider, {
+      slots: { default: () => h(TeacherSwapSection, { semesterId: 1, admin: false }) },
+    })
+    await flushPromises()
+    // 没选日期:节次下拉提示先选日期,我的课下拉提示先选日期和节次
+    expect(wrapper.text()).toContain('先选日期')
+    expect(wrapper.text()).toContain('先选日期和节次')
+  })
+
   it('管理员模式列出调课记录', async () => {
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (url.includes('/teacher-swaps')) {

@@ -3,9 +3,10 @@
 来源:
 - 公共假日走国内接口,主用 timor.tech,失败时退到 jiejiariapi。
   timor 回 {"code": 0, "holiday": {"2026-01-01": {"holiday": true, "name": "元旦", ...}}}:
-  holiday=true 才是放假, false 是调休上班日,不建事件。
+  holiday=true 是放假, false 是调休上班日(2026-10-30 Jason 定:周六日也可能是
+  工作日,要看当年国家时间表,不能默认周末不上课)。
   jiejiariapi 回 {"2026-01-01": {"name": "元旦", "isOffDay": true, ...}}:
-  isOffDay=true 才是放假;整年回 "Year not found" 表示该年还没公布。
+  isOffDay=true 是放假, false 是调休上班;整年回 "Year not found" 表示该年还没公布。
 - 传统节日本地算,不走网络:农历节日用 sxtwl 换算,清明/冬至是节气,
   同样用 sxtwl 的节气日。学校在浙江,小年按南方腊月廿四。
 
@@ -14,6 +15,10 @@
   一律不动;同步时先删本学期的同类自动事件再重建,不会越删越多。
 - 公共假日事件: event_type=holiday, scope=school, 单日, 课时统计
   的 _is_holiday 本来就认这类事件,所以放假那天自动扣课,无需另改口径。
+- 调休上班事件: event_type=other, scope=school, 单日, note=WORKDAY_NOTE,
+  标题如“国庆节调休上班”。它本身不排课:调休那天上哪天的课每次不同,
+  由管理员在排课中心提前 14 天内一键复制某天课表(写成单次特殊日规则),
+  实际课表再按特殊日展开;未复制前实际课表标“调休待复制”。
 - 传统节日事件: event_type=other, scope=school, 单日, 只展示不扣课。
   若某传统节日当天已是公共假日(如春节、清明),不再重复建一个同名事件,
   校历上已有放假事件标着那天,避免冗余。
@@ -43,6 +48,7 @@ logger = logging.getLogger(__name__)
 AUTO_NOTE_PREFIX = "系统自动同步"
 HOLIDAY_NOTE = "系统自动同步：公共假日"
 FESTIVAL_NOTE = "系统自动同步：传统节日"
+WORKDAY_NOTE = "系统自动同步：调休上班"
 
 TIMOR_URL = "https://timor.tech/api/holiday/year/{year}"
 JIEJIARIAPI_URL = "https://api.jiejiariapi.com/v1/holidays/{year}"
@@ -195,20 +201,82 @@ def _auto_events(db: Session, semester_id: int, year: int, note: str) -> list[Sc
     return [r for r in rows if r.start_date.year == year]
 
 
+def _parse_timor_workdays(payload) -> dict[date, str] | None:
+    """timor 调休上班映射:holiday=false 的日期,标题取节日名。"""
+    if not isinstance(payload, dict) or payload.get("code") != 0:
+        return None
+    raw = payload.get("holiday")
+    if not isinstance(raw, dict):
+        return None
+    out: dict[date, str] = {}
+    for key, info in raw.items():
+        if not isinstance(info, dict) or info.get("holiday"):
+            continue
+        try:
+            out[date.fromisoformat(str(key))] = str(info.get("name") or "调休")
+        except ValueError:
+            continue
+    return out
+
+
+def _parse_jiejiariapi_workdays(payload) -> dict[date, str] | None:
+    if not isinstance(payload, dict):
+        return None
+    out: dict[date, str] = {}
+    for key, info in payload.items():
+        if not isinstance(info, dict) or info.get("isOffDay"):
+            continue
+        try:
+            out[date.fromisoformat(str(key))] = str(info.get("name") or "调休")
+        except ValueError:
+            continue
+    return out
+
+
+def fetch_public_workdays(year: int) -> tuple[str, dict[date, str]]:
+    """抓某年调休上班日,状态口径与 fetch_public_holidays 一致。"""
+    try:
+        resp = httpx.get(TIMOR_URL.format(year=year), timeout=FETCH_TIMEOUT)
+        parsed = _parse_timor_workdays(resp.json()) if resp.status_code == 200 else None
+        if parsed is not None:
+            return "ok", parsed
+    except Exception as exc:  # noqa: BLE001 - 接口失败走备用
+        logger.warning("调休上班日 timor 接口失败(%s 年):%s", year, exc)
+    try:
+        resp = httpx.get(JIEJIARIAPI_URL.format(year=year), timeout=FETCH_TIMEOUT)
+        if resp.status_code == 200:
+            text = resp.text.strip()
+            if text == "Year not found":
+                return "unpublished", {}
+            parsed = _parse_jiejiariapi_workdays(resp.json())
+            if parsed is not None:
+                return "ok", parsed
+    except Exception as exc:  # noqa: BLE001 - 备用接口也失败,同步方保持原样
+        logger.warning("调休上班日备用接口失败(%s 年):%s", year, exc)
+    return "failed", {}
+
+
 def sync_year(
     db: Session,
     semester: Semester,
     year: int,
     *,
     fetcher=None,
+    workday_fetcher=None,
 ) -> dict:
-    """同步某学期某年的假日+传统节日。只删重建本年的自动事件,手动事件不动。"""
+    """同步某学期某年的假日+传统节日+调休上班日。只删重建本年的自动事件,手动事件不动。"""
     fetch = fetcher or fetch_public_holidays
     try:
         status, holidays = fetch(year)
     except Exception as exc:  # noqa: BLE001 - 测试用 fetcher 抛错也按失败处理
         logger.warning("公共假日抓取抛错(%s 年):%s", year, exc)
         status, holidays = "failed", {}
+    wfetch = workday_fetcher or fetch_public_workdays
+    try:
+        wstatus, workdays = wfetch(year)
+    except Exception as exc:  # noqa: BLE001 - 调休抓取失败时旧调休事件保持原样
+        logger.warning("调休上班日抓取抛错(%s 年):%s", year, exc)
+        wstatus, workdays = "failed", {}
     # 传统节日:与公共假日重日的跳过(放假事件已标那天,不重复)
     festivals = (
         [(d, name) for d, name in traditional_festivals(year) if d not in holidays]
@@ -248,11 +316,32 @@ def sync_year(
                 )
             )
         public_count = len(holidays)
+    workday_count = None
+    if wstatus == "ok":
+        for row in _auto_events(db, semester.id, year, WORKDAY_NOTE):
+            db.delete(row)
+        for d, name in sorted(workdays.items()):
+            if d in holidays:
+                continue
+            db.add(
+                SchoolCalendarEvent(
+                    semester_id=semester.id,
+                    title=f"{name}调休上班",
+                    event_type="other",
+                    scope_type="school",
+                    scope_id=None,
+                    start_date=d,
+                    end_date=d,
+                    note=WORKDAY_NOTE,
+                )
+            )
+        workday_count = len([d for d in workdays if d not in holidays])
     db.commit()
     return {
         "year": year,
         "status": status,
         "public_holidays": public_count,
+        "public_workdays": workday_count,
         "festivals": len(festivals),
     }
 
@@ -266,9 +355,14 @@ def semester_years(semester: Semester) -> list[int]:
     return list(range(semester.start_date.year, semester.end_date.year + 1))
 
 
-def sync_semester(db: Session, semester: Semester, *, fetcher=None) -> list[dict]:
+def sync_semester(
+    db: Session, semester: Semester, *, fetcher=None, workday_fetcher=None,
+) -> list[dict]:
     """同步某学期全部年份。没日期的学期回空,不报错。"""
-    return [sync_year(db, semester, y, fetcher=fetcher) for y in semester_years(semester)]
+    return [
+        sync_year(db, semester, y, fetcher=fetcher, workday_fetcher=workday_fetcher)
+        for y in semester_years(semester)
+    ]
 
 
 def sync_all_semesters(db: Session, *, fetcher=None) -> list[dict]:

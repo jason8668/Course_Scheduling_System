@@ -7,6 +7,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -76,6 +77,52 @@ def _validate_merged(
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY, "节次范围不合法"
             )
+
+
+class WorkdayOut(BaseModel):
+    date: date
+    title: str
+    has_copy: bool  # 当天已有已发布单次特殊日规则(即已复制课表)
+
+
+@router.get("/calendar-events/workdays", response_model=list[WorkdayOut])
+def list_workdays(
+    semester_id: int = Query(...),
+    from_date: date | None = Query(default=None, alias="from"),
+    to_date: date | None = Query(default=None, alias="to"),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_active_user),
+):
+    """调休上班日清单(国家接口同步,note=WORKDAY_NOTE):是否已复制课表看当天
+    有没有已发布单次特殊日规则。排课中心调休复制区用,提醒口径为提前 14 天。"""
+    from app.models.special_day import SpecialDayRule
+    from app.services.holidays import WORKDAY_NOTE
+
+    _get_semester(db, semester_id)
+    rows = db.scalars(
+        select(SchoolCalendarEvent).where(
+            SchoolCalendarEvent.semester_id == semester_id,
+            SchoolCalendarEvent.note == WORKDAY_NOTE,
+        ).order_by(SchoolCalendarEvent.start_date)
+    ).all()
+    copied = {
+        r.single_date for r in db.scalars(
+            select(SpecialDayRule).where(
+                SpecialDayRule.semester_id == semester_id,
+                SpecialDayRule.is_active.is_(True),
+                SpecialDayRule.recurrence == "single",
+            )
+        ).all() if r.single_date is not None
+    }
+    out: list[WorkdayOut] = []
+    for ev in rows:
+        d = ev.start_date
+        if from_date is not None and d < from_date:
+            continue
+        if to_date is not None and d > to_date:
+            continue
+        out.append(WorkdayOut(date=d, title=ev.title, has_copy=d in copied))
+    return out
 
 
 @router.get("/calendar-events", response_model=list[CalendarEventOut])

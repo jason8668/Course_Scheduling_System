@@ -51,6 +51,18 @@ export const CALENDAR_SCOPE_LABELS: Record<CalendarScopeType, string> = {
   class: '班级',
 }
 
+export interface Workday {
+  date: string
+  title: string
+  has_copy: boolean
+}
+export const listWorkdays = (semesterId: number, from?: string, to?: string) => {
+  const params = new URLSearchParams({ semester_id: String(semesterId) })
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  return apiGet<Workday[]>(`/calendar-events/workdays?${params.toString()}`)
+}
+
 // from/to 皆可省:后端不传范围即返回本学期全部活动(一页一览用)。
 export const listCalendarEvents = (semesterId: number, from?: string, to?: string) => {
   const params = new URLSearchParams({ semester_id: String(semesterId) })
