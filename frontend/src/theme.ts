@@ -79,6 +79,16 @@ export const themeOverrides: GlobalThemeOverrides = {
   Popover: {
     color: 'rgba(255, 255, 255, 0.85)',
     borderRadius: '16px',
+    textColor: '#1D1D1F',
+  },
+  // 问号提示白字白底根因(Jason 2026-10-30 报):Tooltip 内部走 Popover,
+  // 上面 Popover 底色被改成半透明白,但 Tooltip 默认字是白色,白字白底看不见。
+  // 这里把 Tooltip 定成浅底深字,与全站毛玻璃面板一致,不再依赖默认白字。
+  Tooltip: {
+    color: 'rgba(255, 255, 255, 0.95)',
+    textColor: '#1D1D1F',
+    borderRadius: '12px',
+    boxShadow: '0 12px 32px -12px rgba(0, 90, 200, 0.18), 0 1px 2px rgba(0, 0, 0, 0.04)',
   },
   Menu: {
     itemColorActiveInverted: 'rgba(255, 255, 255, 0.16)',

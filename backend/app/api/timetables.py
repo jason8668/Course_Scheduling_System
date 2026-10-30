@@ -288,6 +288,31 @@ def publish_timetable(
             },
         )
     pub.publish(db, tt, user, forced=blocked)
+    # 课表发布通知(原 timetable_published 类型一直定义却从未发送):
+    # 发布即给该学期每位教师一条站内通知,老师打开系统就能看到,不再靠口头传达。
+    # 通知失败不挡发布本身(单条失败只记日志,继续发下一位)。
+    try:
+        import logging
+
+        from app.models.notification import NotificationType
+        from app.services import notifications as _notif
+
+        _log = logging.getLogger(__name__)
+        _sem = db.get(Semester, tt.semester_id)
+        for _teacher in db.scalars(
+            select(Teacher).where(Teacher.semester_id == tt.semester_id)
+        ).all():
+            try:
+                _notif.notify(
+                    db, semester_id=tt.semester_id, teacher_id=_teacher.id,
+                    type=NotificationType.timetable_published,
+                    title="课表已发布",
+                    body=f"{_sem.label if _sem else ''}的课表「{tt.name}」已发布,请查看。",
+                )
+            except Exception as _exc:  # noqa: BLE001 - 通知是附加动作,不挡发布
+                _log.warning("课表发布通知发送失败(%s):%s", _teacher.name, _exc)
+    except Exception as _exc:  # noqa: BLE001 - 通知模块异常不挡发布
+        logging.getLogger(__name__).warning("课表发布通知批量失败:%s", _exc)
     db.commit()
     # 条件 D:重新发布后,提醒仍有多少「今日之后」的调代课是依旧课表展开的
     out = get_timetable(timetable_id, db, None)

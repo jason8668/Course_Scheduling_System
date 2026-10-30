@@ -1,8 +1,8 @@
 """全域系统设置:SMTP 寄信(M4-3)、排课相关规则。管理员专用。"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from app.core.auth import require_roles
 from app.core.db import get_db
 from app.models.audit import AuditLog
 from app.models.basedata import Teacher
+from app.models.semester import Semester
 from app.models.timetable import ClassReminderLog
 from app.models.user import Role, User
 from app.schemas.notification import SmtpSettingsIn, SmtpSettingsOut
@@ -278,6 +279,89 @@ def test_dingtalk_app(
     except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"验证失败:{exc}") from exc
     return {"ok": True}
+
+
+class ReminderDiagnosisStepOut(BaseModel):
+    key: str
+    label: str
+    status: str
+    detail: str
+
+
+class ReminderDiagnosisOut(BaseModel):
+    teacher_id: int
+    teacher_name: str
+    date: date
+    period_no: int
+    steps: list[ReminderDiagnosisStepOut]
+    conclusion: str
+
+
+@router.get("/settings/dingtalk-app/diagnose", response_model=ReminderDiagnosisOut)
+def diagnose_reminder(
+    semester_id: int = Query(...),
+    teacher_id: int = Query(...),
+    on: date = Query(...),
+    period_no: int = Query(...),
+    db: Session = Depends(get_db), _: User = Depends(admin_only),
+):
+    """提醒诊断(只读):某老师某天某节为什么没收到提醒,按链一步步查。
+    诊断本身不发消息、不写回钉钉 userid 缓存,结论只看这一步的检查结果。"""
+    from app.services import reminder_diagnosis as _diag
+
+    sem = db.get(Semester, semester_id)
+    if sem is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到学期")
+    teacher = db.get(Teacher, teacher_id)
+    if teacher is None or teacher.semester_id != semester_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到该学期的教师")
+    d = _diag.diagnose(db, sem, teacher, on, period_no)
+    return ReminderDiagnosisOut(
+        teacher_id=d.teacher_id, teacher_name=d.teacher_name,
+        date=d.date, period_no=d.period_no,
+        steps=[ReminderDiagnosisStepOut(**vars(s)) for s in d.steps],
+        conclusion=d.conclusion,
+    )
+
+
+class TestSendIn(BaseModel):
+    teacher_id: int
+
+
+@router.post("/settings/dingtalk-app/test-send")
+def test_send_reminder(
+    body: TestSendIn,
+    db: Session = Depends(get_db), _: User = Depends(admin_only),
+):
+    """真发一条测试提醒给指定老师(管理员主动点才发):验的不只是 token,
+    而是通讯录找人 + 工作通知权限整条链。失败时回具体原因,不静默。"""
+    from app.services.dingtalk_app import DingTalkAppClient
+
+    cfg = app_settings.dingtalk_app_config(db)
+    if not cfg.configured:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "企业应用未配置,请先填写并保存")
+    teacher = db.get(Teacher, body.teacher_id)
+    if teacher is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到教师")
+    if not (teacher.phone or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"{teacher.name}没有手机号,无法按手机号找人")
+    try:
+        client = DingTalkAppClient(cfg.app_key, cfg.app_secret, cfg.agent_id)
+        userid = teacher.dingtalk_userid or client.get_userid(teacher.phone)
+        if not userid:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"{teacher.name}的手机号不在企业通讯录里,请核对手机号或通讯录权限",
+            )
+        client.send_work_notification(
+            userid, "测试提醒",
+            f"### 测试提醒\n\n{teacher.name}老师,这是一条测试提醒,说明钉钉工作通知通道正常。",
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"测试发送失败:{exc}") from exc
+    return {"ok": True, "teacher_name": teacher.name, "userid_found": bool(userid)}
 
 
 @router.get("/settings/scheduling", response_model=SchedulingSettings)

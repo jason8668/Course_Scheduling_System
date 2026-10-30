@@ -25,6 +25,7 @@ import {
 import type { UpdateStatus, UpgradeNotice } from '@/api/system'
 import { resetWizard } from '@/api/wizard'
 import HelpTip from '@/components/HelpTip.vue'
+import ReminderDiagnosisSection from '@/components/ReminderDiagnosisSection.vue'
 import ReminderHealthCard from '@/components/ReminderHealthCard.vue'
 import DutyRosterSection from '@/components/scheduling/DutyRosterSection.vue'
 import TeacherSwapSection from '@/components/scheduling/TeacherSwapSection.vue'
@@ -574,6 +575,8 @@ async function onResetWizard() {
     </div></div></section>
 
     <ReminderHealthCard v-if="isAdmin()" />
+
+    <ReminderDiagnosisSection v-if="isAdmin()" />
 
     <DutyRosterSection v-if="isAdmin()" :admin="true" />
 
