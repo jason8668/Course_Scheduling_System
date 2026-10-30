@@ -79,7 +79,7 @@ def list_swaps(
 ):
     _get_semester(db, semester_id)
     q = select(TeacherSwap).where(TeacherSwap.semester_id == semester_id)
-    if not user.has_role(Role.admin):
+    if Role.admin.value not in user.role_names:
         me = current_teacher(db, user, semester_id)
         if me is None:
             return []

@@ -52,6 +52,9 @@ class Grid:
     title: str
     num_weekdays: int
     rows: list[Row] = field(default_factory=list)
+    # 行政值日行:按周一..周日顺序的教师名,空 tuple = 本学期没排轮值,不画这行。
+    # 与课表打印页的值日行同一口径(每周轮值),导出文件与打印页内容一致。
+    duty: tuple[str, ...] = ()
 
     @property
     def weekday_names(self) -> list[str]:
@@ -111,6 +114,18 @@ class _Published:
                 select(PeriodTable).where(PeriodTable.semester_id == semester_id)
             )
         }
+        # 行政值日每周轮值(周一=1..周日=7),供导出值日行;没排轮值的学期是空表。
+        from app.models.duty import DutyPattern
+        patterns = db.scalars(
+            select(DutyPattern).where(DutyPattern.semester_id == semester_id)
+        ).all()
+        teacher_names = {
+            t.id: t.name for t in db.scalars(
+                select(Teacher).where(Teacher.semester_id == semester_id)
+            )
+        }
+        by_weekday = {p.weekday: teacher_names.get(p.teacher_id, "") for p in patterns}
+        self.duty = tuple(by_weekday.get(wd, "") for wd in range(1, 8))
 
     def meta(self) -> Meta:
         from app.core import clock
@@ -181,6 +196,7 @@ def _grid_from(
     entries: list[_EntryView],
     lines_of,
     tables: dict[int, PeriodTable] | None = None,
+    duty: tuple[str, ...] = (),
 ) -> Grid:
     """把某对象的格位排进节次表格线。`lines_of(entry)` 决定每格显示哪几行。
 
@@ -218,6 +234,10 @@ def _grid_from(
             covered.add((e.weekday, e.period_no + k))
 
     grid = Grid(title=title, num_weekdays=num_weekdays)
+    # 值日行只在确实排了轮值时出现;没排的那天显示 —,与打印页一致。
+    if any(duty):
+        grid.duty = tuple(duty[wd - 1] if wd <= len(duty) and duty[wd - 1] else "—"
+                          for wd in range(1, num_weekdays + 1))
     for pno in order:
         rep = by_no[pno]
         is_regular = rep.type == PeriodType.regular.value
@@ -264,18 +284,23 @@ def _room_lines(e: _EntryView) -> list[str]:
 
 def class_grid(pub: _Published, cls: ClassUnit) -> Grid:
     entries = [e for e in pub.entries if cls.id in e.class_ids]
-    return _grid_from(pub.class_table(cls), f"{cls.grade}年{cls.name} 课表", entries, _class_lines)
+    return _grid_from(
+        pub.class_table(cls), f"{cls.grade}年{cls.name} 课表", entries,
+        _class_lines, duty=pub.duty)
 
 
 def teacher_grid(pub: _Published, teacher: Teacher) -> Grid:
     entries = [e for e in pub.entries if teacher.id in e.teacher_ids]
     return _grid_from(
-        pub.default_table(), f"{teacher.name} 课表", entries, _teacher_lines, pub.tables)
+        pub.default_table(), f"{teacher.name} 课表", entries,
+        _teacher_lines, pub.tables, duty=pub.duty)
 
 
 def room_grid(pub: _Published, room: Room) -> Grid:
     entries = [e for e in pub.entries if e.room_id == room.id]
-    return _grid_from(pub.default_table(), f"{room.name} 课表", entries, _room_lines, pub.tables)
+    return _grid_from(
+        pub.default_table(), f"{room.name} 课表", entries,
+        _room_lines, pub.tables, duty=pub.duty)
 
 
 def build_grid(db: Session, semester_id: int, view: str, target_id: int) -> tuple[Grid, Meta]:
@@ -410,6 +435,17 @@ def grids_to_xlsx(grids: list[Grid], meta: Meta) -> bytes:
                     ws.merge_cells(start_row=r, start_column=col,
                                    end_row=r + cell.span - 1, end_column=col)
 
+        # 行政值日行:与打印页同一行,没排轮值的学期 grid.duty 为空,不画。
+        if grid.duty:
+            ws.append(["行政值日", *grid.duty])
+            r = ws.max_row
+            for ci, c in enumerate(ws[r]):
+                c.alignment = center
+                c.border = border
+                if ci == 0:
+                    c.font = Font(bold=True)
+                    c.fill = shade
+
         ws.column_dimensions["A"].width = 10
         for col in range(2, 2 + grid.num_weekdays):
             ws.column_dimensions[ws.cell(row=head_row, column=col).column_letter].width = 16
@@ -443,6 +479,9 @@ def grid_to_html(grid: Grid, meta: Meta) -> str:
             inner = "<br>".join(_esc(x) for x in cell.lines)
             tds.append(f'<td class="{cls}"{span}>{inner}</td>')
         body_rows.append(f"<tr>{''.join(tds)}</tr>")
+    if grid.duty:
+        duty_tds = "".join(f"<td class=\"cell\">{_esc(d)}</td>" for d in grid.duty)
+        body_rows.append(f"<tr><th class=\"pno\">行政值日</th>{duty_tds}</tr>")
     return f"""<!doctype html><html><head><meta charset="utf-8"><style>
 @page {{ size: A4 portrait; margin: 14mm; }}
 * {{ font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif; }}

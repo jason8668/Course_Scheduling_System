@@ -143,3 +143,29 @@ def test_api_approve_only_counterpart(env):
     client.post("/api/auth/login", json={"username": "li", "password": PW})
     resp = client.post(f"/api/teacher-swaps/{swap_id}/approve")
     assert resp.status_code == 200 and resp.json()["status"] == "approved"
+
+
+def test_api_list_no_has_role_crash(env):
+    # 回归:2026-10-30 线上 500 —— list_swaps 曾调不存在的 user.has_role(),
+    # 管理员与教师进列表都直接 500,前端只剩通用文案「载入调课失败」。
+    # 此前测试只覆盖创建/同意,从未调过列表,故本地一直没发现。
+    client, db = env
+    ctx = _setup(db)
+    make_user(db, "admin", PW, roles=[Role.admin])
+    user_a = make_user(db, "zhang", PW, roles=[Role.director])
+    ctx["a"].user_id = user_a.id
+    user_b = make_user(db, "li", PW, roles=[Role.director])
+    ctx["b"].user_id = user_b.id
+    db.commit()
+    sem_id = ctx["sem"].id
+    _swap(db, ctx, status="pending")
+    # 管理员看全部
+    client.post("/api/auth/login", json={"username": "admin", "password": PW})
+    resp = client.get(f"/api/teacher-swaps?semester_id={sem_id}")
+    assert resp.status_code == 200, resp.text
+    assert len(resp.json()) == 1
+    # 换课教师(李老师)看与自己有关的
+    client.post("/api/auth/login", json={"username": "li", "password": PW})
+    resp = client.get(f"/api/teacher-swaps?semester_id={sem_id}")
+    assert resp.status_code == 200, resp.text
+    assert len(resp.json()) == 1

@@ -87,7 +87,7 @@ async function remove(s: Subject) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜寻科目名称" clearable style="width: 200px" @input="reload" />
+      <n-input v-model:value="search" placeholder="搜索科目名称" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" round @click="openCreate">新增科目</n-button>
     </n-space>
 

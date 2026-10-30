@@ -195,3 +195,30 @@ def test_teacher_can_export_single_but_not_batch(w):
     assert single.status_code == 200          # 单一课表全校可查可导出
     assert w.client.get(f"/api/export/school.xlsx{w.q}").status_code == 403
     assert w.client.get(f"/api/export/batch.zip{w.q}").status_code == 403
+
+
+# ── 打印/导出统一:值日行 ─────────────────────────────────────
+def test_export_without_duty_has_no_duty_row(w):
+    # 没排轮值的学期不画值日行,导出不凭空多一行。
+    cid = w.classes["701"]
+    r = w.client.get(f"/api/export/timetable{w.q}&view=class&target_id={cid}&fmt=xlsx")
+    wb = _xlsx(r)
+    first_cells = [row[0].value for row in wb.active.iter_rows()]
+    assert "行政值日" not in first_cells
+    grid, meta = tex.build_grid(w.db, w.sid, "class", cid)
+    assert "行政值日" not in tex.grid_to_html(grid, meta)
+
+
+def test_export_xlsx_and_html_have_duty_row(w):
+    # 打印页已有值日行,导出也要有同一行:周三轮值王师,导出里周三格就是王师。
+    from app.models.duty import DutyPattern
+    w.db.add(DutyPattern(semester_id=w.sid, weekday=3, teacher_id=w.teachers["王师"]))
+    w.db.commit()
+    cid = w.classes["701"]
+    r = w.client.get(f"/api/export/timetable{w.q}&view=class&target_id={cid}&fmt=xlsx")
+    wb = _xlsx(r)
+    duty_row = next(row for row in wb.active.iter_rows(values_only=True) if row[0] == "行政值日")
+    assert duty_row[3] == "王师"  # 节次,周一,周二,周三
+    grid, meta = tex.build_grid(w.db, w.sid, "class", cid)
+    html = tex.grid_to_html(grid, meta)
+    assert "行政值日" in html and "王师" in html

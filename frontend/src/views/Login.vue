@@ -48,7 +48,7 @@ async function onSubmit() {
         <p class="form-sub">请输入帐号与密码登录</p>
         <n-form @submit.prevent="onSubmit">
           <n-form-item label="帐号">
-            <n-input v-model:value="username" placeholder="请输入帐号" />
+            <n-input v-model:value="username" placeholder="请输入帐号" autocomplete="username" />
           </n-form-item>
           <n-form-item label="密码">
             <n-input
@@ -56,6 +56,7 @@ async function onSubmit() {
               type="password"
               show-password-on="click"
               placeholder="请输入密码"
+              autocomplete="current-password"
             />
           </n-form-item>
           <!-- 送出只走表单的 submit 这一条路(按钮是 type=submit,输入框按 Enter 也会触发它)。
@@ -73,6 +74,8 @@ async function onSubmit() {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  /* 手机浏览器地址栏会吃掉一部分 100vh,页面会被顶出滚动;支持 dvh 的浏览器用它为准 */
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,6 +158,25 @@ async function onSubmit() {
   }
   .login-form-side {
     padding: 36px 28px;
+  }
+}
+@media (max-width: 480px) {
+  /* H5 手机:边距收窄、标题缩小,输入框字号提到 16px——iPhone 上输入框小于 16px
+     一点输入框页面就会自动放大,输完又缩回去,很晃。 */
+  .login-page {
+    padding: 12px;
+  }
+  .login-shell {
+    border-radius: 20px;
+  }
+  .login-form-side {
+    padding: 28px 20px;
+  }
+  .form-title {
+    font-size: 22px;
+  }
+  .login-form-side :deep(.n-input__input-el) {
+    font-size: 16px;
   }
 }
 </style>

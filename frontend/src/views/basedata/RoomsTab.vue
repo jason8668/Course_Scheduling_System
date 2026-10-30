@@ -79,7 +79,7 @@ async function remove(r: Room) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜寻场地名称" clearable style="width: 200px" @input="reload" />
+      <n-input v-model:value="search" placeholder="搜索场地名称" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" round @click="openCreate">新增场地</n-button>
     </n-space>
 

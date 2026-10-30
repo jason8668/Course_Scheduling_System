@@ -54,10 +54,14 @@ class Recommendation:
 
 
 def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> set[int]:
-    """教这个科目的教师 id。以科目『名称』比对(受影响节次存的是快照名称)。"""
+    """教这个科目的教师 id。以科目『名称』比对(受影响节次存的是快照名称)。
+    档案 + 配课并集:档案空的教师按配课算本科(与年级的“档案优先、没填按
+    配课推导”同款思路,但科目是并集而非整体替换——配课一改档案就自动
+    同步,两者本应一致,并集只是给旧数据档案未补同步时兜底)。"""
     if not subject_name:
         return set()
     from app.models.basedata import Subject, teacher_subjects
+    from app.services import teacher_subjects as _ts  # noqa: F811 - 与上面表名同名,模块用 _ts
 
     rows = db.execute(
         select(teacher_subjects.c.teacher_id)
@@ -65,7 +69,7 @@ def _subject_teacher_ids(db: Session, semester_id: int, subject_name: str) -> se
         .join(Teacher, Teacher.id == teacher_subjects.c.teacher_id)
         .where(Teacher.semester_id == semester_id, Subject.name == subject_name)
     ).all()
-    return {r[0] for r in rows}
+    return {r[0] for r in rows} | _ts.assignment_subject_teacher_ids(db, semester_id, subject_name)
 
 
 def _teacher_grades(db: Session, semester_id: int) -> dict[int, set[int]]:

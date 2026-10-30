@@ -182,7 +182,7 @@ function openRules(t: Teacher) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜寻教师姓名" clearable style="width: 200px" @input="reload" />
+      <n-input v-model:value="search" placeholder="搜索教师姓名" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" round data-testid="teacher-add" @click="openCreate">新增教师</n-button>
       <n-popconfirm @positive-click="promoteAll">
         <template #trigger>
@@ -280,7 +280,7 @@ function openRules(t: Teacher) {
         </n-space>
 
         <n-divider style="margin: 4px 0" title-placement="left">
-          <n-text depth="3" style="font-size: 12px">联络信息(选填,供调代课通知)</n-text>
+          <n-text depth="3" style="font-size: 12px">联系信息(选填,供调代课通知)</n-text>
         </n-divider>
         <n-space>
           <n-space vertical style="flex: 1">
@@ -289,7 +289,7 @@ function openRules(t: Teacher) {
           </n-space>
           <n-space vertical style="flex: 1">
             <n-text>手机</n-text>
-            <n-input v-model:value="form.phone" placeholder="用于钉钉匹配与人工联络" />
+            <n-input v-model:value="form.phone" placeholder="用于钉钉匹配与人工联系" />
           </n-space>
         </n-space>
         <!-- 手动侧只剩管理员恢复默认密码:帐号只读显示,不再提供手动绑定/建号/停用/自设密码 -->

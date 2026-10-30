@@ -21,7 +21,6 @@ from app.models.assignment import (
 from app.models.basedata import ClassUnit, Room, Subject, Teacher
 from app.models.semester import Semester
 from app.models.user import Role, User
-from app.services import grade_scopes
 from app.schemas.assignment import (
     AlternateIn,
     AssignmentIn,
@@ -32,6 +31,7 @@ from app.schemas.assignment import (
     TeacherLoad,
 )
 from app.services import assignments as svc
+from app.services import grade_scopes, teacher_subjects
 
 router = APIRouter(tags=["assignments"])
 
@@ -267,9 +267,23 @@ def create_assignment(
     db.flush()
     _apply(db, assignment, body)
     _check_overtime(db, semester_id, body)
+    # 任教科目自动同步:配课一建,科目就进任课教师档案(只加不减)。
+    teacher_subjects.sync_from_assignment(db, assignment)
     db.commit()
     db.refresh(assignment)
     return svc.serialize_assignment(assignment)
+
+
+@router.post("/assignments/sync-teacher-subjects")
+def sync_teacher_subjects(
+    semester_id: int = Query(...),
+    db: Session = Depends(get_db), _: object = Depends(editor),
+):
+    """给整学期补同步任教科目(旧数据档案空时的一键修复,只加不减)。"""
+    _require_semester(db, semester_id)
+    result = teacher_subjects.sync_semester(db, semester_id)
+    db.commit()
+    return result
 
 
 @router.get("/assignments/{assignment_id}", response_model=AssignmentOut)
@@ -300,6 +314,9 @@ def update_assignment(
     a.scheduling_unit_id = unit.id
     _apply(db, a, body)
     _check_overtime(db, a.semester_id, body)
+    # 任教科目自动同步:配课一改,新科目/新教师的档案自动跟上(只加不减,
+    # 被移除的教师科目不删,手动填的资质不会被同步抹掉)。
+    teacher_subjects.sync_from_assignment(db, a)
     db.commit()
     db.refresh(a)
     return svc.serialize_assignment(a)

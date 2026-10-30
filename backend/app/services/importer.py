@@ -26,6 +26,7 @@ from app.models.basedata import (
 )
 from app.models.period import PeriodTable
 from app.models.user import Role, User, UserRole
+from app.services import teacher_subjects
 from app.services.assignments import (
     DomainError,
     assert_within_overtime_limit,
@@ -523,6 +524,7 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
     if result.errors:
         return result
 
+    created: list[CourseAssignment] = []
     for class_unit, subject, teacher_objs, periods, block, room_type in pending:
         unit = get_or_create_single_unit(db, class_unit)
         assignment = CourseAssignment(
@@ -539,6 +541,12 @@ def _import_assignments(db: Session, semester_id: int, file_bytes: bytes) -> Imp
             assignment.block_rules.append(
                 BlockRule(block_size=block[0], count_per_week=block[1])
             )
+        created.append(assignment)
+
+    # 任教科目自动同步:导入的配课同样只加不减地写进教师档案。
+    # 注意:超课时检核失败会 rollback 整批,同步也在同一事务内,不会残留。
+    for _a in created:
+        teacher_subjects.sync_from_assignment(db, _a)
 
     # 超课时上限:整批一起检核。导入是「一次几百笔」的操作,
     # 逐列挡下只会让用户改一次汇一次;这里一次把所有超标的人列出来。

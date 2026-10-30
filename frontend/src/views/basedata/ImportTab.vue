@@ -67,48 +67,62 @@ async function onUpload() {
 </script>
 
 <template>
-  <n-space vertical size="large" style="max-width: 640px">
+  <div style="max-width: 640px">
     <n-alert type="info" :show-icon="true">
       导入步骤:① 选择资料类型 → ② 下载范本并填写(第 4 列起填,说明/范例列会自动略过)→ ③ 上传。
       任一列有误将全部不导入,并列出错误列号。
     </n-alert>
 
-    <n-space vertical>
-      <n-text strong>① 资料类型</n-text>
-      <n-radio-group v-model:value="entity">
-        <n-radio-button v-for="(label, key) in ENTITY_LABELS" :key="key" :value="key">
-          {{ label }}
-        </n-radio-button>
-      </n-radio-group>
-    </n-space>
+    <section class="ios-section">
+      <div class="ios-section-title">① 资料类型</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-radio-group v-model:value="entity">
+            <n-radio-button v-for="(label, key) in ENTITY_LABELS" :key="key" :value="key">
+              {{ label }}
+            </n-radio-button>
+          </n-radio-group>
+        </div>
+      </div>
+    </section>
 
-    <n-space vertical>
-      <n-text strong>② 下载范本</n-text>
-      <n-button @click="onDownload">下载「{{ ENTITY_LABELS[entity] }}」范本</n-button>
-    </n-space>
+    <section class="ios-section">
+      <div class="ios-section-title">② 下载范本</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-button @click="onDownload">下载「{{ ENTITY_LABELS[entity] }}」范本</n-button>
+        </div>
+      </div>
+    </section>
 
-    <n-space vertical>
-      <n-text strong>③ 上传填好的档案</n-text>
-      <n-checkbox v-if="isTeacher" v-model:checked="createAccounts">
-        自动为每位教师建立登录帐号(帐号=姓名,初始密码 admin,首次登录强制改密码;重名自动加数字后缀)
-      </n-checkbox>
-      <n-text v-if="isTeacher && createAccounts" depth="3" style="font-size: 13px">
-        Excel 里「登录帐号」那列留空就自动用姓名,填了就用填的值;老师拿到帐号就能自己登录,不用单独申请。
-      </n-text>
-      <n-checkbox v-if="isTeacher" v-model:checked="updateExisting" data-testid="import-update">
-        既有教师改为更新资料(以姓名＋身分末四码比对)
-      </n-checkbox>
-      <n-text v-if="isTeacher && updateExisting" depth="3" style="font-size: 13px">
-        只覆盖有填的栏位,空白保留原值;行政职称填「无」代表卸任,数字栏要归零请填 0。
-        既有教师若尚未绑定帐号,勾选建立帐号时也会自动补建(帐号=姓名)。
-      </n-text>
-      <n-upload :max="1" :default-upload="false" accept=".xlsx" @change="onFileChange">
-        <n-button>选择档案</n-button>
-      </n-upload>
-      <n-button type="primary" :loading="uploading" :disabled="!selectedFile" @click="onUpload">
-        开始导入
-      </n-button>
-    </n-space>
+    <section class="ios-section">
+      <div class="ios-section-title">③ 上传填好的文件</div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-space vertical>
+            <n-checkbox v-if="isTeacher" v-model:checked="createAccounts">
+              自动为每位教师建立登录帐号(帐号=姓名,初始密码 admin,首次登录强制改密码;重名自动加数字后缀)
+            </n-checkbox>
+            <n-text v-if="isTeacher && createAccounts" depth="3" style="font-size: 13px">
+              Excel 里「登录帐号」那列留空就自动用姓名,填了就用填的值;老师拿到帐号就能自己登录,不用单独申请。
+            </n-text>
+            <n-checkbox v-if="isTeacher" v-model:checked="updateExisting" data-testid="import-update">
+              既有教师改为更新资料(以姓名＋身分末四码比对)
+            </n-checkbox>
+            <n-text v-if="isTeacher && updateExisting" depth="3" style="font-size: 13px">
+              只覆盖有填的栏位,空白保留原值;行政职称填「无」代表卸任,数字栏要归零请填 0。
+              既有教师若尚未绑定帐号,勾选建立帐号时也会自动补建(帐号=姓名)。
+            </n-text>
+            <n-upload :max="1" :default-upload="false" accept=".xlsx" @change="onFileChange">
+              <n-button>选择文件</n-button>
+            </n-upload>
+            <n-button type="primary" :loading="uploading" :disabled="!selectedFile" @click="onUpload">
+              开始导入
+            </n-button>
+          </n-space>
+        </div>
+      </div>
+    </section>
 
     <n-alert v-if="result && result.errors.length === 0" type="success" data-testid="import-ok">
       <template v-if="result.updated">
@@ -123,5 +137,5 @@ async function onUpload() {
         </n-list-item>
       </n-list>
     </n-alert>
-  </n-space>
+  </div>
 </template>

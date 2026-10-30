@@ -112,7 +112,7 @@ async function remove(c: ClassUnit) {
 <template>
   <n-space vertical>
     <n-space>
-      <n-input v-model:value="search" placeholder="搜寻班名" clearable style="width: 200px" @input="reload" />
+      <n-input v-model:value="search" placeholder="搜索班名" clearable style="width: 200px" @input="reload" />
       <n-button type="primary" round data-testid="class-add" @click="openCreate">新增班级</n-button>
     </n-space>
 

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useWizardStore } from '@/stores/wizard'
+import { AUTH_PAGES, decideRoute } from './guard'
 
 const routes = [
   {
@@ -194,54 +195,27 @@ export const router = createRouter({
   routes,
 })
 
-const AUTH_PAGES = new Set(['login', 'change-password'])
-
-// 全域守卫:管控登录、强制改密、首次登录引导至设置精灵
-// 纯教师帐号可进入的页面(请假是教师自己要做的事;课表打印页是查课表后打印自己/班级课表用)
-const TEACHER_PAGES = new Set([
-  'dashboard', 'my', 'school-calendar', 'calendar-print',
-  'timetable-query', 'timetable-print', 'leaves', 'substitution-stats',
-])
-
+// 全域守卫:管控登录、强制改密、首次登录引导至设置精灵。
+// “去哪”的决策在 ./guard.ts(纯函数,可单测);这里只负责拉取状态。
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (!auth.loaded) {
     await auth.fetchMe()
   }
 
-  if (to.meta.public) {
-    if (auth.isAuthenticated && to.name === 'login') {
-      return { name: auth.mustChangePassword ? 'change-password' : 'dashboard' }
-    }
-    return true
-  }
-
-  if (!auth.isAuthenticated) {
-    return { name: 'login' }
-  }
-  if (auth.mustChangePassword && to.name !== 'change-password') {
-    return { name: 'change-password' }
-  }
-
-  // 纯教师帐号:只开放课表查询与请假登记(其余页面的后端 API 皆需主任以上权限)。
-  // 改密码页必须排除:否则首次登录的教师会被「导去改密码 → 不在教师可进清单 → 导回课表查询
-  // → 又要求改密码」互踢,界面卡在 /login 动不了(#10)。
-  const canManage = auth.hasRole('admin') || auth.hasRole('director')
-  if (
-    !canManage && auth.hasRole('teacher')
-    && !AUTH_PAGES.has(to.name as string) && !TEACHER_PAGES.has(to.name as string)
-  ) {
-    return { name: 'timetable-query' }
-  }
-
-  // 首次登录引导:年级主任/管理员在尚未完成初始设置时,自动进入精灵(精灵内可略过)
+  let wizardState = null
   const canSetup = auth.hasRole('director') || auth.hasRole('admin')
   if (canSetup && to.name !== 'wizard' && !AUTH_PAGES.has(to.name as string)) {
     const wizard = useWizardStore()
     if (!wizard.loaded) await wizard.fetch()
-    if (wizard.state && !wizard.state.completed) {
-      return { name: 'wizard' }
-    }
+    wizardState = wizard.state
   }
-  return true
+
+  const next = decideRoute(
+    auth,
+    to.name as string,
+    !!to.meta.public,
+    wizardState,
+  )
+  return next === true ? true : { name: next }
 })

@@ -13,7 +13,7 @@ import type { DragData, DropFeedback, GridEntry, PeriodCell } from '@/components
 import type { ApiError } from '@/api/client'
 import {
   classLoad, createAlternate, createAssignment, createGroup, deleteAssignment, deleteGroup,
-  listAlternates, listAssignments, listGroups, teacherLoad, updateAssignment,
+  listAlternates, listAssignments, listGroups, syncTeacherSubjects, teacherLoad, updateAssignment,
 } from '@/api/assignments'
 import type {
   Assignment, AssignmentPayload, ClassLoad, SchedulingUnit, TeacherLoad, WeekParity,
@@ -535,6 +535,17 @@ async function removeAssignment(a: Assignment) {
   message.success('已删除')
   await reloadAssignments()
 }
+// 任教科目补同步(旧数据用):新配课已自动同步,这个按钮只修以前建好的学期,
+// 只加不减,手动填的科目不会被删。
+async function onSyncTeacherSubjects() {
+  if (sid.value === null) return
+  try {
+    const r = await syncTeacherSubjects(sid.value)
+    message.success(`已补同步:扫了 ${r.assignments} 笔配课,新增 ${r.added_links} 个教师科目`)
+  } catch (e) {
+    message.error((e as ApiError).message || '补同步失败')
+  }
+}
 function weeksOf(u: SchedulingUnit): { odd?: Assignment; even?: Assignment } {
   const list = assignments.value.filter((a) => a.scheduling_unit.id === u.id)
   return {
@@ -870,6 +881,9 @@ onUnmounted(() => {
           </n-button>
           <n-button size="small" text type="primary" @click="openGroup">
             新建跑班群组
+          </n-button>
+          <n-button size="small" text type="primary" data-testid="sync-teacher-subjects" @click="onSyncTeacherSubjects">
+            补同步任教科目
           </n-button>
         </n-space>
       </div>

@@ -48,7 +48,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px">
+  <div class="cp-page" style="display: flex; justify-content: center; align-items: center; padding: 16px">
     <div class="ios-card" style="width: 100%; max-width: 420px">
       <div class="ios-card-body">
         <h1 class="ios-title" style="margin-bottom: 8px">变更密码</h1>
@@ -59,13 +59,13 @@ async function onSubmit() {
         <n-form-item label="原密码">
           <n-input
             v-model:value="oldPassword" type="password" show-password-on="click"
-            data-testid="cp-old"
+            data-testid="cp-old" autocomplete="current-password"
           />
         </n-form-item>
         <n-form-item :label="`新密码(至少 ${MIN_LEN} 字元)`">
           <n-input
             v-model:value="newPassword" type="password" show-password-on="click"
-            data-testid="cp-new"
+            data-testid="cp-new" autocomplete="new-password"
           />
         </n-form-item>
         <n-form-item label="确认新密码">
@@ -73,7 +73,7 @@ async function onSubmit() {
             v-model:value="confirmPassword"
             type="password"
             show-password-on="click"
-            data-testid="cp-confirm"
+            data-testid="cp-confirm" autocomplete="new-password"
           />
         </n-form-item>
         <!-- 送出只走表单的 submit 这一条路(按钮是 type=submit,输入框按 Enter 也会触发它)。
@@ -91,3 +91,19 @@ async function onSubmit() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.cp-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+@media (max-width: 480px) {
+  /* 与登录页同款:H5 上输入框小于 16px 时 iPhone 会自动放大页面 */
+  .cp-page {
+    padding: 12px;
+  }
+  .cp-page :deep(.n-input__input-el) {
+    font-size: 16px;
+  }
+}
+</style>

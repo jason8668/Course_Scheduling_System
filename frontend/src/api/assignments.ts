@@ -95,6 +95,10 @@ export const createAssignment = (semesterId: number, body: AssignmentPayload) =>
 export const updateAssignment = (id: number, body: AssignmentPayload) =>
   request<Assignment>('PATCH', `/assignments/${id}`, body)
 export const deleteAssignment = (id: number) => request<void>('DELETE', `/assignments/${id}`)
+// 任教科目补同步(旧数据档案空时的一键修复,只加不减):新配课/改配课/导入
+// 已自动同步,这个按钮只用来修以前建好的学期。
+export const syncTeacherSubjects = (semesterId: number) =>
+  apiPost<{ assignments: number; added_links: number }>(`/assignments/sync-teacher-subjects?semester_id=${semesterId}`, {})
 
 // ── 统计 ──
 export const teacherLoad = (semesterId: number) =>

@@ -263,13 +263,14 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout style="background: transparent">
-      <n-layout-header class="app-header" style="padding: 12px 24px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)">
+      <n-layout-header class="app-header" :style="`padding: 12px ${isMobile ? '12px' : '24px'}; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)`">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
           <n-button v-if="isMobile" text size="large" data-testid="header-menu" @click="drawerOpen = true">
             ☰ 菜单
           </n-button>
           <span v-else />
-          <n-space align="center">
+          <!-- H5 小屏:顶栏按钮多(校历/铃铛/姓名/改密/退出),不换行会被挤出屏,允许折到第二行 -->
+          <n-space align="center" :wrap="true">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
             data-testid="update-badge"

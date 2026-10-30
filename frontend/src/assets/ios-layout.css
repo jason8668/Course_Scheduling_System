@@ -163,3 +163,16 @@
     box-shadow: none;
   }
 }
+
+@media (max-width: 768px) {
+  /* H5 小屏:多列表格不再被卡片压扁,改成左右横滑看,桌面端不受影响 */
+  .ios-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ios-table th,
+  .ios-table td {
+    padding: 8px 8px;
+  }
+}
