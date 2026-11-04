@@ -263,3 +263,43 @@ def test_manual_sync_endpoint(env, monkeypatch):
     lst = client.get(f"/api/calendar-events?semester_id={sid}").json()
     assert any(e["title"] == "元宵" and e["event_type"] == "other" for e in lst)
     assert any(e["title"] == "元旦" and e["event_type"] == "holiday" for e in lst)
+
+
+def test_parse_nager_last_resort_only():
+    from app.services.holidays import _parse_nager
+
+    got = _parse_nager(
+        [
+            {"date": "2026-10-01", "localName": "国庆节", "name": "National Day"},
+            {"date": "2026-05-01", "localName": "劳动节", "name": "Labour Day"},
+            {"date": "not-a-date", "localName": "坏数据"},
+        ]
+    )
+    # 只有假日当天一条(没有多天展开),这是兜底的局限,调用方仍优先用 timor
+    assert got == {date(2026, 10, 1): "国庆节", date(2026, 5, 1): "劳动节"}
+    assert _parse_nager([]) is None
+    assert _parse_nager({"code": 0}) is None
+
+
+def test_solar_terms_2026_all_24():
+    from app.services.holidays import solar_terms
+
+    got = dict(solar_terms(2026))
+    assert len(got) == 24
+    assert got[date(2026, 2, 4)] == "立春"
+    assert got[date(2026, 9, 23)] == "秋分"
+    assert got[date(2026, 12, 22)] == "冬至"
+
+
+def test_sync_year_adds_terms_without_duplicating_festivals(db):
+    sem = _semester(db)
+    sync_year(db, sem, 2026, fetcher=_fake_ok, workday_fetcher=lambda y: ("failed", {}))
+    rows = db.query(SchoolCalendarEvent).filter_by(semester_id=sem.id).all()
+    terms = [r for r in rows if r.note == "系统自动同步：二十四节气"]
+    # 24 节气去掉已在节日里的清明/冬至,剩 22 条,全是小标记用的 other 类型
+    assert len(terms) == 22
+    assert all(r.event_type == "other" for r in terms)
+    assert any(r.title == "立春" for r in terms)
+    assert any(r.title == "秋分" for r in terms)
+    qingming = [r for r in rows if r.start_date == date(2026, 4, 5)]
+    assert len(qingming) == 1 and qingming[0].note == "系统自动同步：传统节日"

@@ -1,14 +1,20 @@
-"""公共假日自动同步 + 中国传统节日。
+"""公共假日自动同步 + 中国传统节日 + 二十四节气。
 
 来源:
-- 公共假日走国内接口,主用 timor.tech,失败时退到 jiejiariapi。
+- 公共假日走国内接口,主用 timor.tech,失败时退到 jiejiariapi,再失败
+  退到 Nager.Date v3(免 key,中文 localName)。timor 与 jiejiariapi 给的是
+  按天排好的完整放假表(国庆 10/1–10/7 全有);Nager 只给每个假日当天
+  一条(国庆只 10/1、且没有清明),所以只能当最后的兜底——有总比没有强,
+  但不能当主源。v3 已宣布 2027-01-31 退役,届时兜底失效也只是回到
+  “保持原样”,不会报错;主源 timor 不受影响。
   timor 回 {"code": 0, "holiday": {"2026-01-01": {"holiday": true, "name": "元旦", ...}}}:
   holiday=true 是放假, false 是调休上班日(2026-10-30 Jason 定:周六日也可能是
   工作日,要看当年国家时间表,不能默认周末不上课)。
   jiejiariapi 回 {"2026-01-01": {"name": "元旦", "isOffDay": true, ...}}:
   isOffDay=true 是放假, false 是调休上班;整年回 "Year not found" 表示该年还没公布。
-- 传统节日本地算,不走网络:农历节日用 sxtwl 换算,清明/冬至是节气,
-  同样用 sxtwl 的节气日。学校在浙江,小年按南方腊月廿四。
+- 传统节日与二十四节气本地算,不走网络:农历节日用 sxtwl 换算,节气
+  同样用 sxtwl 的节气日(清明/冬至既是节日也是节气,归节日那条,不重复建)。
+  学校在浙江,小年按南方腊月廿四。
 
 写入规则(幂等,可反复跑):
 - 只管理自己建的事件: note 以“系统自动同步”开头。手动建的校历事件
@@ -48,10 +54,12 @@ logger = logging.getLogger(__name__)
 AUTO_NOTE_PREFIX = "系统自动同步"
 HOLIDAY_NOTE = "系统自动同步：公共假日"
 FESTIVAL_NOTE = "系统自动同步：传统节日"
+SOLAR_TERM_NOTE = "系统自动同步：二十四节气"
 WORKDAY_NOTE = "系统自动同步：调休上班"
 
 TIMOR_URL = "https://timor.tech/api/holiday/year/{year}"
 JIEJIARIAPI_URL = "https://api.jiejiariapi.com/v1/holidays/{year}"
+NAGER_URL = "https://date.nager.at/api/v3/PublicHolidays/{year}/CN"
 FETCH_TIMEOUT = 5.0
 
 # sxtwl 的节气序号: 0=冬至, 1=小寒, 2=大寒, 3=立春, 4=雨水, 5=惊蛰,
@@ -133,12 +141,31 @@ def _parse_jiejiariapi(payload) -> dict[date, str] | None:
     return out
 
 
+def _parse_nager(payload) -> dict[date, str] | None:
+    """Nager.Date v3 兜底:回 [{date, localName, ...}] 的列表,只有假日当天,
+    没有多天连放的展开,也没有清明;空列表当失败处理(保持原样)。"""
+    if not isinstance(payload, list):
+        return None
+    out: dict[date, str] = {}
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out[date.fromisoformat(str(item["date"]))] = str(
+                item.get("localName") or item.get("name") or "公共假日"
+            )
+        except (ValueError, KeyError):
+            continue
+    return out or None
+
+
 def fetch_public_holidays(year: int) -> tuple[str, dict[date, str]]:
     """抓某年公共假日。回 (状态, 放假映射)。
 
     状态: "ok" 已拿到数据(可能为空 dict,代表已公布但该年无放假——
-    实际不会发生,仅作语义区分); "unpublished" 接口明确说该年还没公布;
-    "failed" 两接口都拿不到可用数据(网络/CF 拦截/格式异常等)。
+    实际不会发生,仅作语义区分); "unpublished" 国内接口明确说该年还没公布
+    且兜底也没有数据; "failed" 三个接口都拿不到可用数据
+    (网络/CF 拦截/格式异常等)。
     """
     try:
         resp = httpx.get(TIMOR_URL.format(year=year), timeout=FETCH_TIMEOUT)
@@ -147,18 +174,28 @@ def fetch_public_holidays(year: int) -> tuple[str, dict[date, str]]:
             return "ok", parsed
     except Exception as exc:  # noqa: BLE001 - 接口失败走备用,原因只记日志
         logger.warning("公共假日 timor 接口失败(%s 年):%s", year, exc)
+    unpublished = False
     try:
         resp = httpx.get(JIEJIARIAPI_URL.format(year=year), timeout=FETCH_TIMEOUT)
         if resp.status_code == 200:
             text = resp.text.strip()
             if text == "Year not found":
-                return "unpublished", {}
-            parsed = _parse_jiejiariapi(resp.json())
-            if parsed is not None:
-                return "ok", parsed
+                unpublished = True
+            else:
+                parsed = _parse_jiejiariapi(resp.json())
+                if parsed is not None:
+                    return "ok", parsed
     except Exception as exc:  # noqa: BLE001 - 备用接口也失败,同步方保持原样
         logger.warning("公共假日备用接口失败(%s 年):%s", year, exc)
-    return "failed", {}
+    try:
+        resp = httpx.get(NAGER_URL.format(year=year), timeout=FETCH_TIMEOUT)
+        if resp.status_code == 200:
+            parsed = _parse_nager(resp.json())
+            if parsed is not None:
+                return "ok", parsed
+    except Exception as exc:  # noqa: BLE001 - 兜底也失败,同步方保持原样
+        logger.warning("公共假日 Nager.Date 兜底接口失败(%s 年):%s", year, exc)
+    return ("unpublished", {}) if unpublished else ("failed", {})
 
 
 def traditional_festivals(year: int) -> list[tuple[date, str]]:
@@ -179,7 +216,8 @@ def traditional_festivals(year: int) -> list[tuple[date, str]]:
             d = date(solar.getSolarYear(), solar.getSolarMonth(), solar.getSolarDay())
             if d.year == year:
                 out[d] = name
-    # 节气:逐日扫该年,只要清明与冬至
+    # 节气:这里只要清明与冬至(它们既是节日也是节气,归节日这条);
+    # 其余二十二个节气走 solar_terms(),备注不同,校历上都用小标记显示。
     d = date(year, 1, 1)
     while d.year == year:
         day = sxtwl.fromSolar(d.year, d.month, d.day)
@@ -187,6 +225,23 @@ def traditional_festivals(year: int) -> list[tuple[date, str]]:
             name = _JIEQI_NAMES[day.getJieQi()]
             if name in ("清明", "冬至"):
                 out[d] = name
+        d += timedelta(days=1)
+    return sorted(out.items())
+
+
+def solar_terms(year: int) -> list[tuple[date, str]]:
+    """某公历年全部二十四节气(日期, 节气名)。sxtwl 未装时回空,不报错。"""
+    try:
+        import sxtwl
+    except ImportError:
+        logger.warning("二十四节气计算需要 sxtwl,未安装则跳过(%s 年)", year)
+        return []
+    out: dict[date, str] = {}
+    d = date(year, 1, 1)
+    while d.year == year:
+        day = sxtwl.fromSolar(d.year, d.month, d.day)
+        if day.hasJieQi():
+            out[d] = _JIEQI_NAMES[day.getJieQi()]
         d += timedelta(days=1)
     return sorted(out.items())
 
@@ -298,6 +353,25 @@ def sync_year(
                 note=FESTIVAL_NOTE,
             )
         )
+    # 二十四节气:全部都标,不因撞上公共假日而跳过(节气名与假日名不重复,
+    # 校历上假日红块 + 节气小标记可以同天出现);已在节日里的清明/冬至不重复建。
+    festival_dates = {d for d, _ in festivals}
+    terms = [(d, name) for d, name in solar_terms(year) if d not in festival_dates]
+    for row in _auto_events(db, semester.id, year, SOLAR_TERM_NOTE):
+        db.delete(row)
+    for d, name in terms:
+        db.add(
+            SchoolCalendarEvent(
+                semester_id=semester.id,
+                title=name,
+                event_type="other",
+                scope_type="school",
+                scope_id=None,
+                start_date=d,
+                end_date=d,
+                note=SOLAR_TERM_NOTE,
+            )
+        )
     public_count = None
     if status == "ok":
         for row in _auto_events(db, semester.id, year, HOLIDAY_NOTE):
@@ -343,6 +417,7 @@ def sync_year(
         "public_holidays": public_count,
         "public_workdays": workday_count,
         "festivals": len(festivals),
+        "solar_terms": len(terms),
     }
 
 

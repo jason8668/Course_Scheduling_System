@@ -249,10 +249,14 @@ async function onLogout() {
       </div>
       <div ref="menuWrapRef" class="sider-menu-wrap">
         <div class="menu-indicator" :style="indicatorStyle" />
+        <!-- indent=0(Jason 2026-11-04 定:不要左边缩进):Naive 默认 indent=32
+             会让组内条目再缩 16px(组标题 32px、组内条目 48px),看着前前后后;
+             indent=0 后组标题、组内条目、顶层条目全部齐平 32px。收合态不受影响。 -->
         <n-menu
           :value="activeKey"
           :collapsed="collapsed"
           :collapsed-width="80"
+          :indent="0"
           :options="menuOptions"
           :theme-overrides="menuThemeOverrides"
           :default-expanded-keys="['basedata-group']"
@@ -307,6 +311,7 @@ async function onLogout() {
     <n-drawer-content title="排课与调代课系统">
       <n-menu
         :value="activeKey"
+        :indent="0"
         :options="menuOptions"
         :theme-overrides="menuThemeOverrides"
         @update:value="onMenuSelect"

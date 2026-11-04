@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEvent } from '@/api/calendar'
-import { expandCalendarEvents, mondayOf, toISODate, weekdayOf } from './calendar'
+import { autoMarkerKind, expandCalendarEvents, mondayOf, toISODate, weekdayOf } from './calendar'
 
 function ev(partial: Partial<CalendarEvent>): CalendarEvent {
   return {
@@ -39,5 +39,16 @@ describe('calendar utils', () => {
     expect([...m.keys()].sort()).toEqual([
       '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09',
     ])
+  })
+})
+
+describe('autoMarkerKind', () => {
+  it('国家假日 / 调休 / 节日节气按备注区分,学校活动回 null', () => {
+    expect(autoMarkerKind(ev({ note: '系统自动同步：公共假日' }))).toBe('national')
+    expect(autoMarkerKind(ev({ note: '系统自动同步：调休上班' }))).toBe('workday')
+    expect(autoMarkerKind(ev({ note: '系统自动同步：传统节日' }))).toBe('small')
+    expect(autoMarkerKind(ev({ note: '系统自动同步：二十四节气' }))).toBe('small')
+    expect(autoMarkerKind(ev({ note: null }))).toBe(null)
+    expect(autoMarkerKind(ev({ note: '运动会备注' }))).toBe(null)
   })
 })

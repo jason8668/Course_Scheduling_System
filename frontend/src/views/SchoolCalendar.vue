@@ -20,7 +20,7 @@ import {
   resolveSemesterEnd, weekdayLabel, weekLabel,
 } from '@/utils/calendarList'
 import { classLabel } from '@/utils/labels'
-import { expandCalendarEvents, toISODate as toISO } from '@/utils/calendar'
+import { autoMarkerKind, expandCalendarEvents, toISODate as toISO } from '@/utils/calendar'
 
 const message = useMessage()
 const auth = useAuthStore()
@@ -110,14 +110,26 @@ function onChipClick(ev: CalendarEvent, e: MouseEvent) {
   openEdit(ev)
 }
 
-// 有活动日期整格按类型颜色高亮（多类型取首条，标题字保留）。
+// 有活动日期整格按颜色高亮:取第一个非小标记事件(传统节日/节气是小字,
+// 不抢整格底色);国家假日走放假红块,调休补课日走琥珀块,其余走类型颜色。
 // 今天格的描边由 .is-today 的琥珀虚线 + 「今日」徽标承担，这里只上活动底色，不盖掉今天标记。
+const WORKDAY_COLORS = { bg: '#fff8e1', fg: '#bf6900' }
 function cellStyle(cell: FrameCell) {
-  const ev = cell.events[0]
+  const ev = cell.events.find((e) => autoMarkerKind(e) !== 'small')
   if (!ev) return {}
-  const c = TYPE_COLORS[ev.event_type]
+  const c = autoMarkerKind(ev) === 'workday' ? WORKDAY_COLORS : TYPE_COLORS[ev.event_type]
   if (cell.isToday) return { background: c.bg }
   return { background: c.bg, borderColor: c.fg, borderWidth: '2px' }
+}
+// 格里每条事件的样式:小标记只留弱色小字(无底色);调休琥珀块;
+// 国家假日与学校活动走原来的类型颜色(放假红块本来就和活动蓝/青/橙不同色)。
+function chipClass(ev: CalendarEvent) {
+  return autoMarkerKind(ev) === 'small' ? 'frame-mark' : 'frame-chip'
+}
+function chipStyle(ev: CalendarEvent) {
+  if (autoMarkerKind(ev) === 'small') return {}
+  const c = autoMarkerKind(ev) === 'workday' ? WORKDAY_COLORS : TYPE_COLORS[ev.event_type]
+  return { background: c.bg, color: c.fg }
 }
 
 async function loadEvents() {
@@ -352,6 +364,7 @@ async function onDelete(ev: CalendarEvent) {
 
       <div v-if="semesterMonths.length" data-testid="cal-month-frames">
         <div class="ios-section-title">学期日历</div>
+        <n-text depth="3">红色块：国家假日；琥珀色：调休补课（周六周日调回上课的日子）；小字：传统节日 / 二十四节气。</n-text>
         <n-text v-if="semester && !semester.end_date" depth="3">
           结束日期未设定，按开学起 20 周显示。
         </n-text>
@@ -378,8 +391,8 @@ async function onDelete(ev: CalendarEvent) {
                 </div>
                 <div
                   v-for="ev in cell.events.slice(0, 2)" :key="ev.id"
-                  class="frame-chip"
-                  :style="{ background: TYPE_COLORS[ev.event_type].bg, color: TYPE_COLORS[ev.event_type].fg }"
+                  :class="chipClass(ev)"
+                  :style="chipStyle(ev)"
                   :title="ev.title"
                   @click.stop="onChipClick(ev, $event)"
                 >
@@ -563,6 +576,11 @@ async function onDelete(ev: CalendarEvent) {
 }
 .frame-chip {
   font-size: 11px; line-height: 1.5; padding: 1px 5px; border-radius: 999px;
+  margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 传统节日 / 二十四节气的小标记:弱色小字,无底色,不抢整格颜色。 */
+.frame-mark {
+  font-size: 11px; line-height: 1.5; color: #8e8e93;
   margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .frame-more { font-size: 11px; color: #5b6b73; }

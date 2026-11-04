@@ -75,3 +75,20 @@ export function eventCoversPeriod(
   if (ev.period_start === null || ev.period_end === null) return true
   return periodNo >= ev.period_start && periodNo <= ev.period_end
 }
+
+/** 自动同步事件在日历格里的展示分类(按备注区分,不能用 event_type:
+ * 传统节日、节气、调休在库里都是 other 类型,和学校自己建的 other 活动撞色)。
+ * - national: 国家假日(备注=公共假日),红色块,区别于学校自己的活动;
+ * - workday: 调休上班日(备注=调休上班),琥珀色块,周六周日调回上课的日子;
+ * - small: 传统节日 / 二十四节气,小字弱标记,不要喧宾夺主;
+ * - null: 学校自己建的活动,走原来的类型颜色。 */
+export type AutoMarkerKind = 'national' | 'workday' | 'small'
+export function autoMarkerKind(ev: { note?: string | null }): AutoMarkerKind | null {
+  switch (ev.note ?? '') {
+    case '系统自动同步：公共假日': return 'national'
+    case '系统自动同步：调休上班': return 'workday'
+    case '系统自动同步：传统节日':
+    case '系统自动同步：二十四节气': return 'small'
+    default: return null
+  }
+}
