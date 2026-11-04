@@ -4,9 +4,14 @@
    注意:Naive 的卡片内容区类名是 n-card-content(单横线),标题文字在
    n-card-header__main 里——不要再用 n-card__content / n-card-header__title。 */
 
+/* 内容左对齐(Jason 2026-11-04:两页左缘不一看着难受):
+   以前 margin: 0 auto 让 880px 的页在宽屏上居中,与边栏之间留一大截空,
+   排课中心(max-width: none)却贴着边栏,两页左缘差了一大截。
+   改成左对齐后所有页左缘都落在内容区 24px 内边距上,齐平;排课中心
+   的 max-width: none 行内样式仍生效,只是左缘与其它页对齐。 */
 .ios-page {
   max-width: 880px;
-  margin: 0 auto;
+  margin: 0;
   padding-bottom: 32px;
 }
 

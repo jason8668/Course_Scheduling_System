@@ -269,7 +269,13 @@ async function onLogout() {
     </n-layout-sider>
 
     <n-layout style="background: transparent">
-      <n-layout-header class="app-header" :style="`padding: 12px ${isMobile ? '12px' : '24px'}; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)`">
+      <!-- 顶栏悬浮圆角片(Jason 2026-11-04:顶栏横板与边栏竖板打架):
+        原来顶栏贴视口顶、贴边栏右缘一整条,边栏却是四周留缝的悬浮板,
+        两块玻璃在左上角顶在一起、顶边还没对齐。改成与边栏同款悬浮片:
+        四边各留 12px 缝、顶与边栏顶(12px)对齐、20px 圆角、柔和阴影。
+        内边距 12px + 左边距 12px = 按钮左缘落在内容区 24px 内边距上,
+        与正文左缘齐平;右边同理。 -->
+      <n-layout-header class="app-header" :style="`margin: 12px 12px 0 12px; border-radius: 20px; padding: 12px 12px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 8px 24px rgba(30, 60, 120, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8)`">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
           <n-button v-if="isMobile" text size="large" data-testid="header-menu" @click="drawerOpen = true">
             ☰ 菜单
@@ -337,6 +343,14 @@ async function onLogout() {
    根本没法看。修法:收合宽放宽到 80px;徽章 white-space: nowrap 绝不换行;
    图标格本身定宽 48px 且不收缩,菜单项内容居中、左右内边距清零,
    这样两个字永远横排一行,悬浮提示仍显示全名,认得出是哪页。 */
+/* 菜单字左内边距(Jason 2026-11-04:字太靠左、右边空太多):
+   展开态下条目与组标题左内边距从 32px 加到 44px,组标题与条目同值、仍齐平,
+   字往面板中间靠;收合态不受影响(收合规则仍是 padding-left: 0 居中)。
+   Naive 的内边距是行内样式,须 !important 才能盖掉。 */
+.sider-menu-wrap :deep(.n-menu:not(.n-menu--collapsed) .n-menu-item-content),
+.sider-menu-wrap :deep(.n-menu:not(.n-menu--collapsed) .n-menu-item-group-title) {
+  padding-left: 44px !important;
+}
 .sider-menu-wrap :deep(.menu-char-icon) { display: none; }
 .sider-menu-wrap :deep(.n-menu--collapsed .n-menu-item-content) {
   display: flex; justify-content: center; padding-left: 0; padding-right: 0;

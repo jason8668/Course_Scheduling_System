@@ -425,6 +425,41 @@ const tabAssignments = computed(() =>
 watch(assignmentGrades, (gs) => {
   if (gradeTab.value === undefined || !gs.includes(gradeTab.value)) gradeTab.value = gs[0]
 })
+// ── 配课二级筛选(Jason 2026-11-04:年级 tab 下还是很多笔)──
+// 年级 tab 之下再按班级、科目筛,两个条件可叠加;选项只取当前年级 tab 内
+// 的配课(跑班群组按其成员班级归属,跨年级成员不进本年级的班级选项)。
+// 切年级 tab 时筛选复位;选项消失的旧值自动清空,避免筛出空表还挂着
+// 一个选不中的值;筛后笔数变化时在筛选行显示共几笔,筛空时给空提示。
+const filterClassId = ref<number | null>(null)
+const filterSubjectId = ref<number | null>(null)
+const tabClassOptions = computed(() => {
+  const seen = new Map<number, { label: string; value: number }>()
+  for (const a of tabAssignments.value) {
+    for (const c of a.scheduling_unit.classes) {
+      if (gradeTab.value !== undefined && c.grade !== gradeTab.value) continue
+      if (!seen.has(c.id)) seen.set(c.id, { label: classLabel(c), value: c.id })
+    }
+  }
+  return [...seen.values()].sort((x, y) => x.value - y.value)
+})
+const tabSubjectOptions = computed(() => {
+  const seen = new Map<number, { label: string; value: number }>()
+  for (const a of tabAssignments.value) {
+    if (!seen.has(a.subject.id)) seen.set(a.subject.id, { label: a.subject.name, value: a.subject.id })
+  }
+  return [...seen.values()].sort((x, y) => x.label.localeCompare(y.label, 'zh-CN'))
+})
+const filteredAssignments = computed(() =>
+  tabAssignments.value.filter((a) =>
+    (filterClassId.value === null || a.scheduling_unit.classes.some((c) => c.id === filterClassId.value)) &&
+    (filterSubjectId.value === null || a.subject.id === filterSubjectId.value)))
+watch(gradeTab, () => { filterClassId.value = null; filterSubjectId.value = null })
+watch(tabClassOptions, (opts) => {
+  if (filterClassId.value !== null && !opts.some((o) => o.value === filterClassId.value)) filterClassId.value = null
+})
+watch(tabSubjectOptions, (opts) => {
+  if (filterSubjectId.value !== null && !opts.some((o) => o.value === filterSubjectId.value)) filterSubjectId.value = null
+})
 interface AForm {
   target: 'single' | 'group' | 'alternate'
   class_id: number | null
@@ -912,7 +947,21 @@ onUnmounted(() => {
               :tab="`${gradeLabel(g)}（${gradeAssignmentCount(g)}）`"
             />
           </n-tabs>
-          <div v-for="a in tabAssignments" :key="a.id" class="ios-row">
+          <div style="display: flex; gap: 8px; padding: 10px 16px; flex-wrap: wrap; align-items: center">
+            <n-select
+              v-model:value="filterClassId" :options="tabClassOptions" placeholder="全部班级"
+              clearable size="small" style="width: 160px" data-testid="filter-class"
+            />
+            <n-select
+              v-model:value="filterSubjectId" :options="tabSubjectOptions" placeholder="全部科目"
+              clearable size="small" style="width: 160px" data-testid="filter-subject"
+            />
+            <span v-if="filteredAssignments.length !== tabAssignments.length" class="ios-row-sub">
+              共 {{ filteredAssignments.length }} 笔
+            </span>
+          </div>
+          <n-empty v-if="!filteredAssignments.length" description="没有符合筛选的配课" style="padding: 24px 0" />
+          <div v-for="a in filteredAssignments" :key="a.id" class="ios-row">
             <div class="ios-row-main">
               <span class="ios-row-title">{{ a.scheduling_unit.name }} · {{ a.subject.name }}</span>
               <span class="ios-row-sub" style="margin-left: 8px">
