@@ -43,9 +43,12 @@ export interface Template {
   subject_count: number
 }
 
+// 导师时间已下架(Jason 2026-11-04 定):选项只留一般课/自习/午休/固定用途四个;
+// homeroom 标签保留,仅供旧表里已有的导师时间格子显示用,编辑器不再提供选择。
+// 后端枚举与测试夹具仍有 homeroom,前端类型与后端保持一致,旧数据可正常读写。
 export const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
   regular: '一般课',
-  morning: '早自习',
+  morning: '自习',
   lunch: '午休',
   homeroom: '导师时间',
   reserved: '固定用途',

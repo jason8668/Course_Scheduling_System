@@ -30,10 +30,14 @@ const rows = ref<Row[]>([])
 const WEEKDAY_NAMES = ['一', '二', '三', '四', '五', '六', '日']
 const weekdays = computed(() => Array.from({ length: numWeekdays.value }, (_, i) => i + 1))
 
-const typeOptions = (Object.keys(PERIOD_TYPE_LABELS) as PeriodType[]).map((t) => ({
-  label: PERIOD_TYPE_LABELS[t],
-  value: t,
-}))
+// 导师时间已下架(Jason 2026-11-04 定):下拉与整列设置只给四个选项;
+// 旧表里已有的导师时间格子仍按标签与颜色显示,点开下拉改选后即转为新类型。
+const typeOptions = (Object.keys(PERIOD_TYPE_LABELS) as PeriodType[])
+  .filter((t) => t !== 'homeroom')
+  .map((t) => ({
+    label: PERIOD_TYPE_LABELS[t],
+    value: t,
+  }))
 
 const TYPE_COLORS: Record<PeriodType, string> = {
   regular: '#e8f5e9',

@@ -6,9 +6,9 @@ import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
-  createPeriodTable, deletePeriodTable, getSemester, updatePeriodTable,
+  createPeriodTable, deletePeriodTable, getSemester, listTemplates, updatePeriodTable,
 } from '@/api/semesters'
-import type { PeriodTable } from '@/api/semesters'
+import type { PeriodTable, Template } from '@/api/semesters'
 
 const props = defineProps<{ semesterId: number | null }>()
 const message = useMessage()
@@ -28,6 +28,18 @@ onMounted(reload)
 
 const name = ref('')
 const weekdays = ref(5)
+// 新建时带入学制范本(原单独“学期与节次表”页独有的功能,2026-11-04 起只放开学建置这里):
+// 选了范本就按范本的时段建表,每周几天由范本定;不选则按上面选的天数建空表。
+const templateKey = ref<string | null>(null)
+const templates = ref<Template[]>([])
+async function loadTemplates() {
+  try {
+    templates.value = await listTemplates()
+  } catch {
+    templates.value = []
+  }
+}
+void loadTemplates()
 async function onCreate() {
   if (!props.semesterId) return
   if (!name.value) return message.warning('请输入节次表名称')
@@ -35,8 +47,10 @@ async function onCreate() {
     await createPeriodTable(props.semesterId, {
       name: name.value, num_weekdays: weekdays.value,
       is_default: tables.value.length === 0,
+      template_key: templateKey.value,
     })
     name.value = ''
+    templateKey.value = null
     message.success('已建立节次表')
     await reload()
   } catch (e) {
@@ -93,6 +107,12 @@ function openEditor(t: PeriodTable) {
         <n-select
           v-model:value="weekdays" :options="[5, 6, 7].map((d) => ({ label: `每周 ${d} 天`, value: d }))"
           style="width: 130px"
+        />
+        <n-select
+          v-model:value="templateKey"
+          :options="templates.map((t) => ({ label: t.name, value: t.key }))"
+          placeholder="学制范本（可空，选了按范本时段建）"
+          style="width: 220px" clearable
         />
         <n-text depth="3" style="font-size: 13px">
           时段格子（第几节、几点到几点、午休等）点「编辑时段」进去排

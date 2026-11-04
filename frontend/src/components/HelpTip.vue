@@ -1,5 +1,6 @@
 <template>
-  <n-tooltip trigger="hover">
+  <!-- 弹框限宽:不设宽时长说明会横向撑满整个页面(Jason 2026-11-04 报);280px 内换行显示。 -->
+  <n-tooltip trigger="hover" :content-style="{ maxWidth: '280px', whiteSpace: 'normal', lineHeight: '1.6', fontSize: '13px' }">
     <template #trigger>
       <span class="help-tip" :data-testid="testid">?</span>
     </template>

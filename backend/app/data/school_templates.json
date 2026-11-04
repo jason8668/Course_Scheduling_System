@@ -9,7 +9,7 @@
       "slots": [
         {
           "period_no": 1,
-          "name": "早自习",
+          "name": "自习",
           "start": "07:50",
           "end": "08:20",
           "type": "morning"
@@ -105,7 +105,7 @@
       "slots": [
         {
           "period_no": 1,
-          "name": "早自习",
+          "name": "自习",
           "start": "07:50",
           "end": "08:20",
           "type": "morning"
@@ -195,7 +195,7 @@
       "slots": [
         {
           "period_no": 1,
-          "name": "早自习",
+          "name": "自习",
           "start": "07:50",
           "end": "08:10",
           "type": "morning"
@@ -293,7 +293,7 @@
       "slots": [
         {
           "period_no": 1,
-          "name": "早自习",
+          "name": "自习",
           "start": "07:50",
           "end": "08:10",
           "type": "morning"
@@ -387,7 +387,7 @@
       "slots": [
         {
           "period_no": 1,
-          "name": "早自习",
+          "name": "自习",
           "start": "07:50",
           "end": "08:10",
           "type": "morning"

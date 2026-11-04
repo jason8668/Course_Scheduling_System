@@ -5,7 +5,7 @@ export interface PeriodCell {
   weekday: number // 1=周一 …
   period_no: number // 当日节次顺序(含休息时段)
   name: string // 显示名称,如「第一节」「午休」
-  type: string // 'regular'(可排课)| morning/lunch/homeroom/reserved(反灰)
+  type: string // 'regular'(可排课)| morning/lunch/reserved(反灰);homeroom 仅旧数据
   start_time?: string | null // 'HH:MM' 或 'HH:MM:SS'
   end_time?: string | null
 }

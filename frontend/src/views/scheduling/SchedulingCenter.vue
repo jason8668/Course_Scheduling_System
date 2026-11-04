@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
   NAlert, NButton, NCollapse, NCollapseItem, NEmpty, NInput, NInputNumber, NModal, NPopconfirm,
-  NRadioButton, NRadioGroup, NSelect, NSpace, NSwitch, NText, useMessage,
+  NRadioButton, NRadioGroup, NSelect, NSpace, NSwitch, NTabPane, NTabs, NText, useMessage,
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import SpecialDaySection from '@/components/scheduling/SpecialDaySection.vue'
 import WorkdayCopySection from '@/components/scheduling/WorkdayCopySection.vue'
@@ -409,6 +409,22 @@ function onKey(ev: KeyboardEvent) {
 }
 
 // ── 配课 ──
+// 配课列表按年级分 tab(Jason 2026-11-04 定):246 笔全摊一页太长,一次只看一个年级;
+// 年级取自配课单位所含班级(跑班群组若跨年级会在每个相关年级下都出现),
+// 年级集合随配课数据走,当前 tab 失效时自动回到第一个年级。
+const gradeTab = ref<number | undefined>(undefined)
+const assignmentGrades = computed(() =>
+  [...new Set(assignments.value.flatMap((a) => a.scheduling_unit.classes.map((c) => c.grade)))]
+    .sort((a, b) => a - b))
+const gradeAssignmentCount = (g: number) =>
+  assignments.value.filter((a) => a.scheduling_unit.classes.some((c) => c.grade === g)).length
+const tabAssignments = computed(() =>
+  gradeTab.value === undefined
+    ? assignments.value
+    : assignments.value.filter((a) => a.scheduling_unit.classes.some((c) => c.grade === gradeTab.value)))
+watch(assignmentGrades, (gs) => {
+  if (gradeTab.value === undefined || !gs.includes(gradeTab.value)) gradeTab.value = gs[0]
+})
 interface AForm {
   target: 'single' | 'group' | 'alternate'
   class_id: number | null
@@ -890,7 +906,13 @@ onUnmounted(() => {
       <div class="ios-card">
         <n-empty v-if="!assignments.length" description="尚无配课，先新增配课" style="padding: 24px 0" />
         <template v-else>
-          <div v-for="a in assignments" :key="a.id" class="ios-row">
+          <n-tabs v-model:value="gradeTab" type="line" animated>
+            <n-tab-pane
+              v-for="g in assignmentGrades" :key="g" :name="g"
+              :tab="`${gradeLabel(g)}（${gradeAssignmentCount(g)}）`"
+            />
+          </n-tabs>
+          <div v-for="a in tabAssignments" :key="a.id" class="ios-row">
             <div class="ios-row-main">
               <span class="ios-row-title">{{ a.scheduling_unit.name }} · {{ a.subject.name }}</span>
               <span class="ios-row-sub" style="margin-left: 8px">

@@ -54,6 +54,7 @@ async function onDeleted() {
           <SetupSemesterCard
             :semesters="semesters" :semester-id="sid"
             @select="(v: number) => { sid = v }" @created="onCreated" @deleted="onDeleted"
+            @updated="reload"
           />
         </div>
       </div>
