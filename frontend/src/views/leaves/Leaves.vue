@@ -167,7 +167,7 @@ function rangeText(l: LeaveRequest): string {
 
     <template v-else>
       <section class="ios-section">
-        <div class="ios-section-title">{{ canManage ? '登记请假(可代教师登记)' : '登记我的请假' }}</div>
+        <div class="ios-section-title">{{ canManage ? '一步 · 登记请假(可代教师登记)' : '一步 · 登记我的请假' }}</div>
         <div class="ios-card">
           <div class="ios-card-body">
         <n-space vertical>
@@ -229,6 +229,9 @@ function rangeText(l: LeaveRequest): string {
       </n-alert>
 
       <n-empty v-if="!leaves.length" description="尚无请假纪录" />
+      <div v-if="leaves.length" class="ios-section-title">
+        <span>二 · 假单跟进与销假</span>
+      </div>
       <section
         v-for="l in leaves" :key="l.id" class="ios-section" data-testid="lv-card"
       >

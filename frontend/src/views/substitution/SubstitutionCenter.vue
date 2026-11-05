@@ -9,14 +9,14 @@ import type { ApiError } from '@/api/client'
 import { listSemesters } from '@/api/semesters'
 import { listTeachers } from '@/api/basedata'
 import type { Teacher } from '@/api/basedata'
-import { createLeave, listLeaves, listLeaveTypes } from '@/api/leaves'
+import { listLeaves } from '@/api/leaves'
 import type { AffectedPeriod, LeaveRequest } from '@/api/leaves'
 import {
   assignSubstitution, assignSubstitutionBatch, clearSubstitution, getRecommendations,
-  listSubstitutionTypes, openSlips,
+  getSwapOptions, listSubstitutionTypes, openSlips,
 } from '@/api/substitutions'
-import type { BatchSkip, Candidate, Recommendation } from '@/api/substitutions'
-import { getDailyBoard, getSubstitutionLog, openPatrolSheets } from '@/api/substitutionLog'
+import type { BatchSkip, Candidate, Recommendation, SwapOption, SwapOptions, SwapPartner } from '@/api/substitutions'
+import { getDailyBoard, getSubstitutionLog } from '@/api/substitutionLog'
 import type { DailyBoard, LogEntry } from '@/api/substitutionLog'
 
 const message = useMessage()
@@ -34,18 +34,10 @@ function shortDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${m}/${d}(${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`
 }
-/** 所选日期所在周的周一~周日(纪录区默认看这一周) */
-function weekRange(ts: number): [number, number] {
-  const d = new Date(ts)
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7))
-  return [monday.getTime(), monday.getTime() + 6 * 86400000]
-}
-
 const semesters = ref<{ id: number; label: string }[]>([])
 const sid = ref<number | null>(null)
 const teachers = ref<Teacher[]>([])
 const subTypes = ref<Record<string, string>>({})
-const leaveTypes = ref<Record<string, string>>({})
 
 const now = new Date()
 const dateTs = ref<number | null>(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime())
@@ -54,16 +46,12 @@ const dateIso = computed(() => (dateTs.value == null ? '' : toISODate(dateTs.val
 const leaves = ref<LeaveRequest[]>([])
 const board = ref<DailyBoard | null>(null)
 const logEntries = ref<LogEntry[]>([])
-const logRange = ref<[number, number] | null>(dateTs.value == null ? null : weekRange(dateTs.value))
-const logTeacher = ref<number | null>(null)
 const loading = ref(false)
 
 const semesterOptions = computed(() => semesters.value.map((s) => ({ label: s.label, value: s.id })))
 const teacherOptions = computed(() => teachers.value
   .filter((t) => t.is_active).map((t) => ({ label: t.name, value: t.id })))
-const leaveTypeOptions = computed(() =>
-  Object.entries(leaveTypes.value).map(([value, label]) => ({ label, value })))
-/** 其他处置(代课走推荐、调课走原页面,这里只列剩下的处置方式) */
+/** 其他处置(代课走推荐、调课走下方调课按钮,这里只列剩下的处置方式) */
 const otherTypeOptions = computed(() => Object.entries(subTypes.value)
   .filter(([v]) => v !== 'substitute' && v !== 'swap')
   .map(([value, label]) => ({ label, value })))
@@ -88,11 +76,12 @@ async function reloadBoard() {
   if (sid.value && dateIso.value) board.value = await getDailyBoard(sid.value, dateIso.value)
 }
 async function reloadLog() {
-  if (!sid.value) return
+  if (!sid.value || !dateIso.value) return
+  // 纪录区已退化为当日摘要:只查所选日期当天的纪录,全量查询走独立纪录页。
   logEntries.value = await getSubstitutionLog(sid.value, {
-    teacherId: logTeacher.value,
-    dateFrom: logRange.value ? toISODate(logRange.value[0]) : null,
-    dateTo: logRange.value ? toISODate(logRange.value[1]) : null,
+    teacherId: null,
+    dateFrom: dateIso.value,
+    dateTo: dateIso.value,
   })
 }
 async function reloadAll() {
@@ -110,16 +99,14 @@ async function onSemesterChange(id: number) {
   await reloadAll()
 }
 async function onDateChange() {
-  if (dateTs.value != null) logRange.value = weekRange(dateTs.value)
   await Promise.all([reloadBoard(), reloadLog()])
 }
 
 onMounted(async () => {
-  const [sems, types, ltypes] = await Promise.all(
-    [listSemesters(), listSubstitutionTypes(), listLeaveTypes()])
+  const [sems, types] = await Promise.all(
+    [listSemesters(), listSubstitutionTypes()])
   semesters.value = sems
   subTypes.value = types
-  leaveTypes.value = ltypes
   if (semesters.value.length) await onSemesterChange(semesters.value[0].id)
 })
 
@@ -140,6 +127,7 @@ async function openPeriod(p: AffectedPeriod) {
   rec.value = null
   otherType.value = null
   countsHours.value = true
+  resetSwap()
   loadingRec.value = true
   try {
     rec.value = await getRecommendations(p.id)
@@ -256,58 +244,96 @@ function openBatch(l: LeaveRequest) {
   batchDone.value = null
 }
 
-// ── 请假登记(管理员代登) ──
-const lfTeacher = ref<number | null>(null)
-const lfType = ref('')
-const lfStart = ref<number | null>(null)
-const lfEnd = ref<number | null>(null)
-const lfReason = ref('')
-const submittingLeave = ref(false)
+// ── 调课(对调):处理页的调课面板平移过来(R2)──
+// 展开中节次的可对调清单。swapTeacherId 为空 = 只看也教这个班的老师。
+const swapOpen = ref(false)
+const swap = ref<SwapOptions | null>(null)
+const loadingSwap = ref(false)
+const swapTeacherId = ref<number | null>(null)
+// 找几周:沿用处理页的默认值(常和隔三周调的学校,每次都要重选很烦)
+const swapWeeks = ref(2)
+const SWAP_WEEK_OPTIONS = [
+  { label: '本周与下周', value: 2 },
+  { label: '往后共 3 周', value: 3 },
+  { label: '往后共 4 周', value: 4 },
+]
+// 一位老师两周内可换的节次常有二、三十个;先只列同班的,其他班收起来(展开过的老师记在这里)
+const swapExpanded = ref<Set<number>>(new Set())
 
-async function submitLeave() {
-  if (!sid.value) return
-  if (!lfTeacher.value || !lfType.value || lfStart.value == null || lfEnd.value == null) {
-    message.warning('请先选老师、假别与起讫日期')
-    return
-  }
-  submittingLeave.value = true
+function resetSwap() {
+  swapOpen.value = false
+  swap.value = null
+  swapTeacherId.value = null
+  swapExpanded.value = new Set()
+}
+
+/** 这位老师目前要显示的节次:有同班的就先只列同班,其他班等展开 */
+function visibleOptions(partner: SwapPartner): SwapOption[] {
+  const same = partner.options.filter((o) => o.same_class)
+  if (!same.length || swapExpanded.value.has(partner.teacher_id)) return partner.options
+  return same
+}
+
+function hiddenCount(partner: SwapPartner): number {
+  return partner.options.length - visibleOptions(partner).length
+}
+
+function expandPartner(partner: SwapPartner) {
+  swapExpanded.value = new Set([...swapExpanded.value, partner.teacher_id])
+}
+
+function swapTeacherOptions(l: LeaveRequest) {
+  return teachers.value
+    .filter((t) => t.is_active && t.id !== l.teacher_id)
+    .map((t) => ({ label: t.name, value: t.id }))
+}
+
+async function loadSwap(p: AffectedPeriod) {
+  loadingSwap.value = true
   try {
-    await createLeave(sid.value, {
-      teacher_id: lfTeacher.value,
-      leave_type: lfType.value,
-      start_date: toISODate(lfStart.value),
-      end_date: toISODate(lfEnd.value),
-      reason: lfReason.value || undefined,
+    swap.value = await getSwapOptions(p.id, swapTeacherId.value, swapWeeks.value)
+  } finally {
+    loadingSwap.value = false
+  }
+}
+
+async function toggleSwap(p: AffectedPeriod) {
+  swapOpen.value = !swapOpen.value
+  if (swapOpen.value && !swap.value) await loadSwap(p)
+}
+
+async function onSwapTeacherChange(p: AffectedPeriod, id: number | null) {
+  swapTeacherId.value = id
+  await loadSwap(p)
+}
+
+async function onSwapWeeksChange(p: AffectedPeriod, weeks: number) {
+  swapWeeks.value = weeks
+  await loadSwap(p)
+}
+
+async function assignSwap(
+  l: LeaveRequest, p: AffectedPeriod, partner: SwapPartner, opt: SwapOption,
+) {
+  try {
+    await assignSubstitution(p.id, {
+      type: 'swap',
+      handler_teacher_id: partner.teacher_id,
+      swap_entry_id: opt.entry_id,
+      swap_date: opt.date,
+      swap_period_no: opt.period_no,
     })
-    message.success('请假已登记')
-    lfTeacher.value = null
-    lfType.value = ''
-    lfStart.value = null
-    lfEnd.value = null
-    lfReason.value = ''
+    message.success(
+      `已和 ${partner.teacher_name} 调课:${l.teacher_name} 于 ${withWeekday(opt.date)} `
+      + `${opt.period_name}补 ${opt.class_names} ${opt.subject_name}`)
+    openPeriodId.value = null
+    resetSwap()
     await reloadAll()
   } catch (e) {
-    message.error((e as ApiError).message || '登记失败')
-  } finally {
-    submittingLeave.value = false
+    message.error((e as ApiError).message || '调课失败')
   }
 }
 
-// ── 看板与纪录打印 ──
-function printDailyBoard() {
-  if (sid.value && dateIso.value) {
-    window.open(`/daily-board/print?semester_id=${sid.value}&date=${dateIso.value}`, '_blank')
-  }
-}
-function printPatrol() {
-  if (sid.value && dateIso.value) openPatrolSheets(sid.value, dateIso.value)
-}
-const logSwapIds = computed(() => logEntries.value
-  .filter((e) => e.sub_type === 'swap' && e.status !== 'cancelled')
-  .map((e) => e.affected_period_id))
-const logSubstituteIds = computed(() => logEntries.value
-  .filter((e) => (e.sub_type === 'substitute' || e.sub_type === 'merge') && e.status !== 'cancelled')
-  .map((e) => e.affected_period_id))
 </script>
 
 <template>
@@ -345,12 +371,25 @@ const logSubstituteIds = computed(() => logEntries.value
 
     <section class="ios-section">
       <div class="ios-section-title">
-        <span>待处理代课</span>
-        <RouterLink :to="{ name: 'substitutions' }">
-          <n-button size="small" text type="primary">
-            调课对调去原页面 →
-          </n-button>
-        </RouterLink>
+        <span>一 · 今日看板</span>
+      </div>
+      <div class="ios-card">
+        <div class="ios-card-body">
+          <n-space align="center" :wrap="true">
+            <n-text>今日已安排 {{ boardCount }} 节 · 请假 {{ absentToday }} 人 · 待处理 {{ pendingTotal }} 节</n-text>
+            <RouterLink :to="{ name: 'daily-board', query: { semester_id: sid, date: dateIso } }">
+              <n-button size="small" type="primary" data-testid="center-board-summary">
+                今日看板 →
+              </n-button>
+            </RouterLink>
+          </n-space>
+        </div>
+      </div>
+    </section>
+
+    <section class="ios-section" style="animation-delay: 60ms">
+      <div class="ios-section-title">
+        <span>二 · 待处理处置</span>
       </div>
       <n-empty v-if="!activeLeaves.length" description="没有待处理的假单" />
       <div v-else style="display: flex; flex-direction: column; gap: 12px">
@@ -450,6 +489,73 @@ const logSubstituteIds = computed(() => logEntries.value
                   </n-button>
                 </n-space>
               </n-space>
+              <n-space align="center" style="margin-top: 8px">
+                <n-text depth="3">或改采调课：</n-text>
+                <n-button size="small" :type="swapOpen ? 'primary' : 'default'" @click="toggleSwap(p)">
+                  调课
+                </n-button>
+              </n-space>
+              <div v-if="swapOpen" class="swap">
+                <n-text depth="3" class="swap-intro">
+                  调课 = 请另一位老师来上这一节，{{ l.teacher_name }}再找一天补回对方的一节（不计代课课时）。
+                  <template v-if="swap">
+                    以下是 {{ shortDate(swap.date_from) }} 到 {{ shortDate(swap.date_to) }}
+                    之间，双方都有空的节次，点一下就成立。
+                  </template>
+                </n-text>
+                <n-space align="center" size="small" style="margin-bottom: 6px">
+                  <n-select
+                    :value="swapTeacherId" :options="swapTeacherOptions(l)" filterable clearable
+                    size="small" style="width: 200px" placeholder="只看也教这班的老师"
+                    @update:value="(v: number | null) => onSwapTeacherChange(p, v)"
+                  />
+                  <n-text depth="3">也可以指定其他老师</n-text>
+                  <n-text depth="3" style="margin-left: 12px">范围</n-text>
+                  <n-select
+                    :value="swapWeeks" :options="SWAP_WEEK_OPTIONS" size="small"
+                    style="width: 140px" @update:value="(v: number) => onSwapWeeksChange(p, v)"
+                  />
+                </n-space>
+                <n-text v-if="loadingSwap" depth="3">寻找可对调的节次…</n-text>
+                <template v-else-if="swap">
+                  <n-text v-if="!swap.partners.length" depth="3" class="swap-note">
+                    {{ swapTeacherId ? '这位老师目前无法对调（可能已停用）。' : '没有其他老师也教这个班，可以从上方指定一位老师看看。' }}
+                  </n-text>
+                  <div
+                    v-for="partner in swap.partners" :key="partner.teacher_id"
+                    class="swap-partner"
+                  >
+                    <n-space align="center" size="small">
+                      <b>{{ partner.teacher_name }}</b>
+                      <span v-if="partner.teaches_same_class" class="ios-chip-green ios-chip">也教这班</span>
+                    </n-space>
+                    <n-text v-if="partner.blocked_reason" depth="3" class="swap-note">
+                      无法对调：{{ partner.blocked_reason }}
+                    </n-text>
+                    <n-text v-else-if="!partner.options.length" depth="3" class="swap-note">
+                      这段期间找不到双方都有空的节次，可试着放宽周数
+                    </n-text>
+                    <n-space v-else size="small" class="swap-note">
+                      <n-button
+                        v-for="opt in visibleOptions(partner)"
+                        :key="`${opt.entry_id}-${opt.date}-${opt.period_no}`"
+                        size="small" :type="opt.same_class ? 'primary' : 'default'" ghost
+                        @click="assignSwap(l, p, partner, opt)"
+                      >
+                        {{ shortDate(opt.date) }} {{ opt.period_name }} ·
+                        {{ opt.class_names }} {{ opt.subject_name }}
+                        <span v-if="opt.in_block" class="swap-block">（连堂之一）</span>
+                      </n-button>
+                      <n-button
+                        v-if="hiddenCount(partner)" size="small" text type="primary"
+                        @click="expandPartner(partner)"
+                      >
+                        显示其他班级的 {{ hiddenCount(partner) }} 个节次
+                      </n-button>
+                    </n-space>
+                  </div>
+                </template>
+              </div>
             </div>
           </template>
           <n-collapse v-if="resolvedOf(l).length" style="padding: 0 16px 8px">
@@ -473,111 +579,49 @@ const logSubstituteIds = computed(() => logEntries.value
       </div>
     </section>
 
-    <section class="ios-section" style="animation-delay: 60ms">
-      <div class="ios-section-title">
-        <span>{{ dateIso }} 当日看板</span>
-        <n-space>
-          <n-button size="small" text type="primary" @click="printDailyBoard">
-            打印今日板
-          </n-button>
-          <n-button size="small" text type="primary" @click="printPatrol">
-            打印巡视表
-          </n-button>
-        </n-space>
-      </div>
-      <div class="ios-card">
-        <n-empty v-if="!board || !board.entries.length" description="当天没有调代课安排" style="padding: 24px 0" />
-        <table v-else class="ios-table">
-          <thead>
-            <tr>
-              <th>节次</th>
-              <th>班级</th>
-              <th>科目</th>
-              <th>请假教师</th>
-              <th>安排</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="e in board.entries" :key="e.affected_period_id + e.row_kind">
-              <td>{{ e.period_name }}</td>
-              <td>{{ e.class_names }}</td>
-              <td>{{ e.subject_name }}</td>
-              <td>{{ e.absent_teacher_name }}</td>
-              <td>{{ e.handler_name ? `${e.sub_type_label ?? ''} → ${e.handler_name}` : e.status_label }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
     <section class="ios-section" style="animation-delay: 120ms">
       <div class="ios-section-title">
-        <span>请假登记</span>
+        <span>三 · 请假登记</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">
-          <n-space align="end" :wrap="true">
-            <n-select
-              v-model:value="lfTeacher" :options="teacherOptions" placeholder="请假老师"
-              style="width: 160px" filterable
-            />
-            <n-select
-              v-model:value="lfType" :options="leaveTypeOptions" placeholder="假别"
-              style="width: 140px"
-            />
-            <n-date-picker v-model:value="lfStart" type="date" placeholder="开始日期" style="width: 160px" />
-            <n-date-picker v-model:value="lfEnd" type="date" placeholder="结束日期" style="width: 160px" />
-            <n-button type="primary" round :loading="submittingLeave" @click="submitLeave">
-              登记请假
-            </n-button>
+          <n-space align="center" :wrap="true">
+            <n-text depth="3">请假登记、跟进与销假都在「调课管理」页；登记后受影响节次会出现在上方待处理里。</n-text>
+            <RouterLink :to="{ name: 'leaves' }">
+              <n-button size="small" type="primary" data-testid="center-leave-entry">
+                去登记请假 →
+              </n-button>
+            </RouterLink>
           </n-space>
-          <div class="ios-row-sub" style="margin-top: 8px">
-            管理员代登；老师自己请假仍在「调课管理」页。登记后受影响节次会出现在上方待处理里。
-          </div>
         </div>
       </div>
     </section>
 
     <section class="ios-section" style="animation-delay: 180ms">
       <div class="ios-section-title">
-        <span>调代课纪录</span>
+        <span>四 · 调代课纪录</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">
           <n-space align="center" :wrap="true">
-            <n-date-picker
-              v-model:value="logRange" type="daterange" placeholder="日期范围"
-              style="width: 260px" @update:value="reloadLog"
-            />
-            <n-select
-              v-model:value="logTeacher" :options="teacherOptions"
-              placeholder="老师(清空=全部)" style="width: 160px" filterable clearable @update:value="reloadLog"
-            />
-            <n-button
-              v-if="logSubstituteIds.length" size="small" text type="primary"
-              @click="printSlips('substitute', logSubstituteIds)"
-            >
-              印代课单
-            </n-button>
-            <n-button
-              v-if="logSwapIds.length" size="small" text type="primary"
-              @click="printSlips('swap', logSwapIds)"
-            >
-              印调课单
-            </n-button>
+            <n-text>{{ dateIso }} 调代课纪录 {{ logEntries.length }} 条</n-text>
+            <RouterLink :to="{ name: 'substitution-log' }">
+              <n-button size="small" type="primary" data-testid="center-log-all">
+                查看全部纪录 →
+              </n-button>
+            </RouterLink>
           </n-space>
+          <n-text v-if="!logEntries.length" depth="3" style="display: block; margin-top: 8px">该日暂无调代课纪录。</n-text>
         </div>
-        <n-empty v-if="!logEntries.length" description="该范围内没有纪录" style="padding: 12px 0 24px" />
-        <template v-else>
-          <div v-for="e in logEntries" :key="e.affected_period_id + e.row_kind" class="ios-row">
-            <span style="font-size: 13px">
-              {{ e.date }} {{ e.period_name }} · {{ e.class_names }}《{{ e.subject_name }}》
-              · {{ e.absent_teacher_name }} {{ e.leave_type_label }}
-              {{ e.handler_name ? `→ ${e.handler_name}(${e.sub_type_label ?? ''})` : `（${e.status_label}）` }}
-            </span>
-          </div>
-        </template>
       </div>
     </section>
   </div>
 </template>
+
+<style scoped>
+.swap { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128, 128, 128, 0.35); }
+.swap-intro { display: block; margin-bottom: 6px; }
+.swap-partner { margin: 6px 0; }
+.swap-note { display: block; margin: 4px 0 0 12px; }
+.swap-block { margin-left: 4px; opacity: 0.7; }
+</style>

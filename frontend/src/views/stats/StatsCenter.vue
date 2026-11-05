@@ -26,6 +26,7 @@ onMounted(async () => {
       代课课时、教学课时、通知确认集中在一页，每个数字都标口径
     </div>
     <n-space align="center" :wrap="true" style="margin-top: 16px">
+      <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">一步 · 选学期</span>
       <n-select
         :value="sid" :options="semesterOptions" placeholder="选择学期"
         style="width: 220px" @update:value="(v: number) => { sid = v }"
@@ -34,7 +35,7 @@ onMounted(async () => {
 
     <section class="ios-section">
       <div class="ios-section-title">
-        <span>代课课时（月结）</span>
+        <span>二 · 代课课时（月结）</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">
@@ -45,7 +46,7 @@ onMounted(async () => {
 
     <section class="ios-section" style="animation-delay: 60ms">
       <div class="ios-section-title">
-        <span>教学课时（实际上课）</span>
+        <span>三 · 教学课时（实际上课）</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">
@@ -56,7 +57,7 @@ onMounted(async () => {
 
     <section class="ios-section" style="animation-delay: 120ms">
       <div class="ios-section-title">
-        <span>通知确认</span>
+        <span>四 · 通知确认</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">

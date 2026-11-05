@@ -5,7 +5,7 @@ import {
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import TimetableGrid from '@/components/timetable/TimetableGrid.vue'
 import type { GridEntry, PeriodCell } from '@/components/timetable/types'
@@ -44,6 +44,7 @@ const exporting = ref(false)
 // 实际课表模式:周课表是模板,某天实际是叠加了特殊日、请假代课、老师调课、放假后的那天真课表。
 const mode = ref<'week' | 'day'>('week')
 const router = useRouter()
+const route = useRoute()
 const actualDateTs = ref<number | null>(null)
 const actualDay = ref<ActualDay | null>(null)
 const actualLoading = ref(false)
@@ -167,6 +168,16 @@ onMounted(async () => {
   try {
     semesters.value = await publishedSemesters()
     if (semesters.value.length) await load(semesters.value[0].id)
+    // 排课中心结果查看跳过来:带学期与班级直接定位(R4)。
+    const qSid = Number(route.query.semester_id)
+    if (qSid && semesters.value.some((s) => s.id === qSid) && qSid !== sid.value) {
+      await load(qSid)
+    }
+    const qClass = Number(route.query.class_id)
+    if (qClass && data.value?.classes.some((c) => c.id === qClass)) {
+      view.value = 'class'
+      classId.value = qClass
+    }
   } finally {
     loading.value = false
   }
@@ -250,6 +261,7 @@ const entries = computed<GridEntry[]>(() => {
 
     <template v-else-if="data">
       <n-space align="center" :wrap="true">
+        <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">一步 · 选视角</span>
         <n-radio-group v-model:value="view">
           <n-radio-button value="class" data-testid="tq-view-class">班级</n-radio-button>
           <n-radio-button value="teacher" data-testid="tq-view-teacher">教师</n-radio-button>
@@ -273,6 +285,7 @@ const entries = computed<GridEntry[]>(() => {
       </n-space>
 
       <n-space align="center" :wrap="true">
+        <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">二 · 选模式</span>
         <n-radio-group v-model:value="mode">
           <n-radio-button value="week" data-testid="tq-mode-week">周课表(模板)</n-radio-button>
           <n-radio-button value="day" data-testid="tq-mode-day">某天实际课表</n-radio-button>
@@ -286,7 +299,77 @@ const entries = computed<GridEntry[]>(() => {
         </n-text>
       </n-space>
 
+
+      <section v-if="mode === 'day'" class="ios-section" data-testid="tq-actual">
+        <div class="ios-section-title">
+          <span>三 · 查看</span>
+        </div>
+        <div class="ios-card">
+          <div class="ios-card-body">
+            <n-text v-if="actualLoading">加载中…</n-text>
+            <n-empty v-else-if="!actualDay || !actualDay.published" description="该学期尚未发布课表,暂无实际课表" />
+            <template v-else>
+              <n-alert
+                v-if="actualDay.holiday_titles.length" type="error" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 放假({{ actualDay.holiday_titles.join('、') }}),以下为取消的课。
+              </n-alert>
+              <n-alert
+                v-if="actualDay.workday_pending" type="warning" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),还没复制课表。
+                <n-button size="small" type="primary" @click="router.push({ name: 'scheduling-center' })">
+                  去排课中心复制
+                </n-button>
+              </n-alert>
+              <n-alert
+                v-else-if="actualDay.workday_title" type="info" style="margin-bottom: 8px"
+              >
+                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),以下为复制的课表。
+              </n-alert>
+              <n-empty v-if="!actualSlots.length" description="这天没有课" />
+              <div v-for="s in actualSlots" :key="`${s.class_unit_id}-${s.period_no}`" class="ios-row" data-testid="tq-actual-row">
+                <div class="ios-row-main">
+                  <div class="ios-row-title">
+                    第{{ s.period_no }}节 {{ s.subject }}
+                    <span v-if="view === 'class'"> · {{ s.teacher_names.join('、') || '—' }}</span>
+                    <span v-else> · {{ s.class_name }}</span>
+                    <span v-if="s.room_name"> · {{ s.room_name }}</span>
+                  </div>
+                  <div v-if="s.note" class="ios-row-sub">{{ s.note }}</div>
+                </div>
+                <n-tag :type="(ORIGIN_TAG[s.origin] ?? 'default') as never" size="small">
+                  {{ ORIGIN_LABELS[s.origin] ?? s.origin }}
+                </n-tag>
+              </div>
+              <n-text depth="3" style="font-size: 13px" data-testid="tq-actual-duty">
+                行政值日: {{ actualDuty || '尚未安排（请管理员在系统管理页排每周轮值）' }}
+              </n-text>
+            </template>
+          </div>
+        </div>
+      </section>
+      <section v-else class="ios-section" data-testid="tq-grid">
+        <div class="ios-section-title">
+          <span>三 · 查看</span>
+        </div>
+        <div class="ios-card">
+          <div class="ios-card-body">
+        <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />
+        <TimetableGrid
+          v-else
+          :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
+        />
+        <!-- 值日行一直画:没排轮值时 dutyText 为空,之前 v-if 把整行藏掉,
+          看起来就像「值日信息没有写进去」;现在没排就明写尚未安排。 -->
+        <n-text depth="3" style="font-size: 13px" data-testid="tq-duty">
+          行政值日: {{ dutyText || '尚未安排（请管理员在系统管理页排每周轮值）' }}
+        </n-text>
+          </div>
+        </div>
+      </section>
       <n-space align="center" :wrap="true">
+        <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">四 · 打印 / 导出</span>
         <n-text depth="3" style="font-size: 13px">导出目前课表:</n-text>
         <n-button-group>
           <n-button
@@ -334,68 +417,6 @@ const entries = computed<GridEntry[]>(() => {
         </template>
       </n-space>
 
-      <section v-if="mode === 'day'" class="ios-section" data-testid="tq-actual">
-        <div class="ios-card">
-          <div class="ios-card-body">
-            <n-text v-if="actualLoading">加载中…</n-text>
-            <n-empty v-else-if="!actualDay || !actualDay.published" description="该学期尚未发布课表,暂无实际课表" />
-            <template v-else>
-              <n-alert
-                v-if="actualDay.holiday_titles.length" type="error" style="margin-bottom: 8px"
-              >
-                {{ actualDay.date }} 放假({{ actualDay.holiday_titles.join('、') }}),以下为取消的课。
-              </n-alert>
-              <n-alert
-                v-if="actualDay.workday_pending" type="warning" style="margin-bottom: 8px"
-              >
-                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),还没复制课表。
-                <n-button size="small" type="primary" @click="router.push({ name: 'scheduling-center' })">
-                  去排课中心复制
-                </n-button>
-              </n-alert>
-              <n-alert
-                v-else-if="actualDay.workday_title" type="info" style="margin-bottom: 8px"
-              >
-                {{ actualDay.date }} 是调休上班日({{ actualDay.workday_title }}),以下为复制的课表。
-              </n-alert>
-              <n-empty v-if="!actualSlots.length" description="这天没有课" />
-              <div v-for="s in actualSlots" :key="`${s.class_unit_id}-${s.period_no}`" class="ios-row" data-testid="tq-actual-row">
-                <div class="ios-row-main">
-                  <div class="ios-row-title">
-                    第{{ s.period_no }}节 {{ s.subject }}
-                    <span v-if="view === 'class'"> · {{ s.teacher_names.join('、') || '—' }}</span>
-                    <span v-else> · {{ s.class_name }}</span>
-                    <span v-if="s.room_name"> · {{ s.room_name }}</span>
-                  </div>
-                  <div v-if="s.note" class="ios-row-sub">{{ s.note }}</div>
-                </div>
-                <n-tag :type="(ORIGIN_TAG[s.origin] ?? 'default') as never" size="small">
-                  {{ ORIGIN_LABELS[s.origin] ?? s.origin }}
-                </n-tag>
-              </div>
-              <n-text depth="3" style="font-size: 13px" data-testid="tq-actual-duty">
-                行政值日: {{ actualDuty || '尚未安排（请管理员在系统管理页排每周轮值）' }}
-              </n-text>
-            </template>
-          </div>
-        </div>
-      </section>
-      <section v-else class="ios-section" data-testid="tq-grid">
-        <div class="ios-card">
-          <div class="ios-card-body">
-        <n-empty v-if="periods.length === 0" description="此学期尚无节次表" />
-        <TimetableGrid
-          v-else
-          :periods="periods" :num-weekdays="numWeekdays" :entries="entries" readonly
-        />
-        <!-- 值日行一直画:没排轮值时 dutyText 为空,之前 v-if 把整行藏掉,
-          看起来就像「值日信息没有写进去」;现在没排就明写尚未安排。 -->
-        <n-text depth="3" style="font-size: 13px" data-testid="tq-duty">
-          行政值日: {{ dutyText || '尚未安排（请管理员在系统管理页排每周轮值）' }}
-        </n-text>
-          </div>
-        </div>
-      </section>
       <n-text depth="3" style="font-size: 12px">课表为唯读查看;如有异动请洽教学组。</n-text>
     </template>
   </div>

@@ -215,7 +215,7 @@ async function onDelete(r: SpecialDayRule) {
 <template>
   <section class="ios-section" style="animation-delay: 300ms">
     <div class="ios-section-title">
-      <span>特殊日课表</span>
+      <span>四 · 特殊日课表</span>
       <span class="ios-row-sub">某天或每周/每月固定日子换课:填了的节次换课,没填的沿用主课表</span>
     </div>
     <div class="ios-card">

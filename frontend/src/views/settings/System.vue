@@ -28,7 +28,6 @@ import HelpTip from '@/components/HelpTip.vue'
 import ReminderDiagnosisSection from '@/components/ReminderDiagnosisSection.vue'
 import ReminderHealthCard from '@/components/ReminderHealthCard.vue'
 import DutyRosterSection from '@/components/scheduling/DutyRosterSection.vue'
-import TeacherSwapSection from '@/components/scheduling/TeacherSwapSection.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWizardStore } from '@/stores/wizard'
 
@@ -459,7 +458,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="school-card">
-      <div class="ios-section-title">学校信息</div>
+      <div class="ios-section-title">开学准备一 · 学校信息</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -484,7 +483,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="dingtalk-card">
-      <div class="ios-section-title">钉钉通知</div>
+      <div class="ios-section-title">开学准备二 · 钉钉通知</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -521,7 +520,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="dingtalk-app-card">
-      <div class="ios-section-title">钉钉企业应用(个人上课提醒)</div>
+      <div class="ios-section-title">开学准备三 · 钉钉企业应用(个人上课提醒)</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -580,10 +579,10 @@ async function onResetWizard() {
 
     <DutyRosterSection v-if="isAdmin()" :admin="true" />
 
-    <TeacherSwapSection v-if="isAdmin()" :admin="true" />
+    <!-- 老师调课总览已在调课管理页(管理员视图),这里不再重复挂(R6) -->
 
     <section v-if="isAdmin() && demoAvailable" class="ios-section" data-testid="demo-card">
-      <div class="ios-section-title">示范资料</div>
+      <div class="ios-section-title">日常运维二 · 示范资料</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -609,7 +608,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="smtp-card">
-      <div class="ios-section-title">通知信件(SMTP)</div>
+      <div class="ios-section-title">日常运维三 · 通知信件(SMTP)</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -656,7 +655,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="backup-card">
-      <div class="ios-section-title">资料备份与还原</div>
+      <div class="ios-section-title">日常运维四 · 资料备份与还原</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -716,7 +715,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="scheduling-card">
-      <div class="ios-section-title">排课设置</div>
+      <div class="ios-section-title">日常运维五 · 排课设置</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -748,7 +747,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section v-if="isAdmin()" class="ios-section" data-testid="patrol-card">
-      <div class="ios-section-title">课堂巡视情况记录表</div>
+      <div class="ios-section-title">日常运维六 · 课堂巡视情况记录表</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>
@@ -771,7 +770,7 @@ async function onResetWizard() {
     </div></div></section>
 
     <section class="ios-section">
-      <div class="ios-section-title">设置精灵</div>
+      <div class="ios-section-title">日常运维七 · 设置精灵</div>
       <div class="ios-card">
         <div class="ios-card-body">
       <n-space vertical>

@@ -22,8 +22,10 @@ const roleLabels = computed(() => (auth.user?.roles ?? []).map((r) => ROLE_LABEL
 // 重的那个不画,只留与名字不同的角色(例如教务主任)。
 const otherRoleLabels = computed(() => roleLabels.value.filter((l) => l !== auth.user?.display_name))
 
-// 手机尺寸默认收合侧边栏:390px 宽的萤幕若被 220px 侧栏占去,课表几乎没有空间
-const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
+// 边栏收合功能已取消(Jason 2026-11-04:收合后很难看,箭头直接取消):
+// 边栏固定 220px 展开,不再有收合箭头;手机端本来就用抽屉菜单,不走边栏,
+// 所以 collapsed 恒为 false,下面的收合态样式与两字图标规则不再生效、仅作保留。
+const collapsed = ref(false)
 // 手机适配(2026-10-30 菜单精简+手机适配):窄屏不再留 80px 收合边栏占地方,
 // 边栏改成抽屉——平时完全不占屏,点左上角菜单钮才滑出来,选完自动收回。
 // 桌面端仍用原来的悬浮玻璃边栏,逻辑不动。
@@ -94,7 +96,8 @@ const menuOptions = computed<MenuOption[]>(() => {
       children: [
         menuItem('substitution-center', '调代课中心'),
         leaves,
-        menuItem('substitutions', '调代课处理'),
+        // 调代课处理退出菜单(2026-11-05 归并 R2):对调已搬进调代课中心,
+        // 处理页路由保留,原页面直接输地址仍能进,菜单不再列出。
         // 今日调代课退出菜单(2026-10-30 菜单精简):当日看板的内容已在调代课中心
         // (当日已安排/请假人数 + 待处理),入口改放调代课中心顶部的「今日看板」按钮,
         // 路由保留,直接输地址仍能进,功能没删。
@@ -233,10 +236,7 @@ async function onLogout() {
       style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.35)); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 20px; margin: 12px 0 12px 12px; box-shadow: 0 12px 40px rgba(30, 60, 120, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95)"
       :collapsed-width="80"
       :width="220"
-      show-trigger
       :collapsed="collapsed"
-      @collapse="collapsed = true"
-      @expand="collapsed = false"
     >
       <!-- 边栏悬浮圆角玻璃(Jason 2026-10-29 照片定的 Liquid Glass 效果):
         不再是贴满左边的整列,而是一块圆角玻璃板悬浮在页面底色上——

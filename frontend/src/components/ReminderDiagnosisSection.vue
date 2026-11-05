@@ -89,7 +89,7 @@ function tagType(s: string): 'success' | 'warning' | 'error' {
 
 <template>
   <section class="ios-section" data-testid="reminder-diagnosis">
-    <div class="ios-section-title">提醒诊断(没收到提醒时查这里)</div>
+    <div class="ios-section-title">日常运维一 · 提醒诊断(没收到提醒时查这里)</div>
     <div class="ios-card">
       <div class="ios-card-body">
         <n-space vertical>

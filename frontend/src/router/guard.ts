@@ -53,11 +53,13 @@ export function decideRoute(
     return 'timetable-query'
   }
 
-  // 首次登录引导:年级主任/管理员在尚未完成初始设置时,自动进入精灵(精灵内可略过)
+  // 首次登录引导:年级主任/管理员在尚未完成初始设置时,自动进入开学建置(2026-11-05
+  // 起替代旧精灵;旧精灵仍可从系统管理手动重启,故 wizard 目标也放行)。
+  // 开学建置第 4 步的「完成开学建置」会把 completed 置 true,之后不再导向。
   const canSetup = auth.hasRole('director') || auth.hasRole('admin')
-  if (canSetup && name !== 'wizard' && !AUTH_PAGES.has(name)) {
+  if (canSetup && name !== 'setup-flow' && name !== 'wizard' && !AUTH_PAGES.has(name)) {
     if (wizardState && !wizardState.completed) {
-      return 'wizard'
+      return 'setup-flow'
     }
   }
   return true

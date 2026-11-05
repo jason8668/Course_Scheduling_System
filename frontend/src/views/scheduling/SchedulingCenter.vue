@@ -5,6 +5,7 @@ import {
 } from 'naive-ui'
 import { classLabel } from '@/utils/labels'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { crossTableNote, extraRows } from '@/components/timetable/crossTable'
 import SpecialDaySection from '@/components/scheduling/SpecialDaySection.vue'
 import WorkdayCopySection from '@/components/scheduling/WorkdayCopySection.vue'
@@ -138,7 +139,6 @@ async function loadSemester(id: number) {
   if (active) attachJob(active)
   published.value = await getPublishedTimetable(id).catch(() => null)
   resultClassId.value = published.value?.classes[0]?.id ?? null
-  await loadResultPeriods()
 }
 
 async function reloadDrafts() {
@@ -865,31 +865,9 @@ async function onCheckDraft(t: TimetableBrief) {
     warnShow.value = true
   }
 }
-// ── 结果查看(已发布课表,唯读)──
+// ── 结果查看(已发布课表):只留入口,表本身在课表查询看(R4)──
 const published = ref<PublishedTimetable | null>(null)
 const resultClassId = ref<number | null>(null)
-const resultPeriods = ref<PeriodCell[]>([])
-async function loadResultPeriods() {
-  let table: PeriodTable | null = defaultTable.value
-  if (resultClassId.value) {
-    try {
-      table = await getClassPeriodTable(resultClassId.value)
-    } catch {
-      table = defaultTable.value
-    }
-  }
-  resultPeriods.value = (table?.periods ?? []) as PeriodCell[]
-}
-const resultEntries = computed<GridEntry[]>(() => {
-  if (!published.value || !resultClassId.value) return []
-  return published.value.entries
-    .filter((e) => e.class_ids.includes(resultClassId.value!))
-    .map((e) => ({
-      id: e.id, weekday: e.weekday, period_no: e.period_no, span: e.span, locked: e.locked,
-      subject: e.subject, teacher: e.teachers.join('、'), room: e.room ?? undefined,
-      week: weekTag(e.week_parity),
-    }))
-})
 function openResult() {
   document.getElementById('sc-result')?.scrollIntoView({ behavior: 'smooth' })
 }
@@ -925,7 +903,7 @@ onUnmounted(() => {
 
     <section class="ios-section">
       <div class="ios-section-title">
-        <span>配课</span>
+        <span>一 · 配课</span>
         <n-space>
           <n-button size="small" text type="primary" @click="openCreate">
             新增配课
@@ -1083,7 +1061,7 @@ onUnmounted(() => {
 
     <section class="ios-section" style="animation-delay: 60ms">
       <div class="ios-section-title">
-        <span>手动排课</span>
+        <span>二 · 排课（手动微调）</span>
         <n-space>
           <n-select
             v-if="drafts.length" :value="ttId" :options="draftOptions"
@@ -1183,7 +1161,7 @@ onUnmounted(() => {
 
     <section class="ios-section" style="animation-delay: 120ms">
       <div class="ios-section-title">
-        <span>自动排课</span>
+        <span>二 · 排课（自动排课）</span>
       </div>
       <div class="ios-card">
         <div class="ios-card-body">
@@ -1303,7 +1281,7 @@ onUnmounted(() => {
 
     <section class="ios-section" style="animation-delay: 180ms">
       <div class="ios-section-title">
-        <span>版本与发布</span>
+        <span>三 · 版本与发布</span>
         <n-button size="small" text type="primary" @click="onCreateDraft">
           新增草稿
         </n-button>
@@ -1368,22 +1346,26 @@ onUnmounted(() => {
 
     <section id="sc-result" class="ios-section" style="animation-delay: 240ms">
       <div class="ios-section-title">
-        <span>结果查看（已发布课表）</span>
+        <span>五 · 结果查看（已发布课表）</span>
       </div>
       <div class="ios-card">
         <n-empty v-if="!published" description="本学期还没有已发布的课表" style="padding: 24px 0" />
         <template v-else>
-          <div style="padding: 12px 16px 0">
-            <n-select
-              :value="resultClassId" :options="published.classes.map((c) => ({ label: c.name, value: c.id }))"
-              placeholder="选择班级" style="width: 200px" filterable @update:value="(v: number) => { resultClassId = v; loadResultPeriods() }"
-            />
-          </div>
           <div style="padding: 12px 16px">
-            <n-empty v-if="!resultClassId" description="请选择班级" />
-            <TimetableGrid
-              v-else :periods="resultPeriods" :entries="resultEntries" readonly
-            />
+            <n-space align="center" :wrap="true">
+              <n-select
+                :value="resultClassId" :options="published.classes.map((c) => ({ label: c.name, value: c.id }))"
+                placeholder="选择班级" style="width: 200px" filterable @update:value="(v: number) => { resultClassId = v }"
+              />
+              <RouterLink :to="{ name: 'timetable-query', query: { semester_id: sid, class_id: resultClassId } }">
+                <n-button type="primary" :disabled="!resultClassId">
+                  去课表查询查看 →
+                </n-button>
+              </RouterLink>
+            </n-space>
+            <div class="ios-row-sub" style="margin-top: 8px">
+              已发布课表只在课表查询看，排课中心不再另嵌一张表，免得两处对不上。
+            </div>
           </div>
         </template>
       </div>

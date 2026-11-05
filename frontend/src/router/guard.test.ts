@@ -44,10 +44,11 @@ describe('decideRoute', () => {
     expect(decideRoute(a, 'dashboard', false, null)).toBe('change-password')
   })
 
-  it('主任/管理员:初始设置未完成时导向精灵,完成后放行', () => {
+  it('主任/管理员:初始设置未完成时导向开学建置,完成后放行', () => {
     const a = auth(['director'])
-    expect(decideRoute(a, 'dashboard', false, { completed: false })).toBe('wizard')
+    expect(decideRoute(a, 'dashboard', false, { completed: false })).toBe('setup-flow')
     expect(decideRoute(a, 'dashboard', false, { completed: true })).toBe(true)
+    expect(decideRoute(a, 'setup-flow', false, { completed: false })).toBe(true)
     expect(decideRoute(a, 'wizard', false, { completed: false })).toBe(true)
     expect(decideRoute(a, 'dashboard', false, null)).toBe(true)
   })

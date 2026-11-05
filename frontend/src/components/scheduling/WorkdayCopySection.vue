@@ -144,7 +144,7 @@ onMounted(load)
 
 <template>
   <section class="ios-section">
-    <div class="ios-section-title">调休日课表复制</div>
+    <div class="ios-section-title">四 · 调休日课表复制</div>
     <div class="ios-card">
       <div class="ios-card-body">
         <div class="ios-row-sub">
