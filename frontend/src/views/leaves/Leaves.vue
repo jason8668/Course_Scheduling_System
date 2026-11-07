@@ -225,7 +225,7 @@ function rangeText(l: LeaveRequest): string {
       </section>
 
       <n-alert v-if="truncated" type="warning" :bordered="false" data-testid="lv-truncated">
-        只显示最新的 {{ MAX_LEAVE_ROWS }} 张假单,更早的未列出;要查更早的请到「调代课纪录」以日期区间查询。
+        只显示最新的 {{ MAX_LEAVE_ROWS }} 张假单,更早的未列出;要查更早的请到调代课中心点「查看全部纪录」,以日期区间查询。
       </n-alert>
 
       <n-empty v-if="!leaves.length" description="尚无请假纪录" />

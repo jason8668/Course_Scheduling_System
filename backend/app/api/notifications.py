@@ -1,10 +1,14 @@
 """通知:教师端(铃铛、确认收到)与主任看板(确认状态、再次提醒)(M4-3)。"""
 
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_active_user, require_roles
+from app.core.config import settings
 from app.core.db import get_db
 from app.models.notification import Notification
 from app.models.user import Role, User
@@ -90,15 +94,29 @@ def board(
     semester_id: int = Query(...),
     teacher_id: int | None = Query(default=None),
     unacknowledged_only: bool = Query(default=False),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
     db: Session = Depends(get_db),
     _: User = Depends(registrar),
 ):
-    """全校通知的确认状态;可筛教师、可只看未确认者。"""
+    """全校通知的确认状态;可筛教师、可只看未确认者、可按建立日期区间筛
+    (统计中心三档范围用)。日期按学校时区的日界切。"""
     stmt = select(Notification).where(Notification.semester_id == semester_id)
     if teacher_id is not None:
         stmt = stmt.where(Notification.teacher_id == teacher_id)
     if unacknowledged_only:
         stmt = stmt.where(Notification.acknowledged_at.is_(None))
+    tz = ZoneInfo(settings.tz)
+    # 日界按学校时区切,但 bound 一律换算成 UTC 时刻再绑定:
+    # SQLite 绑定时会把时区直接丢掉只留墙钟时间,传校时墙钟会差 8 小时;
+    # Postgres 上 aware 时间按时刻比较,传 UTC 同样正确。
+    if date_from is not None:
+        lo = datetime.combine(date_from, time.min, tzinfo=tz).astimezone(timezone.utc)
+        stmt = stmt.where(Notification.created_at >= lo)
+    if date_to is not None:
+        hi = datetime.combine(
+            date_to + timedelta(days=1), time.min, tzinfo=tz).astimezone(timezone.utc)
+        stmt = stmt.where(Notification.created_at < hi)
     rows = db.scalars(stmt.order_by(Notification.id.desc())).all()
     return [
         TeacherNotificationStatus(

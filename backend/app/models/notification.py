@@ -24,8 +24,9 @@ class NotificationType(enum.StrEnum):
     substitution_assigned = "substitution_assigned"      # 被指派代课(M4-2)
     substitution_cancelled = "substitution_cancelled"    # 原订代课取消(销假级联)
     timetable_published = "timetable_published"          # 课表发布(M4-3)
-    duty_swap_requested = "duty_swap_requested"          # 行政值日换班申请(站内通知,不发钉钉群)
-    teacher_swap_requested = "teacher_swap_requested"  # 老师自主调课申请(站内通知,不发钉钉群)
+    duty_swap_requested = "duty_swap_requested"          # 行政值日换班申请
+    teacher_swap_requested = "teacher_swap_requested"  # 老师自主调课申请
+    monthly_hours = "monthly_hours"                    # 月度课时确认(每月最后一天 17:00)
 
 
 class Notification(Base):

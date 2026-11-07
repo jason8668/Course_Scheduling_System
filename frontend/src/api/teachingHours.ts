@@ -21,7 +21,7 @@ export interface TeachingHoursReport {
   total_periods: number
 }
 
-export type HoursScope = 'week' | 'semester' | 'custom'
+export type HoursScope = 'month' | 'week' | 'semester' | 'custom'
 
 export interface HoursQuery {
   semester_id: number

@@ -53,10 +53,14 @@ export const acknowledge = (id: number): Promise<Notification> =>
 
 export const notificationBoard = (
   semesterId: number,
-  opts: { unacknowledgedOnly?: boolean } = {},
-): Promise<BoardEntry[]> =>
-  apiGet(`/notifications?semester_id=${semesterId}`
-    + (opts.unacknowledgedOnly ? '&unacknowledged_only=true' : ''))
+  opts: { unacknowledgedOnly?: boolean, dateFrom?: string | null, dateTo?: string | null } = {},
+): Promise<BoardEntry[]> => {
+  const p = new URLSearchParams({ semester_id: String(semesterId) })
+  if (opts.unacknowledgedOnly) p.set('unacknowledged_only', 'true')
+  if (opts.dateFrom) p.set('date_from', opts.dateFrom)
+  if (opts.dateTo) p.set('date_to', opts.dateTo)
+  return apiGet(`/notifications?${p.toString()}`)
+}
 
 export const remind = (id: number): Promise<Notification> =>
   apiPost(`/notifications/${id}/remind`)

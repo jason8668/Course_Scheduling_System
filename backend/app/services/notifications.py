@@ -2,9 +2,12 @@
 
 **站内通知永远送达**:写入 `notifications` 一列即完成——铃铛轮询读这张表。
 **Email 是加分**:资料 commit 后才排入寄送伫列,寄失败不影响课务。
+**个人钉钉是加分**:企业内部应用的工作通知,一对一发给通知的收件老师,
+寄失败只记日志,不影响站内通知与课务。
 
-寄送以 `NotificationChannel` 分层(architecture.md §5.3):MVP 两个管道,站内与 Email;
-v2 加 webhook / 钉钉 只需再实作一个 channel、append 进 `CHANNELS`。
+寄送以 `NotificationChannel` 分层(architecture.md §5.3):站内、Email、
+个人钉钉三个管道。钉钉群机器人已于 2026-11-06 停用:群里不再发任何消息,
+群 Webhook 配置保留未删,但不再有任何代码路径往群里发消息。
 """
 
 import logging
@@ -17,11 +20,12 @@ from sqlalchemy.orm import Session
 
 from app.models.basedata import Teacher
 from app.models.notification import Notification, NotificationType
+from app.services.dingtalk_app import DingTalkAppClient
 
 logger = logging.getLogger(__name__)
 
 _OUTBOX_KEY = "notification_email_outbox"
-_DINGTALK_OUTBOX_KEY = "notification_dingtalk_outbox"
+_PERSONAL_DINGTALK_OUTBOX_KEY = "notification_personal_dingtalk_outbox"
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,51 +72,54 @@ class EmailChannel:
 
 
 @dataclass(frozen=True, slots=True)
-class _DingTalkMsg:
-    webhook: str
-    secret: str
+class _PersonalDingTalkMsg:
+    app_key: str
+    app_secret: str
+    agent_id: str
+    userid: str | None  # 已缓存的钉钉 userid;没有时寄出阶段按手机号查
+    mobile: str | None
+    teacher_name: str
     title: str
     text: str
 
 
-# 钉钉只发调课/代课:调课(swap)与代课都走 substitution_* 类型(含双方通知与取消);
-# 请假(leave_registered / leave_cancelled)只留站内通知,不进钉钉群。课表发布等
-# 其他类型也不发钉钉——规则收在这一处,新增 notify 与「再次提醒」重发都同样受限。
-_DINGTALK_TYPE_VALUES = frozenset({
-    NotificationType.substitution_assigned.value,
-    NotificationType.substitution_cancelled.value,
-})
+class PersonalDingTalkChannel:
+    """个人钉钉(企业内部应用工作通知):与 Email 相同走寄件匣模式——在交易内
+    就把应用三件套与收件人备好(after_commit 阶段已不能再查 DB),commit 后
+    只做发送,交易 rollback 就不送。未配置企业应用、或收件老师既无钉钉 userid
+    又无手机号时静默略过。所有通知类型都走这条路:请假、调代课、课表发布、
+    月度课时确认,全部一对一发给相关老师本人,群里不再发任何消息
+    (2026-11-06 起取代旧的「群里只发调代课」规则)。
 
+    寄出阶段:有 userid 直接发;没有则按手机号 getbymobile 查一次(查到
+    也不回写教师档案——after_commit 阶段不写 DB,下次由上课提醒/月度任务
+    的任务内解析回填)。"""
 
-class DingTalkChannel:
-    """钉钉群机器人:与 Email 相同走寄件匣模式——在交易内就把 Webhook/密钥/
-    校名/文案全部备好(after_commit 阶段已不能再查 DB),commit 后只做 POST,
-    交易 rollback 就不送。未设置 Webhook 时静默略过。内容是给全群看的广播,
-    只同步标题与摘要。只发调课/代课类型(见 _DINGTALK_TYPE_VALUES),请假不发。
-
-    群广播口径(Jason 2026-10-30 给的模板原样):正文第一句就说清谁代谁的课,
-    不用第二人称“您”,所以钉钉层不再贴“相关教师:”标、也不再把“您”换成名字——
-    旧做法(2026-10-26)已被这版正文取代,正文由调代课服务直接写成广播体。"""
-
-    key = "dingtalk"
+    key = "personal_dingtalk"
 
     def deliver(self, db: Session, notification: Notification, teacher: Teacher | None) -> None:
-        if notification.type not in _DINGTALK_TYPE_VALUES:
+        if teacher is None:
             return
         from app.services import settings as app_settings
 
-        cfg = app_settings.dingtalk_config(db)
+        cfg = app_settings.dingtalk_app_config(db)
         if not cfg.configured:
             return
-        school = app_settings.school_name(db)
-        outbox = db.info.setdefault(_DINGTALK_OUTBOX_KEY, [])
-        title = f"[{school}] {notification.title}"
+        userid = teacher.dingtalk_userid
+        mobile = None if userid else (teacher.phone or None)
+        if not userid and not mobile:
+            return
+        title = notification.title
         body = notification.body or notification.title
-        text = f"### {notification.title}\n\n{body}"
-        outbox.append(_DingTalkMsg(cfg.webhook, cfg.secret, title, text))
+        text = f"### {title}\n\n{body}"
+        outbox = db.info.setdefault(_PERSONAL_DINGTALK_OUTBOX_KEY, [])
+        outbox.append(_PersonalDingTalkMsg(
+            cfg.app_key, cfg.app_secret, cfg.agent_id,
+            userid, mobile, teacher.name, title, text,
+        ))
 
 
-CHANNELS: list[NotificationChannel] = [InAppChannel(), EmailChannel(), DingTalkChannel()]
+CHANNELS: list[NotificationChannel] = [InAppChannel(), EmailChannel(), PersonalDingTalkChannel()]
 
 
 def notification_subject_prefix(db: Session) -> str:
@@ -165,53 +172,40 @@ def _flush_email_outbox(session: Session) -> None:
 @event.listens_for(Session, "after_rollback")
 def _discard_email_outbox(session: Session) -> None:
     session.info.pop(_OUTBOX_KEY, None)
-    session.info.pop(_DINGTALK_OUTBOX_KEY, None)
+    session.info.pop(_PERSONAL_DINGTALK_OUTBOX_KEY, None)
 
 
-# ── 钉钉机器人发送 ──────────────────────────────────────────
-def dingtalk_signed_url(webhook: str, secret: str) -> str:
-    """加签:sign = base64(HMAC-SHA256(key=secret, msg="{timestamp}\n{secret}"))。"""
-    if not secret:
-        return webhook
-    import base64
-    import hashlib
-    import hmac
-    import time
-    from urllib.parse import quote_plus
-
-    timestamp = str(round(time.time() * 1000))
-    digest = hmac.new(
-        secret.encode(), f"{timestamp}\n{secret}".encode(), digestmod=hashlib.sha256
-    ).digest()
-    sign = quote_plus(base64.b64encode(digest))
-    sep = "&" if "?" in webhook else "?"
-    return f"{webhook}{sep}timestamp={timestamp}&sign={sign}"
-
-
-def send_dingtalk(webhook: str, secret: str, title: str, text: str) -> None:
-    """POST 一则 markdown 消息到钉钉群机器人;失败掷出例外(由呼叫端决定如何处理)。"""
-    import httpx
-
-    url = dingtalk_signed_url(webhook, secret)
-    resp = httpx.post(
-        url,
-        json={"msgtype": "markdown", "markdown": {"title": title, "text": text}},
-        timeout=5.0,
-    )
-    resp.raise_for_status()
-    payload = resp.json()
-    if payload.get("errcode") != 0:
-        raise RuntimeError(f"钉钉回报错误:{payload.get('errmsg', payload)}")
-
-
+# ── 个人钉钉发送 ────────────────────────────────────────────
 @event.listens_for(Session, "after_commit")
-def _flush_dingtalk_outbox(session: Session) -> None:
-    outbox: list[_DingTalkMsg] = session.info.pop(_DINGTALK_OUTBOX_KEY, [])
+def _flush_personal_dingtalk_outbox(session: Session) -> None:
+    outbox: list[_PersonalDingTalkMsg] = session.info.pop(_PERSONAL_DINGTALK_OUTBOX_KEY, [])
+    if not outbox:
+        return
+    # 同一次 commit 里的消息共用一个 client(应用三件套全局唯一,token 只取一次);
+    # 单条失败只记日志跳过,不影响其他老师。站内通知已送达,个人钉钉只是加分。
+    client: DingTalkAppClient | None = None
+    client_key: tuple[str, str, str] | None = None
     for msg in outbox:
         try:
-            send_dingtalk(msg.webhook, msg.secret, title=msg.title, text=msg.text)
-        except Exception:  # noqa: BLE001 - 站内通知已送达;钉钉只是广播,失败留痕即可
-            logger.warning("钉钉群通知发送失败(标题:%s),站内通知不受影响", msg.title)
+            key = (msg.app_key, msg.app_secret, msg.agent_id)
+            if client is None or key != client_key:
+                client = DingTalkAppClient(*key)
+                client_key = key
+            userid = msg.userid
+            if not userid and msg.mobile:
+                userid = client.get_userid(msg.mobile)
+            if not userid:
+                logger.warning(
+                    "个人钉钉跳过:%s 无钉钉 userid(未填手机号或不在企业通讯录)",
+                    msg.teacher_name,
+                )
+                continue
+            client.send_work_notification(userid, msg.title, msg.text)
+        except Exception:  # noqa: BLE001 - 站内通知已送达;个人钉钉失败留痕即可
+            logger.warning(
+                "个人钉钉发送失败(%s,标题:%s),站内通知不受影响",
+                msg.teacher_name, msg.title,
+            )
 
 
 # ── 读取与状态 ──────────────────────────────────────────────

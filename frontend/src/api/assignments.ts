@@ -146,7 +146,7 @@ export const getSchoolSettings = () => apiGet<SchoolSettings>('/settings/school'
 export const saveSchoolSettings = (body: SchoolSettings) =>
   apiPut<SchoolSettings>('/settings/school', body)
 
-// ── 钉钉群机器人(管理员)──
+// ── 钉钉群机器人设置(已停用,配置保留未删;2026-11-06 起群里不再发任何消息)──
 export interface DingTalkSettings {
   webhook: string
   configured: boolean
@@ -157,8 +157,6 @@ const dingtalkBody = (webhook: string, secretValue: string) =>
   Object.assign({ webhook }, { ['sec' + 'ret']: secretValue })
 export const saveDingTalkSettings = (webhook: string, secretValue: string) =>
   apiPut<DingTalkSettings>('/settings/dingtalk', dingtalkBody(webhook, secretValue))
-export const testDingTalk = (webhook: string, secretValue: string) =>
-  apiPost<{ sent: boolean }>('/settings/dingtalk/test', dingtalkBody(webhook, secretValue))
 
 // ── 钉钉企业内部应用(个人上课提醒,管理员)──
 export interface DingTalkAppSettings {

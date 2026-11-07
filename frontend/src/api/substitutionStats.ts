@@ -37,6 +37,13 @@ export interface MonthlyReport {
   details: StatDetail[]
 }
 
+export interface RangeReport {
+  date_from: string
+  date_to: string
+  summaries: TeacherSummary[]
+  details: StatDetail[]
+}
+
 function qs(sid: number, year: number, month: number, teacherId?: number | null): string {
   const p = new URLSearchParams({
     semester_id: String(sid), year: String(year), month: String(month),
@@ -48,6 +55,16 @@ function qs(sid: number, year: number, month: number, teacherId?: number | null)
 export const getStats = (
   sid: number, year: number, month: number, teacherId?: number | null,
 ): Promise<MonthlyReport> => apiGet(`/substitution-stats?${qs(sid, year, month, teacherId)}`)
+
+export const getStatsRange = (
+  sid: number, dateFrom: string, dateTo: string, teacherId?: number | null,
+): Promise<RangeReport> => {
+  const p = new URLSearchParams({
+    semester_id: String(sid), date_from: dateFrom, date_to: dateTo,
+  })
+  if (teacherId) p.set('teacher_id', String(teacherId))
+  return apiGet(`/substitution-stats/range?${p.toString()}`)
+}
 
 export const getMyStats = (
   sid: number, year: number, month: number,

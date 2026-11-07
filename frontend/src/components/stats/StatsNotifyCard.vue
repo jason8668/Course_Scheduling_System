@@ -5,7 +5,12 @@ import type { ApiError } from '@/api/client'
 import { notificationBoard, remind } from '@/api/notifications'
 import type { BoardEntry } from '@/api/notifications'
 
-const props = defineProps<{ semesterId: number | null }>()
+const props = defineProps<{
+  semesterId: number | null
+  scope: 'month' | 'semester' | 'custom'
+  dateFrom: string | null
+  dateTo: string | null
+}>()
 const message = useMessage()
 
 const unackOnly = ref(true)
@@ -15,9 +20,13 @@ async function reload() {
     entries.value = []
     return
   }
-  entries.value = await notificationBoard(props.semesterId, { unacknowledgedOnly: unackOnly.value })
+  entries.value = await notificationBoard(props.semesterId, {
+    unacknowledgedOnly: unackOnly.value,
+    dateFrom: props.dateFrom, dateTo: props.dateTo,
+  })
 }
 watch(() => props.semesterId, reload)
+watch([() => props.scope, () => props.dateFrom, () => props.dateTo], reload)
 onMounted(reload)
 const unackCount = computed(() => entries.value.filter((e) => !e.acknowledged_at).length)
 async function onRemind(e: BoardEntry) {

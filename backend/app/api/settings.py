@@ -137,37 +137,10 @@ def put_dingtalk(
     db.add(AuditLog(
         user_id=user.id, username=user.username, action="update_dingtalk",
         target_type="app_setting", target_id=None,
-        detail="钉钉群机器人设置更新"[:500],
+        detail="钉钉 Webhook 设置更新"[:500],
     ))
     db.commit()
     return _dingtalk_out(db)
-
-
-@router.post("/settings/dingtalk/test", status_code=status.HTTP_200_OK)
-def test_dingtalk(
-    body: DingTalkSettingsIn | None = None,
-    db: Session = Depends(get_db), _: User = Depends(admin_only),
-):
-    """发一则测试消息到钉钉群,当场回报结果。可用表单上的值先测再存。"""
-    from app.services.notifications import send_dingtalk
-
-    cfg = app_settings.dingtalk_config(db)
-    webhook = (body.webhook if body and body.webhook else cfg.webhook).strip()
-    picked = cfg.secret
-    if body and body.secret:
-        picked = body.secret
-    if not webhook:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "尚未设置钉钉机器人 Webhook")
-    try:
-        send_dingtalk(
-            webhook, picked,
-            title="排课系统测试消息",
-            text="### 排课系统测试消息\n\n收到这则消息,代表钉钉群机器人设置正确。"
-                 "之后调课、代课的通知会同步推送到这个群。",
-        )
-    except Exception as exc:  # noqa: BLE001 - 把钉钉错误原文回给管理员
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"发送失败:{exc}") from exc
-    return {"sent": True}
 
 
 def _dingtalk_app_out(db: Session) -> DingTalkAppSettingsOut:

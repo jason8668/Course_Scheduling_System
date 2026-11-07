@@ -239,9 +239,10 @@ def test_cancelling_a_leave_notifies_the_assigned_substitute(school):
     assert "王师" in notes[0].title
     assert "2 节" in notes[0].body
 
-    # 王师本人:代登通知 + 销假通知
+    # 王师本人:课表发布通知 + 代登通知 + 销假通知
     wang_notes = db.query(Notification).filter_by(teacher_id=tid).all()
     assert [n.type for n in wang_notes] == [
+        NotificationType.timetable_published.value,
         NotificationType.leave_registered.value,
         NotificationType.leave_cancelled.value,
     ]
@@ -316,7 +317,8 @@ def test_registrar_on_behalf_notifies_the_teacher(school):
     client, db, sid, tid = school
     _leave(client, sid, tid, start_date=MON.isoformat(), end_date=MON.isoformat())
 
-    notes = db.query(Notification).filter_by(teacher_id=tid).all()
+    notes = db.query(Notification).filter_by(
+        teacher_id=tid, type=NotificationType.leave_registered.value).all()
     assert len(notes) == 1
     assert notes[0].type == NotificationType.leave_registered.value
     assert "已为您登记" in notes[0].title

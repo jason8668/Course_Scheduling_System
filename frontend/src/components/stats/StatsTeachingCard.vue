@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { NButton, NDatePicker, NEmpty, NRadioButton, NRadioGroup, NSelect, NSpace } from 'naive-ui'
+import { NButton, NEmpty, NSelect, NSpace } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { listClassUnits, listTeachers } from '@/api/basedata'
 import { getTeachingHours } from '@/api/teachingHours'
-import type { HoursScope, TeachingHoursReport } from '@/api/teachingHours'
+import type { TeachingHoursReport } from '@/api/teachingHours'
 
-const props = defineProps<{ semesterId: number | null }>()
+// 范围由统计中心统一给(本月/本学期/自定义),本卡只跟著算,不自己再切范围。
+const props = defineProps<{
+  semesterId: number | null
+  scope: 'month' | 'semester' | 'custom'
+  dateFrom: string | null
+  dateTo: string | null
+}>()
 
-const scope = ref<HoursScope>('week')
-const range = ref<[number, number] | null>(null)
 const teacherId = ref<number | null>(null)
 const grade = ref<number | null>(null)
 const teachers = ref<{ label: string; value: number }[]>([])
 const grades = ref<{ label: string; value: number }[]>([])
 const report = ref<TeachingHoursReport | null>(null)
 
-function fmtDate(ts: number): string {
-  const d = new Date(ts)
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
 async function reload() {
   if (!props.semesterId) {
     report.value = null
@@ -31,13 +30,14 @@ async function reload() {
   grades.value = [...new Set(classes.map((c) => c.grade))].sort((a, b) => a - b)
     .map((g) => ({ label: `${g}年级`, value: g }))
   report.value = await getTeachingHours({
-    semester_id: props.semesterId, scope: scope.value,
-    date_from: scope.value === 'custom' && range.value ? fmtDate(range.value[0]) : null,
-    date_to: scope.value === 'custom' && range.value ? fmtDate(range.value[1]) : null,
+    semester_id: props.semesterId, scope: props.scope,
+    date_from: props.scope === 'custom' ? props.dateFrom : null,
+    date_to: props.scope === 'custom' ? props.dateTo : null,
     teacher_id: teacherId.value, grade: grade.value,
   })
 }
 watch(() => props.semesterId, reload)
+watch([() => props.scope, () => props.dateFrom, () => props.dateTo], reload)
 onMounted(reload)
 const byGradeText = computed(() => (r: Record<string, number>) =>
   Object.entries(r).map(([g, n]) => `${g}年级 ${n} 节`).join('、'))
@@ -49,21 +49,6 @@ const byGradeText = computed(() => (r: Record<string, number>) =>
       口径：已发布课表按日期展开，叠加请假调代课；未来日期不计入「已上」。
     </div>
     <n-space align="center" :wrap="true" style="margin-bottom: 12px">
-      <n-radio-group v-model:value="scope" @update:value="reload">
-        <n-radio-button value="week">
-          本周
-        </n-radio-button>
-        <n-radio-button value="semester">
-          本学期
-        </n-radio-button>
-        <n-radio-button value="custom">
-          自选日期
-        </n-radio-button>
-      </n-radio-group>
-      <n-date-picker
-        v-if="scope === 'custom'" v-model:value="range" type="daterange"
-        style="width: 260px" @update:value="reload"
-      />
       <n-select
         v-model:value="teacherId" :options="teachers"
         placeholder="老师（空=全部）" style="width: 160px" filterable clearable @update:value="reload"

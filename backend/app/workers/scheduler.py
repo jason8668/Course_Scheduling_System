@@ -8,6 +8,7 @@ RQ worker 以 `with_scheduler=True` 启动,内建排程器会在到期时把排�
 心跳任务只证明排程器存活(写一行 log 并排下一次)。以固定 job_id 续期,重启不会堆叠。
 """
 
+import calendar
 import logging
 from datetime import datetime, timedelta
 
@@ -25,6 +26,8 @@ CLASS_REMINDER_JOB_ID = "class-reminder"
 CLASS_REMINDER_INTERVAL = timedelta(minutes=5)
 HOLIDAY_SYNC_JOB_ID = "holiday-sync"
 HOLIDAY_SYNC_INTERVAL = timedelta(days=1)
+MONTHLY_HOURS_JOB_ID = "monthly-hours"
+MONTHLY_HOURS_HOUR = 17  # 每月最后一天 17:00(下班时)发月度课时确认
 
 
 def _interval() -> timedelta:
@@ -47,6 +50,7 @@ def heartbeat() -> None:
         _ensure_daily_backup_scheduled()
         _ensure_class_reminder_scheduled()
         _ensure_holiday_sync_scheduled()
+        _ensure_monthly_hours_scheduled()
     finally:
         _schedule_next()  # 无论本次是否出错,下一次心跳一定排入
 
@@ -130,6 +134,36 @@ def _ensure_holiday_sync_scheduled() -> None:
         logger.warning("检查/补排假日同步失败(Redis 不可用?)")
 
 
+def _next_monthly_hours_time() -> datetime:
+    """学校时区的下一次「每月最后一天 17:00」(unaware,供 enqueue_at)。
+    若本月最后一天 17:00 已过,取下个月最后一天。"""
+    now = clock.school_now().replace(tzinfo=None)
+    last_day = calendar.monthrange(now.year, now.month)[1]
+    target = now.replace(day=last_day, hour=MONTHLY_HOURS_HOUR, minute=0, second=0, microsecond=0)
+    if target <= now:
+        year, month = (now.year + 1, 1) if now.month == 12 else (now.year, now.month + 1)
+        last_day = calendar.monthrange(year, month)[1]
+        target = target.replace(year=year, month=month, day=last_day)
+    return target
+
+
+def schedule_monthly_hours() -> None:
+    """把下一次月度课时确认排入(每月最后一天 17:00);固定 job_id,重复排入会覆盖而非堆叠。"""
+    from app.workers.monthly_hours_job import monthly_hours_job
+    ops_queue.enqueue_at(_next_monthly_hours_time(), monthly_hours_job, job_id=MONTHLY_HOURS_JOB_ID)
+
+
+def _ensure_monthly_hours_scheduled() -> None:
+    """心跳兜底:月度课时确认链若断了,在这里补排回去(断链会漏发整月的确认)。"""
+    try:
+        registry = ScheduledJobRegistry(queue=ops_queue)
+        if MONTHLY_HOURS_JOB_ID not in set(registry.get_job_ids()):
+            schedule_monthly_hours()
+            logger.warning("侦测到月度课时确认未排入,已补排,下次 %s", _next_monthly_hours_time())
+    except Exception:  # noqa: BLE001 - 自愈失败不该让心跳挂掉
+        logger.warning("检查/补排月度课时确认失败(Redis 不可用?)")
+
+
 def ensure_scheduled() -> None:
     """ops worker 启动时呼叫:确保心跳、备份、提醒与假日同步已排入(已存在则略过)。"""
     _drop_legacy_default_schedules()
@@ -152,5 +186,10 @@ def ensure_scheduled() -> None:
 
             ops_queue.enqueue(holiday_sync_job, job_id=HOLIDAY_SYNC_JOB_ID)
             logger.info("已排入假日同步(首次立即跑,之后间隔 %s)", HOLIDAY_SYNC_INTERVAL)
+        if MONTHLY_HOURS_JOB_ID not in pending:
+            # 月度课时确认只在每月最后一天 17:00 跑,首次排入不立即跑,等下一个
+            # 月底时刻;跑完任务自己续期到下个月底,心跳兜底防断链。
+            schedule_monthly_hours()
+            logger.info("已排入月度课时确认,下次 %s", _next_monthly_hours_time())
     except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
         logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")

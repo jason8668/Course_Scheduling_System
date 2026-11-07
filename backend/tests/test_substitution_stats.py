@@ -101,6 +101,39 @@ def test_month_filter_excludes_other_months(w):
     assert _stats(w, year=other_year, month=other_month)["summaries"] == []  # 别的月份没有
 
 
+# ── 范围查询:统计中心本月/本学期/自定义三档用 ───────────────
+def test_range_endpoint_returns_period_range(w):
+    from datetime import timedelta
+
+    w.teacher("王师", ["国文"])
+    w.teacher("陈师", ["国文"])
+    w.place("王师", "国文", "701", 0)
+    w.publish()
+    ap = w.leave("王师", when=WED)
+    w.assign(ap[0]["id"], type="substitute", handler_teacher_id=w.teachers["陈师"])
+
+    in_range = w.client.get(
+        f"/api/substitution-stats/range{w.q}"
+        f"&date_from={WED.isoformat()}&date_to={WED.isoformat()}").json()
+    assert in_range["date_from"] == WED.isoformat()
+    assert in_range["date_to"] == WED.isoformat()
+    assert next(
+        s for s in in_range["summaries"] if s["teacher_name"] == "陈师")["handled_count"] == 1
+
+    # 区间外没有
+    nxt = WED + timedelta(days=1)
+    out = w.client.get(
+        f"/api/substitution-stats/range{w.q}"
+        f"&date_from={nxt.isoformat()}&date_to={nxt.isoformat()}").json()
+    assert out["summaries"] == []
+
+    # 讫日早于起日 → 400
+    r = w.client.get(
+        f"/api/substitution-stats/range{w.q}"
+        f"&date_from={WED.isoformat()}&date_to={(WED - timedelta(days=1)).isoformat()}")
+    assert r.status_code == 400
+
+
 # ── 边界:跨月假单拆月计 ─────────────────────────────────────
 def test_cross_month_leave_splits_by_period_date(w):
     """林师请的假横跨月底(含两个周三,分属前后两个月),各月各计一节。

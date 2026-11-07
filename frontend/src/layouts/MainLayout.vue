@@ -101,7 +101,8 @@ const menuOptions = computed<MenuOption[]>(() => {
         // 今日调代课退出菜单(2026-10-30 菜单精简):当日看板的内容已在调代课中心
         // (当日已安排/请假人数 + 待处理),入口改放调代课中心顶部的「今日看板」按钮,
         // 路由保留,直接输地址仍能进,功能没删。
-        menuItem('substitution-log', '调代课纪录'),
+        // 调代课纪录退出菜单(2026-11-06 归并补漏):中心页四节已有「查看全部纪录 →」入口,
+        // 纪录页路由保留,菜单不再列出。
       ],
     },
     // 统计中心单列顶层:统计组只剩它一个孩子,成组就是多余一层(与排课中心同例)。
@@ -205,6 +206,9 @@ function updateIndicator() {
   }
 }
 watch([activeKey, collapsed], () => nextTick(updateIndicator))
+// 菜单内容变了也要重测指示条位置(2026-11-06):权限加载晚于首帧时,菜单先少后多,
+// 首帧量到的位置会停在错的条目上;菜单选项一变就重测,指示条跟著走。
+watch(menuOptions, () => nextTick(updateIndicator))
 onMounted(() => {
   nextTick(updateIndicator)
   window.addEventListener('resize', updateIndicator)

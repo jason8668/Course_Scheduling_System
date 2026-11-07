@@ -313,7 +313,7 @@ def _clear_swap(sub: Substitution) -> None:
 
 
 def _cn_date(d) -> str:
-    """群广播口径的日期:10月30日(用户 2026-10-30 给的模板原样)。"""
+    """通知口径的日期:10月30日(用户 2026-10-30 给的模板原样)。"""
     return f"{d.month}月{d.day}日"
 
 
@@ -322,8 +322,8 @@ def _notify_handler(
 ) -> None:
     absent = affected.leave_request.teacher
     type_cn = SUBSTITUTION_TYPE_CN[sub.type]
-    # 群广播口径(Jason 2026-10-30 给的模板原样):第一句就说清谁代谁的课,
-    # 不用第二人称“您”,站内/Email/钉钉群三处同一正文,不再由钉钉层改写。
+    # 通知口径(Jason 2026-10-30 给的模板原样):第一句就说清谁代谁的课,
+    # 不用第二人称“您”,站内/Email/个人钉钉三处同一正文,不再由钉钉层改写。
     slot = (
         f"{_cn_date(affected.date)} {affected.period_name},"
         f"{affected.class_names}《{affected.subject_name}》"
@@ -345,7 +345,7 @@ def _notify_handler(
     )
     if sub.type == SubstitutionType.swap.value:
         # 调课多了一个要到场的人:请假的甲得回来补乙那节。只通知乙,甲就会漏掉补课。
-        # 群广播同一正文(对调整件事),标题仍指向补课那节,方便原任一眼找到自己的补课。
+        # 对调同一正文(对调整件事),标题仍指向补课那节,方便原任一眼找到自己的补课。
         notifications.notify(
             db, semester_id=affected.semester_id, teacher_id=absent.id,
             type=NotificationType.substitution_assigned,

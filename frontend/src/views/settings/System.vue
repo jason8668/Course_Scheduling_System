@@ -14,7 +14,7 @@ import {
 import type { Backup, RestoreResult } from '@/api/backups'
 import {
   demoDataStatus, getDingTalkAppSettings, getDingTalkSettings, getSchedulingSettings, getSchoolSettings, loadDemoData,
-  saveDingTalkAppSettings, saveDingTalkSettings, testDingTalk, testDingTalkApp,
+  saveDingTalkAppSettings, saveDingTalkSettings, testDingTalkApp,
   saveSchedulingSettings, saveSchoolSettings,
 } from '@/api/assignments'
 import { getSmtp, saveSmtp } from '@/api/notifications'
@@ -191,11 +191,10 @@ async function onSavePatrol() {
     savingPatrol.value = false
   }
 }
-// ── 钉钉群机器人 ──
+// ── 钉钉群机器人(已停用,配置保留)──
 const dingtalk = ref({ webhook: '', secret: '' })
 const dingtalkHasSecret = ref(false)
 const savingDingtalk = ref(false)
-const testingDingtalk = ref(false)
 
 async function onSaveDingtalk() {
   savingDingtalk.value = true
@@ -204,23 +203,11 @@ async function onSaveDingtalk() {
     dingtalk.value.webhook = r.webhook
     dingtalk.value.secret = ''
     dingtalkHasSecret.value = r.has_secret
-    message.success(r.configured ? '已保存钉钉设置' : '已清空钉钉 Webhook,群通知停用')
+    message.success(r.configured ? '已保存钉钉设置' : '已清空钉钉 Webhook')
   } catch (e) {
     message.error((e as ApiError).message || '保存失败')
   } finally {
     savingDingtalk.value = false
-  }
-}
-
-async function onTestDingtalk() {
-  testingDingtalk.value = true
-  try {
-    await testDingTalk(dingtalk.value.webhook, dingtalk.value.secret)
-    message.success('测试消息已发送,请到钉钉群确认')
-  } catch (e) {
-    message.error((e as ApiError).message || '发送失败')
-  } finally {
-    testingDingtalk.value = false
   }
 }
 
@@ -488,9 +475,10 @@ async function onResetWizard() {
         <div class="ios-card-body">
       <n-space vertical>
         <n-text depth="3">
-          在钉钉群里添加「自定义机器人」(群设置 → 机器人),安全设置选「加签」,
-          把机器人的 Webhook 地址与加签密钥粘贴到这里。之后教师请假、调课、代课的
-          通知会同步推送到群里(站内通知与邮件不受影响)。清空 Webhook 即可停用。
+          钉钉群发送已停用(2026-11-06 起):请假、调课、代课、课表发布、月度课时确认
+          等通知不再发到群里,全部一对一发给相关老师本人的个人钉钉(企业内部应用
+          的工作通知),同时照常留一条站内通知。下面的 Webhook 与加签密钥保留未删,
+          只停用不删除。
         </n-text>
         <n-space align="center">
           <n-text style="width: 72px">Webhook</n-text>
@@ -506,9 +494,6 @@ async function onResetWizard() {
             :placeholder="dingtalkHasSecret ? '已设置(留空不变更)' : 'SEC 开头的加签密钥,可留空'"
             style="width: 460px" data-testid="dingtalk-secret"
           />
-          <n-button :loading="testingDingtalk" data-testid="dingtalk-test" @click="onTestDingtalk">
-            发送测试消息
-          </n-button>
           <n-button
             type="primary" :loading="savingDingtalk" data-testid="dingtalk-save"
             @click="onSaveDingtalk"

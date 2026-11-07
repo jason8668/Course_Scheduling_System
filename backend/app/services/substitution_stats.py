@@ -91,22 +91,29 @@ class MonthlyReport:
     details: list[StatDetail] = field(default_factory=list)
 
 
+@dataclass
+class RangeReport:
+    """任意日期区间的代课统计(统计中心本月/本学期/自定义三档用);数字口径与月结相同。"""
+
+    date_from: date
+    date_to: date
+    summaries: list[TeacherSummary] = field(default_factory=list)
+    details: list[StatDetail] = field(default_factory=list)
+
+
 def _next_month(year: int, month: int) -> date:
     return date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
 
 
-def monthly_report(
+def _report_in_range(
     db: Session,
     semester_id: int,
-    year: int,
-    month: int,
+    start: date,
+    end_exclusive: date,
     *,
     teacher_id: int | None = None,
-) -> MonthlyReport:
-    """某月的代课课时统计。指定 teacher_id 则只统计该教师(教师个人查询用)。"""
-    month_start = date(year, month, 1)
-    month_end = _next_month(year, month)
-
+) -> tuple[list[TeacherSummary], list[StatDetail]]:
+    """[start, end_exclusive) 内的代课汇总 + 明细;月结与范围查询共用这一份。"""
     stmt = (
         select(Substitution, AffectedPeriod)
         .join(AffectedPeriod, Substitution.affected_period_id == AffectedPeriod.id)
@@ -114,17 +121,17 @@ def monthly_report(
             Substitution.semester_id == semester_id,
             Substitution.handler_teacher_id.isnot(None),
             AffectedPeriod.status != AffectedStatus.cancelled.value,
-            AffectedPeriod.date >= month_start,
-            AffectedPeriod.date < month_end,
+            AffectedPeriod.date >= start,
+            AffectedPeriod.date < end_exclusive,
         )
     )
     if teacher_id is not None:
         stmt = stmt.where(Substitution.handler_teacher_id == teacher_id)
 
-    report = MonthlyReport(year=year, month=month)
+    details: list[StatDetail] = []
     summaries: dict[int, TeacherSummary] = {}
     rows = db.execute(stmt).all()
-    shared = _shared_daily_days(db, semester_id, month_start, month_end)
+    shared = _shared_daily_days(db, semester_id, start, end_exclusive)
     daily_days: dict[int, set[date]] = {}
 
     for sub, ap in rows:
@@ -134,7 +141,7 @@ def monthly_report(
         leave = ap.leave_request
         kind = pay_kind(sub)
         is_shared = kind == "daily" and (leave.teacher_id, ap.date) in shared
-        report.details.append(StatDetail(
+        details.append(StatDetail(
             handler_teacher_id=handler.id,
             handler_name=handler.name,
             date=ap.date,
@@ -168,9 +175,40 @@ def monthly_report(
                 if is_shared:
                     s.daily_shared_days += 1
 
-    report.details.sort(key=lambda d: (d.handler_name, d.date, d.period_no))
-    report.summaries = sorted(summaries.values(), key=lambda s: s.teacher_name)
-    return report
+    details.sort(key=lambda d: (d.handler_name, d.date, d.period_no))
+    return sorted(summaries.values(), key=lambda s: s.teacher_name), details
+
+
+def monthly_report(
+    db: Session,
+    semester_id: int,
+    year: int,
+    month: int,
+    *,
+    teacher_id: int | None = None,
+) -> MonthlyReport:
+    """某月的代课课时统计。指定 teacher_id 则只统计该教师(教师个人查询用)。"""
+    month_start = date(year, month, 1)
+    month_end = _next_month(year, month)
+    summaries, details = _report_in_range(
+        db, semester_id, month_start, month_end, teacher_id=teacher_id)
+    return MonthlyReport(year=year, month=month, summaries=summaries, details=details)
+
+
+def range_report(
+    db: Session,
+    semester_id: int,
+    start: date,
+    end: date,
+    *,
+    teacher_id: int | None = None,
+) -> RangeReport:
+    """[start, end] 闭区间的代课课时统计(统计中心三档范围用)。"""
+    from datetime import timedelta as _td
+
+    summaries, details = _report_in_range(
+        db, semester_id, start, end + _td(days=1), teacher_id=teacher_id)
+    return RangeReport(date_from=start, date_to=end, summaries=summaries, details=details)
 
 
 def _shared_daily_days(

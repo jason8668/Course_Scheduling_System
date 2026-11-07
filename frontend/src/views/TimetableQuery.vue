@@ -260,7 +260,7 @@ const entries = computed<GridEntry[]>(() => {
     </section>
 
     <template v-else-if="data">
-      <n-space align="center" :wrap="true">
+      <n-space align="center" :wrap="true" size="large">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">一步 · 选视角</span>
         <n-radio-group v-model:value="view">
           <n-radio-button value="class" data-testid="tq-view-class">班级</n-radio-button>
@@ -284,7 +284,7 @@ const entries = computed<GridEntry[]>(() => {
         </n-tag>
       </n-space>
 
-      <n-space align="center" :wrap="true">
+      <n-space align="center" :wrap="true" size="large">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">二 · 选模式</span>
         <n-radio-group v-model:value="mode">
           <n-radio-button value="week" data-testid="tq-mode-week">周课表(模板)</n-radio-button>
@@ -294,14 +294,14 @@ const entries = computed<GridEntry[]>(() => {
           v-if="mode === 'day'" v-model:value="actualDateTs" type="date"
           placeholder="选日期" style="width: 160px" data-testid="tq-actual-date"
         />
-        <n-text v-if="mode === 'day'" depth="3" style="font-size: 12px">
-          实际课表已叠加特殊日、请假代课、老师调课和放假,看到的就是那天真要上的课。
-        </n-text>
       </n-space>
+      <div v-if="mode === 'day'" style="font-size: 12px; color: rgba(60,60,67,0.6); margin-bottom: 8px">
+        实际课表已叠加特殊日、请假代课、老师调课和放假,看到的就是那天真要上的课。
+      </div>
 
 
       <section v-if="mode === 'day'" class="ios-section" data-testid="tq-actual">
-        <div class="ios-section-title">
+        <div class="ios-section-title" style="padding-left: 0">
           <span>三 · 查看</span>
         </div>
         <div class="ios-card">
@@ -350,7 +350,7 @@ const entries = computed<GridEntry[]>(() => {
         </div>
       </section>
       <section v-else class="ios-section" data-testid="tq-grid">
-        <div class="ios-section-title">
+        <div class="ios-section-title" style="padding-left: 0">
           <span>三 · 查看</span>
         </div>
         <div class="ios-card">
@@ -368,7 +368,7 @@ const entries = computed<GridEntry[]>(() => {
           </div>
         </div>
       </section>
-      <n-space align="center" :wrap="true">
+      <n-space align="center" :wrap="true" size="large">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">四 · 打印 / 导出</span>
         <n-text depth="3" style="font-size: 13px">导出目前课表:</n-text>
         <n-button-group>
@@ -397,6 +397,8 @@ const entries = computed<GridEntry[]>(() => {
         >
           打印课表
         </n-button>
+      </n-space>
+      <n-space align="center" :wrap="true" size="large">
         <template v-if="canManage && batchView">
           <n-text depth="3" style="font-size: 13px">{{ batchLabel }}:</n-text>
           <n-button

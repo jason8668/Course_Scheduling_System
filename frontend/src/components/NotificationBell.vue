@@ -68,6 +68,7 @@ const TYPE_TAG: Record<string, string> = {
   leave_registered: '请假登记',
   leave_cancelled: '销假',
   timetable_published: '课表发布',
+  monthly_hours: '课时确认',
 }
 </script>
 

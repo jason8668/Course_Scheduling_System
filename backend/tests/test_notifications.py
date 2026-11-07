@@ -78,10 +78,10 @@ def test_assignment_creates_in_app_notification(school, outbox):
     wang, chen = _publish_wang(client, db, sid)   # 陈师无 email
     _leave_and_assign(client, sid, wang, chen)
 
-    # 站内:陈师登录看得到自己的通知
+    # 站内:陈师登录看得到自己的通知(课表发布 1 条 + 代课指派 1 条)
     _bind_login(client, db, chen, "chen")
     body = client.get(f"/api/notifications/mine?semester_id={sid}").json()
-    assert body["unread"] == 1
+    assert body["unread"] == 2
     assert body["items"][0]["type"] == "substitution_assigned"
     assert body["items"][0]["link"] == ""
     # 陈师没填 email → 不排入寄送
@@ -93,10 +93,11 @@ def test_assignment_emails_when_teacher_has_address(school, outbox):
     wang, chen = _publish_wang(client, db, sid, email="chen@example.com")
     # 需设置 SMTP,否则 email 管道不会放进寄件匣?——不,寄件匣只看有没有信箱;
     # 是否真的寄由 email_job 依 SMTP 设置决定。这里验「有信箱 → 有排入」。
+    # 课表发布与代课指派各一封,共 2 封。
     _leave_and_assign(client, sid, wang, chen)
 
-    assert len(outbox) == 1
-    to, subject, _body = outbox[0]
+    assert len(outbox) == 2
+    to, subject, _body = next(e for e in outbox if "代课通知" in e[1])
     assert to == "chen@example.com"
     assert "代课通知" in subject
 
@@ -115,9 +116,9 @@ def test_teacher_acknowledges_a_notification(school):
     assert r.json()["acknowledged_at"] is not None
     assert r.json()["read_at"] is not None  # 确认即已读
 
-    # 未读数归零
+    # 未读数减一(课表发布那条还在,故剩 1 条未读)
     count = client.get(f"/api/notifications/mine/unread-count?semester_id={sid}").json()
-    assert count["unread"] == 0
+    assert count["unread"] == 1
 
 
 def test_cannot_acknowledge_someone_elses_notification(school):
@@ -146,6 +147,35 @@ def test_board_shows_acknowledgement_status(school):
     unack = client.get(
         f"/api/notifications?semester_id={sid}&unacknowledged_only=true").json()
     assert all(n["acknowledged_at"] is None for n in unack)
+
+
+def test_board_date_filter(school):
+    """看板按建立日期区间筛(统计中心三档范围用)。"""
+    from datetime import datetime, timezone
+
+    from app.models.notification import Notification
+    from app.services.substitution_log import school_today
+
+    client, db, sid = school
+    wang, chen = _publish_wang(client, db, sid)
+    _leave_and_assign(client, sid, wang, chen)
+
+    # 把代课指派那条的建立时间改到 2026-01-05(课表发布那两条留在今天)
+    assigned = db.query(Notification).filter_by(type="substitution_assigned").first()
+    assigned.created_at = datetime(2026, 1, 5, tzinfo=timezone.utc)
+    db.commit()
+
+    jan = client.get(
+        "/api/notifications?semester_id=" + str(sid)
+        + "&date_from=2026-01-01&date_to=2026-01-31").json()
+    assert len(jan) == 1 and jan[0]["type"] == "substitution_assigned"
+
+    today = school_today().isoformat()
+    today_board = client.get(
+        f"/api/notifications?semester_id={sid}&date_from={today}&date_to={today}").json()
+    # 今天 3 条:课表发布 ×2 + 请假登记 ×1,改到一月的代课指派已被筛掉
+    assert len(today_board) == 3
+    assert {n["type"] for n in today_board} == {"timetable_published", "leave_registered"}
 
 
 def test_remind_resends_and_is_blocked_after_acknowledgement(school, outbox):

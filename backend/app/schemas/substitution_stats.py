@@ -40,3 +40,12 @@ class MonthlyReportOut(BaseModel):
     month: int
     summaries: list[TeacherSummaryOut] = []
     details: list[StatDetailOut] = []
+
+
+class RangeReportOut(BaseModel):
+    """任意日期区间的代课统计(统计中心三档范围用)。"""
+
+    date_from: _Date
+    date_to: _Date
+    summaries: list[TeacherSummaryOut] = []
+    details: list[StatDetailOut] = []

@@ -215,9 +215,9 @@ def test_h2_coteaching_counts(env2):
 
 
 def test_slot_label_uses_period_name_not_index(env):
-    """回归:讯息中的时段须用节次表名称(早自习/午休/第一节),不可用内部 period_no。
+    """回归:讯息中的时段须用节次表名称(自习/午休/第一节),不可用内部 period_no。
 
-    初中范本的「第一节」period_no 是 2(第 1 格是早自习),先前硬拼 f"第{period_no}节"
+    初中范本的「第一节」period_no 是 2(第 1 格是自习),先前硬拼 f"第{period_no}节"
     会显示「第2节」,与教学组长的认知不符(2026-07-10 实机验证发现)。
     """
     client, db = env
@@ -238,7 +238,7 @@ def test_slot_label_uses_period_name_not_index(env):
     a301 = _assign(client, sid, class_id=c301["id"], subject_id=chin["id"],
                    teacher_ids=[wang["id"]])
 
-    # 范本:period_no 1=早自习、2=第一节、6=午休
+    # 范本:period_no 1=自习、2=第一节、6=午休
     assert _place(client, tid, a302["id"], 1, 2).status_code == 201
 
     h2 = next(c["message"] for c in _check(client, tid, a301["id"], 1, 2)["conflicts"]
@@ -252,7 +252,7 @@ def test_slot_label_uses_period_name_not_index(env):
 
     h5_morning = next(c["message"] for c in _check(client, tid, a301["id"], 1, 1)["conflicts"]
                       if c["code"] == "H5")
-    assert h5_morning.startswith("周一早自习")
+    assert h5_morning.startswith("周一自习")
 
 
 # ── H3 场地不冲堂 ─────────────────────
