@@ -260,7 +260,7 @@ const entries = computed<GridEntry[]>(() => {
     </section>
 
     <template v-else-if="data">
-      <n-space align="center" :wrap="true" size="large">
+      <n-space align="center" :wrap="true" size="large" style="margin-bottom: 12px">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">一步 · 选视角</span>
         <n-radio-group v-model:value="view">
           <n-radio-button value="class" data-testid="tq-view-class">班级</n-radio-button>
@@ -284,7 +284,7 @@ const entries = computed<GridEntry[]>(() => {
         </n-tag>
       </n-space>
 
-      <n-space align="center" :wrap="true" size="large">
+      <n-space align="center" :wrap="true" size="large" style="margin-bottom: 12px">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">二 · 选模式</span>
         <n-radio-group v-model:value="mode">
           <n-radio-button value="week" data-testid="tq-mode-week">周课表(模板)</n-radio-button>
@@ -368,7 +368,7 @@ const entries = computed<GridEntry[]>(() => {
           </div>
         </div>
       </section>
-      <n-space align="center" :wrap="true" size="large">
+      <n-space align="center" :wrap="true" size="large" style="margin-top: 16px">
         <span style="font-size: 13px; font-weight: 600; color: rgba(60,60,67,0.6)">四 · 打印 / 导出</span>
         <n-text depth="3" style="font-size: 13px">导出目前课表:</n-text>
         <n-button-group>

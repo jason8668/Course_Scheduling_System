@@ -497,11 +497,17 @@ const targetGrades = computed<number[]>(() => {
   return u ? [...new Set(u.classes.map((c) => c.grade))] : []
 })
 const formTeacherOptions = computed(() => teachers.value.filter((t) => {
-  if (!onlySameGrade.value) return true
+  // 已选的保留(换科目/换年级时不把已选的人踢掉,与年级筛选同例)。
   if (form.value.teacher_ids.includes(t.id)) return true
-  if (!t.grade_ids?.length) return true
-  if (!targetGrades.value.length) return true
-  return t.grade_ids.some((g) => targetGrades.value.includes(g))
+  // 年级筛选(只看同年级开关):没填年级资料的不过滤。
+  if (onlySameGrade.value && t.grade_ids?.length && targetGrades.value.length) {
+    if (!t.grade_ids.some((g) => targetGrades.value.includes(g))) return false
+  }
+  // 科目筛选(2026-11-07):表单定了科目,只留任教科目含该科的老师;
+  // 没填任教科目的不过滤(新老师还没录科目,不能因此配不上去)。
+  const sid = form.value.subject_id
+  if (sid && t.subjects?.length && !t.subjects.some((s) => s.id === sid)) return false
+  return true
 }).map((t) => ({ label: t.name, value: t.id })))
 const leadOptions = computed(() => teachers.value
   .filter((t) => form.value.teacher_ids.includes(t.id))
@@ -511,13 +517,21 @@ const alternateOptions = computed(() => alternates.value.map((g) => ({ label: g.
 
 function openCreate() {
   editingId.value = null
-  form.value = emptyForm()
+  // 新建时把页面上筛好的班级/科目带进表单(2026-11-07):筛了科目再新建,
+  // 老师下拉直接按该科目过滤,不用在表单里再选一次科目。
+  form.value = {
+    ...emptyForm(),
+    class_id: filterClassId.value,
+    subject_id: filterSubjectId.value,
+  }
   formShow.value = true
 }
 function openCreateWeek(u: SchedulingUnit, week: WeekParity, from?: Assignment) {
   editingId.value = null
   form.value = {
     ...emptyForm(), target: 'alternate', scheduling_unit_id: u.id, week_parity: week,
+    // 单双周拆分是同一门课:科目从原配课带过来,老师下拉按该科目过滤;老师不带(两周可不同人)。
+    subject_id: from?.subject.id ?? null,
     periods_per_week: from?.periods_per_week ?? 1,
     block_rules: from?.block_rules.map((b) => ({ ...b })) ?? [],
   }

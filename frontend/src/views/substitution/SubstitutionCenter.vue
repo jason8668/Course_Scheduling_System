@@ -391,7 +391,11 @@ async function assignSwap(
       <div class="ios-section-title">
         <span>二 · 待处理处置</span>
       </div>
-      <n-empty v-if="!activeLeaves.length" description="没有待处理的假单" />
+      <div v-if="!activeLeaves.length" class="ios-card">
+        <div class="ios-card-body">
+          <n-empty description="没有待处理的假单" />
+        </div>
+      </div>
       <div v-else style="display: flex; flex-direction: column; gap: 12px">
         <div v-for="l in activeLeaves" :key="l.id" class="ios-card">
           <div class="ios-row">
