@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NDataTable, NEmpty, NInput, NModal, NPagination, NPopconfirm,
+  NAlert, NButton, NDataTable, NEmpty, NInput, NModal, NPagination,
   NSelect, NSpace, NText, useMessage,
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
-  CHANGE_TYPES, STUDENT_STATUSES, changeStudentStatus, createParent, createStudent,
-  deleteParent, exportStudents, getStudent, importStudents, listParents, listStatusChanges,
-  listStudents, updateParent, updateStudent, downloadStudentTemplate,
+  CHANGE_TYPES, STUDENT_STATUSES, changeStudentStatus, createStudent,
+  exportStudents, getStudent, importStudents, listStatusChanges,
+  listStudents, updateStudent, downloadStudentTemplate,
 } from '@/api/exam'
-import type { ImportResult, Parent, StatusChange, Student } from '@/api/exam'
+import type { ImportResult, StatusChange, Student } from '@/api/exam'
+import DingTalkImport from './DingTalkImport.vue'
 import { listClassUnits } from '@/api/basedata'
 import { listSemesters } from '@/api/semesters'
 import type { ClassUnit } from '@/api/basedata'
@@ -21,10 +22,8 @@ import { useAuthStore } from '@/stores/auth'
 const message = useMessage()
 const auth = useAuthStore()
 // 学生写操作只限 admin/director(后端 writer + can_manage_students);
-// 家长写操作班主任可改本班,前端无法判断是否为本班班主任,按钮对教师开放,
 // 越权时后端回 403,前端原样展示后端提示。
 const canManage = computed(() => auth.hasRole('admin') || auth.hasRole('director'))
-const canEditParents = computed(() => canManage.value || auth.hasRole('teacher'))
 
 const semesters = ref<SemesterListItem[]>([])
 const semesterId = ref<number | null>(null)
@@ -170,34 +169,26 @@ async function saveForm() {
   }
 }
 
-// ── 详情:家长子面板 + 异动记录 ──
+// ── 详情:异动记录 ──
 const showDetail = ref(false)
 const detail = ref<Student | null>(null)
-const detailParents = ref<Parent[]>([])
 const detailChanges = ref<StatusChange[]>([])
 const detailForbidden = ref(false)
 async function openDetail(s: Student) {
   detailForbidden.value = false
   showDetail.value = true
   try {
-    const [st, parents, changes] = await Promise.all([
+    const [st, changes] = await Promise.all([
       getStudent(s.id),
-      listParents(s.id),
       listStatusChanges(s.id),
     ])
     detail.value = st
-    detailParents.value = parents
     detailChanges.value = changes.items
   } catch (e) {
     if ((e as ApiError).status === 403) detailForbidden.value = true
     else message.error((e as ApiError).detail || '加载失败')
   }
 }
-async function reloadParents() {
-  if (!detail.value) return
-  detailParents.value = await listParents(detail.value.id)
-}
-
 // ── 状态变更/异动 ──
 const showStatus = ref(false)
 const statusForm = ref({
@@ -230,59 +221,11 @@ async function saveStatus() {
   }
 }
 
-// ── 家长增删改 ──
-const showParent = ref(false)
-const editingParentId = ref<number | null>(null)
-const parentForm = ref({ name: '', relation: '', phone: '' })
-function openParentCreate() {
-  editingParentId.value = null
-  parentForm.value = { name: '', relation: '', phone: '' }
-  showParent.value = true
-}
-function openParentEdit(p: Parent) {
-  editingParentId.value = p.id
-  // 后端 update_parent 是全量覆盖:必须用接口返回的号码预填,留空会把电话清空;
-  // 脱敏号码(含 ****)绝不能回写,保存时会被拦截(见 parentPhoneMasked)。
-  parentForm.value = { name: p.name, relation: p.relation ?? '', phone: p.phone ?? '' }
-  showParent.value = true
-}
-// 脱敏号码不可编辑:能成功保存家长的人(教务/管理员/本班班主任)看到的都是完整号码,
-// 看到脱敏号码的人本来就没有家长写权限,后端也会 403,前端先拦住不让脏数据回写。
-const parentPhoneMasked = computed(() =>
-  editingParentId.value !== null && parentForm.value.phone.includes('****'))
-async function saveParent() {
-  if (!detail.value) return
-  if (!parentForm.value.name.trim()) { message.warning('请输入家长姓名'); return }
-  try {
-    const body = {
-      name: parentForm.value.name.trim(),
-      relation: parentForm.value.relation.trim() || null,
-      // 新增时留空表示无电话;编辑时表单已用原号码预填,留空就是清空(需用户明确清空)。
-      phone: parentForm.value.phone.trim() || null,
-    }
-    if (editingParentId.value) await updateParent(editingParentId.value, body)
-    else await createParent(detail.value.id, body)
-    showParent.value = false
-    message.success('已储存')
-    await reloadParents()
-  } catch (e) {
-    message.error((e as ApiError).detail || '储存失败')
-  }
-}
-async function removeParent(p: Parent) {
-  try {
-    await deleteParent(p.id)
-    message.success('已删除')
-    await reloadParents()
-  } catch (e) {
-    message.error((e as ApiError).detail || '删除失败')
-  }
-}
-
 // ── 导入导出 ──
 const fileInput = ref<HTMLInputElement | null>(null)
 const showImportResult = ref(false)
 const importResult = ref<ImportResult | null>(null)
+const showDingTalkImport = ref(false)
 async function onImportFile(ev: Event) {
   const file = (ev.target as HTMLInputElement).files?.[0]
   if (!file || !semesterId.value) return
@@ -308,7 +251,7 @@ async function onExport() {
   if (!semesterId.value) return
   try {
     await exportStudents(semesterId.value, filterGrade.value, filterClass.value)
-    message.success('已导出(家长电话已脱敏)')
+    message.success('已导出')
   } catch (e) {
     message.error((e as Error).message || '导出失败')
   }
@@ -334,11 +277,6 @@ const columns: DataTableColumns<Student> = [
     render: (row) => row.status,
   },
   { title: '考号', key: 'exam_no', width: 110, render: (row) => row.exam_no ?? '—' },
-  {
-    title: '家长电话(已脱敏)',
-    key: 'parents',
-    render: (row) => row.parents.map((p) => `${p.name} ${p.phone ?? '—'}`).join('、') || '—',
-  },
   {
     title: '操作',
     key: 'actions',
@@ -402,8 +340,8 @@ const columns: DataTableColumns<Student> = [
             <n-button v-if="canManage" @click="onDownloadTemplate">下载导入模板</n-button>
             <n-button v-if="canManage" @click="fileInput?.click()">批量导入</n-button>
             <input ref="fileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="onImportFile">
+            <n-button v-if="canManage" @click="showDingTalkImport = true">从钉钉导入</n-button>
             <n-button @click="onExport">导出学生名单</n-button>
-            <n-text depth="3" style="font-size: 13px">列表家长电话一律脱敏显示;导出文件中的家长电话同样已脱敏。</n-text>
           </n-space>
         </div>
       </div>
@@ -443,31 +381,6 @@ const columns: DataTableColumns<Student> = [
             <n-button v-if="canManage" size="small" type="primary" @click="openEdit(detail)">编辑档案</n-button>
             <n-button v-if="canManage" size="small" @click="openStatus(detail)">状态变更</n-button>
           </n-space>
-          <div>
-            <div class="ios-section-title">家长信息</div>
-            <n-empty v-if="detailParents.length === 0" description="尚未登记家长" />
-            <div v-for="p in detailParents" :key="p.id" class="ios-row">
-              <div class="ios-row-main">
-                <span class="ios-row-title">{{ p.name }}</span>
-                <span class="ios-row-sub" style="margin-left: 8px">
-                  {{ p.relation ?? '关系未填' }} · {{ p.phone ?? '无电话' }}
-                </span>
-              </div>
-              <template v-if="canEditParents">
-                <n-button size="small" text type="primary" @click="openParentEdit(p)">编辑</n-button>
-                <n-popconfirm @positive-click="removeParent(p)">
-                  <template #trigger><n-button size="small" text type="error">删除</n-button></template>
-                  确定删除这位家长的联系信息?
-                </n-popconfirm>
-              </template>
-            </div>
-            <n-button v-if="canEditParents" size="small" style="margin-top: 8px" @click="openParentCreate">
-              新增家长
-            </n-button>
-            <n-text v-if="!canManage" depth="3" style="font-size: 12px; display: block; margin-top: 4px">
-              家长信息仅班主任可改本班;非本班班主任保存时会被拒绝。
-            </n-text>
-          </div>
           <div>
             <div class="ios-section-title">异动记录</div>
             <n-empty v-if="detailChanges.length === 0" description="暂无异动记录" />
@@ -524,21 +437,6 @@ const columns: DataTableColumns<Student> = [
       </n-space>
     </n-modal>
 
-    <n-modal v-model:show="showParent" preset="card" :title="editingParentId ? '编辑家长' : '新增家长'" style="max-width: 420px">
-      <n-space vertical>
-        <n-text>家长姓名</n-text>
-        <n-input v-model:value="parentForm.name" placeholder="家长姓名" />
-        <n-text>关系(选填)</n-text>
-        <n-input v-model:value="parentForm.relation" placeholder="如:父亲、母亲" />
-        <n-text>手机号(选填)</n-text>
-        <n-input v-model:value="parentForm.phone" :disabled="parentPhoneMasked" placeholder="手机号" />
-        <n-alert v-if="parentPhoneMasked" type="warning">
-          该号码已脱敏显示,无法在此修改;只有本班班主任或教务能改家长电话。
-        </n-alert>
-        <n-button type="primary" :disabled="parentPhoneMasked" @click="saveParent">储存</n-button>
-      </n-space>
-    </n-modal>
-
     <n-modal v-model:show="showImportResult" preset="card" title="导入结果" style="max-width: 560px">
       <n-space vertical>
         <n-text>新增 {{ importResult?.created ?? 0 }} 人,更新 {{ importResult?.updated ?? 0 }} 人。</n-text>
@@ -548,5 +446,11 @@ const columns: DataTableColumns<Student> = [
         <n-text v-else type="success">全部导入成功,无错误行。</n-text>
       </n-space>
     </n-modal>
+
+    <DingTalkImport
+      v-if="showDingTalkImport && semesterId" :semester-id="semesterId" :classes="classes"
+      @done="showDingTalkImport = false; void reload()"
+      @close="showDingTalkImport = false"
+    />
   </div>
 </template>

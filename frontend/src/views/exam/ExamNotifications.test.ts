@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import {
   canResendNotification, formatNotifyResult, getNotificationSettings,
-  listNotifications, notifyInvigilation, notifyPublish, notifySchedule,
+  listNotifications, notifyInvigilation, notifySchedule,
   notifyScoreDeadline, remindDueNotifications, resendNotification,
   saveNotificationSettings, summarizeUnsubmittedScores,
 } from '@/api/exam'
@@ -40,7 +40,7 @@ vi.stubGlobal('fetch', vi.fn((url: string, init: { method?: string; body?: strin
       ok: true, status: 200,
       json: () => Promise.resolve({
         exam_id: 3, schedule_notify_enabled: true, invigilation_remind_enabled: true,
-        score_deadline_remind_enabled: false, publish_notify_enabled: true,
+        score_deadline_remind_enabled: false,
       }),
     })
   }
@@ -103,24 +103,24 @@ function failedLog(over: Partial<ExamNotification> = {}): ExamNotification {
   }
 }
 
-describe('通知与提醒 API 客户端(KW-57~61)', () => {
-  it('通知设置查询与保存走 /notification-settings,保存带全部四项开关', async () => {
+describe('通知与提醒 API 客户端(KW-57~59/61)', () => {
+  it('通知设置查询与保存走 /notification-settings,保存带全部三项开关', async () => {
     await getNotificationSettings(3)
     expect(lastUrl).toBe('/api/exam/exams/3/notification-settings')
     expect(lastMethod).toBe('GET')
     await saveNotificationSettings(3, {
       schedule_notify_enabled: true, invigilation_remind_enabled: false,
-      score_deadline_remind_enabled: true, publish_notify_enabled: false,
+      score_deadline_remind_enabled: true,
     })
     expect(lastUrl).toBe('/api/exam/exams/3/notification-settings')
     expect(lastMethod).toBe('PUT')
     expect(lastBody).toMatchObject({
       schedule_notify_enabled: true, invigilation_remind_enabled: false,
-      score_deadline_remind_enabled: true, publish_notify_enabled: false,
+      score_deadline_remind_enabled: true,
     })
   })
 
-  it('四类手动发送各走自己的 notify 端点,都回 sent/failed', async () => {
+  it('三类手动发送各走自己的 notify 端点,都回 sent/failed', async () => {
     await notifySchedule(3)
     expect(lastUrl).toBe('/api/exam/exams/3/notify/schedule')
     expect(lastMethod).toBe('POST')
@@ -129,9 +129,6 @@ describe('通知与提醒 API 客户端(KW-57~61)', () => {
     expect(lastMethod).toBe('POST')
     await notifyScoreDeadline(3)
     expect(lastUrl).toBe('/api/exam/exams/3/notify/score-deadline')
-    expect(lastMethod).toBe('POST')
-    await notifyPublish(3)
-    expect(lastUrl).toBe('/api/exam/exams/3/notify/publish')
     expect(lastMethod).toBe('POST')
   })
 
@@ -190,7 +187,7 @@ describe('发送结果与重发的展示逻辑(KW-57~61)', () => {
 })
 
 describe('通知与提醒页分区渲染(KW-57~61)', () => {
-  it('六个分区标题齐全,失败记录有重发按钮、成功记录没有,健康页提示在场', async () => {
+  it('五个分区标题齐全,失败记录有重发按钮、成功记录没有,健康页提示在场', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const auth = useAuthStore()
@@ -213,12 +210,10 @@ describe('通知与提醒页分区渲染(KW-57~61)', () => {
     await flushPromises()
     await flushPromises()
     const text = wrapper.text()
-    for (const title of ['通知设置', '考试日程通知', '监考提醒', '录分截止提醒', '成绩发布通知', '通知记录']) {
+    for (const title of ['通知设置', '考试日程通知', '监考提醒', '录分截止提醒', '通知记录']) {
       expect(text).toContain(title)
     }
     expect(text).toContain('期中考试')
-    // 成绩发布只通知“已可查询”,不含分数
-    expect(text).toContain('只通知学生/家长“成绩已可查询”,通知中不含任何分数')
     // 录分截止:截止时间与未录完班级/人数来自成绩设置与录分进度
     expect(text).toContain('未录完 1 个班级、38 人')
     // 健康页提示:聚合数据已进系统提醒健康页

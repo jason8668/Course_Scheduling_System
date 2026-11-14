@@ -79,12 +79,12 @@ def put_publish_settings(
     exam = _exam_or_404(db, exam_id)
     row = svc.upsert_settings(
         db, exam, body.proofreader_role, body.approval_levels,
-        body.publish_order, body.objection_open,
+        body.objection_open,
     )
     log_exam_action(
         db, user, "exam_publish_settings_update",
         target_type="exam", target_id=exam.id,
-        detail=f"更新考试{exam.name}发布设置(校对人{row.proofreader_role},审批{row.approval_levels}层,发布顺序{row.publish_order},异议入口{'开放' if row.objection_open else '关闭'})",
+        detail=f"更新考试{exam.name}发布设置(校对人{row.proofreader_role},审批{row.approval_levels}层,异议入口{'开放' if row.objection_open else '关闭'})",
     )
     db.commit()
     return PublishSettingsOut(**svc.settings_out(exam, row))

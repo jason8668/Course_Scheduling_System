@@ -4,12 +4,8 @@
 
 export const AUTH_PAGES = new Set(['login', 'change-password'])
 
-// 学生/家长帐号可进入的页面:只开放自助查询页,改密页在 AUTH_PAGES 里。
-// 其余页面壳虽然后端 API 会 403,但也不应让学生/家长打开(见 decideRoute)。
-export const STUDENT_PARENT_PAGES = new Set(['exam-my-scores'])
-
 // 纯教师帐号可进入的页面(请假是教师自己要做的事;课表打印页是查课表后打印用)
-// 总主入口对所有登录角色放行(含纯教师);考务入口三页也在内:班主任要看本班学生档案、改本班家长信息,写权限仍由后端接口拦截
+// 总主入口对所有登录角色放行(含纯教师);考务入口三页也在内:班主任要看本班学生档案,写权限仍由后端接口拦截
 export const TEACHER_PAGES = new Set([
   'portal',
   'dashboard', 'my', 'school-calendar', 'calendar-print',
@@ -41,14 +37,10 @@ export function decideRoute(
   wizardState: WizardState | null,
 ): true | string {
   const name = toName ?? ''
-  // 仅含学生/家长角色的帐号(不含 admin/director/teacher)。
-  const isStudentParent =
-    (auth.hasRole('student') || auth.hasRole('parent'))
-    && !auth.hasRole('admin') && !auth.hasRole('director') && !auth.hasRole('teacher')
   if (isPublic) {
     if (auth.isAuthenticated && name === 'login') {
       if (auth.mustChangePassword) return 'change-password'
-      return isStudentParent ? 'exam-my-scores' : 'portal'
+      return 'portal'
     }
     return true
   }
@@ -58,11 +50,6 @@ export function decideRoute(
   }
   if (auth.mustChangePassword && name !== 'change-password') {
     return 'change-password'
-  }
-
-  // 学生/家长帐号:只开放自助查询页,其余一律导向自助查询页(登录后落地也在此)。
-  if (isStudentParent && !AUTH_PAGES.has(name) && !STUDENT_PARENT_PAGES.has(name)) {
-    return 'exam-my-scores'
   }
 
   // 纯教师帐号:只开放课表查询与请假登记(其余页面的后端 API 皆需主任以上权限)。

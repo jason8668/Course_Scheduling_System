@@ -836,7 +836,7 @@ onMounted(() => { void reloadAll() })
         <div class="ios-section-title">学生个人成绩趋势</div>
         <div class="ios-card"><div class="ios-card-body">
           <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 8px">
-            选一名学生,看历次考试总分与各科走势,供班主任面谈和家长沟通使用;用表格展示,不画复杂图表。
+            选一名学生,看历次考试总分与各科走势,供班主任面谈使用;用表格展示,不画复杂图表。
           </n-text>
           <n-space :wrap="true" align="center" style="margin-bottom: 12px">
             <n-select

@@ -409,6 +409,75 @@ def test_participant_list_scoped_for_teacher(client_db, seed):
     assert client.post(f"/api/exam/exams/{eid}/participants/generate").status_code == 403
 
 
+def test_participant_list_multi_class_filter(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    exam = make_exam(client, seed, grades=[7, 8])
+    eid = exam["id"]
+    client.post(f"/api/exam/exams/{eid}/participants/generate")
+    # 一次勾两个班:701 两人 + 801 一人
+    body = client.get(
+        f"/api/exam/exams/{eid}/participants"
+        f"?class_unit_ids={seed['cls7'].id}&class_unit_ids={seed['cls8'].id}"
+    ).json()
+    assert body["total"] == 3
+    assert {i["student_name"] for i in body["items"]} == {"张三", "李四", "王五"}
+    # 只勾一个班仍只回该班
+    body = client.get(
+        f"/api/exam/exams/{eid}/participants?class_unit_ids={seed['cls7'].id}"
+    ).json()
+    assert body["total"] == 2
+    # 旧的单个 class_unit_id 参数仍可用
+    body = client.get(
+        f"/api/exam/exams/{eid}/participants?class_unit_id={seed['cls8'].id}"
+    ).json()
+    assert body["total"] == 1
+    assert body["items"][0]["student_name"] == "王五"
+    # 教师多选里混进无权看的班直接 403
+    login(client, "t1")
+    assert client.get(
+        f"/api/exam/exams/{eid}/participants"
+        f"?class_unit_ids={seed['cls7'].id}&class_unit_ids={seed['cls8'].id}"
+    ).status_code == 403
+
+
+def test_participant_bulk_add(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    exam = make_exam(client, seed)
+    eid = exam["id"]
+    client.post(f"/api/exam/exams/{eid}/participants/generate")  # 张三、李四已在名单
+    # 一次勾三个:休学赵六(新增)、801 班王五(新增,同学期可增补)、张三(已在名单,跳过)
+    r = client.post(f"/api/exam/exams/{eid}/participants/bulk", json={
+        "student_ids": [seed["s4"].id, seed["s3"].id, seed["s1"].id],
+        "note": "批量增补",
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 2, "skipped": 1}
+    body = client.get(f"/api/exam/exams/{eid}/participants").json()
+    assert body["total"] == 4
+    added = [i for i in body["items"] if i["student_name"] in ("赵六", "王五")]
+    assert len(added) == 2
+    assert all(i["note"] == "批量增补" for i in added)
+    # 同一批里重复勾同一人只算一次
+    r = client.post(f"/api/exam/exams/{eid}/participants/bulk", json={
+        "student_ids": [seed["s4"].id, seed["s4"].id],
+    })
+    assert r.json() == {"created": 0, "skipped": 1}
+    # 不存在的学生计入跳过,不中断整批
+    r = client.post(f"/api/exam/exams/{eid}/participants/bulk", json={
+        "student_ids": [999999, seed["s5"].id],
+    })
+    assert r.json() == {"created": 1, "skipped": 1}
+    # 空列表 422
+    assert client.post(f"/api/exam/exams/{eid}/participants/bulk",
+                       json={"student_ids": []}).status_code == 422
+    # 单人增补端点保留不动,仍 201/409
+    assert client.post(f"/api/exam/exams/{eid}/participants",
+                       json={"student_id": seed["s5"].id}).status_code == 409
+    assert db.query(AuditLog).filter_by(action="exam_participant_update").count() == 3
+
+
 # ── KW-13 命题信息 ──────────────────────────────
 def test_paper_info_upsert(client_db, seed):
     client, db = client_db

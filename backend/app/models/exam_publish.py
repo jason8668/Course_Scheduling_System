@@ -23,7 +23,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import Base
 
 PROOFREADER_ROLES = ("subject_leader", "peer_teacher")
-PUBLISH_ORDERS = ("teachers_first", "sync")
 PROOFREADING_STATUSES = ("待校对", "通过", "退回")
 CHANGE_REQUEST_STATUSES = ("待审批", "已通过", "已驳回")
 CHANGE_DECISIONS = ("通过", "驳回")
@@ -37,7 +36,6 @@ class ExamPublishSetting(Base):
 
     proofreader_role:subject_leader 教研组长 / peer_teacher 同组教师。
     approval_levels:1 一层审批 / 2 两层审批(教研组长→教务)。
-    publish_order:teachers_first 教师先看、家长同步延后 / sync 同步。
     objection_open:是否开放异议入口,默认 true。
     """
 
@@ -52,7 +50,6 @@ class ExamPublishSetting(Base):
     )
     proofreader_role: Mapped[str] = mapped_column(String(20), default="subject_leader")
     approval_levels: Mapped[int] = mapped_column(Integer, default=1)
-    publish_order: Mapped[str] = mapped_column(String(20), default="teachers_first")
     objection_open: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
@@ -197,10 +194,10 @@ class ExamPublishBatch(Base):
 
 
 class ExamObjection(Base):
-    """成绩异议(KW-40):学生/家长有疑问可登记异议,任课教师复核后回复,形成闭环。
+    """成绩异议(KW-40):教师/教务代学生登记异议,任课教师复核后回复,形成闭环。
 
-    学生/家长账号在第 8 批才建,本批先由教师/教务代登,raised_by_role 注明
-    代登人角色(教师/教务/管理员)。status 待复核/已回复/已关闭。
+    由教师/教务代登,raised_by_role 注明代登人角色(教师/教务/管理员)。
+    status 待复核/已回复/已关闭。
     """
 
     __tablename__ = "exam_objections"

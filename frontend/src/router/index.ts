@@ -285,22 +285,10 @@ const routes = [
         component: () => import('@/views/exam/ExamReportStudent.vue'),
       },
       {
-        // 教师端成绩查询页(KW-54):按科目/班级/关键词检索,含成绩单设置与成绩册导出
+        // 教师端成绩查询页(KW-54):按科目/班级/关键词检索,含成绩册导出
         path: 'exam/exams/:id/teacher-scores',
         name: 'exam-exam-teacher-scores',
         component: () => import('@/views/exam/ExamTeacherScores.vue'),
-      },
-      {
-        // 学生/家长自助查询页(KW-55):我的成绩与个人成绩单,未发布原样提示
-        path: 'exam/my-scores',
-        name: 'exam-my-scores',
-        component: () => import('@/views/exam/ExamMyScores.vue'),
-      },
-      {
-        // 学生/家长账号开通管理页(KW-55):一键开通、账号清单、重置口令
-        path: 'exam/accounts',
-        name: 'exam-exam-accounts',
-        component: () => import('@/views/exam/ExamAccounts.vue'),
       },
       {
         path: 'settings/period-tables/:id',

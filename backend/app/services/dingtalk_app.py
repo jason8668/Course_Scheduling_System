@@ -8,6 +8,12 @@
 按手机号查 userid(查到即缓存到教师档案,下次不再查) →
 asyncsend_v2 发 markdown 工作通知。任何一步失败都只记日志、
 由呼叫端决定跳过,绝不影响站内通知与课务流程。
+
+学生名单导入(见 app/services/dingtalk_students.py)复用同一套凭证与
+token,另加三个只读接口:取下一级子部门、取部门直属成员详情、
+家校通讯录 2.0 取人员身份详情(role=student/guardian/teacher)。
+企业通讯录标准接口不带角色字段,分不出学生与家长/老师,
+所以身份区分只认 edu 身份接口的 role。
 """
 
 import logging
@@ -85,6 +91,52 @@ class DingTalkAppClient:
             )
             return None
         return str(payload["result"]["userid"])
+
+    def list_sub_departments(self, dept_id: int) -> list[dict]:
+        """取下一级子部门基础信息(只一层,部门树由呼叫端递归);失败掷出例外。"""
+        import httpx
+
+        resp = httpx.post(
+            f"{_OAPI}/topapi/v2/department/listsub",
+            params={"access_token": self.token},
+            json={"dept_id": dept_id, "language": "zh_CN"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        return list(_check(resp.json(), "取部门列表").get("result") or [])
+
+    def list_department_users(
+        self, dept_id: int, cursor: int = 0, size: int = 100
+    ) -> dict:
+        """取某部门直属成员详情(一页);回 result 原样 {has_more, next_cursor, list}。"""
+        import httpx
+
+        resp = httpx.post(
+            f"{_OAPI}/topapi/v2/user/list",
+            params={"access_token": self.token},
+            json={"dept_id": dept_id, "cursor": cursor, "size": size, "language": "zh_CN"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        return dict(_check(resp.json(), "取部门成员").get("result") or {})
+
+    def get_edu_user(self, class_id: int, userid: str) -> dict:
+        """家校通讯录 2.0:取人员身份详情,回 result 原样。
+
+        含 role(teacher/guardian/student)、class_id、userid、unionid,
+        学生角色另有 student_no(学号),老师角色另有 is_adviser(是否班主任)。
+        失败掷出例外,由呼叫端决定是整批失败还是单人标为身份未确认。
+        """
+        import httpx
+
+        resp = httpx.post(
+            f"{_OAPI}/topapi/edu/user/get",
+            params={"access_token": self.token},
+            json={"class_id": class_id, "userid": userid},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        return dict(_check(resp.json(), "取家校人员身份").get("result") or {})
 
     def send_work_notification(self, userid: str, title: str, text: str) -> None:
         """发一则 markdown 工作通知;失败掷出例外(由呼叫端记日志并跳过)。"""

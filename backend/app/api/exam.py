@@ -5,7 +5,7 @@
 所有写操作记审计。
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_active_user, require_roles
@@ -24,6 +24,7 @@ from app.schemas.exam import (
     PaperInfoListOut,
     PaperInfoPut,
     ParticipantAddIn,
+    ParticipantBulkAddIn,
     ParticipantGenerateOut,
     ParticipantListOut,
     ParticipantOut,
@@ -204,13 +205,16 @@ def schedule_check(
 def list_participants(
     exam_id: int,
     class_unit_id: int | None = None,
+    class_unit_ids: list[int] | None = Query(default=None),
     status: str | None = None,
     q: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_active_user),
 ):
     exam = _exam_or_404(db, exam_id)
-    rows, total = svc.list_participants(db, user, exam, class_unit_id, status, q)
+    rows, total = svc.list_participants(
+        db, user, exam, class_unit_id, status, q, class_unit_ids
+    )
     return ParticipantListOut(items=rows, total=total)
 
 
@@ -249,6 +253,25 @@ def add_participant(
     )
     db.commit()
     return svc.participant_out(db, row)
+
+
+@router.post("/exams/{exam_id}/participants/bulk", response_model=ParticipantGenerateOut)
+def add_participants_bulk(
+    exam_id: int,
+    body: ParticipantBulkAddIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(writer),
+):
+    _require_can_manage(db, user)
+    exam = _exam_or_404(db, exam_id)
+    created, skipped = svc.add_participants(db, exam, body.student_ids, body.note)
+    log_exam_action(
+        db, user, "exam_participant_update",
+        target_type="exam", target_id=exam.id,
+        detail=f"考试{exam.name}批量增补参试学生:新增{created}人,跳过{skipped}人",
+    )
+    db.commit()
+    return ParticipantGenerateOut(created=created, skipped=skipped)
 
 
 @router.patch("/exams/{exam_id}/participants/{pid}", response_model=ParticipantOut)

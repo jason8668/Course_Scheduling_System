@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NDataTable, NEmpty, NInput, NSelect, NSpace, NSwitch, NText, useMessage,
+  NAlert, NButton, NDataTable, NEmpty, NInput, NSelect, NSpace, NText, useMessage,
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
-  DEFAULT_REPORT_SETTINGS, exportGradeBook, formatScore, getExam, getReportSettings,
-  listTeacherScores, saveReportSettings,
+  exportGradeBook, formatScore, getExam,
+  listTeacherScores,
 } from '@/api/exam'
 import type { ExamDetail, TeacherScoreItem } from '@/api/exam'
 import { listClassUnits } from '@/api/basedata'
@@ -17,14 +17,14 @@ import { useAuthStore } from '@/stores/auth'
 
 // 教师端成绩查询页(KW-54):任课教师查所教班级本科成绩,班主任查本班全部科目成绩,
 // 权限按角色自动限定范围(后端按可见范围过滤,越权 403 原样展示)。
-// 另含成绩单设置入口(KW-53)与成绩册导出(KW-56)。
+// 另含成绩册导出(KW-56)。
 
 const message = useMessage()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const examId = Number(route.params.id)
-// 成绩单设置与成绩册导出只限 admin/director,越权时后端回 403,前端原样展示。
+// 成绩册导出只限 admin/director,越权时后端回 403,前端原样展示。
 const canManage = computed(() => auth.hasRole('admin') || auth.hasRole('director'))
 
 const exam = ref<ExamDetail | null>(null)
@@ -115,34 +115,12 @@ async function onExportGradeBook() {
   }
 }
 
-// ── 成绩单设置(KW-53):家长版是否显示班级/年级排名,默认都不显示 ──
-const settingsForm = ref({ ...DEFAULT_REPORT_SETTINGS })
-async function reloadSettings() {
-  try {
-    const s = await getReportSettings(examId)
-    settingsForm.value = {
-      parent_show_grade_rank: s.parent_show_grade_rank,
-      parent_show_class_rank: s.parent_show_class_rank,
-    }
-  } catch (e) {
-    message.error((e as ApiError).detail || '成绩单设置加载失败')
-  }
-}
-async function saveSettings() {
-  try {
-    await saveReportSettings(examId, settingsForm.value)
-    message.success('成绩单设置已保存')
-  } catch (e) {
-    message.error((e as ApiError).detail || '成绩单设置保存失败')
-  }
-}
-
 onMounted(async () => {
   loading.value = true
   try {
     exam.value = await getExam(examId)
     classes.value = await listClassUnits(exam.value.semester_id)
-    await Promise.all([reload(), reloadSettings()])
+    await reload()
   } catch (e) {
     message.error((e as ApiError).detail || '加载失败')
   } finally {
@@ -198,21 +176,5 @@ onMounted(async () => {
       </div></div>
     </div>
 
-    <!-- 成绩单设置(KW-53) -->
-    <div v-if="canManage" class="ios-section">
-      <div class="ios-section-title">成绩单设置</div>
-      <div class="ios-card"><div class="ios-card-body">
-        <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 8px">
-          家长版个人成绩单是否显示排名,须学校先定;默认两项都不显示,教师版始终显示。
-        </n-text>
-        <n-space :wrap="true" align="center">
-          <span>家长版显示班级排名</span>
-          <n-switch v-model:value="settingsForm.parent_show_class_rank" data-testid="report-setting-class-rank" />
-          <span style="margin-left: 16px">家长版显示年级排名</span>
-          <n-switch v-model:value="settingsForm.parent_show_grade_rank" data-testid="report-setting-grade-rank" />
-          <n-button type="primary" data-testid="report-setting-save" @click="saveSettings">保存设置</n-button>
-        </n-space>
-      </div></div>
-    </div>
   </div>
 </template>

@@ -38,7 +38,7 @@ from app.models.assignment import (
 # Base.metadata.create_all 才会建这些表。
 from app.models import exam_notifications  # noqa: F401
 from app.models.basedata import ClassUnit, Room, Subject, Teacher
-from app.models.exam_foundation import ParentContact, Student
+from app.models.exam_foundation import Student
 from app.models.exam_invigilation import ExamInvigilation
 from app.models.exam_scores import ExamScore, ExamScoreSetting
 from app.models.semester import Semester
@@ -132,11 +132,6 @@ def seed(client_db):
     s6 = Student(semester_id=sem.id, class_unit_id=cls702.id, student_no="20260202", name="钱八", gender="女")
     db.add_all([s1, s2, s3, s4, s5, s6])
     db.flush()
-    db.add_all([
-        ParentContact(student_id=s1.id, name="张父", relation="父亲", phone="13800000001"),
-        ParentContact(student_id=s2.id, name="张母", relation="母亲", phone="13800000001"),
-        ParentContact(student_id=s5.id, name="王父", relation="父亲", phone="13800000005"),
-    ])
     db.commit()
     return {
         "sem": sem, "math": math, "chinese": chinese,
@@ -204,13 +199,11 @@ def test_settings_default_and_put(client_db, seed):
         "schedule_notify_enabled": True,
         "invigilation_remind_enabled": True,
         "score_deadline_remind_enabled": True,
-        "publish_notify_enabled": True,
     }
     r = client.put(f"/api/exam/exams/{eid}/notification-settings", json={
         "schedule_notify_enabled": False,
         "invigilation_remind_enabled": True,
         "score_deadline_remind_enabled": False,
-        "publish_notify_enabled": True,
     })
     assert r.status_code == 200, r.text
     assert r.json()["schedule_notify_enabled"] is False
@@ -261,7 +254,6 @@ def test_notify_schedule_switch_off_409(client_db, seed):
         "schedule_notify_enabled": False,
         "invigilation_remind_enabled": True,
         "score_deadline_remind_enabled": True,
-        "publish_notify_enabled": True,
     })
     r = client.post(f"/api/exam/exams/{eid}/notify/schedule")
     assert r.status_code == 409, r.text
@@ -304,7 +296,6 @@ def test_notify_invigilation_switch_off_409(client_db, seed):
         "schedule_notify_enabled": True,
         "invigilation_remind_enabled": False,
         "score_deadline_remind_enabled": True,
-        "publish_notify_enabled": True,
     })
     r = client.post(f"/api/exam/exams/{eid}/notify/invigilation")
     assert r.status_code == 409, r.text
@@ -370,187 +361,9 @@ def test_notify_score_deadline_switch_off_409(client_db, seed):
         "schedule_notify_enabled": True,
         "invigilation_remind_enabled": True,
         "score_deadline_remind_enabled": False,
-        "publish_notify_enabled": True,
     })
     r = client.post(f"/api/exam/exams/{eid}/notify/score-deadline")
     assert r.status_code == 409, r.text
-
-
-# ── KW-60 成绩发布通知 ──────────────────────────────
-def test_notify_publish_not_published_409(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    login(client, "adm")
-    r = client.post(f"/api/exam/exams/{eid}/notify/publish")
-    assert r.status_code == 409, r.text
-
-
-def test_notify_publish_switch_off_409(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    login(client, "adm")
-    r = client.post(f"/api/exam/exams/{eid}/publish-batches", json={
-        "scope_type": "年级", "scope_value": 7,
-    })
-    assert r.status_code == 201, r.text
-    client.put(f"/api/exam/exams/{eid}/notification-settings", json={
-        "schedule_notify_enabled": True,
-        "invigilation_remind_enabled": True,
-        "score_deadline_remind_enabled": True,
-        "publish_notify_enabled": False,
-    })
-    r = client.post(f"/api/exam/exams/{eid}/notify/publish")
-    assert r.status_code == 409, r.text
-
-
-def test_notify_publish_only_queryable_no_scores(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    deadline = datetime.now(timezone.utc) + timedelta(days=2)
-    _seed_scores(db, seed, eid, deadline)
-    login(client, "adm")
-    r = client.post(f"/api/exam/exams/{eid}/publish-batches", json={
-        "scope_type": "年级", "scope_value": 7,
-    })
-    assert r.status_code == 201, r.text
-    r = client.post(f"/api/exam/accounts/provision?semester_id={seed['sem'].id}")
-    assert r.status_code == 200, r.text
-    r = client.post(f"/api/exam/exams/{eid}/notify/publish")
-    assert r.status_code == 200, r.text
-    # 6 名学生账号 + 3 条家长关联(s1、s2 同一家长账号各一条,s5 一条)。
-    assert r.json() == {"sent": 9, "failed": 0}
-    body = list_logs(client, eid, "?type=成绩发布")
-    assert body["total"] == 9
-    for item in body["items"]:
-        assert "成绩已可查询" in item["message"]
-        assert "90" not in item["message"]
-        assert "80" not in item["message"]
-        assert "70" not in item["message"]
-        assert "分" not in item["message"]
-
-
-# ── 到期扫与去重 ────────────────────────────────────
-def test_remind_due_day_before_and_dedup_24h(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)  # 考试日期默认为明天
-    _seed_invigilation(db, seed, eid)
-    login(client, "adm")
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 2, "failed": 0}
-    body = list_logs(client, eid, "?type=监考提醒")
-    assert body["total"] == 2
-    assert all("明天" in item["message"] for item in body["items"])
-    # 24 小时内再扫:同一提醒不重复发。
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 0, "failed": 0}
-    assert list_logs(client, eid, "?type=监考提醒")["total"] == 2
-
-
-def test_remind_due_day_of_within_lead(client_db, seed):
-    client, db = client_db
-    wall_now = datetime.now(TAIPEI)
-    start = (wall_now + timedelta(minutes=10)).strftime("%H:%M")
-    end = (wall_now + timedelta(minutes=100)).strftime("%H:%M")
-    eid = setup_exam(
-        client, seed, exam_date=wall_now.date().isoformat(), start=start, end=end,
-    )
-    # 只排数学一场(语文固定 10:00,是否在窗口内取决于跑测试的时刻,不稳定)。
-    db.add(ExamInvigilation(exam_id=eid, subject_id=seed["math"].id,
-                            room_id=seed["room1"].id, teacher_id=seed["t1t"].id))
-    db.commit()
-    login(client, "adm")
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    # 当天开考前(默认提前 30 分钟,10 分钟后开考)在窗口内,发 1 人。
-    assert r.json() == {"sent": 1, "failed": 0}
-    body = list_logs(client, eid, "?type=监考提醒")
-    assert all("今天" in item["message"] for item in body["items"])
-
-
-def test_remind_due_score_deadline_24h_and_dedup(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    deadline = datetime.now(timezone.utc) + timedelta(hours=23)
-    _seed_scores(db, seed, eid, deadline)
-    login(client, "adm")
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 2, "failed": 0}
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 0, "failed": 0}
-    assert list_logs(client, eid, "?type=录分截止")["total"] == 2
-
-
-def test_remind_due_score_deadline_2h(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    deadline = datetime.now(timezone.utc) + timedelta(hours=1)
-    _seed_scores(db, seed, eid, deadline)
-    login(client, "adm")
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 2, "failed": 0}
-
-
-def test_remind_due_forbidden_for_teacher(client_db, seed):
-    client, db = client_db
-    setup_exam(client, seed)
-    login(client, "t1")
-    r = client.post("/api/exam/notifications/remind-due")
-    assert r.status_code == 403, r.text
-
-
-# ── 失败记录重发 ────────────────────────────────────
-def test_failed_log_resend(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    configure_dingtalk(db, seed["t1t"])
-    db.refresh(seed["t1t"])
-    login(client, "adm")
-    with patch(
-        "app.services.exam_notifications.send_personal_dingtalk",
-        side_effect=RuntimeError("钉钉网关超时"),
-    ):
-        r = client.post(f"/api/exam/exams/{eid}/notify/schedule")
-    assert r.status_code == 200, r.text
-    # t1 走钉钉失败,t2 无钉钉 userid 但有手机号,同样走钉钉 mock 也失败。
-    assert r.json() == {"sent": 0, "failed": 2}
-    body = list_logs(client, eid, "?status=失败")
-    assert body["total"] == 2
-    assert all(item["error"] for item in body["items"])
-    failed_id = body["items"][0]["id"]
-    # 重发时钉钉恢复:成功。
-    with patch(
-        "app.services.exam_notifications.send_personal_dingtalk",
-        return_value=(True, None),
-    ):
-        r = client.post(f"/api/exam/exams/{eid}/notifications/{failed_id}/resend")
-    assert r.status_code == 200, r.text
-    assert r.json() == {"sent": True, "status": "成功"}
-    body = list_logs(client, eid, "?status=成功")
-    assert any(item["id"] == failed_id for item in body["items"])
-    # 成功记录不可重发。
-    r = client.post(f"/api/exam/exams/{eid}/notifications/{failed_id}/resend")
-    assert r.status_code == 409, r.text
-
-
-# ── KW-61 健康页 ────────────────────────────────────
-def test_health_page_shows_exam_notifications(client_db, seed):
-    client, db = client_db
-    eid = setup_exam(client, seed)
-    login(client, "adm")
-    r = client.get("/api/settings/dingtalk-app/health")
-    assert r.status_code == 200, r.text
-    assert r.json()["exam_notifications_7d"] == 0
-    client.post(f"/api/exam/exams/{eid}/notify/schedule")
-    r = client.get("/api/settings/dingtalk-app/health")
-    assert r.status_code == 200, r.text
-    assert r.json()["exam_notifications_7d"] == 2
-    assert r.json()["exam_notifications_failed"] == 0
-    assert r.json()["exam_notifications_last_sent_at"] is not None
 
 
 # ── 权限与列表过滤 ──────────────────────────────────
@@ -558,7 +371,7 @@ def test_notify_forbidden_for_teacher(client_db, seed):
     client, db = client_db
     eid = setup_exam(client, seed)
     login(client, "t1")
-    for path in ("schedule", "invigilation", "score-deadline", "publish"):
+    for path in ("schedule", "invigilation", "score-deadline"):
         r = client.post(f"/api/exam/exams/{eid}/notify/{path}")
         assert r.status_code == 403, (path, r.text)
 

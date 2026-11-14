@@ -32,11 +32,10 @@ from app.models import (  # noqa: F401
     exam_arrangement,
     exam_invigilation,
     exam_publish,
-    exam_reports,
     exam_scores,
 )
 from app.models.basedata import ClassUnit, Room, Subject, Teacher
-from app.models.exam_foundation import ParentContact, Student
+from app.models.exam_foundation import Student
 from app.models.semester import Semester
 from app.models.user import Role
 from tests.conftest import make_user
@@ -121,11 +120,6 @@ def seed(client_db):
     s6 = Student(semester_id=sem.id, class_unit_id=cls702.id, student_no="20260202", name="钱八", gender="女")
     db.add_all([s1, s2, s3, s4, s5, s6])
     db.flush()
-    db.add_all([
-        ParentContact(student_id=s1.id, name="张父", relation="父亲", phone="13800000001"),
-        ParentContact(student_id=s2.id, name="张母", relation="母亲", phone="13800000001"),
-        ParentContact(student_id=s5.id, name="王父", relation="父亲", phone="13800000005"),
-    ])
     db.commit()
     return {
         "sem": sem, "math": math, "chinese": chinese, "english": english,
@@ -442,11 +436,10 @@ def test_backup_export(client_db, seed):
     assert "spreadsheetml.sheet" in r.headers["content-type"]
     wb = load_workbook(BytesIO(r.content))
     assert wb.sheetnames == [
-        "学生", "家长", "考试", "参试名单", "考场编排",
+        "学生", "考试", "参试名单", "考场编排",
         "监考安排", "成绩", "发布批次", "考风考纪", "通知记录",
     ]
     assert wb["学生"].max_row == 7  # 表头 + 6 人
-    assert wb["家长"].max_row == 4  # 表头 + 3 条
     assert wb["考试"].max_row == 2
     assert wb["参试名单"].max_row == 7
     assert wb["成绩"].max_row == 13  # 表头 + 12 条

@@ -48,7 +48,7 @@ vi.stubGlobal('fetch', vi.fn((url: string, init: { method?: string; body?: strin
       ok: true, status: 200,
       json: () => Promise.resolve({
         exam_id: 3, proofreader_role: 'subject_leader', approval_levels: 1,
-        publish_order: 'teachers_first', objection_open: true,
+        objection_open: true,
       }),
     })
   }
@@ -96,18 +96,18 @@ function changeReq(over: Partial<ScoreChangeRequest>): ScoreChangeRequest {
 }
 
 describe('发布与校对锁定 API 客户端(KW-36~40)', () => {
-  it('发布设置查询与保存走 /publish-settings,带全部四项口径', async () => {
+  it('发布设置查询与保存走 /publish-settings,带全部三项口径', async () => {
     await getPublishSettings(3)
     expect(lastUrl).toBe('/api/exam/exams/3/publish-settings')
     await savePublishSettings(3, {
       proofreader_role: 'peer_teacher', approval_levels: 2,
-      publish_order: 'sync', objection_open: false,
+      objection_open: false,
     })
     expect(lastUrl).toBe('/api/exam/exams/3/publish-settings')
     expect(lastMethod).toBe('PUT')
     expect(lastBody).toMatchObject({
       proofreader_role: 'peer_teacher', approval_levels: 2,
-      publish_order: 'sync', objection_open: false,
+      objection_open: false,
     })
   })
 

@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   ARRANGEMENT_TYPES, EXAM_STATUSES, EXAM_TYPES, PARTICIPANT_STATUSES,
-  addParticipant, canAdvanceExamStatus, changeExamStatus, checkExamSchedule,
+  addParticipants, canAdvanceExamStatus, changeExamStatus, checkExamSchedule,
   createSpecialArrangement, deleteParticipant, deleteSpecialArrangement, getExam,
   getPaperInfo, isExamDraft, isExamStatusBackward, listParticipants, listSpecialArrangements,
   generateParticipants, nextExamStatus, saveExamSubjects, savePaperInfo, updateExam,
@@ -206,19 +206,26 @@ interface ScheduleRow {
 const scheduleRows = ref<ScheduleRow[]>([])
 const conflicts = ref<ScheduleConflict[]>([])
 const conflictChecked = ref(false)
-const addSubjectId = ref<number | null>(null)
+const addSubjectIds = ref<number[]>([])
 const addableSubjects = computed(() =>
   subjectOptions.value.filter((o) => !scheduleRows.value.some((r) => r.subject_id === o.value)),
 )
+/** 全选:把当前可加的科目一次全部勾上,再点“添加科目”一次加完。 */
+function selectAllAddableSubjects() {
+  addSubjectIds.value = addableSubjects.value.map((o) => o.value)
+}
 function addScheduleRow() {
-  if (!addSubjectId.value) { message.warning('请选择科目'); return }
-  const s = allSubjects.value.find((x) => x.id === addSubjectId.value)
-  if (!s) return
-  scheduleRows.value.push({
-    subject_id: s.id, subject_name: s.name,
-    exam_date: null, start_time: null, end_time: null, full_score: null,
-  })
-  addSubjectId.value = null
+  if (!addSubjectIds.value.length) { message.warning('请选择科目'); return }
+  for (const id of addSubjectIds.value) {
+    const s = allSubjects.value.find((x) => x.id === id)
+    if (!s) continue
+    if (scheduleRows.value.some((r) => r.subject_id === s.id)) continue
+    scheduleRows.value.push({
+      subject_id: s.id, subject_name: s.name,
+      exam_date: null, start_time: null, end_time: null, full_score: null,
+    })
+  }
+  addSubjectIds.value = []
 }
 function removeScheduleRow(row: ScheduleRow) {
   scheduleRows.value = scheduleRows.value.filter((r) => r.subject_id !== row.subject_id)
@@ -252,7 +259,7 @@ async function saveSchedule() {
 }
 
 // ── 参试名单(KW-10) ──
-const filterClass = ref<number | null>(null)
+const filterClass = ref<number[]>([])
 const filterPStatus = ref<string | null>(null)
 const filterPQ = ref('')
 const pStatusOptions = PARTICIPANT_STATUSES.map((s) => ({ label: s, value: s }))
@@ -264,7 +271,7 @@ async function reloadParticipants() {
   pLoading.value = true
   try {
     const res = await listParticipants(exam.value.id, {
-      classUnitId: filterClass.value,
+      classUnitIds: filterClass.value.length ? filterClass.value : undefined,
       status: filterPStatus.value,
       q: filterPQ.value || undefined,
     })
@@ -287,20 +294,20 @@ async function onGenerate() {
   }
 }
 const showAddP = ref(false)
-const addPForm = ref({ student_id: null as number | null, note: '' })
+const addPForm = ref({ student_ids: [] as number[], note: '' })
 function openAddP() {
-  addPForm.value = { student_id: null, note: '' }
+  addPForm.value = { student_ids: [], note: '' }
   showAddP.value = true
 }
 async function saveAddP() {
-  if (!exam.value || !addPForm.value.student_id) { message.warning('请选择学生'); return }
+  if (!exam.value || !addPForm.value.student_ids.length) { message.warning('请选择学生'); return }
   try {
-    await addParticipant(exam.value.id, {
-      student_id: addPForm.value.student_id,
+    const res = await addParticipants(exam.value.id, {
+      student_ids: addPForm.value.student_ids,
       note: addPForm.value.note.trim() || null,
     })
     showAddP.value = false
-    message.success('已增补')
+    message.success(res.skipped ? `已增补 ${res.created} 人,跳过 ${res.skipped} 人(已在名单中)` : `已增补 ${res.created} 人`)
     await reloadParticipants()
   } catch (e) {
     message.error((e as ApiError).detail || '增补失败')
@@ -543,9 +550,11 @@ function arrStudentName(a: SpecialArrangement): string {
           <n-space :wrap="true" align="center" style="margin-top: 12px">
             <template v-if="isDraft && canManage">
               <n-select
-                v-model:value="addSubjectId" :options="addableSubjects" clearable
-                placeholder="选择科目" style="width: 160px"
+                v-model:value="addSubjectIds" :options="addableSubjects" multiple clearable
+                max-tag-count="responsive" placeholder="选择科目(可多选)" style="width: 240px"
+                data-testid="schedule-add-subjects"
               />
+              <n-button size="small" data-testid="schedule-select-all" @click="selectAllAddableSubjects">全选</n-button>
               <n-button @click="addScheduleRow">添加科目</n-button>
               <n-button type="primary" @click="saveSchedule">保存日程并检查冲突</n-button>
             </template>
@@ -560,8 +569,9 @@ function arrStudentName(a: SpecialArrangement): string {
         <div class="ios-card"><div class="ios-card-body">
           <n-space :wrap="true" align="center">
             <n-select
-              v-model:value="filterClass" :options="classOptions" clearable
-              placeholder="班级" style="width: 170px" @update:value="reloadParticipants"
+              v-model:value="filterClass" :options="classOptions" multiple clearable
+              max-tag-count="responsive" placeholder="班级(可多选)" style="width: 220px"
+              data-testid="participant-filter-class" @update:value="reloadParticipants"
             />
             <n-select
               v-model:value="filterPStatus" :options="pStatusOptions" clearable
@@ -668,8 +678,8 @@ function arrStudentName(a: SpecialArrangement): string {
     <!-- 参试个别增补 -->
     <n-modal v-model:show="showAddP" preset="card" title="个别增补参试学生" style="max-width: 480px">
       <n-space vertical>
-        <n-text>学生</n-text>
-        <n-select v-model:value="addPForm.student_id" :options="studentOptions" filterable placeholder="按姓名或学号选择学生" />
+        <n-text>学生(可多选)</n-text>
+        <n-select v-model:value="addPForm.student_ids" :options="studentOptions" multiple filterable max-tag-count="responsive" placeholder="按姓名或学号选择学生(可多选)" data-testid="add-participant-students" />
         <n-text>备注(选填)</n-text>
         <n-input v-model:value="addPForm.note" type="textarea" placeholder="如:借读生" />
         <n-button type="primary" @click="saveAddP">增补</n-button>

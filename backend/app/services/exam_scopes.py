@@ -8,9 +8,7 @@
 - 教研组长 = teacher,且在 subject_leaders 表中有本科目记录
 - 班主任 = teacher,且其 Teacher 记录是某班的 homeroom_teacher
 - 任课教师 = teacher
-- 学生 = student,家长 = parent(第 8 批新增 Role 枚举值,用户名=学号/家长手机号;
-  自助查询走 ExamAccountLink,不走 visible_class_ids;考务派生角色仍只覆盖教职工六类)
-
+- 学生与家长不设账号、不进本系统角色体系,只有教师看成绩。
 注意:主任配了年级即视为年级组长,不再同时视为教务(两者按映射互斥);
 年级组长管学生档案的能力仍由 can_manage_students 另行规定,不受此影响。
 

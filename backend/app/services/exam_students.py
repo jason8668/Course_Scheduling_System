@@ -1,9 +1,8 @@
-"""考务地基服务(KW-01~07):学生档案、导入导出、异动、家长、分值、考号。
+"""考务地基服务(KW-01~07):学生档案、导入导出、异动、分值、考号。
 
 权限口径:
 - 学生写操作(新增/修改/导入/异动/生成考号)只允许 admin/director,
   由 API 层 require_roles + can_manage_students 把关。
-- 家长写操作例外(KW-05):班主任可改本班、教务可改全校。
 - 科目设置(KW-06):admin/director 全可,教研组长只可管本科目。
 - 读操作按 exam_scopes 的可见范围过滤,越权 403。
 """
@@ -23,7 +22,6 @@ from app.models.exam_foundation import (
     STUDENT_GENDERS,
     STUDENT_STATUSES,
     ExamNumberRule,
-    ParentContact,
     Student,
     StudentStatusChange,
     SubjectScoreSetting,
@@ -32,7 +30,6 @@ from app.models.exam_scopes import SubjectLeader
 from app.models.semester import Semester
 from app.models.user import User
 from app.schemas.exam_students import (
-    ParentOut,
     StudentOut,
     StudentStatusChangeOut,
     SubjectSettingOut,
@@ -55,24 +52,9 @@ STUDENT_TEMPLATE_COLUMNS = [
     ("班级", "必填,需为已建立的班名", "701"),
     ("状态", "选填:在读/休学/毕业,默认在读", "在读"),
     ("考号", "选填", "070001"),
-    ("家长姓名", "选填", "张父"),
-    ("家长关系", "选填:父亲/母亲/其他", "父亲"),
-    ("家长电话", "选填", "13812345678"),
 ]
 
 S_SHAPE_NO_SCORE_WARNING = "暂无上次成绩，暂按学号顺序编排"
-
-
-def mask_phone(phone: str | None) -> str | None:
-    """家长电话脱敏:13812345678 -> 138****5678。"""
-    if not phone:
-        return phone
-    p = phone.strip()
-    if len(p) >= 7:
-        return f"{p[:3]}****{p[-4:]}"
-    if len(p) > 4:
-        return f"{p[:2]}****{p[-2:]}"
-    return "****"
 
 
 def _teacher_ids(db: Session, user: User) -> set[int]:
@@ -89,20 +71,6 @@ def _is_homeroom_of(db: Session, user: User, class_unit_id: int) -> bool:
     return cls is not None and cls.homeroom_teacher_id in teacher_ids
 
 
-def can_see_full_phone(db: Session, user: User, student: Student) -> bool:
-    """详情页完整号码可见范围:教务/管理员全校,班主任仅本班。"""
-    if can_manage_students(db, user):
-        return True
-    return _is_homeroom_of(db, user, student.class_unit_id)
-
-
-def can_manage_parents(db: Session, user: User, student: Student) -> bool:
-    """家长写权限(KW-05):教务可改全校,班主任只可改本班。"""
-    if can_manage_students(db, user):
-        return True
-    return _is_homeroom_of(db, user, student.class_unit_id)
-
-
 def _class_map(db: Session, semester_id: int) -> dict[int, ClassUnit]:
     rows = db.scalars(
         select(ClassUnit).where(ClassUnit.semester_id == semester_id)
@@ -110,18 +78,9 @@ def _class_map(db: Session, semester_id: int) -> dict[int, ClassUnit]:
     return {c.id: c for c in rows}
 
 
-def to_student_out(db: Session, student: Student, full_phone: bool) -> StudentOut:
-    """组装 StudentOut;列表一律脱敏,详情按权限决定是否给完整号码。"""
+def to_student_out(db: Session, student: Student) -> StudentOut:
+    """组装 StudentOut。"""
     cls = db.get(ClassUnit, student.class_unit_id)
-    parents = [
-        ParentOut(
-            id=p.id,
-            name=p.name,
-            relation=p.relation,
-            phone=p.phone if full_phone else mask_phone(p.phone),
-        )
-        for p in sorted(student.parents, key=lambda x: x.id)
-    ]
     return StudentOut(
         id=student.id,
         semester_id=student.semester_id,
@@ -133,7 +92,6 @@ def to_student_out(db: Session, student: Student, full_phone: bool) -> StudentOu
         gender=student.gender,
         status=student.status,
         exam_no=student.exam_no,
-        parents=parents,
     )
 
 
@@ -414,42 +372,6 @@ def list_status_changes(db: Session, student: Student) -> list[StudentStatusChan
     return out
 
 
-# ── 家长 ──────────────────────────────
-def create_parent(
-    db: Session, student: Student, name: str, relation: str | None, phone: str | None
-) -> ParentContact:
-    parent = ParentContact(
-        student_id=student.id, name=name, relation=relation, phone=phone
-    )
-    db.add(parent)
-    db.commit()
-    db.refresh(parent)
-    return parent
-
-
-def get_parent(db: Session, parent_id: int) -> ParentContact:
-    parent = db.get(ParentContact, parent_id)
-    if parent is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "找不到家长联系信息")
-    return parent
-
-
-def update_parent(
-    db: Session, parent: ParentContact, name: str, relation: str | None, phone: str | None
-) -> ParentContact:
-    parent.name = name
-    parent.relation = relation
-    parent.phone = phone
-    db.commit()
-    db.refresh(parent)
-    return parent
-
-
-def delete_parent(db: Session, parent: ParentContact) -> None:
-    db.delete(parent)
-    db.commit()
-
-
 # ── 导入导出 ──────────────────────────────
 def build_student_template() -> bytes:
     """学生导入模板:固定三列表头(栏名/说明/范例),第 4 列起读数据。"""
@@ -514,9 +436,6 @@ def import_students(db: Session, semester_id: int, file_bytes: bytes) -> dict:
         class_name = _cell(row, 3)
         status_value = _cell(row, 4) or "在读"
         exam_no = _cell(row, 5)
-        parent_name = _cell(row, 6)
-        parent_relation = _cell(row, 7)
-        parent_phone = _cell(row, 8)
         if not student_no or not name or not class_name:
             errors.append(f"第 {idx} 行:学号、姓名、班级皆必填")
             continue
@@ -540,9 +459,6 @@ def import_students(db: Session, semester_id: int, file_bytes: bytes) -> dict:
             "class_unit_id": classes_by_name[class_name].id,
             "status": status_value,
             "exam_no": exam_no,
-            "parent_name": parent_name,
-            "parent_relation": parent_relation,
-            "parent_phone": parent_phone,
         })
     if errors:
         return {"created": 0, "updated": 0, "errors": errors}
@@ -572,22 +488,6 @@ def import_students(db: Session, semester_id: int, file_bytes: bytes) -> dict:
             if item["exam_no"] is not None:
                 student.exam_no = item["exam_no"]
             updated += 1
-        if item["parent_name"]:
-            parent = next(
-                (p for p in student.parents if p.name == item["parent_name"]), None
-            )
-            if parent is None:
-                db.add(ParentContact(
-                    student_id=student.id,
-                    name=item["parent_name"],
-                    relation=item["parent_relation"],
-                    phone=item["parent_phone"],
-                ))
-            else:
-                if item["parent_relation"] is not None:
-                    parent.relation = item["parent_relation"]
-                if item["parent_phone"] is not None:
-                    parent.phone = item["parent_phone"]
     db.commit()
     return {"created": created, "updated": updated, "errors": []}
 
@@ -595,11 +495,11 @@ def import_students(db: Session, semester_id: int, file_bytes: bytes) -> dict:
 def build_student_export(
     db: Session, students: list[Student]
 ) -> bytes:
-    """导出学生名单:家长电话默认脱敏导出。"""
+    """导出学生名单。"""
     wb = Workbook()
     ws = wb.active
     ws.title = "学生名单"
-    ws.append(["学号", "姓名", "性别", "班级", "年级", "状态", "考号", "家长姓名", "家长关系", "家长电话"])
+    ws.append(["学号", "姓名", "性别", "班级", "年级", "状态", "考号"])
     for cell in ws[1]:
         cell.font = Font(bold=True)
     classes = {}
@@ -607,7 +507,6 @@ def build_student_export(
         if s.class_unit_id not in classes:
             classes[s.class_unit_id] = db.get(ClassUnit, s.class_unit_id)
         cls = classes[s.class_unit_id]
-        parents = sorted(s.parents, key=lambda x: x.id)
         ws.append([
             s.student_no,
             s.name,
@@ -616,9 +515,6 @@ def build_student_export(
             cls.grade if cls else "",
             s.status,
             s.exam_no or "",
-            "、".join(p.name for p in parents),
-            "、".join(p.relation or "" for p in parents),
-            "、".join(mask_phone(p.phone) or "" for p in parents),
         ])
     for col in ws.columns:
         ws.column_dimensions[col[0].column_letter].width = 16

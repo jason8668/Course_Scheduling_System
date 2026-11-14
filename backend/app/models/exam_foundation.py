@@ -1,4 +1,4 @@
-"""考务地基模型(KW-01~07):学生档案、异动记录、家长联系、学科分值、考号规则。
+"""考务地基模型(KW-01~07):学生档案、异动记录、学科分值、考号规则。
 
 学生直接复用现有班级数据(ClassUnit),不另建班级主数据。
 所有表都按 semester_id 快照,与基础资料同一口径。
@@ -56,9 +56,6 @@ class Student(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    parents: Mapped[list["ParentContact"]] = relationship(
-        back_populates="student", cascade="all, delete-orphan", lazy="selectin"
-    )
     status_changes: Mapped[list["StudentStatusChange"]] = relationship(
         back_populates="student", cascade="all, delete-orphan", lazy="selectin"
     )
@@ -94,22 +91,6 @@ class StudentStatusChange(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     student: Mapped["Student"] = relationship(back_populates="status_changes")
-
-
-class ParentContact(Base):
-    """家长联系信息(KW-05):一名学生可多位家长。"""
-
-    __tablename__ = "parent_contacts"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    student_id: Mapped[int] = mapped_column(
-        ForeignKey("students.id", ondelete="CASCADE"), index=True
-    )
-    name: Mapped[str] = mapped_column(String(32))
-    relation: Mapped[str | None] = mapped_column(String(20), nullable=True)  # 如 父亲/母亲
-    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
-
-    student: Mapped["Student"] = relationship(back_populates="parents")
 
 
 class SubjectScoreSetting(Base):

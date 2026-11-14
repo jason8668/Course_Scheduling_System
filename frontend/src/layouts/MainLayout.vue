@@ -67,7 +67,7 @@ const menuOptions = computed<MenuOption[]>(() => {
     return [
       menuItem('exam-students', '学生档案'),
       menuItem('exam-subject-settings', '学科分值'),
-      menuItem('exam-exam-number-rule', '考号规则'),
+      menuItem('exam-number-rule', '考号规则'),
       menuItem('exam-exams', '考试管理'),
     ]
   }

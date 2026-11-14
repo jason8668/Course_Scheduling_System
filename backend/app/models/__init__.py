@@ -49,7 +49,6 @@ from app.models.exam_analysis import (
 from app.models.exam_archive import ExamArchive
 from app.models.exam_foundation import (
     ExamNumberRule,
-    ParentContact,
     Student,
     StudentStatusChange,
     SubjectScoreSetting,
@@ -71,7 +70,6 @@ from app.models.exam_publish import (
     ExamScoreChangeRequest,
     ExamScoreLock,
 )
-from app.models.exam_reports import ExamAccountLink, ExamReportSetting
 from app.models.exam_scores import (
     ExamMakeup,
     ExamMakeupScore,
@@ -154,7 +152,6 @@ __all__ = [
     "DutySwapRequest",
     "DutyReminderLog",
     "Exam",
-    "ExamAccountLink",
     "ExamAnalysisSetting",
     "ExamArchive",
     "ExamArrangementLock",
@@ -178,7 +175,6 @@ __all__ = [
     "ExamProofreading",
     "ExamPublishBatch",
     "ExamPublishSetting",
-    "ExamReportSetting",
     "ExamRoom",
     "ExamRoomAssignment",
     "ExamScore",
@@ -193,7 +189,6 @@ __all__ = [
     "ExamSubject",
     "ExamSubjectThreshold",
     "ExamTargetStudent",
-    "ParentContact",
     "Student",
     "StudentStatusChange",
     "SubjectLeader",

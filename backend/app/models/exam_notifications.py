@@ -2,7 +2,7 @@
 
 决策:不复用 notifications 表——那张表强制 semester_id + teacher_id、
 没有 channel / status / error / related_type / related_id 栏位,
-学生/家长收件人根本没有 Teacher 记录,装不下考务通知上下文,
+装不下考务通知上下文,
 故按任务要求新建 ExamNotificationLog;开关另存 ExamNotificationSetting。
 """
 
@@ -31,7 +31,7 @@ NOTIFICATION_STATUSES = ("成功", "失败", "待发送")
 
 
 class ExamNotificationSetting(Base):
-    """考试通知开关(KW-57~60 共用):一次考试一条,未设过用默认值(全开)。"""
+    """考试通知开关(KW-57~59 共用):一次考试一条,未设过用默认值(全开)。"""
 
     __tablename__ = "exam_notification_settings"
     __table_args__ = (
@@ -45,7 +45,6 @@ class ExamNotificationSetting(Base):
     schedule_notify_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     invigilation_remind_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     score_deadline_remind_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    publish_notify_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -56,14 +55,14 @@ class ExamNotificationLog(Base):
     """考务通知发送记录(KW-61):每发一次(每位收件人)记一行。
 
     recipient_user_id 为收件人账号 id:教师取 Teacher.user_id(无账号时为空,
-    以 recipient_name 辨识);学生/家长取 User id。related_type / related_id
+    以 recipient_name 辨识)。related_type / related_id
     标明这条通知关联的实体,供到期扫去重用:
     考试日程为 exam/考试 id;监考手动为 invigilation/教师 id,
     到期扫考前一天为 invigilation_day_before/监考安排 id、
     当天开考前为 invigilation_day_of/监考安排 id;
     录分手动为 score_deadline/教师 id,到期扫 24 小时为
-    score_deadline_24h/教师 id、2 小时为 score_deadline_2h/教师 id;
-    成绩发布为 publish/学生 id。
+    score_deadline_24h/教师 id、2 小时为 score_deadline_2h/教师 id。
+    成绩发布通知已取消,历史记录仍保留该类型。
     """
 
     __tablename__ = "exam_notification_logs"

@@ -8,8 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   CHANGE_REQUEST_STATUSES, OBJECTION_STATUSES,
-  PROOFREADER_ROLE_LABELS, PROOFREADER_ROLES, PUBLISH_ORDER_LABELS,
-  PUBLISH_ORDERS, PUBLISH_SCOPE_TYPES,
+  PROOFREADER_ROLE_LABELS, PROOFREADER_ROLES, PUBLISH_SCOPE_TYPES,
   approvalLevelLabel, canLockAfterProofreading, changeApprovalProgressText,
   closeObjection, createChangeRequest, createLock, createObjection, createPublishBatch,
   decideChangeRequest, decideProofreading, deleteLock, formatPublishScope, getExam,
@@ -58,7 +57,6 @@ const settings = ref<PublishSettings | null>(null)
 const settingsForm = ref({
   proofreader_role: 'subject_leader',
   approval_levels: 1,
-  publish_order: 'teachers_first',
   objection_open: true,
 })
 const proofreaderRoleOptions = PROOFREADER_ROLES.map((r) => ({
@@ -68,16 +66,12 @@ const approvalLevelOptions = [
   { label: '1 层', value: 1 },
   { label: '2 层', value: 2 },
 ]
-const publishOrderOptions = PUBLISH_ORDERS.map((o) => ({
-  label: PUBLISH_ORDER_LABELS[o], value: o,
-}))
 async function reloadSettings() {
   try {
     settings.value = await getPublishSettings(examId)
     settingsForm.value = {
       proofreader_role: settings.value.proofreader_role,
       approval_levels: settings.value.approval_levels,
-      publish_order: settings.value.publish_order,
       objection_open: settings.value.objection_open,
     }
   } catch (e) {
@@ -407,11 +401,6 @@ function goBack() {
               v-model:value="settingsForm.approval_levels" :options="approvalLevelOptions"
               style="width: 90px" data-testid="publish-approval-levels"
             />
-            <span style="font-size: 13px">发布顺序</span>
-            <n-select
-              v-model:value="settingsForm.publish_order" :options="publishOrderOptions"
-              style="width: 130px" data-testid="publish-order"
-            />
             <span style="font-size: 13px">异议入口</span>
             <n-switch v-model:value="settingsForm.objection_open" data-testid="publish-objection-open">
               <template #checked>开放</template>
@@ -691,7 +680,7 @@ function goBack() {
             本考试未开放成绩异议入口(发布设置里可开启),登记将被后端拒绝。
           </n-alert>
           <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 8px">
-            学生/家长对成绩有疑问可登记异议,由任课教师复核后回复处理结果,形成闭环记录。
+            学生对成绩有疑问,可由教师/教务代为登记异议,由任课教师复核后回复处理结果,形成闭环记录。
             异议须先回复才能关闭;只有待复核的异议能回复,只有已回复的异议能关闭。
           </n-text>
           <n-space :wrap="true" align="center">

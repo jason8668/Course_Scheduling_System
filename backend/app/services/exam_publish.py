@@ -32,7 +32,6 @@ from app.models.exam_foundation import Student
 from app.models.exam_publish import (
     CHANGE_DECISIONS,
     PROOFREADER_ROLES,
-    PUBLISH_ORDERS,
     PUBLISH_SCOPE_TYPES,
     ExamObjection,
     ExamProofreading,
@@ -54,7 +53,6 @@ from app.services.exam_scopes import (
 DEFAULT_SETTINGS = {
     "proofreader_role": "subject_leader",
     "approval_levels": 1,
-    "publish_order": "teachers_first",
     "objection_open": True,
 }
 
@@ -195,14 +193,13 @@ def settings_out(exam: Exam, row: ExamPublishSetting | None) -> dict:
         "exam_id": exam.id,
         "proofreader_role": row.proofreader_role,
         "approval_levels": row.approval_levels,
-        "publish_order": row.publish_order,
         "objection_open": row.objection_open,
     }
 
 
 def upsert_settings(
     db: Session, exam: Exam, proofreader_role: str, approval_levels: int,
-    publish_order: str, objection_open: bool,
+    objection_open: bool,
 ) -> ExamPublishSetting:
     if proofreader_role not in PROOFREADER_ROLES:
         raise HTTPException(
@@ -213,18 +210,12 @@ def upsert_settings(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY, "审批层级只能是 1 或 2"
         )
-    if publish_order not in PUBLISH_ORDERS:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "发布顺序只能是 teachers_first(教师先看)或 sync(同步)",
-        )
     row = get_settings(db, exam)
     if row is None:
         row = ExamPublishSetting(exam_id=exam.id)
         db.add(row)
     row.proofreader_role = proofreader_role
     row.approval_levels = approval_levels
-    row.publish_order = publish_order
     row.objection_open = objection_open
     db.flush()
     return row
@@ -888,8 +879,7 @@ def is_score_published(
 
     已发布批次覆盖即算已发布:年级批次按 scope_value 等于年级覆盖;
     班级批次按 scope_value 等于班级 id 覆盖。待发布与已撤回不算。
-    publish_order(教师先看/同步)只影响第 7~8 批的可见性控制,不影响
-    本判定:批次已发布即视为已发布。
+    批次已发布即视为已发布。
     """
     rows = db.scalars(
         select(ExamPublishBatch).where(

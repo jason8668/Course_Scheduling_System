@@ -11,14 +11,12 @@ class NotificationSettingOut(BaseModel):
     schedule_notify_enabled: bool = True
     invigilation_remind_enabled: bool = True
     score_deadline_remind_enabled: bool = True
-    publish_notify_enabled: bool = True
 
 
 class NotificationSettingPut(BaseModel):
     schedule_notify_enabled: bool = True
     invigilation_remind_enabled: bool = True
     score_deadline_remind_enabled: bool = True
-    publish_notify_enabled: bool = True
 
 
 class NotifyOut(BaseModel):

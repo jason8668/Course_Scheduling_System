@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EXAM_STATUSES,
   addParticipant,
+  addParticipants,
   canAdvanceExamStatus,
   changeExamStatus,
   checkExamSchedule,
@@ -91,12 +92,18 @@ describe('考试管理 API 客户端(KW-08~14)', () => {
   it('参试名单检索、生成、增补、标记、删除走契约端点', async () => {
     await listParticipants(3, { classUnitId: 5, status: '缺考', q: '张三' })
     expect(lastUrl).toBe('/api/exam/exams/3/participants?class_unit_id=5&status=%E7%BC%BA%E8%80%83&q=%E5%BC%A0%E4%B8%89')
+    await listParticipants(3, { classUnitIds: [5, 6] })
+    expect(lastUrl).toBe('/api/exam/exams/3/participants?class_unit_ids=5&class_unit_ids=6')
     await generateParticipants(3)
     expect(lastUrl).toBe('/api/exam/exams/3/participants/generate')
     expect(lastMethod).toBe('POST')
     await addParticipant(3, { student_id: 9, note: '借读生' })
     expect(lastUrl).toBe('/api/exam/exams/3/participants')
     expect(lastBody).toMatchObject({ student_id: 9 })
+    await addParticipants(3, { student_ids: [9, 10], note: '批量增补' })
+    expect(lastUrl).toBe('/api/exam/exams/3/participants/bulk')
+    expect(lastMethod).toBe('POST')
+    expect(lastBody).toMatchObject({ student_ids: [9, 10], note: '批量增补' })
     await updateParticipant(3, 11, { status: '缺考' })
     expect(lastUrl).toBe('/api/exam/exams/3/participants/11')
     expect(lastMethod).toBe('PATCH')

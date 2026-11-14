@@ -219,26 +219,26 @@ def test_publish_settings_defaults_and_update(client_db, seed):
     assert r.status_code == 200, r.text
     assert r.json() == {
         "exam_id": exam_id, "proofreader_role": "subject_leader",
-        "approval_levels": 1, "publish_order": "teachers_first",
+        "approval_levels": 1,
         "objection_open": True,
     }
     login(client, "t1")
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "peer_teacher", "approval_levels": 2,
-        "publish_order": "sync", "objection_open": False,
+        "objection_open": False,
     })
     assert r.status_code == 403, r.text  # 教师无权改设置
     login(client, "adm")
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "peer_teacher", "approval_levels": 2,
-        "publish_order": "sync", "objection_open": False,
+        "objection_open": False,
     })
     assert r.status_code == 200, r.text
     assert r.json()["approval_levels"] == 2
     assert r.json()["objection_open"] is False
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "subject_leader", "approval_levels": 3,
-        "publish_order": "teachers_first", "objection_open": True,
+        "objection_open": True,
     })
     assert r.status_code == 422, r.text
 
@@ -342,7 +342,7 @@ def test_proofreading_peer_teacher_mode(client_db, seed):
     login(client, "adm")
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "peer_teacher", "approval_levels": 1,
-        "publish_order": "teachers_first", "objection_open": True,
+        "objection_open": True,
     })
     assert r.status_code == 200, r.text
     enter_and_submit(
@@ -507,7 +507,7 @@ def test_change_request_two_levels_order_and_reject(client_db, seed):
     login(client, "adm")
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "subject_leader", "approval_levels": 2,
-        "publish_order": "teachers_first", "objection_open": True,
+        "objection_open": True,
     })
     assert r.status_code == 200, r.text
     sid = _locked_score_id(client_db, seed, exam_id)
@@ -730,7 +730,7 @@ def test_objection_closed_when_disabled(client_db, seed):
     login(client, "adm")
     r = client.put(f"/api/exam/exams/{exam_id}/publish-settings", json={
         "proofreader_role": "subject_leader", "approval_levels": 1,
-        "publish_order": "teachers_first", "objection_open": False,
+        "objection_open": False,
     })
     assert r.status_code == 200, r.text
     login(client, "t1")

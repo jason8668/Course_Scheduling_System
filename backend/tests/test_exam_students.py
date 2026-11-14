@@ -1,4 +1,4 @@
-"""考务地基测试(KW-01~05):学生档案、导入导出、异动、家长、权限与审计。
+"""考务地基测试(KW-01~04):学生档案、导入导出、异动、权限与审计。
 
 本文件自带 app fixture(挂 auth + exam_students 路由),因为
 conftest 的 env 尚未接线新路由(接线由协调员统一做,见汇报)。
@@ -19,7 +19,7 @@ from app.api import exam_students as exam_api
 from app.core.db import Base, get_db
 from app.models.audit import AuditLog
 from app.models.basedata import ClassUnit, Subject, Teacher
-from app.models.exam_foundation import ParentContact, Student, StudentStatusChange
+from app.models.exam_foundation import Student, StudentStatusChange
 from app.models.exam_scopes import SubjectLeader  # noqa: F401  # 注册模型
 from app.models.semester import Semester
 from app.models.user import Role, UserGradeScope
@@ -90,7 +90,6 @@ def seed(client_db):
     s3 = Student(semester_id=sem.id, class_unit_id=cls8.id, student_no="20260201", name="王五", gender="男")
     db.add_all([s1, s2, s3])
     db.flush()
-    db.add(ParentContact(student_id=s1.id, name="张父", relation="父亲", phone="13812345678"))
     db.commit()
     return {
         "sem": sem, "math": math, "chinese": chinese,
@@ -114,9 +113,9 @@ def students_url(sem_id, **kw):
 def make_import_file(rows):
     wb = Workbook()
     ws = wb.active
-    ws.append(["学号", "姓名", "性别", "班级", "状态", "考号", "家长姓名", "家长关系", "家长电话"])
-    ws.append(["必填", "必填", "选填", "必填", "选填", "选填", "选填", "选填", "选填"])
-    ws.append(["20260101", "张三", "男", "701", "在读", "", "", "", ""])
+    ws.append(["学号", "姓名", "性别", "班级", "状态", "考号"])
+    ws.append(["必填", "必填", "选填", "必填", "选填", "选填"])
+    ws.append(["20260101", "张三", "男", "701", "在读", ""])
     for row in rows:
         ws.append(row)
     buf = io.BytesIO()
@@ -138,7 +137,6 @@ def test_create_student_201_and_audit(client_db, seed):
     assert body["class_name"] == "701"
     assert body["grade"] == 7
     assert body["status"] == "在读"
-    assert body["parents"] == []
     assert db.query(AuditLog).filter_by(action="exam_student_create").count() == 1
 
 
@@ -165,24 +163,6 @@ def test_list_filters_and_total(client_db, seed):
     assert client.get(students_url(sem, status="休学")).json()["total"] == 0
     page = client.get(students_url(sem, limit=2, offset=2)).json()
     assert page["total"] == 3 and len(page["items"]) == 1
-
-
-def test_list_parent_phone_masked(client_db, seed):
-    client, db = client_db
-    login(client, "adm")
-    items = client.get(students_url(seed["sem"].id, q="张三")).json()["items"]
-    assert items[0]["parents"][0]["phone"] == "138****5678"
-
-
-def test_detail_full_phone_only_for_homeroom_and_academic(client_db, seed):
-    client, db = client_db
-    s1 = seed["s1"].id
-    login(client, "jiao")
-    assert client.get(f"/api/exam/students/{s1}").json()["parents"][0]["phone"] == "13812345678"
-    login(client, "t1")  # 701 班主任
-    assert client.get(f"/api/exam/students/{s1}").json()["parents"][0]["phone"] == "13812345678"
-    login(client, "t2")  # 801 班主任,看 701 学生应 403
-    assert client.get(f"/api/exam/students/{s1}").status_code == 403
 
 
 def test_teacher_list_scoped_to_own_class(client_db, seed):
@@ -293,44 +273,6 @@ def test_status_change_validation_errors(client_db, seed):
     assert db.query(StudentStatusChange).count() == 0
 
 
-# ── KW-05 家长 ──────────────────────────────
-def test_parent_crud_and_homeroom_permission(client_db, seed):
-    client, db = client_db
-    s1 = seed["s1"].id
-    login(client, "t1")  # 701 班主任:可改本班
-    r = client.post(f"/api/exam/students/{s1}/parents", json={
-        "name": "张母", "relation": "母亲", "phone": "13987654321",
-    })
-    assert r.status_code == 201, r.text
-    pid = r.json()["id"]
-    r = client.patch(f"/api/exam/parents/{pid}", json={
-        "name": "张母", "relation": "母亲", "phone": "13900001111",
-    })
-    assert r.status_code == 200
-    assert db.query(AuditLog).filter_by(action="exam_parent_update").count() == 1
-    assert client.delete(f"/api/exam/parents/{pid}").status_code == 204
-    assert db.query(AuditLog).filter_by(action="exam_parent_delete").count() == 1
-    # 801 班主任改 701 学生家长 -> 403
-    login(client, "t2")
-    r = client.post(f"/api/exam/students/{s1}/parents", json={
-        "name": "越权", "relation": "父亲", "phone": "13800000000",
-    })
-    assert r.status_code == 403
-    # 无班级教师也 403
-    login(client, "t3")
-    assert client.get(f"/api/exam/students/{s1}/parents").status_code == 403
-
-
-def test_parent_list_masked_for_non_homeroom_reader(client_db, seed):
-    client, db = client_db
-    login(client, "t2")
-    # t2 是 801 班主任,连 701 学生的家长列表都看不到
-    assert client.get(f"/api/exam/students/{seed['s1'].id}/parents").status_code == 403
-    login(client, "t1")
-    rows = client.get(f"/api/exam/students/{seed['s1'].id}/parents").json()
-    assert rows[0]["phone"] == "13812345678"  # 本班班主任看完整号码
-
-
 # ── KW-02 导入 ──────────────────────────────
 def test_template_download(client_db, seed):
     client, db = client_db
@@ -349,18 +291,18 @@ def test_import_creates_and_is_idempotent(client_db, seed):
     login(client, "jiao")
     sem = seed["sem"].id
     data = make_import_file([
-        ["20260103", "赵六", "男", "701", "在读", "", "赵父", "父亲", "13711112222"],
-        ["20260104", "钱七", "女", "801", "在读", "", "", "", ""],
+        ["20260103", "赵六", "男", "701", "在读", ""],
+        ["20260104", "钱七", "女", "801", "在读", ""],
     ])
     r = client.post(f"/api/exam/students/import?semester_id={sem}",
                     files={"file": ("students.xlsx", data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")})
     assert r.status_code == 200, r.text
-    assert r.json() == {"created": 2, "updated": 0, "errors": []}
+    assert r.json() == {"created": 2, "updated": 0, "skipped": 0, "errors": []}
     assert db.query(Student).filter_by(student_no="20260103").one().name == "赵六"
     # 再导一次同一文件:全部更新,不产生重复学生
     r = client.post(f"/api/exam/students/import?semester_id={sem}",
                     files={"file": ("students.xlsx", data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")})
-    assert r.json() == {"created": 0, "updated": 2, "errors": []}
+    assert r.json() == {"created": 0, "updated": 2, "skipped": 0, "errors": []}
     assert db.query(Student).filter_by(student_no="20260103").count() == 1
     assert db.query(AuditLog).filter_by(action="exam_student_import").count() == 2
 
@@ -371,10 +313,10 @@ def test_import_errors_report_all_rows_and_write_nothing(client_db, seed):
     sem = seed["sem"].id
     before = db.query(Student).count()
     data = make_import_file([
-        ["20260103", "", "男", "701", "在读", "", "", "", ""],          # 缺姓名
-        ["20260104", "钱七", "女", "不存在的班", "在读", "", "", "", ""],  # 班级不存在
-        ["20260105", "孙八", "未知", "701", "在读", "", "", "", ""],      # 性别无效
-        ["20260105", "孙八", "男", "701", "在读", "", "", "", ""],        # 文件内学号重复
+        ["20260103", "", "男", "701", "在读", ""],          # 缺姓名
+        ["20260104", "钱七", "女", "不存在的班", "在读", ""],  # 班级不存在
+        ["20260105", "孙八", "未知", "701", "在读", ""],      # 性别无效
+        ["20260105", "孙八", "男", "701", "在读", ""],        # 文件内学号重复
     ])
     r = client.post(f"/api/exam/students/import?semester_id={sem}",
                     files={"file": ("students.xlsx", data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")})
@@ -396,7 +338,7 @@ def test_import_bad_file_400(client_db, seed):
 
 
 # ── KW-03 导出 ──────────────────────────────
-def test_export_masked_phones_and_audit(client_db, seed):
+def test_export_headers_and_audit(client_db, seed):
     client, db = client_db
     login(client, "jiao")
     r = client.get(f"/api/exam/students/export?semester_id={seed['sem'].id}&grade=7")
@@ -404,11 +346,8 @@ def test_export_masked_phones_and_audit(client_db, seed):
     wb = load_workbook(io.BytesIO(r.content), data_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
-    assert rows[0][:3] == ("学号", "姓名", "性别")
-    assert rows[0][9] == "家长电话"
+    assert rows[0] == ("学号", "姓名", "性别", "班级", "年级", "状态", "考号")
     assert len(rows) == 3  # 表头 + 2 名 7 年级学生
-    assert rows[1][9] == "138****5678"  # 导出默认脱敏
-    assert "13812345678" not in r.content.decode("latin1", errors="ignore")
     assert db.query(AuditLog).filter_by(action="exam_student_export").count() == 1
 
 

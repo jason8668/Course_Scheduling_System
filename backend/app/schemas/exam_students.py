@@ -1,24 +1,10 @@
-"""考务地基 schema(KW-01~07):学生、家长、异动、学科分值、考号规则。"""
+"""考务地基 schema(KW-01~07):学生、异动、学科分值、考号规则。"""
 
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.exam_foundation import CHANGE_TYPES, RULE_TYPES, STUDENT_STATUSES
-
-
-class ParentOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    name: str
-    relation: str | None = None
-    phone: str | None = None
-
-
-class ParentIn(BaseModel):
-    name: str = Field(min_length=1, max_length=32)
-    relation: str | None = Field(default=None, max_length=20)
-    phone: str | None = Field(default=None, max_length=32)
 
 
 class StudentOut(BaseModel):
@@ -33,7 +19,6 @@ class StudentOut(BaseModel):
     gender: str | None = None
     status: str
     exam_no: str | None = None
-    parents: list[ParentOut] = []
 
 
 class StudentCreate(BaseModel):
@@ -89,7 +74,77 @@ class StatusChangeListOut(BaseModel):
 class ImportResultOut(BaseModel):
     created: int = 0
     updated: int = 0
+    skipped: int = 0
     errors: list[str] = []
+
+
+# ── 从钉钉导入学生 ──────────────────────────────
+class DingTalkDeptOut(BaseModel):
+    dept_id: int
+    name: str
+    parent_id: int | None = None
+    children: list["DingTalkDeptOut"] = []
+
+
+class DingTalkPreviewMemberOut(BaseModel):
+    userid: str
+    name: str
+    mobile: str | None = None
+    role: str
+    student_no: str | None = None
+    student_no_missing: bool = False
+    exists: str = "new"  # new=新增 update=按学号更新 same_name=同名已存在
+    missing_fields: list[str] = []
+
+
+class DingTalkUnconfirmedOut(BaseModel):
+    userid: str
+    name: str
+    mobile: str | None = None
+    reason: str
+
+
+class DingTalkPreviewIn(BaseModel):
+    semester_id: int
+    dept_id: int
+    dept_path: list[str] = []
+    class_unit_id: int | None = None
+
+
+class DingTalkPreviewOut(BaseModel):
+    dept_id: int
+    dept_name: str
+    dept_path: list[str] = []
+    total_members: int = 0
+    student_count: int = 0
+    guardian_count: int = 0
+    teacher_count: int = 0
+    unknown_count: int = 0
+    suggested_class_unit_id: int | None = None
+    suggested_class_name: str | None = None
+    target_class_unit_id: int | None = None
+    target_class_name: str | None = None
+    students: list[DingTalkPreviewMemberOut] = []
+    unconfirmed: list[DingTalkUnconfirmedOut] = []
+
+
+class DingTalkImportRowIn(BaseModel):
+    """学号/姓名允许空串,由服务层逐行校验并回一句明白话(不要 422)。"""
+
+    userid: str = ""
+    name: str = Field(default="", max_length=32)
+    student_no: str = Field(default="", max_length=32)
+
+
+class DingTalkImportIn(BaseModel):
+    semester_id: int
+    dept_id: int
+    class_unit_id: int
+    students: list[DingTalkImportRowIn] = []
+
+
+class DingTalkImportResultOut(ImportResultOut):
+    skipped_detail: list[str] = []
 
 
 class SubjectSettingOut(BaseModel):

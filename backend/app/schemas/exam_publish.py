@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field
 class PublishSettingsIn(BaseModel):
     proofreader_role: str = "subject_leader"
     approval_levels: int = 1
-    publish_order: str = "teachers_first"
     objection_open: bool = True
 
 
@@ -18,7 +17,6 @@ class PublishSettingsOut(BaseModel):
     exam_id: int
     proofreader_role: str = "subject_leader"
     approval_levels: int = 1
-    publish_order: str = "teachers_first"
     objection_open: bool = True
 
 

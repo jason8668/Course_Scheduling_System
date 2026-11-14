@@ -22,12 +22,10 @@ describe('decideRoute', () => {
       .toBe('change-password')
   })
 
-  it('总主入口对所有登录角色放行,学生/家长除外', () => {
+  it('总主入口对所有登录角色放行', () => {
     expect(decideRoute(auth(['admin']), 'portal', false, null)).toBe(true)
     expect(decideRoute(auth(['director']), 'portal', false, null)).toBe(true)
     expect(decideRoute(auth(['teacher']), 'portal', false, null)).toBe(true)
-    expect(decideRoute(auth(['student']), 'portal', false, null)).toBe('exam-my-scores')
-    expect(decideRoute(auth(['parent']), 'portal', false, null)).toBe('exam-my-scores')
   })
 
   it('须改密时除改密页外一律去改密页', () => {
@@ -94,8 +92,6 @@ describe('decideRoute', () => {
     expect(decideRoute(a, 'exam-exam-report-class', false, null)).toBe(true)
     expect(decideRoute(a, 'exam-exam-report-student', false, null)).toBe(true)
     expect(decideRoute(a, 'exam-exam-teacher-scores', false, null)).toBe(true)
-    expect(decideRoute(a, 'exam-my-scores', false, null)).toBe('timetable-query')
-    expect(decideRoute(a, 'exam-exam-accounts', false, null)).toBe('timetable-query')
   })
 
   it('纯教师:通知与提醒页放行(教师要看发给本人的通知记录)', () => {
@@ -106,18 +102,6 @@ describe('decideRoute', () => {
   it('纯教师:归档与备份页不放行(教务功能，导回课表查询)', () => {
     const a = auth(['teacher'])
     expect(decideRoute(a, 'exam-exam-archive', false, null)).toBe('timetable-query')
-  })
-
-  it('学生/家长:登录后落地自助查询页,只能进自助查询页与改密页', () => {
-    const s = auth(['student'])
-    const p = auth(['parent'])
-    expect(decideRoute(s, 'login', true, null)).toBe('exam-my-scores')
-    expect(decideRoute(p, 'login', true, null)).toBe('exam-my-scores')
-    expect(decideRoute(s, 'exam-my-scores', false, null)).toBe(true)
-    expect(decideRoute(p, 'exam-my-scores', false, null)).toBe(true)
-    expect(decideRoute(s, 'dashboard', false, null)).toBe('exam-my-scores')
-    expect(decideRoute(s, 'exam-exams', false, null)).toBe('exam-my-scores')
-    expect(decideRoute(s, 'change-password', false, null)).toBe(true)
   })
 
   it('#10 回归:须改密的纯教师进改密页不能被教师清单挡回课表查询', () => {

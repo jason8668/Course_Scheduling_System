@@ -562,15 +562,21 @@ def list_participants(
     class_unit_id: int | None = None,
     status_filter: str | None = None,
     q: str | None = None,
+    class_unit_ids: list[int] | None = None,
 ) -> tuple[list[ParticipantOut], int]:
     require_exam_visible(db, user, exam)
-    _check_list_scope(db, user, class_unit_id)
+    # 多选班级优先;只给单个 class_unit_id 时仍按单个筛(兼容旧调用)。
+    ids = class_unit_ids if class_unit_ids else (
+        [class_unit_id] if class_unit_id is not None else None
+    )
+    for cid in ids or []:
+        _check_list_scope(db, user, cid)
     class_ids = visible_class_ids(db, user)
     stmt = select(ExamParticipant).where(ExamParticipant.exam_id == exam.id)
     if class_ids is not None:
         stmt = stmt.where(ExamParticipant.class_unit_id.in_(class_ids))
-    if class_unit_id is not None:
-        stmt = stmt.where(ExamParticipant.class_unit_id == class_unit_id)
+    if ids is not None:
+        stmt = stmt.where(ExamParticipant.class_unit_id.in_(ids))
     if status_filter:
         if status_filter not in PARTICIPANT_STATUSES:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "参试状态只能是正常、缺考或免考")
@@ -647,6 +653,38 @@ def add_participant(
     db.commit()
     db.refresh(row)
     return row
+
+
+def add_participants(
+    db: Session, exam: Exam, student_ids: list[int], note: str | None
+) -> tuple[int, int]:
+    """批量增补:一次勾选多人,共用一个备注;已在名单/不存在/不属于本学期者计入跳过,不中断整批。"""
+    created = 0
+    skipped = 0
+    for student_id in dict.fromkeys(student_ids):
+        student = db.get(Student, student_id)
+        if student is None or student.semester_id != exam.semester_id:
+            skipped += 1
+            continue
+        dup = db.scalar(
+            select(ExamParticipant.id).where(
+                ExamParticipant.exam_id == exam.id,
+                ExamParticipant.student_id == student_id,
+            )
+        )
+        if dup is not None:
+            skipped += 1
+            continue
+        db.add(ExamParticipant(
+            exam_id=exam.id,
+            student_id=student.id,
+            class_unit_id=student.class_unit_id,
+            status="正常",
+            note=note,
+        ))
+        created += 1
+    db.commit()
+    return created, skipped
 
 
 def update_participant(

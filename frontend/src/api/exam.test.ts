@@ -2,17 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   S_SHAPE_NO_SCORE_WARNING,
   changeStudentStatus,
-  createParent,
   createStudent,
   generateExamNumbers,
   getExamNumberRule,
   getStudent,
   listStudents,
   listSubjectSettings,
-  maskPhone,
   saveExamNumberRule,
   saveSubjectSettings,
-  updateParent,
 } from './exam'
 
 // fetch 打桩:记下最后一次请求的 URL、方法与 body,回固定 JSON
@@ -55,14 +52,6 @@ describe('考务 API 客户端', () => {
     expect(lastBody).toMatchObject({ to_status: '在读', change_type: '转班', new_class_unit_id: 6 })
   })
 
-  it('家长新增走学生下路由、修改走 /parents/{id}', async () => {
-    await createParent(9, { name: '张父', relation: '父亲', phone: '13812345678' })
-    expect(lastUrl).toBe('/api/exam/students/9/parents')
-    await updateParent(3, { name: '张父', relation: '父亲', phone: '13900001111' })
-    expect(lastUrl).toBe('/api/exam/parents/3')
-    expect(lastMethod).toBe('PATCH')
-  })
-
   it('学科分值批量保存走 PUT /subject-settings', async () => {
     await listSubjectSettings(1)
     expect(lastUrl).toBe('/api/exam/subject-settings?semester_id=1')
@@ -91,12 +80,5 @@ describe('考务 API 客户端', () => {
 
   it('S 型无成绩警告文案与后端原样一致', () => {
     expect(S_SHAPE_NO_SCORE_WARNING).toBe('暂无上次成绩，暂按学号顺序编排')
-  })
-
-  it('家长电话脱敏与后端 mask_phone 同规则', () => {
-    expect(maskPhone('13812345678')).toBe('138****5678')
-    expect(maskPhone('12345')).toBe('12****45')
-    expect(maskPhone('1234')).toBe('****')
-    expect(maskPhone(null)).toBe(null)
   })
 })

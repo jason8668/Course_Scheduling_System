@@ -7,7 +7,7 @@ import { formatScore, getExam, getStudentReportCard, listParticipants } from '@/
 import type { ExamDetail, StudentReportCard } from '@/api/exam'
 
 // 学生个人成绩单页(KW-53,教师/教务完整版):各科成绩、总分、含排名,
-// 可打印发放或电子发送给家长。版面照抄准考证打印页:白底黑框表 +
+// 可打印发放。版面照抄准考证打印页:白底黑框表 +
 // @media print + window.print。学生从参试名单里选;支持从班级成绩单页
 // 带 student_id 跳转进来。未发布时后端 403 的 detail 原样展示。
 
@@ -84,7 +84,7 @@ onMounted(async () => {
       </n-space>
     </div>
     <n-text depth="3" class="no-print" style="font-size: 12px; display: block; margin-bottom: 12px">
-      个人成绩单为教师/教务完整版,含总分与排名;给家长的版本按成绩单设置决定是否显示排名。
+      个人成绩单为教师/教务完整版,含总分与排名。
     </n-text>
 
     <h1 v-if="exam" class="head">{{ exam.name }} · 个人成绩单</h1>

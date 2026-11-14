@@ -1,4 +1,4 @@
-"""考务通知服务(KW-57~61):考试日程、监考提醒、录分截止催录、成绩发布通知、到期扫。
+"""考务通知服务(KW-57~59/61):考试日程、监考提醒、录分截止催录、到期扫。
 
 发送口径:
 - 钉钉只发个人工作通知,绝不发群消息(与清单备注一致)。
@@ -17,7 +17,6 @@
 """
 
 import logging
-import re
 from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -33,19 +32,15 @@ from app.models.assignment import (
 )
 from app.models.basedata import ClassUnit, Room, Subject, Teacher
 from app.models.exam import Exam, ExamParticipant, ExamSubject
-from app.models.exam_foundation import Student
 from app.models.exam_invigilation import ExamInvigilation
 from app.models.exam_notifications import (
     ExamNotificationLog,
     ExamNotificationSetting,
 )
-from app.models.exam_publish import ExamPublishBatch
-from app.models.exam_reports import ExamAccountLink
 from app.models.exam_scores import ExamMarkingAssignment, ExamScore, ExamScoreSetting
 from app.models.user import Role, User
 from app.services import settings as app_settings
 from app.services.dingtalk_app import DingTalkAppClient
-from app.services.exam_publish import is_score_published
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +59,6 @@ TITLES = {
     "成绩发布": "成绩已可查询",
 }
 
-_MOBILE_RE = re.compile(r"1\d{10}")
 
 
 def _now() -> datetime:
@@ -194,14 +188,12 @@ def settings_out(exam: Exam, row: ExamNotificationSetting | None) -> dict:
             "schedule_notify_enabled": True,
             "invigilation_remind_enabled": True,
             "score_deadline_remind_enabled": True,
-            "publish_notify_enabled": True,
         }
     return {
         "exam_id": exam.id,
         "schedule_notify_enabled": row.schedule_notify_enabled,
         "invigilation_remind_enabled": row.invigilation_remind_enabled,
         "score_deadline_remind_enabled": row.score_deadline_remind_enabled,
-        "publish_notify_enabled": row.publish_notify_enabled,
     }
 
 
@@ -212,7 +204,6 @@ def _settings_or_default(db: Session, exam: Exam) -> dict:
 def upsert_settings(
     db: Session, exam: Exam, schedule_notify_enabled: bool,
     invigilation_remind_enabled: bool, score_deadline_remind_enabled: bool,
-    publish_notify_enabled: bool,
 ) -> ExamNotificationSetting:
     row = get_settings(db, exam)
     if row is None:
@@ -221,7 +212,6 @@ def upsert_settings(
     row.schedule_notify_enabled = schedule_notify_enabled
     row.invigilation_remind_enabled = invigilation_remind_enabled
     row.score_deadline_remind_enabled = score_deadline_remind_enabled
-    row.publish_notify_enabled = publish_notify_enabled
     db.flush()
     return row
 
@@ -509,73 +499,6 @@ def notify_score_deadline(db: Session, exam: Exam) -> tuple[int, int]:
     return _count(results)
 
 
-# ── KW-60 成绩发布通知 ────────────────────────────────
-def _is_published(db: Session, exam: Exam) -> bool:
-    return db.scalar(
-        select(ExamPublishBatch).where(
-            ExamPublishBatch.exam_id == exam.id,
-            ExamPublishBatch.status == "已发布",
-        )
-    ) is not None
-
-
-def notify_publish(db: Session, exam: Exam) -> tuple[int, int]:
-    _require_enabled(db, exam, "publish_notify_enabled", "成绩发布通知")
-    if not _is_published(db, exam):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "成绩尚未发布,无法发送可查询提醒"
-        )
-    participants = _participants(db, exam)
-    classes = _class_map(db, {p.class_unit_id for p in participants})
-    students = {
-        s.id: s for s in db.scalars(
-            select(Student).where(
-                Student.id.in_({p.student_id for p in participants})
-            )
-        ).all()
-    } if participants else {}
-    links = db.scalars(
-        select(ExamAccountLink).where(
-            ExamAccountLink.student_id.in_({p.student_id for p in participants})
-        ).order_by(ExamAccountLink.id)
-    ).all() if participants else []
-    title = TITLES["成绩发布"]
-    text = f"### {title}\n\n{exam.name}成绩已可查询,请登录系统查看。"
-    results = []
-    seen: set[tuple[int, int]] = set()
-    for link in links:
-        if (link.user_id, link.student_id) in seen:
-            continue
-        seen.add((link.user_id, link.student_id))
-        participant = next(
-            (p for p in participants if p.student_id == link.student_id), None
-        )
-        if participant is None:
-            continue
-        cls = classes.get(participant.class_unit_id)
-        if cls is None:
-            continue
-        if not is_score_published(db, exam.id, cls.grade, cls.id):
-            continue
-        user = db.get(User, link.user_id)
-        if user is None:
-            continue
-        student = students.get(link.student_id)
-        student_name = student.name if student is not None else ""
-        if link.relation == "本人":
-            recipient_name = student_name or user.username
-            mobile = None
-        else:
-            recipient_name = f"{student_name}的{link.relation}" if student_name else user.username
-            mobile = user.username if _MOBILE_RE.fullmatch(user.username or "") else None
-        results.append(_send_one(
-            db, exam, "成绩发布", user.id, recipient_name, None, mobile,
-            title, text, "publish", link.student_id,
-        ))
-    db.flush()
-    return _count(results)
-
-
 # ── 到期扫(供定时任务调用) ──────────────────────────
 def _recent_success(
     db: Session, exam_id: int, notification_type: str, related_type: str,
@@ -765,8 +688,6 @@ def resend_log(db: Session, exam: Exam, log_id: int) -> ExamNotificationLog:
                     Teacher.semester_id == exam.semester_id,
                 ).order_by(Teacher.id)
             )
-            if teacher is None and Role.parent.value in user.role_names:
-                mobile = user.username if _MOBILE_RE.fullmatch(user.username or "") else None
     if teacher is None and log.recipient_user_id is None:
         teacher = db.scalar(
             select(Teacher).where(

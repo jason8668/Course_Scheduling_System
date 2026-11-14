@@ -30,7 +30,7 @@ from app.models.basedata import ClassUnit, Room, Subject, Teacher
 from app.models.exam import Exam, ExamGrade, ExamParticipant
 from app.models.exam_archive import ExamArchive
 from app.models.exam_arrangement import ExamRoomAssignment
-from app.models.exam_foundation import ParentContact, Student
+from app.models.exam_foundation import Student
 from app.models.exam_invigilation import ExamDiscipline, ExamInvigilation
 from app.models.exam_notifications import ExamNotificationLog
 from app.models.exam_publish import ExamPublishBatch
@@ -326,8 +326,8 @@ def _semester_label(sem: Semester | None) -> str:
 
 
 def build_backup_workbook(db: Session, semester_id: int | None) -> bytes:
-    """全量导出考务与成绩数据:学生、家长、考试、参试名单、考场编排、
-    监考安排、成绩、发布批次、考风考纪、通知记录,共十表。
+    """全量导出考务与成绩数据:学生、考试、参试名单、考场编排、
+    监考安排、成绩、发布批次、考风考纪、通知记录,共九表。
 
     semester_id 为空时导出全部学期;指定学期时只导出该学期数据。
     """
@@ -380,21 +380,6 @@ def build_backup_workbook(db: Session, semester_id: int | None) -> bytes:
             _semester_label(semesters.get(s.semester_id)),
             s.student_no, s.name, s.gender or "",
             cls.name if cls else "", s.status, s.exam_no or "",
-        ])
-
-    ws = wb.create_sheet("家长")
-    _sheet_header(ws, ["学生学号", "学生姓名", "家长姓名", "关系", "电话"])
-    parents = db.scalars(
-        select(ParentContact)
-        .where(ParentContact.student_id.in_(student_ids))
-        .order_by(ParentContact.id)
-    ).all() if student_ids else []
-    for p in parents:
-        student = _student(p.student_id)
-        ws.append([
-            student.student_no if student else "",
-            student.name if student else "",
-            p.name, p.relation or "", p.phone or "",
         ])
 
     ws = wb.create_sheet("考试")

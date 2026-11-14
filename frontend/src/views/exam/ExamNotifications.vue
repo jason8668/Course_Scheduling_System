@@ -9,7 +9,7 @@ import {
   NOTIFICATION_STATUSES, NOTIFICATION_TYPES,
   canResendNotification, formatNotifyResult, getExam, getNotificationSettings,
   getScoreProgress, getScoreSettings, listNotifications, notifyInvigilation,
-  notifyPublish, notifySchedule, notifyScoreDeadline, remindDueNotifications,
+  notifySchedule, notifyScoreDeadline, remindDueNotifications,
   resendNotification, saveNotificationSettings, summarizeUnsubmittedScores,
 } from '@/api/exam'
 import type { ExamNotification, NotifyResult } from '@/api/exam'
@@ -35,12 +35,11 @@ function goHealth() {
   void router.push({ name: 'system' })
 }
 
-// ── 通知设置(KW-57~61):四类开关,默认全开 ──
+// ── 通知设置(KW-57~59):三类开关,默认全开 ──
 const settingsForm = ref({
   schedule_notify_enabled: true,
   invigilation_remind_enabled: true,
   score_deadline_remind_enabled: true,
-  publish_notify_enabled: true,
 })
 async function reloadSettings() {
   try {
@@ -49,7 +48,6 @@ async function reloadSettings() {
       schedule_notify_enabled: s.schedule_notify_enabled,
       invigilation_remind_enabled: s.invigilation_remind_enabled,
       score_deadline_remind_enabled: s.score_deadline_remind_enabled,
-      publish_notify_enabled: s.publish_notify_enabled,
     }
   } catch (e) {
     message.error((e as ApiError).detail || '通知设置加载失败')
@@ -189,10 +187,6 @@ onMounted(async () => {
               <n-switch v-model:value="settingsForm.score_deadline_remind_enabled" :disabled="!canManage" />
               <n-text>录分截止提醒</n-text>
             </n-space>
-            <n-space align="center">
-              <n-switch v-model:value="settingsForm.publish_notify_enabled" :disabled="!canManage" />
-              <n-text>成绩发布通知</n-text>
-            </n-space>
           </n-space>
           <n-button
             v-if="canManage" type="primary" style="margin-top: 12px"
@@ -267,24 +261,6 @@ onMounted(async () => {
           >发送催录提醒</n-button>
           <n-text v-if="resultText('score-deadline')" style="display: block; margin-top: 8px" data-testid="notifications-result-score-deadline">
             {{ resultText('score-deadline') }}
-          </n-text>
-        </div></div>
-      </div>
-
-      <!-- 成绩发布通知(KW-60) -->
-      <div class="ios-section">
-        <div class="ios-section-title">成绩发布通知</div>
-        <div class="ios-card"><div class="ios-card-body">
-          <n-alert type="info" style="margin-bottom: 8px">
-            只通知学生/家长“成绩已可查询”,通知中不含任何分数。
-          </n-alert>
-          <n-button
-            v-if="canManage" type="primary" :loading="sending === 'publish'"
-            data-testid="notifications-send-publish"
-            @click="sendOne('publish', () => notifyPublish(examId), '成绩发布通知')"
-          >发送成绩发布通知</n-button>
-          <n-text v-if="resultText('publish')" style="display: block; margin-top: 8px" data-testid="notifications-result-publish">
-            {{ resultText('publish') }}
           </n-text>
         </div></div>
       </div>

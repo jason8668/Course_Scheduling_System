@@ -1,20 +1,13 @@
-// 考务地基 API(KW-01~07):学生档案、导入导出、异动、家长、学科分值、考号规则。
+// 考务地基 API(KW-01~07):学生档案、导入导出、异动、学科分值、考号规则。
 // 以 backend/app/api/exam_students.py 与 backend/app/schemas/exam_students.py 为准,
 // 全部走 /api/exam。写接口权限以后端为准:学生写操作只限 admin/director,
-// 家长写操作班主任可改本班、教务可改全校,学科分值 PUT 允许 admin/director 全改、
-// 教研组长只改本科目(逐科由后端 403 拦截,前端不假装有权限)。
+// 学科分值 PUT 允许 admin/director 全改、教研组长只改本科目
+// (逐科由后端 403 拦截,前端不假装有权限)。
 
 import { apiDelete, apiGet, apiPost, apiPut, request } from '@/api/client'
 import type { ApiError } from '@/api/client'
 
 export type { ApiError }
-
-export interface Parent {
-  id: number
-  name: string
-  relation: string | null
-  phone: string | null
-}
 
 export interface Student {
   id: number
@@ -27,7 +20,6 @@ export interface Student {
   gender: string | null
   status: string
   exam_no: string | null
-  parents: Parent[]
 }
 
 export interface StudentList {
@@ -53,7 +45,74 @@ export interface StatusChange {
 export interface ImportResult {
   created: number
   updated: number
+  skipped?: number
   errors: string[]
+}
+
+// ── 从钉钉导入学生:部门树、成员预览、确认导入 ──
+export interface DingTalkDept {
+  dept_id: number
+  name: string
+  parent_id: number | null
+  children: DingTalkDept[]
+}
+
+export interface DingTalkPreviewMember {
+  userid: string
+  name: string
+  mobile: string | null
+  role: string
+  student_no: string | null
+  student_no_missing: boolean
+  exists: 'new' | 'update' | 'same_name'
+  missing_fields: string[]
+}
+
+export interface DingTalkUnconfirmed {
+  userid: string
+  name: string
+  mobile: string | null
+  reason: string
+}
+
+export interface DingTalkPreview {
+  dept_id: number
+  dept_name: string
+  dept_path: string[]
+  total_members: number
+  student_count: number
+  guardian_count: number
+  teacher_count: number
+  unknown_count: number
+  suggested_class_unit_id: number | null
+  suggested_class_name: string | null
+  target_class_unit_id: number | null
+  target_class_name: string | null
+  students: DingTalkPreviewMember[]
+  unconfirmed: DingTalkUnconfirmed[]
+}
+
+export const getDingTalkDepartments = () =>
+  apiGet<DingTalkDept[]>('/exam/students/dingtalk/departments')
+
+export function previewDingTalkStudents(body: {
+  semester_id: number
+  dept_id: number
+  dept_path: string[]
+  class_unit_id?: number | null
+}): Promise<DingTalkPreview> {
+  return apiPost<DingTalkPreview>('/exam/students/dingtalk/preview', body)
+}
+
+export function importDingTalkStudents(body: {
+  semester_id: number
+  dept_id: number
+  class_unit_id: number
+  students: { userid: string; name: string; student_no: string }[]
+}): Promise<ImportResult & { skipped_detail?: string[] }> {
+  return apiPost<ImportResult & { skipped_detail?: string[] }>(
+    '/exam/students/dingtalk/import', body,
+  )
 }
 
 export interface SubjectSetting {
@@ -100,15 +159,6 @@ export const DEFAULT_SUBJECT_SETTING = {
 
 /** S 型无成绩警告:后端原样返回,前端必须原样展示,不得改写或省略。 */
 export const S_SHAPE_NO_SCORE_WARNING = '暂无上次成绩，暂按学号顺序编排'
-
-/** 家长电话脱敏(与后端 mask_phone 同规则):13812345678 -> 138****5678。 */
-export function maskPhone(phone: string | null | undefined): string | null {
-  if (!phone) return phone ?? null
-  const p = phone.trim()
-  if (p.length >= 7) return `${p.slice(0, 3)}****${p.slice(-4)}`
-  if (p.length > 4) return `${p.slice(0, 2)}****${p.slice(-2)}`
-  return '****'
-}
 
 export interface ListStudentsParams {
   semesterId: number
@@ -166,27 +216,6 @@ export function changeStudentStatus(
 
 export const listStatusChanges = (studentId: number) =>
   apiGet<{ items: StatusChange[] }>(`/exam/students/${studentId}/status-changes`)
-
-export const listParents = (studentId: number) =>
-  apiGet<Parent[]>(`/exam/students/${studentId}/parents`)
-
-export function createParent(
-  studentId: number,
-  body: { name: string; relation?: string | null; phone?: string | null },
-): Promise<Parent> {
-  return apiPost<Parent>(`/exam/students/${studentId}/parents`, body)
-}
-
-export function updateParent(
-  parentId: number,
-  body: { name: string; relation?: string | null; phone?: string | null },
-): Promise<Parent> {
-  return request<Parent>('PATCH', `/exam/parents/${parentId}`, body)
-}
-
-export function deleteParent(parentId: number): Promise<void> {
-  return request<void>('DELETE', `/exam/parents/${parentId}`)
-}
 
 async function downloadBlob(path: string, fallbackName: string): Promise<void> {
   const resp = await fetch(`/api${path}`, { credentials: 'include' })
@@ -486,6 +515,8 @@ export function checkExamSchedule(id: number): Promise<{ conflicts: ScheduleConf
 // ── 参试名单(KW-10) ──
 export interface ListParticipantsParams {
   classUnitId?: number | null
+  /** 多选班级:一次勾选多个班级一起看;与 classUnitId 二选一,多选优先。 */
+  classUnitIds?: number[] | null
   status?: string | null
   q?: string
 }
@@ -493,6 +524,9 @@ export interface ListParticipantsParams {
 export function listParticipants(id: number, params: ListParticipantsParams = {}): Promise<ParticipantList> {
   const qs = new URLSearchParams()
   if (params.classUnitId != null) qs.set('class_unit_id', String(params.classUnitId))
+  if (params.classUnitIds?.length) {
+    for (const cid of params.classUnitIds) qs.append('class_unit_ids', String(cid))
+  }
   if (params.status) qs.set('status', params.status)
   if (params.q) qs.set('q', params.q)
   const suffix = qs.toString()
@@ -508,6 +542,14 @@ export function addParticipant(
   body: { student_id: number; note?: string | null },
 ): Promise<ExamParticipant> {
   return apiPost<ExamParticipant>(`/exam/exams/${id}/participants`, body)
+}
+
+/** 批量增补参试学生:一次勾选多名学生,共用一个备注;回 created/skipped(跳过=已在名单/不存在/不属于本学期)。 */
+export function addParticipants(
+  id: number,
+  body: { student_ids: number[]; note?: string | null },
+): Promise<GenerateParticipantsResult> {
+  return apiPost<GenerateParticipantsResult>(`/exam/exams/${id}/participants/bulk`, body)
 }
 
 export function updateParticipant(
@@ -1571,7 +1613,7 @@ export function saveMakeupScores(
 // 契约见任务书(与后端 backend/app/api/exam_publish.py、
 // backend/app/schemas/exam_publish.py 共用),一个字都不能改:
 // proofreader_role: subject_leader(教研组长,默认)/peer_teacher(同组教师);
-// approval_levels: 1(默认)/2;publish_order: teachers_first(教师先看,默认)/sync(同步);
+// approval_levels: 1(默认)/2;
 // objection_open 默认 true。注意后端口径(写进汇报,不改后端):
 // 后端 exam_publish 路由已在 main.py 里挂载(app.include_router(exam_publish.router,
 // prefix="/api/exam")),以下端点在现网可用;另:提交校对要求该范围成绩已全部提交(409),
@@ -1582,12 +1624,6 @@ export type ProofreaderRole = (typeof PROOFREADER_ROLES)[number]
 export const PROOFREADER_ROLE_LABELS: Record<ProofreaderRole, string> = {
   subject_leader: '教研组长',
   peer_teacher: '同组教师',
-}
-export const PUBLISH_ORDERS = ['teachers_first', 'sync'] as const
-export type PublishOrder = (typeof PUBLISH_ORDERS)[number]
-export const PUBLISH_ORDER_LABELS: Record<PublishOrder, string> = {
-  teachers_first: '教师先看',
-  sync: '同步发布',
 }
 export const PROOFREADING_STATUSES = ['待校对', '通过', '退回'] as const
 export type ProofreadingStatus = (typeof PROOFREADING_STATUSES)[number]
@@ -1608,7 +1644,6 @@ export type ObjectionStatus = (typeof OBJECTION_STATUSES)[number]
 export const DEFAULT_PUBLISH_SETTINGS = {
   proofreader_role: 'subject_leader' as ProofreaderRole,
   approval_levels: 1,
-  publish_order: 'teachers_first' as PublishOrder,
   objection_open: true,
 }
 
@@ -1616,7 +1651,6 @@ export interface PublishSettings {
   exam_id: number
   proofreader_role: string
   approval_levels: number
-  publish_order: string
   objection_open: boolean
 }
 
@@ -1811,7 +1845,6 @@ export function savePublishSettings(
   body: {
     proofreader_role: string
     approval_levels: number
-    publish_order: string
     objection_open: boolean
   },
 ): Promise<PublishSettings> {
@@ -2394,16 +2427,11 @@ export function downloadReportPack(id: number): Promise<void> {
   return downloadBlob(`/exam/exams/${id}/analysis/report-pack`, 'report_pack.xlsx')
 }
 
-// ── 成绩单与查询(KW-52~56) ──
+// ── 成绩单与查询(KW-52~54/56) ──
 // 契约见任务书(与后端 backend/app/api/exam_reports.py、
 // backend/app/schemas/exam_reports.py 共用),一个字都不能改:
-// report-settings 默认 false/false,家长版默认不显示年级排名;
-// my-scores / my-report-card 的排名键按家长版设置决定是否出现,
-// 后端直接删键,不回固定 response_model,前端按“键在不在”判断显示,
-// 不得自行补排名;未发布时后端 403,detail 原样展示。
-// 注意后端口径(写进汇报,不改后端):my-scores 未关联任何参试学生时
-// 回空 items(不报 403);初始口令只在开通当次回传,已存在账号不回传口令;
-// 账号重置口令最短 8 位(后端 settings.min_password_length)。
+// 班级成绩单、个人成绩单、教师端查询均含排名;未发布时后端 403,detail 原样展示。
+// 只有教师与教务可看成绩,不设学生/家长账号与自助查询。
 export interface ReportSubjectScore {
   subject_id: number
   subject_name: string
@@ -2431,18 +2459,6 @@ export interface StudentReportCard extends ReportCardStudent {
   class_name: string
 }
 
-export interface ReportSettings {
-  exam_id: number
-  parent_show_grade_rank: boolean
-  parent_show_class_rank: boolean
-}
-
-/** 成绩单设置默认值(与后端 ReportSettingOut 默认一致):两项都不显示。 */
-export const DEFAULT_REPORT_SETTINGS = {
-  parent_show_grade_rank: false,
-  parent_show_class_rank: false,
-}
-
 export interface TeacherScoreItem {
   student_id: number
   student_no: string
@@ -2460,127 +2476,6 @@ export interface TeacherScoreItem {
 export interface TeacherScoreList {
   items: TeacherScoreItem[]
   total: number
-}
-
-/** 学生/家长自助成绩:排名键按家长版设置决定是否出现,故设为可选。 */
-export interface MyScoreItem {
-  exam_id: number
-  exam_name: string
-  student_id: number
-  student_no: string
-  student_name: string
-  subjects: ReportSubjectScore[]
-  total: number | null
-  class_rank?: number | null
-  grade_rank?: number | null
-}
-
-export interface MyScores {
-  items: MyScoreItem[]
-}
-
-/** 学生/家长个人成绩单:排名键同样按设置决定是否出现,故设为可选。 */
-export interface MyReportCard {
-  student_id: number
-  student_no: string
-  student_name: string
-  class_name: string
-  subjects: ReportSubjectScore[]
-  total: number | null
-  class_rank?: number | null
-  grade_rank?: number | null
-}
-
-export interface AccountCredential {
-  username: string
-  role: string
-  initial_password: string
-  student_name: string
-}
-
-export interface ProvisionResult {
-  students_created: number
-  parents_created: number
-  credentials: AccountCredential[]
-}
-
-export interface ExamAccount {
-  user_id: number
-  username: string
-  role: string
-  student_names: string[]
-  must_change_password: boolean
-}
-
-export interface AccountList {
-  items: ExamAccount[]
-  total: number
-}
-
-export const ACCOUNT_ROLE_LABELS: Record<string, string> = {
-  student: '学生',
-  parent: '家长',
-}
-
-export function accountRoleLabel(role: string): string {
-  return ACCOUNT_ROLE_LABELS[role] ?? role
-}
-
-/** 初始口令只显示一次的醒目提示:开通页与分发表共用同一文案,不得改写。 */
-export const PROVISION_ONCE_HINT = '口令只显示一次，请立即分发，关闭后无法再次查看'
-
-/** 未发布时后端 403 的 detail,前端原样展示,不得改写或省略“本次”。 */
-export const MY_SCORES_NOT_PUBLISHED = '本次考试成绩尚未发布'
-
-/**
- * 家长版排名是否显示:以后端回传的键在不在为准。
- * 后端按 report-settings 删键(不显示的排名键直接缺失),前端不得自行补排名;
- * 键在但值为 null(无总分未排名)时同样不显示数字。
- */
-export function rankVisible(
-  card: { class_rank?: number | null; grade_rank?: number | null },
-  kind: 'class' | 'grade',
-): boolean {
-  if (kind === 'class') return 'class_rank' in card && card.class_rank != null
-  return 'grade_rank' in card && card.grade_rank != null
-}
-
-/**
- * 家长版排名隐藏(与后端 _apply_parent_rank_settings 同规则,供单测与
- * 本地兜底用):设置不显示的排名键直接删掉,不留 null。
- */
-export function applyParentRankVisibility<T extends { class_rank?: number | null; grade_rank?: number | null }>(
-  card: T,
-  settings: { parent_show_class_rank: boolean; parent_show_grade_rank: boolean },
-): T {
-  const out = { ...card }
-  if (!settings.parent_show_class_rank) delete out.class_rank
-  if (!settings.parent_show_grade_rank) delete out.grade_rank
-  return out
-}
-
-/** 分发表 CSV:表头用户名、角色、学生、初始口令;学生名含逗号时加引号。 */
-export function buildCredentialCsv(credentials: AccountCredential[]): string {
-  const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-  const lines = ['用户名,角色,学生,初始口令']
-  for (const c of credentials) {
-    lines.push(
-      [c.username, accountRoleLabel(c.role), c.student_name, c.initial_password]
-        .map(esc).join(','),
-    )
-  }
-  return lines.join('\n')
-}
-
-/** 成绩单显示设置(KW-53):家长版是否显示班级/年级排名,默认都不显示。 */
-export const getReportSettings = (id: number) =>
-  apiGet<ReportSettings>(`/exam/exams/${id}/report-settings`)
-
-export function saveReportSettings(
-  id: number,
-  body: { parent_show_grade_rank: boolean; parent_show_class_rank: boolean },
-): Promise<ReportSettings> {
-  return request<ReportSettings>('PUT', `/exam/exams/${id}/report-settings`, body)
 }
 
 /** 班级成绩单(KW-52):班主任版,含总分与排名,按班级出全科成绩单。 */
@@ -2616,60 +2511,21 @@ export function listTeacherScores(
   return apiGet<TeacherScoreList>(`/exam/exams/${id}/teacher-scores${suffix ? `?${suffix}` : ''}`)
 }
 
-/** 学生/家长自助查询(KW-55):查本人(孩子)的成绩;未发布后端 403。 */
-export function getMyScores(examId: number): Promise<MyScores> {
-  return apiGet<MyScores>(`/exam/my-scores?exam_id=${examId}`)
-}
-
-/** 学生/家长个人成绩单(KW-55):家长版按设置决定是否含排名。 */
-export function getMyReportCard(examId: number, studentId: number): Promise<MyReportCard> {
-  return apiGet<MyReportCard>(`/exam/my-report-card?exam_id=${examId}&student_id=${studentId}`)
-}
-
-/** 学生/家长账号一键开通(KW-55):初始口令只在本次回传中出现一次。 */
-export function provisionAccounts(semesterId: number): Promise<ProvisionResult> {
-  return apiPost<ProvisionResult>(`/exam/accounts/provision?semester_id=${semesterId}`, {})
-}
-
-/** 学生/家长账号清单(KW-55):按学期/角色/关键词筛选。 */
-export interface ListAccountsParams {
-  semesterId?: number | null
-  role?: string | null
-  q?: string
-}
-
-export function listAccounts(params: ListAccountsParams = {}): Promise<AccountList> {
-  const qs = new URLSearchParams()
-  if (params.semesterId != null) qs.set('semester_id', String(params.semesterId))
-  if (params.role) qs.set('role', params.role)
-  if (params.q) qs.set('q', params.q)
-  const suffix = qs.toString()
-  return apiGet<AccountList>(`/exam/accounts${suffix ? `?${suffix}` : ''}`)
-}
-
-/** 重置学生/家长账号口令(KW-55):新口令最短 8 位,重置后须改密。 */
-export function resetAccountPassword(userId: number, newPassword: string): Promise<{ status: string }> {
-  return apiPost<{ status: string }>(`/exam/accounts/${userId}/reset-password`, {
-    new_password: newPassword,
-  })
-}
-
 /** 成绩归档表导出(KW-56):完整成绩册 Excel 直接下载,前端不解析。 */
 export function exportGradeBook(id: number): Promise<void> {
   return downloadBlob(`/exam/exams/${id}/grade-book/export`, 'grade_book.xlsx')
 }
 
-// ── 通知与提醒(KW-57~61) ──
+// ── 通知与提醒(KW-57~59/61) ──
 // 契约见任务书(与后端 backend/app/api/exam_notifications.py、
 // backend/app/schemas/exam_notifications.py 共用):
-// 四类通知开关默认全开;手动触发四类通知与到期扫都只回 sent/failed;
+// 三类通知开关默认全开;手动触发三类通知与到期扫都只回 sent/failed;
 // 通知类型只有考试日程/监考提醒/录分截止/成绩发布,状态只有成功/失败/待发送,
 // 渠道只有钉钉/站内;只重发失败记录。触发与重发只限 admin/director,
 // 越权时后端回 403,前端原样展示,不自行放行。
 // 注意后端口径(写进汇报,不改后端):到期扫是全校范围(POST /notifications/remind-due
 // 不带考试 id),同一提醒 24 小时内不重复发;录分截止提醒要求考试已设置
-// 录分截止时间,未设置时后端回 409;成绩发布通知只在已有“已发布”批次时
-// 才有接收对象;后端没有“未录完教师数”查询接口,未录完人数以后端
+// 录分截止时间,未设置时后端回 409;后端没有“未录完教师数”查询接口,未录完人数以后端
 // 录分进度(getScoreProgress)为准,前端只做汇总展示,不另算教师数。
 export const NOTIFICATION_TYPES = ['考试日程', '监考提醒', '录分截止', '成绩发布'] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -2677,12 +2533,11 @@ export const NOTIFICATION_STATUSES = ['成功', '失败', '待发送'] as const
 export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number]
 export const NOTIFICATION_CHANNELS = ['钉钉', '站内'] as const
 
-/** 通知设置默认值(与后端 NotificationSettingOut 默认值一致):四类全开。 */
+/** 通知设置默认值(与后端 NotificationSettingOut 默认值一致):三类全开。 */
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   schedule_notify_enabled: true,
   invigilation_remind_enabled: true,
   score_deadline_remind_enabled: true,
-  publish_notify_enabled: true,
 }
 
 export interface NotificationSettings {
@@ -2690,7 +2545,6 @@ export interface NotificationSettings {
   schedule_notify_enabled: boolean
   invigilation_remind_enabled: boolean
   score_deadline_remind_enabled: boolean
-  publish_notify_enabled: boolean
 }
 
 export interface NotifyResult {
@@ -2753,7 +2607,7 @@ export function summarizeUnsubmittedScores(progress: ScoreProgress): {
   return { unsubmittedClasses, unsubmittedStudents }
 }
 
-// ── 通知设置(KW-57~61):四类开关,默认全开 ──
+// ── 通知设置(KW-57~59):三类开关,默认全开 ──
 export const getNotificationSettings = (id: number) =>
   apiGet<NotificationSettings>(`/exam/exams/${id}/notification-settings`)
 
@@ -2763,13 +2617,12 @@ export function saveNotificationSettings(
     schedule_notify_enabled: boolean
     invigilation_remind_enabled: boolean
     score_deadline_remind_enabled: boolean
-    publish_notify_enabled: boolean
   },
 ): Promise<NotificationSettings> {
   return request<NotificationSettings>('PUT', `/exam/exams/${id}/notification-settings`, body)
 }
 
-// ── 手动触发四类通知(KW-57~60):只回 sent/failed ──
+// ── 手动触发三类通知(KW-57~59):只回 sent/failed ──
 /** 考试日程通知(KW-57):向班主任和任课教师发钉钉个人通知,不发群消息。 */
 export function notifySchedule(id: number): Promise<NotifyResult> {
   return apiPost<NotifyResult>(`/exam/exams/${id}/notify/schedule`, {})
@@ -2783,11 +2636,6 @@ export function notifyInvigilation(id: number): Promise<NotifyResult> {
 /** 录分截止提醒(KW-59):向未录完/未提交的教师发催录提醒;未设截止时间后端回 409。 */
 export function notifyScoreDeadline(id: number): Promise<NotifyResult> {
   return apiPost<NotifyResult>(`/exam/exams/${id}/notify/score-deadline`, {})
-}
-
-/** 成绩发布通知(KW-60):向学生/家长发“已可查询”提醒,不含分数。 */
-export function notifyPublish(id: number): Promise<NotifyResult> {
-  return apiPost<NotifyResult>(`/exam/exams/${id}/notify/publish`, {})
 }
 
 // ── 到期扫(KW-58、KW-59):全校范围;考前一天与当天开考前到点的监考提醒、

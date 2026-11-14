@@ -21,12 +21,6 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
       }),
     })
   }
-  if (url.startsWith('/api/exam/exams/3/report-settings')) {
-    return Promise.resolve({
-      ok: true, status: 200,
-      json: () => Promise.resolve({ exam_id: 3, parent_show_grade_rank: false, parent_show_class_rank: false }),
-    })
-  }
   if (url.startsWith('/api/exam/exams/3')) {
     return Promise.resolve({
       ok: true, status: 200,
@@ -50,7 +44,7 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
 }))
 
 describe('教师端成绩查询页(KW-54)', () => {
-  it('查询结果含总分与排名,成绩单设置与成绩册导出入口在场', async () => {
+  it('查询结果含总分与排名,成绩册导出入口在场', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const auth = useAuthStore()
@@ -77,9 +71,5 @@ describe('教师端成绩查询页(KW-54)', () => {
     expect(wrapper.text()).toContain('共 1 条')
     expect(wrapper.find('[data-testid="teacher-scores-export-grade-book"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="teacher-scores-class-card"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('成绩单设置')
-    expect(wrapper.find('[data-testid="report-setting-class-rank"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="report-setting-grade-rank"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="report-setting-save"]').exists()).toBe(true)
   })
 })

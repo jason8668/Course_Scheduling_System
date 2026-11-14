@@ -28,8 +28,6 @@ class Role(enum.StrEnum):
     director = "director"    # 教务主任
     scheduler = "scheduler"  # 停用:三种角色只剩管理员/主任/教师,不再分配;枚举保留只为兼容旧数据
     teacher = "teacher"      # 教师
-    student = "student"      # 学生(KW-55:账号用户名=学号,走同一登录入口)
-    parent = "parent"        # 家长(KW-55:账号用户名=家长手机号,同一手机号多子女只建一个账号)
 
 
 class User(Base):

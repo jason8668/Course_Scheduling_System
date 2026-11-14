@@ -114,6 +114,13 @@ class ParticipantAddIn(BaseModel):
     note: str | None = Field(default=None, max_length=256)
 
 
+class ParticipantBulkAddIn(BaseModel):
+    """批量增补参试学生:一次勾选多人,共用一个备注;已在名单/不存在/不属于本学期者计入跳过,不中断整批。"""
+
+    student_ids: list[int] = Field(min_length=1)
+    note: str | None = Field(default=None, max_length=256)
+
+
 class ParticipantUpdateIn(BaseModel):
     status: str | None = None
     note: str | None = Field(default=None, max_length=256)
