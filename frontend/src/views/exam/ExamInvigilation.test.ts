@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { NMessageProvider } from 'naive-ui'
+import type { VueWrapper } from '@vue/test-utils'
+import { NButton, NMessageProvider, NSelect } from 'naive-ui'
 import { createPinia, setActivePinia } from 'pinia'
 import { h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -7,7 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import ExamInvigilation from './ExamInvigilation.vue'
 import {
   DEFAULT_INVIGILATION_RULE, DISCIPLINE_TYPES, INVIGILATION_ROLE, SHEET_VIEW_LABELS,
-  createDiscipline, createInvigilation, createPatrol, deleteDiscipline, deleteInvigilation,
+  addInvigilations, createDiscipline, createInvigilation, createPatrol, deleteDiscipline, deleteInvigilation,
   deletePatrol, exportInvigilationWorkload, getInvigilationRule, getInvigilationSheet,
   getInvigilationWorkload, getRoomSheet, getTeacherSheet, invigilateExam, listDiscipline,
   listInvigilations, listInvigilators, listPatrols, normalizeSheetView, saveInvigilationRule,
@@ -19,6 +20,8 @@ import { useAuthStore } from '@/stores/auth'
 let lastUrl = ''
 let lastMethod = ''
 let lastBody: unknown = null
+// 批量监考请求的 body 记录:确认添加后还会跑三次重载,lastBody 会被覆盖,单独记批量请求。
+const bulkHits: unknown[] = []
 // jsdom 里 a.click() 会触发导航报错:下载链接点击在此处是无操作桩
 vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 vi.stubGlobal('URL', {
@@ -64,6 +67,10 @@ vi.stubGlobal('fetch', vi.fn((url: string, init?: { method?: string; body?: stri
       ],
       total: 2,
     })
+  }
+  if (url === '/api/exam/exams/3/invigilations/bulk' && lastMethod === 'POST') {
+    bulkHits.push(lastBody)
+    return ok({ created: 2, skipped: 0 })
   }
   if (url.startsWith('/api/exam/exams/3/invigilations/')) {
     if (lastMethod === 'DELETE') {
@@ -238,6 +245,14 @@ describe('监考安排 API 客户端(KW-23~29)', () => {
     expect(lastMethod).toBe('DELETE')
   })
 
+  it('批量手工安排监考走 POST /invigilations/bulk:同一科目同一考场多位教师', async () => {
+    const res = await addInvigilations(3, { subject_id: 2, room_id: 12, teacher_ids: [1, 2], role: '监考' })
+    expect(lastUrl).toBe('/api/exam/exams/3/invigilations/bulk')
+    expect(lastMethod).toBe('POST')
+    expect(lastBody).toMatchObject({ subject_id: 2, room_id: 12, teacher_ids: [1, 2], role: '监考' })
+    expect(res).toEqual({ created: 2, skipped: 0 })
+  })
+
   it('巡考安排增删改查走 /patrols', async () => {
     await listPatrols(3)
     expect(lastUrl).toBe('/api/exam/exams/3/patrols')
@@ -385,5 +400,41 @@ describe('监考安排页(KW-23~29)', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="sheet-room-block"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('201 考场')
+  })
+
+  // 按 placeholder 找下拉(仓库里已有用 $emit('update:value') 驱动 n-select 的模式)。
+  function findSelect(wrapper: VueWrapper, placeholder: string) {
+    const sel = wrapper.findAllComponents(NSelect)
+      .find((c) => c.props('placeholder') === placeholder)
+    expect(sel?.exists()).toBe(true)
+    return sel as NonNullable<typeof sel>
+  }
+  function emitSelectValue(
+    sel: ReturnType<typeof findSelect>, value: number | number[],
+  ) {
+    ;(sel.vm as unknown as { $emit: (e: string, v: number | number[]) => void })
+      .$emit('update:value', value)
+  }
+  function findButton(wrapper: VueWrapper, text: string) {
+    const btn = wrapper.findAllComponents(NButton)
+      .find((b) => b.text().trim() === text)
+    expect(btn?.exists()).toBe(true)
+    return btn as NonNullable<typeof btn>
+  }
+
+  it('手工添加监考:同一科目同一考场一次勾选两位教师,点一次确认走批量端点', async () => {
+    bulkHits.length = 0
+    const wrapper = await mountPage()
+    await wrapper.find('[data-testid="invigilation-add"]').trigger('click')
+    await flushPromises()
+    emitSelectValue(findSelect(wrapper, '选择科目'), 2)
+    emitSelectValue(findSelect(wrapper, '选择考场'), 12)
+    emitSelectValue(findSelect(wrapper, '选择监考教师(可多选)'), [1, 2])
+    await findButton(wrapper, '确认添加').trigger('click')
+    await flushPromises()
+    await flushPromises()
+    // 确认添加后还会跑三次重载,lastBody 会被覆盖,用批量请求记录断言。
+    expect(bulkHits.length).toBe(1)
+    expect(bulkHits[0]).toMatchObject({ subject_id: 2, room_id: 12, teacher_ids: [1, 2], role: '监考' })
   })
 })

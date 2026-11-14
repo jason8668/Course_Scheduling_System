@@ -685,6 +685,35 @@ def create_invigilation(
     return row
 
 
+def create_invigilations_bulk(
+    db: Session, exam: Exam,
+    subject_id: int, room_id: int, teacher_ids: list[int], role: str | None,
+) -> tuple[int, int]:
+    """批量手工安排监考:同一科目同一考场一次勾选多位教师。
+    已安排在本考场/不存在/不在职/池中停用/同一时段已有监考者计入跳过,不中断整批;一次提交。"""
+    require_exam_not_archived(db, exam.id)
+    _require_exam_subject(db, exam, subject_id)
+    _require_exam_room(db, exam, room_id)
+    created = 0
+    skipped = 0
+    for teacher_id in dict.fromkeys(teacher_ids):
+        try:
+            _validate_manual_target(db, exam, subject_id, room_id, teacher_id)
+        except HTTPException:
+            skipped += 1
+            continue
+        db.add(ExamInvigilation(
+            exam_id=exam.id,
+            subject_id=subject_id,
+            room_id=room_id,
+            teacher_id=teacher_id,
+            role=role or INVIGILATION_ROLE,
+        ))
+        created += 1
+    db.commit()
+    return created, skipped
+
+
 def invigilation_to_out(db: Session, row: ExamInvigilation) -> dict:
     subject_names = _subject_name_map(db, {row.subject_id})
     room_names = _room_name_map(db, {row.room_id})

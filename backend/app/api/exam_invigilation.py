@@ -24,6 +24,8 @@ from app.schemas.exam_invigilation import (
     InvigilateIn,
     InvigilateOut,
     InvigilationIn,
+    InvigilationBulkAddIn,
+    InvigilationBulkOut,
     InvigilationListOut,
     InvigilationOut,
     InvigilationPatchIn,
@@ -209,6 +211,27 @@ def create_invigilation(
     )
     db.commit()
     return InvigilationOut(**svc.invigilation_to_out(db, row))
+
+
+@router.post("/exams/{exam_id}/invigilations/bulk", response_model=InvigilationBulkOut)
+def create_invigilations_bulk(
+    exam_id: int,
+    body: InvigilationBulkAddIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(writer),
+):
+    _require_can_manage(db, user)
+    exam = _exam_or_404(db, exam_id)
+    created, skipped = svc.create_invigilations_bulk(
+        db, exam, body.subject_id, body.room_id, body.teacher_ids, body.role
+    )
+    log_exam_action(
+        db, user, "exam_invigilation_create",
+        target_type="exam", target_id=exam.id,
+        detail=f"考试{exam.name}批量安排监考:新增{created}人次,跳过{skipped}人次",
+    )
+    db.commit()
+    return InvigilationBulkOut(created=created, skipped=skipped)
 
 
 @router.patch("/exams/{exam_id}/invigilations/{iid}", response_model=InvigilationOut)

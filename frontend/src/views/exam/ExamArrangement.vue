@@ -8,7 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   ARRANGEMENT_LOCKED_HINT, ARRANGEMENT_MODE_LABELS, ARRANGEMENT_MODES,
-  addExamRoom, arrangeExam, canEditArrangement, deleteExamRoom, exportArrangements,
+  addExamRooms, arrangeExam, canEditArrangement, deleteExamRoom, exportArrangements,
   getArrangementLock, getArrangementRule, getExam, getSeatMap, listArrangements,
   listExamRooms, lockArrangement, moveArrangement, saveArrangementRule, swapArrangements,
   unlockArrangement,
@@ -124,30 +124,48 @@ async function onSubjectFilterChange() {
 }
 
 // ── 考场设置(KW-15):教室复用排课系统教室数据,设人数上限、类型、特殊考场标记 ──
-const roomTypeOptions = Object.entries(ROOM_TYPE_LABELS).map(([value, label]) => ({ label, value }))
+// 考场类型只有普通/特殊(后端只认这两个值);不要复用排课教室的
+// ROOM_TYPE_LABELS(普通教室/专科教室/实习工场/户外),那套值后端会 400。
+const roomTypeOptions = [
+  { label: '普通', value: '普通' },
+  { label: '特殊', value: '特殊' },
+]
 const addableRooms = computed(() =>
   availableRooms.value
     .filter((r) => !rooms.value.some((x) => x.room_id === r.id))
     .map((r) => ({ label: `${r.name}${r.capacity ? `(${r.capacity} 人)` : ''}`, value: r.id })),
 )
-const roomForm = ref({ room_id: null as number | null, capacity: null as number | null, room_type: 'normal', is_special: false })
-function onRoomPick() {
-  const r = availableRooms.value.find((x) => x.id === roomForm.value.room_id)
-  roomForm.value.capacity = r?.capacity ?? null
-  roomForm.value.room_type = r?.room_type ?? 'normal'
+const roomForm = ref({ room_ids: [] as number[], capacity: null as number | null, room_type: '普通', is_special: false })
+function onRoomsPick() {
+  const ids = roomForm.value.room_ids
+  if (ids.length === 1) {
+    // 只选一间时回填该教室的容量,仍可手动改。
+    const r = availableRooms.value.find((x) => x.id === ids[0])
+    roomForm.value.capacity = r?.capacity ?? null
+  } else if (ids.length > 1) {
+    // 多选时人数上限留空则各用各的容量:把单选时自动回填的值清掉,
+    // 避免误把第一间的容量用到全部;手动填了则对所选全部生效。
+    roomForm.value.capacity = null
+  }
+}
+function selectAllRooms() {
+  roomForm.value.room_ids = addableRooms.value.map((r) => r.value)
+  roomForm.value.capacity = null
 }
 async function saveRoom() {
   if (!exam.value) return
-  if (!roomForm.value.room_id) { message.warning('请选择教室'); return }
+  if (!roomForm.value.room_ids.length) { message.warning('请选择教室'); return }
   try {
-    await addExamRoom(exam.value.id, {
-      room_id: roomForm.value.room_id,
+    const res = await addExamRooms(exam.value.id, {
+      room_ids: roomForm.value.room_ids,
       capacity: roomForm.value.capacity,
       room_type: roomForm.value.room_type,
       is_special: roomForm.value.is_special,
     })
-    roomForm.value = { room_id: null, capacity: null, room_type: 'normal', is_special: false }
-    message.success('考场已添加')
+    roomForm.value = { room_ids: [], capacity: null, room_type: '普通', is_special: false }
+    message.success(res.skipped > 0
+      ? `已添加 ${res.created} 间考场,跳过 ${res.skipped} 间(已添加过)`
+      : `已添加 ${res.created} 间考场`)
     await reloadRooms()
   } catch (e) {
     if ((e as ApiError).status === 409) message.error(ARRANGEMENT_LOCKED_HINT)
@@ -369,13 +387,14 @@ async function onUnlock() {
           </div>
           <n-space :wrap="true" align="center" style="margin-top: 12px">
             <n-select
-              v-model:value="roomForm.room_id" :options="addableRooms" clearable
-              placeholder="选择教室" style="width: 180px" :disabled="!editable"
-              @update:value="onRoomPick"
+              v-model:value="roomForm.room_ids" :options="addableRooms" clearable multiple
+              max-tag-count="responsive" placeholder="选择教室(可多选)" style="width: 260px"
+              :disabled="!editable" @update:value="onRoomsPick"
             />
+            <n-button :disabled="!editable" @click="selectAllRooms">全选</n-button>
             <n-input-number
-              v-model:value="roomForm.capacity" :min="1" placeholder="人数上限"
-              style="width: 110px" :disabled="!editable"
+              v-model:value="roomForm.capacity" :min="1" placeholder="人数上限(留空用各教室容量)"
+              style="width: 190px" :disabled="!editable"
             />
             <n-select
               v-model:value="roomForm.room_type" :options="roomTypeOptions"

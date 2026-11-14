@@ -171,6 +171,59 @@ def test_rooms_create_list_delete(client_db, seed):
     assert db.query(AuditLog).filter_by(action="exam_room_delete").count() == 1
 
 
+def test_rooms_bulk_create(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    eid = setup_exam(client, seed, with_rooms=False)
+    # 一次勾选三间:不填人数上限,每间用各自教室容量(r1=2,r2=30,r3=30)
+    r = client.post(f"/api/exam/exams/{eid}/rooms/bulk", json={
+        "room_ids": [seed["r1"].id, seed["r2"].id, seed["r3"].id],
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 3, "skipped": 0}
+    body = client.get(f"/api/exam/exams/{eid}/rooms").json()
+    assert body["total"] == 3
+    assert {i["room_name"]: i["capacity"] for i in body["items"]} == {
+        "101 教室": 2, "102 教室": 30, "103 特殊教室": 30,
+    }
+    assert {i["room_type"] for i in body["items"]} == {"普通"}
+    assert db.query(AuditLog).filter_by(action="exam_room_create").count() == 1
+
+
+def test_rooms_bulk_partial_skip_and_validation(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    eid = setup_exam(client, seed, with_rooms=False)
+    # 先单加一间,再批量:已加过的与不存在的计入跳过,不中断整批
+    r = client.post(f"/api/exam/exams/{eid}/rooms",
+                    json={"room_id": seed["r1"].id})
+    assert r.status_code == 201, r.text
+    r = client.post(f"/api/exam/exams/{eid}/rooms/bulk", json={
+        "room_ids": [seed["r1"].id, seed["r2"].id, 99999],
+        "capacity": 40, "room_type": "特殊", "is_special": True,
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 1, "skipped": 2}
+    body = client.get(f"/api/exam/exams/{eid}/rooms").json()
+    assert body["total"] == 2
+    added = next(i for i in body["items"] if i["room_name"] == "102 教室")
+    assert added["capacity"] == 40  # 手动填的上限对所选全部生效
+    assert added["room_type"] == "特殊"
+    assert added["is_special"] is True
+    # 空列表 422;非法类型 400;教师越权 403
+    r = client.post(f"/api/exam/exams/{eid}/rooms/bulk", json={"room_ids": []})
+    assert r.status_code == 422, r.text
+    r = client.post(f"/api/exam/exams/{eid}/rooms/bulk", json={
+        "room_ids": [seed["r2"].id], "room_type": "normal",
+    })
+    assert r.status_code == 400, r.text
+    login(client, "t1")
+    r = client.post(f"/api/exam/exams/{eid}/rooms/bulk", json={
+        "room_ids": [seed["r2"].id],
+    })
+    assert r.status_code == 403, r.text
+
+
 def test_delete_room_with_assignments_409(client_db, seed):
     client, db = client_db
     login(client, "jiao")

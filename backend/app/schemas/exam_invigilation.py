@@ -73,6 +73,20 @@ class InvigilationIn(BaseModel):
     role: str | None = Field(default=None, max_length=20)
 
 
+class InvigilationBulkAddIn(BaseModel):
+    """批量手工安排监考:同一科目同一考场一次勾选多位教师,角色对所选全部生效。"""
+
+    subject_id: int
+    room_id: int
+    teacher_ids: list[int] = Field(min_length=1)
+    role: str | None = Field(default=None, max_length=20)
+
+
+class InvigilationBulkOut(BaseModel):
+    created: int = 0
+    skipped: int = 0
+
+
 class InvigilationPatchIn(BaseModel):
     teacher_id: int | None = None
     role: str | None = Field(default=None, max_length=20)

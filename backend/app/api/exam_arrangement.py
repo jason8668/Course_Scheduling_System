@@ -28,6 +28,8 @@ from app.schemas.exam_arrangement import (
     ArrangementRuleIn,
     ArrangementRuleOut,
     ExamRoomIn,
+    ExamRoomBulkAddIn,
+    ExamRoomBulkOut,
     ExamRoomListOut,
     ExamRoomOut,
     SeatMapOut,
@@ -89,6 +91,27 @@ def create_room(
     items, _ = svc.list_rooms(db, exam)
     item = next(i for i in items if i["id"] == row.id)
     return ExamRoomOut(**item)
+
+
+@router.post("/exams/{exam_id}/rooms/bulk", response_model=ExamRoomBulkOut)
+def create_rooms_bulk(
+    exam_id: int,
+    body: ExamRoomBulkAddIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(writer),
+):
+    _require_can_manage(db, user)
+    exam = _exam_or_404(db, exam_id)
+    created, skipped = svc.create_rooms_bulk(
+        db, exam, body.room_ids, body.capacity, body.room_type, body.is_special
+    )
+    log_exam_action(
+        db, user, "exam_room_create",
+        target_type="exam", target_id=exam.id,
+        detail=f"考试{exam.name}批量添加考场:新增{created}间,跳过{skipped}间",
+    )
+    db.commit()
+    return ExamRoomBulkOut(created=created, skipped=skipped)
 
 
 @router.delete("/exams/{exam_id}/rooms/{rid}", status_code=status.HTTP_204_NO_CONTENT)

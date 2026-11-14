@@ -228,6 +228,42 @@ def create_room(
     return row
 
 
+def create_rooms_bulk(
+    db: Session, exam: Exam, room_ids: list[int], capacity: int | None,
+    room_type: str, is_special: bool,
+) -> tuple[int, int]:
+    """批量添加考场:一次勾选多间教室;已设为考场/不存在/不属于本学期者计入跳过,不中断整批。
+    人数上限不填时每间用各自教室的容量,填了则对所选全部生效;一次提交。"""
+    require_exam_not_archived(db, exam.id)
+    if room_type not in EXAM_ROOM_TYPES:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "考场类型只能是普通或特殊"
+        )
+    created = 0
+    skipped = 0
+    for room_id in dict.fromkeys(room_ids):
+        room = db.get(Room, room_id)
+        if room is None or room.semester_id != exam.semester_id:
+            skipped += 1
+            continue
+        dup = db.scalar(
+            select(ExamRoom.id).where(
+                ExamRoom.exam_id == exam.id, ExamRoom.room_id == room_id
+            )
+        )
+        if dup is not None:
+            skipped += 1
+            continue
+        db.add(ExamRoom(
+            exam_id=exam.id, room_id=room_id,
+            capacity=capacity if capacity is not None else room.capacity,
+            room_type=room_type, is_special=is_special,
+        ))
+        created += 1
+    db.commit()
+    return created, skipped
+
+
 def delete_room(db: Session, exam: Exam, rid: int) -> None:
     require_exam_not_archived(db, exam.id)
     row = db.get(ExamRoom, rid)

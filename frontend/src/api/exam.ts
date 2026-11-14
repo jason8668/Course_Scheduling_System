@@ -710,6 +710,20 @@ export function addExamRoom(
   return apiPost<ExamRoom>(`/exam/exams/${id}/rooms`, body)
 }
 
+/** 批量新增的统一回包:新增数与跳过数(已存在/不存在/不合规者计入跳过)。 */
+export interface BulkAddResult {
+  created: number
+  skipped: number
+}
+
+/** 批量添加考场:一次勾选多间教室;人数上限留空时每间用各自教室容量。 */
+export function addExamRooms(
+  id: number,
+  body: { room_ids: number[]; capacity?: number | null; room_type?: string | null; is_special?: boolean },
+): Promise<BulkAddResult> {
+  return apiPost<BulkAddResult>(`/exam/exams/${id}/rooms/bulk`, body)
+}
+
 export function deleteExamRoom(id: number, rid: number): Promise<void> {
   return request<void>('DELETE', `/exam/exams/${id}/rooms/${rid}`)
 }
@@ -1124,6 +1138,14 @@ export function createInvigilation(
   body: { subject_id: number; room_id: number; teacher_id: number; role?: string },
 ): Promise<Invigilation> {
   return apiPost<Invigilation>(`/exam/exams/${id}/invigilations`, body)
+}
+
+/** 批量手工安排监考:同一科目同一考场一次勾选多位教师。 */
+export function addInvigilations(
+  id: number,
+  body: { subject_id: number; room_id: number; teacher_ids: number[]; role?: string },
+): Promise<BulkAddResult> {
+  return apiPost<BulkAddResult>(`/exam/exams/${id}/invigilations/bulk`, body)
 }
 
 /** 替补换人:只改教师(与 role),其余字段不动。 */

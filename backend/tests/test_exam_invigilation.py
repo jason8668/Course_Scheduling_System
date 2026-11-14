@@ -430,6 +430,68 @@ def test_manual_create_patch_delete(client_db, seed):
     assert all(i["id"] != iid for i in rows["items"])
 
 
+def test_invigilations_bulk_create(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    eid = setup_exam(client, seed)
+    # 同一科目同一考场一次勾选三位教师
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": seed["math"].id, "room_id": seed["r1"].id,
+        "teacher_ids": [seed["t2"].id, seed["t4"].id, seed["t5"].id],
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 3, "skipped": 0}
+    rows = list_invigilations(client, eid)
+    assert rows["total"] == 3
+    assert {i["teacher_name"] for i in rows["items"]} == {"李老师", "刘老师", "陈老师"}
+    assert {i["role"] for i in rows["items"]} == {"监考"}
+    assert db.query(AuditLog).filter_by(action="exam_invigilation_create").count() == 1
+
+
+def test_invigilations_bulk_partial_skip_and_validation(client_db, seed):
+    client, db = client_db
+    login(client, "jiao")
+    eid = setup_exam(client, seed)
+    # 先单加一位,再批量:已安排的与不存在的计入跳过,不中断整批
+    r = client.post(f"/api/exam/exams/{eid}/invigilations", json={
+        "subject_id": seed["math"].id, "room_id": seed["r1"].id,
+        "teacher_id": seed["t2"].id,
+    })
+    assert r.status_code == 201, r.text
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": seed["math"].id, "room_id": seed["r1"].id,
+        "teacher_ids": [seed["t2"].id, seed["t4"].id, 99999],
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 1, "skipped": 2}
+    rows = list_invigilations(client, eid)
+    assert rows["total"] == 2
+    # 同一教师本科目另一考场:时间冲突,计入跳过
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": seed["math"].id, "room_id": seed["r2"].id,
+        "teacher_ids": [seed["t4"].id, seed["t6"].id],
+    })
+    assert r.status_code == 200, r.text
+    assert r.json() == {"created": 1, "skipped": 1}
+    # 空列表 422;教师越权 403;不存在的科目 404
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": seed["math"].id, "room_id": seed["r1"].id, "teacher_ids": [],
+    })
+    assert r.status_code == 422, r.text
+    login(client, "t1")
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": seed["math"].id, "room_id": seed["r1"].id,
+        "teacher_ids": [seed["t4"].id],
+    })
+    assert r.status_code == 403, r.text
+    login(client, "jiao")
+    r = client.post(f"/api/exam/exams/{eid}/invigilations/bulk", json={
+        "subject_id": 99999, "room_id": seed["r1"].id,
+        "teacher_ids": [seed["t4"].id],
+    })
+    assert r.status_code == 404, r.text
+
+
 def test_manual_create_disabled_pool_teacher_rejected(client_db, seed):
     client, db = client_db
     login(client, "jiao")

@@ -21,6 +21,21 @@ class ExamRoomOut(BaseModel):
     is_special: bool
 
 
+class ExamRoomBulkAddIn(BaseModel):
+    """批量添加考场:一次勾选多间教室,类型与特殊标记对所选全部生效;
+    人数上限不填时每间用各自教室的容量,填了则对所选全部生效。"""
+
+    room_ids: list[int] = Field(min_length=1)
+    capacity: int | None = Field(default=None, gt=0)
+    room_type: str = Field(default="普通", max_length=20)
+    is_special: bool = False
+
+
+class ExamRoomBulkOut(BaseModel):
+    created: int = 0
+    skipped: int = 0
+
+
 class ExamRoomListOut(BaseModel):
     items: list[ExamRoomOut]
     total: int

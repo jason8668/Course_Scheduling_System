@@ -8,7 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   DISCIPLINE_TYPES, INVIGILATION_ROLE, SHEET_VIEW_LABELS,
-  createDiscipline, createInvigilation, createPatrol, deleteDiscipline, deleteInvigilation,
+  addInvigilations, createDiscipline, createPatrol, deleteDiscipline, deleteInvigilation,
   deletePatrol, exportInvigilationWorkload, getExam, getInvigilationRule, getInvigilationSheet,
   getInvigilationWorkload, invigilateExam, listDiscipline, listExamRooms, listInvigilations,
   listInvigilators, listPatrols, listStudents, normalizeSheetView, saveInvigilationRule,
@@ -148,26 +148,28 @@ async function reloadInvigilations() {
   }
 }
 const showAdd = ref(false)
-const addForm = ref({ subject_id: null as number | null, room_id: null as number | null, teacher_id: null as number | null })
+const addForm = ref({ subject_id: null as number | null, room_id: null as number | null, teacher_ids: [] as number[] })
 function openAdd() {
-  addForm.value = { subject_id: null, room_id: null, teacher_id: null }
+  addForm.value = { subject_id: null, room_id: null, teacher_ids: [] }
   showAdd.value = true
 }
 async function saveAdd() {
   if (!exam.value) return
-  if (!addForm.value.subject_id || !addForm.value.room_id || !addForm.value.teacher_id) {
+  if (!addForm.value.subject_id || !addForm.value.room_id || !addForm.value.teacher_ids.length) {
     message.warning('请先选择科目、考场和监考教师')
     return
   }
   try {
-    await createInvigilation(exam.value.id, {
+    const res = await addInvigilations(exam.value.id, {
       subject_id: addForm.value.subject_id,
       room_id: addForm.value.room_id,
-      teacher_id: addForm.value.teacher_id,
+      teacher_ids: addForm.value.teacher_ids,
       role: INVIGILATION_ROLE,
     })
     showAdd.value = false
-    message.success('监考安排已添加')
+    message.success(res.skipped > 0
+      ? `监考安排已添加 ${res.created} 人次,跳过 ${res.skipped} 人次(已安排或冲突)`
+      : `监考安排已添加 ${res.created} 人次`)
     await Promise.all([reloadInvigilations(), reloadSheets(), reloadWorkload()])
   } catch (e) {
     message.error((e as ApiError).detail || '添加失败')
@@ -704,7 +706,10 @@ onMounted(() => { void reload() })
         <n-text>考场</n-text>
         <n-select v-model:value="addForm.room_id" :options="roomOptions" placeholder="选择考场" />
         <n-text>监考教师</n-text>
-        <n-select v-model:value="addForm.teacher_id" :options="poolTeacherOptions" filterable placeholder="选择监考教师" />
+        <n-select
+          v-model:value="addForm.teacher_ids" :options="poolTeacherOptions" filterable multiple
+          max-tag-count="responsive" placeholder="选择监考教师(可多选)"
+        />
         <n-text depth="3" style="font-size: 12px">角色统一为“监考”,不区分主监与副监。</n-text>
         <n-button type="primary" @click="saveAdd">确认添加</n-button>
       </n-space>
