@@ -1,6 +1,7 @@
 """今日调代课看板与调代课日志(M4-4)。
 
 看板/日志是行政的当日排课与历史查询工具,限年级主任/教务主任。
+例外:看板带 mine=true 时教师可看与自己有关的条目(见 daily_board)。
 """
 
 from dataclasses import asdict
@@ -10,7 +11,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import get_active_user, require_roles
 from app.core.db import get_db
 from app.models.semester import Semester
 from app.models.user import Role, User
@@ -18,6 +19,7 @@ from app.schemas.substitution_log import DailyBoardOut, LogEntryOut, PatrolSheet
 from app.services import patrol_sheets, patrol_xlsx
 from app.services import settings as app_settings
 from app.services import substitution_log as log_service
+from app.services.teachers import current_teacher
 
 router = APIRouter(tags=["substitution-log"])
 
@@ -39,13 +41,32 @@ def _get_semester(db: Session, semester_id: int) -> Semester:
 def daily_board(
     semester_id: int = Query(...),
     on: date | None = Query(default=None, description="看板日期,默认为学校时区的今天"),
+    mine: bool = Query(default=False, description="只看与我有关的调代课"),
     db: Session = Depends(get_db),
-    _: User = Depends(viewer),
+    user: User = Depends(get_active_user),
 ):
-    """某一天全校的调代课异动(默认今天);无异动则 entries 为空。"""
+    """某一天全校的调代课异动(默认今天);无异动则 entries 为空。
+
+    不带 mine 时只限管理员/教务主任(全校口径,默认行为不变)。
+    mine=true 时教师只看与自己有关的:我是缺课的原任教师,
+    或我是接手代课的教师,两个方向都算;未绑定教师主档的账号看到空看板。
+    """
+    names = user.role_names
+    is_manager = Role.admin.value in names or Role.director.value in names
+    if not is_manager and not (Role.teacher.value in names and mine):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="权限不足")
     sem = _get_semester(db, semester_id)
     day = on or log_service.school_today()
     entries = log_service.daily_board(db, semester_id, day)
+    if mine:
+        me = current_teacher(db, user, semester_id)
+        if me is None:
+            entries = []
+        else:
+            entries = [
+                e for e in entries
+                if e.absent_teacher_id == me.id or e.handler_teacher_id == me.id
+            ]
     return DailyBoardOut(
         date=day,
         weekday=day.isoweekday(),

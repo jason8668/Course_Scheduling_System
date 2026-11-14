@@ -63,15 +63,16 @@ const routes = [
     component: () => import('@/views/CalendarPrint.vue'),
   },
   {
+    // 总主入口:独立页,不套系统边栏(登录页同款干净版面),登录后落点。
+    // 所有系统排一张网格上,以后新系统往里加卡。
+    path: '/',
+    name: 'portal',
+    component: () => import('@/views/Portal.vue'),
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
-      {
-        // 总主入口:登录后落点,所有系统排一张网格上,以后新系统往里加卡。
-        path: '',
-        name: 'portal',
-        component: () => import('@/views/Portal.vue'),
-      },
       {
         path: 'dashboard',
         name: 'dashboard',

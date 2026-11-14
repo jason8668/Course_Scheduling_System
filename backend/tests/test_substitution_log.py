@@ -216,3 +216,81 @@ def test_teacher_cannot_view_board(w):
 def test_board_unknown_semester_404(w):
     r = w.client.get(f"/api/daily-board?semester_id=999999&on={WED.isoformat()}")
     assert r.status_code == 404
+
+
+# ── mine=true:教师只看与自己有关的调代课 ───────────────────
+def _bind_teacher(w, name: str, username: str) -> str:
+    """把教师主档绑定到一个教师账号,返回用户名。"""
+    from app.models.basedata import Teacher
+
+    user = make_user(w.db, username, PW, roles=[Role.teacher])
+    w.db.get(Teacher, w.teachers[name]).user_id = user.id
+    w.db.commit()
+    return username
+
+
+def _login_as(w, username: str) -> None:
+    r = w.client.post("/api/auth/login", json={"username": username, "password": PW})
+    assert r.status_code == 200, r.json()
+
+
+def _mine_board(w, on=WED):
+    return w.client.get(f"/api/daily-board{w.q}&on={on.isoformat()}&mine=true").json()
+
+
+def test_board_mine_filters_to_related_entries(w):
+    """mine=true:教师只看与自己有关的调代课(缺课的原任教师 / 代课教师两个方向)。"""
+    w.teacher("王师", ["国文"])
+    w.teacher("陈师", ["国文"])
+    w.teacher("李师", ["数学"])
+    w.place("王师", "国文", "701", 0)
+    w.place("李师", "数学", "702", 1)
+    w.publish()
+    affected_id = w.leave("王师")[0]["id"]
+    w.assign(affected_id, type="substitute", handler_teacher_id=w.teachers["陈师"])
+    w.leave("李师")  # 李师请假、无人代课:与王师、陈师都无关
+
+    # 全校口径(默认行为不变):两条
+    assert len(_board(w)["entries"]) == 2
+
+    # 陈师登录(代课教师方向):只看到代王师那条
+    _bind_teacher(w, "陈师", "chen")
+    _login_as(w, "chen")
+    mine = _mine_board(w)
+    assert len(mine["entries"]) == 1
+    assert mine["entries"][0]["absent_teacher_name"] == "王师"
+    assert mine["entries"][0]["handler_name"] == "陈师"
+
+    # 王师登录(原任教师方向):只看到自己缺课那条
+    _bind_teacher(w, "王师", "wang")
+    _login_as(w, "wang")
+    mine = _mine_board(w)
+    assert len(mine["entries"]) == 1
+    assert mine["entries"][0]["absent_teacher_name"] == "王师"
+
+    # 王师不带 mine:仍 403(教师不得看全校看板)
+    r = w.client.get(f"/api/daily-board{w.q}&on={WED.isoformat()}")
+    assert r.status_code == 403
+
+    # 李师登录:只看到自己缺课那条
+    _bind_teacher(w, "李师", "li")
+    _login_as(w, "li")
+    mine = _mine_board(w)
+    assert len(mine["entries"]) == 1
+    assert mine["entries"][0]["absent_teacher_name"] == "李师"
+
+
+def test_board_mine_without_teacher_binding_is_empty(w):
+    """mine=true 但账号未绑定教师主档:看到空看板,不报错;默认仍是全校。"""
+    w.teacher("王师", ["国文"])
+    w.place("王师", "国文", "701", 0)
+    w.publish()
+    w.leave("王师")
+    make_user(w.db, "t", PW, roles=[Role.teacher])
+    _login_as(w, "t")
+    assert _mine_board(w)["entries"] == []
+
+    # 主任带 mine=true 也能用(未绑定教师主档,同样空看板);默认仍是全校
+    _login_as(w, "s")
+    assert _mine_board(w)["entries"] == []
+    assert len(_board(w)["entries"]) == 1

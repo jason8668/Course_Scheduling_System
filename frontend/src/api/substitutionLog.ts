@@ -51,8 +51,10 @@ export interface LogFilters {
   leaveType?: string | null
 }
 
-export const getDailyBoard = (semesterId: number, on?: string | null): Promise<DailyBoard> =>
-  apiGet(`/daily-board?semester_id=${semesterId}` + (on ? `&on=${on}` : ''))
+export const getDailyBoard = (
+  semesterId: number, on?: string | null, mine?: boolean,
+): Promise<DailyBoard> =>
+  apiGet(`/daily-board?semester_id=${semesterId}` + (on ? `&on=${on}` : '') + (mine ? '&mine=true' : ''))
 
 export const getSubstitutionLog = (
   semesterId: number, f: LogFilters = {},

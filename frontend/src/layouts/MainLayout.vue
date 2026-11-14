@@ -230,11 +230,11 @@ onBeforeUnmount(() => {
 })
 
 // 总主入口:顶栏只留一个“主入口”按钮点回总入口页,不再排课↔考务直接互切。
-// 系统名按当前所在系统显示:总入口显示智慧教务系统,/exam/* 显示考务成绩系统,其余显示排课系统。
+// 系统名按当前所在系统显示:/exam/* 显示考务成绩系统,其余显示排课系统。
+// 总入口页本身是独立页,不进 MainLayout,所以这里不再有 portal 分支。
 const isExamRoute = computed(() => route.path.startsWith('/exam/'))
-const isPortalRoute = computed(() => route.name === 'portal')
 const systemTitle = computed(() =>
-  isPortalRoute.value ? '智慧教务系统' : isExamRoute.value ? '考务成绩系统' : '排课系统')
+  isExamRoute.value ? '考务成绩系统' : '排课系统')
 function goPortal() {
   router.push({ name: 'portal' })
 }
