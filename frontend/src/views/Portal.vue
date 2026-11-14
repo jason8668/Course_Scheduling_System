@@ -175,6 +175,7 @@ onMounted(() => { void load() })
 
 <template>
   <div class="ios-page portal-page">
+    <div class="portal-wrap">
     <div class="portal-header">
       <span />
       <div class="portal-user">
@@ -193,8 +194,10 @@ onMounted(() => { void load() })
         </button>
       </div>
     </div>
-    <h1 class="ios-title">智慧教务系统</h1>
-    <div class="ios-subtitle">一个账号，进各个系统</div>
+    <div class="portal-hero">
+      <h1 class="ios-title">智慧教务系统</h1>
+      <div class="ios-subtitle">一个账号，进各个系统</div>
+    </div>
 
     <section class="ios-section" data-testid="portal-entries">
       <div class="ios-section-title">系统入口</div>
@@ -203,18 +206,24 @@ onMounted(() => { void load() })
           class="ios-card entry-card" data-testid="entry-scheduling"
           @click="router.push({ name: 'scheduling-center' })"
         >
-          <div class="ios-card-body">
-            <div class="ios-row-title">排课系统</div>
-            <div class="ios-row-sub">开学建置、配课与排课、课表查询、调课/代课、课时统计</div>
+          <div class="ios-card-body entry-body">
+            <div class="entry-text">
+              <div class="ios-row-title">排课系统</div>
+              <div class="ios-row-sub">开学建置、配课与排课、课表查询、调课/代课、课时统计</div>
+            </div>
+            <span class="entry-arrow" aria-hidden="true">›</span>
           </div>
         </div>
         <div
           class="ios-card entry-card" data-testid="entry-exam"
           @click="router.push({ name: 'exam-students' })"
         >
-          <div class="ios-card-body">
-            <div class="ios-row-title">考务成绩系统</div>
-            <div class="ios-row-sub">学生档案、学科分值、考号规则、考试与成绩</div>
+          <div class="ios-card-body entry-body">
+            <div class="entry-text">
+              <div class="ios-row-title">考务成绩系统</div>
+              <div class="ios-row-sub">学生档案、学科分值、考号规则、考试与成绩</div>
+            </div>
+            <span class="entry-arrow" aria-hidden="true">›</span>
           </div>
         </div>
       </div>
@@ -247,9 +256,9 @@ onMounted(() => { void load() })
             </div>
           </div>
         </div>
-      </div>
-      <div class="portal-more">
-        <router-link :to="{ name: 'substitution-center' }">查看今日调代课 →</router-link>
+        <div class="portal-card-foot">
+          <router-link class="portal-btn" :to="{ name: 'substitution-center' }">查看今日调代课 →</router-link>
+        </div>
       </div>
     </section>
 
@@ -331,33 +340,69 @@ onMounted(() => { void load() })
     >
       <div class="ios-section-title">考试进行时</div>
       <div class="ios-card">
-        <div class="ios-card-body">
+        <div class="ios-card-body portal-empty">
           <div class="ios-row-sub">本学期暂无考试</div>
-          <div v-if="canManage" class="portal-more">
-            <router-link :to="{ name: 'exam-exams' }">去新建考试 →</router-link>
+          <div v-if="canManage" class="portal-empty-action">
+            <router-link class="portal-btn-solid" :to="{ name: 'exam-exams' }">去新建考试 →</router-link>
           </div>
         </div>
       </div>
     </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.portal-page .ios-section { margin-top: 28px; }
+/* 总入口首页视觉(Jason 2026-11-14 定:封面要像苹果系统,每格浅蓝底、整页居中)。
+   只改本页:容器定宽居中 + 浅蓝卡片;其它页仍走全局左对齐版式,不动。 */
+.portal-page {
+  min-height: 100vh;
+  padding-bottom: 0;
+  background: linear-gradient(180deg, #c7d9f6 0%, #dde7f8 30%, #e9ebf2 65%, #f5f5f7 100%);
+}
+.portal-wrap { max-width: 1024px; margin: 0 auto; padding: 20px 24px 72px; }
 .portal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.portal-user { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+.portal-user { display: flex; align-items: center; gap: 16px; font-size: 14px; color: #1d1d1f; }
 .portal-link { background: none; border: none; padding: 0; font-size: 14px; color: #007aff; cursor: pointer; }
+.portal-hero { text-align: center; margin: 28px 0 8px; }
+.portal-hero .ios-title { font-size: 34px; }
+.portal-hero .ios-subtitle { margin-top: 8px; font-size: 15px; }
+.portal-page .ios-section { margin-top: 28px; }
+.portal-page .ios-section-title { padding: 0 4px 8px; font-size: 14px; color: #5b7ba6; }
+.portal-page .ios-card {
+  background: linear-gradient(180deg, #e9f2fe 0%, #deebfd 100%);
+  border: 1px solid rgba(0, 122, 255, 0.16);
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.1);
+}
+.portal-page .ios-card-body { padding: 16px 20px; }
 .portal-grid { display: flex; gap: 16px; flex-wrap: wrap; }
-.entry-card { flex: 1; min-width: 240px; cursor: pointer; }
-.entry-card:hover { box-shadow: 0 8px 24px rgba(0, 122, 255, 0.18); }
-.portal-stats { display: flex; flex-wrap: wrap; gap: 24px 40px; }
-.portal-stat-label { font-size: 13px; color: #8e8e93; margin-bottom: 4px; }
-.portal-stat-value { font-size: 17px; font-weight: 600; }
-.portal-stat-sub { font-size: 13px; font-weight: 400; color: #8e8e93; }
-.portal-more { margin-top: 12px; display: flex; gap: 20px; font-size: 14px; }
-.portal-more a { color: #007aff; text-decoration: none; }
+.entry-card { flex: 1; min-width: 240px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.entry-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 122, 255, 0.2); }
+.entry-body { display: flex; align-items: center; gap: 12px; }
+.entry-text { flex: 1; min-width: 0; }
+.entry-card .ios-row-title { font-size: 18px; color: #0b5ed7; }
+.entry-card .ios-row-sub { color: #5b7ba6; }
+.entry-arrow { flex-shrink: 0; font-size: 30px; font-weight: 300; line-height: 1; color: #007aff; }
+.portal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.portal-stat { background: #eaf3fe; border: 1px solid rgba(0, 122, 255, 0.18); border-radius: 14px; padding: 14px 16px; }
+.portal-stat-label { font-size: 13px; color: #5b7ba6; margin-bottom: 6px; }
+.portal-stat-value { font-size: 17px; font-weight: 600; color: #1d1d1f; }
+.portal-stat-sub { font-size: 13px; font-weight: 400; color: #5b7ba6; }
+.portal-card-foot { display: flex; justify-content: flex-end; padding: 12px 20px 16px; border-top: 1px solid rgba(0, 122, 255, 0.14); }
+.portal-btn { display: inline-block; background: rgba(0, 122, 255, 0.1); border: 1px solid rgba(0, 122, 255, 0.2); color: #007aff; border-radius: 999px; padding: 6px 16px; font-size: 14px; text-decoration: none; }
+.portal-btn:hover { background: rgba(0, 122, 255, 0.16); }
+.portal-btn-solid { display: inline-block; background: #007aff; color: #fff; border-radius: 999px; padding: 8px 22px; font-size: 14px; text-decoration: none; }
+.portal-btn-solid:hover { background: #0066d6; }
+.portal-more { margin-top: 14px; display: flex; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.portal-more a { background: rgba(0, 122, 255, 0.1); border: 1px solid rgba(0, 122, 255, 0.2); color: #007aff; border-radius: 999px; padding: 6px 16px; text-decoration: none; }
+.portal-more a:hover { background: rgba(0, 122, 255, 0.16); }
 .portal-exam-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.portal-tag { font-size: 13px; color: #8e8e93; }
+.portal-exam-head .ios-row-title { color: #1d1d1f; }
+.portal-tag { font-size: 13px; font-weight: 600; color: #007aff; background: rgba(0, 122, 255, 0.12); border-radius: 999px; padding: 2px 10px; }
 .portal-progress { margin-top: 16px; }
-.portal-progress-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; }
+.portal-progress-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-top: 1px solid rgba(0, 122, 255, 0.1); }
+.portal-empty { text-align: center; padding: 32px 20px; }
+.portal-empty .ios-row-sub { font-size: 15px; }
+.portal-empty-action { margin-top: 16px; }
 </style>
