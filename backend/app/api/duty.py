@@ -218,7 +218,7 @@ def create_swap_request(
     )
     db.add(req)
     db.flush()
-    # 站内通知给对方老师(钉钉群不发:类型不在群发白名单,见 notifications)
+    # 站内通知给对方老师(个人钉钉会同步推给对方老师本人,群里不发)
     notify(
         db, semester_id=semester_id, teacher_id=body.to_teacher_id,
         type=NotificationType.duty_swap_requested,

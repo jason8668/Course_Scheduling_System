@@ -61,6 +61,16 @@ const canManage = computed(() =>
   auth.hasRole('admin') || auth.hasRole('director'))
 
 const menuOptions = computed<MenuOption[]>(() => {
+  // 双入口:在 /exam/* 路由下只显示考务菜单(学生档案、学科分值、考号规则、考试管理),
+  // 绝不把考务菜单项塞进排课菜单里;其他路由保持现有排课菜单原样。
+  if (route.path.startsWith('/exam/')) {
+    return [
+      menuItem('exam-students', '学生档案'),
+      menuItem('exam-subject-settings', '学科分值'),
+      menuItem('exam-exam-number-rule', '考号规则'),
+      menuItem('exam-exams', '考试管理'),
+    ]
+  }
   // 「我的」已并进仪表板(2026-10-30 Jason 定):教师菜单不再单列「我的」,
   // 路由 /my 改重定向到仪表板,旧通知里的 /my 链接落点仍在仪表板,不会断。
   const dashboard = menuItem('dashboard', '仪表板')
@@ -219,6 +229,13 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
 })
 
+// 双入口切换:在任一端顶部都能一键切到另一端。
+const isExamRoute = computed(() => route.path.startsWith('/exam/'))
+function switchEntry() {
+  if (isExamRoute.value) router.push({ name: 'scheduling-center' })
+  else router.push({ name: 'exam-students' })
+}
+
 function onChangePassword() {
   router.push({ name: 'change-password' })
 }
@@ -249,7 +266,7 @@ async function onLogout() {
         面板透过模糊把这层淡蓝晕进来,而不是对著一块平色底发呆。
         收合后同样是一块窄玻璃板。 -->
       <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
-        {{ collapsed ? '排课' : '排课与调代课系统' }}
+        {{ collapsed ? '排课' : isExamRoute ? '考务成绩系统' : '排课与调代课系统' }}
       </div>
       <div ref="menuWrapRef" class="sider-menu-wrap">
         <div class="menu-indicator" :style="indicatorStyle" />
@@ -294,6 +311,13 @@ async function onLogout() {
             <n-tag type="warning" size="small" round>有新版本 {{ newVersion }}</n-tag>
           </router-link>
           <n-button
+            class="glass-btn" size="small"
+            :data-testid="isExamRoute ? 'header-switch-to-scheduling' : 'header-switch-to-exam'"
+            @click="switchEntry"
+          >
+            {{ isExamRoute ? '排课系统' : '考务成绩系统' }}
+          </n-button>
+          <n-button
             class="glass-btn" size="small" data-testid="header-calendar"
             @click="router.push({ name: 'school-calendar' })"
           >
@@ -318,7 +342,7 @@ async function onLogout() {
 
   <!-- 手机抽屉菜单:窄屏才出现,点选后自动收回 -->
   <n-drawer v-model:show="drawerOpen" placement="left" :width="260" data-testid="mobile-menu-drawer">
-    <n-drawer-content title="排课与调代课系统">
+    <n-drawer-content :title="isExamRoute ? '考务成绩系统' : '排课与调代课系统'">
       <n-menu
         :value="activeKey"
         :indent="0"

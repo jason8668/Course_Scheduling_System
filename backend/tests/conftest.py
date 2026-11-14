@@ -23,6 +23,16 @@ from app.api import (
     calendar,
     demo,
     duty,
+    exam,
+    exam_analysis,
+    exam_archive,
+    exam_arrangement,
+    exam_invigilation,
+    exam_notifications,
+    exam_publish,
+    exam_reports,
+    exam_scores,
+    exam_students,
     exports,
     imports,
     leaves,
@@ -112,6 +122,16 @@ def env():
     application.include_router(calendar.router, prefix="/api")
     application.include_router(special_days.router, prefix="/api")
     application.include_router(duty.router, prefix="/api")
+    application.include_router(exam_students.router, prefix="/api/exam")
+    application.include_router(exam.router, prefix="/api/exam")
+    application.include_router(exam_analysis.router, prefix="/api/exam")
+    application.include_router(exam_arrangement.router, prefix="/api/exam")
+    application.include_router(exam_invigilation.router, prefix="/api/exam")
+    application.include_router(exam_scores.router, prefix="/api/exam")
+    application.include_router(exam_publish.router, prefix="/api/exam")
+    application.include_router(exam_reports.router, prefix="/api/exam")
+    application.include_router(exam_notifications.router, prefix="/api/exam")
+    application.include_router(exam_archive.router, prefix="/api/exam")
     application.include_router(teacher_swaps.router, prefix="/api")
 
     @application.get("/api/_protected")

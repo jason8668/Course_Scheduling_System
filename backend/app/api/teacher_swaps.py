@@ -145,7 +145,7 @@ def create_swap(
     db.add(row)
     db.commit()
     db.refresh(row)
-    # 站内通知对方(不走钉钉群白名单,故只站内)
+    # 站内通知对方(个人钉钉会同步推给对方老师本人,群里不发)
     approver_id = (
         row.handler_teacher_id if row.requester_id == row.original_teacher_id
         else row.original_teacher_id

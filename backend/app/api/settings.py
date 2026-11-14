@@ -11,6 +11,7 @@ from app.core.auth import require_roles
 from app.core.db import get_db
 from app.models.audit import AuditLog
 from app.models.basedata import Teacher
+from app.models.exam_notifications import ExamNotificationLog
 from app.models.semester import Semester
 from app.models.timetable import ClassReminderLog
 from app.models.user import Role, User
@@ -172,6 +173,10 @@ class DingTalkAppHealthOut(BaseModel):
     teachers_missing_phone: int
     opted_out: list[ReminderTeacherBrief]
     unresolved: list[ReminderTeacherBrief]
+    # 考务通知(KW-61):7 天内考务通知记录数、7 天内失败数、最近一次发送时间。
+    exam_notifications_7d: int = 0
+    exam_notifications_failed: int = 0
+    exam_notifications_last_sent_at: datetime | None = None
 
 
 @router.get("/settings/dingtalk-app/health", response_model=DingTalkAppHealthOut)
@@ -197,6 +202,14 @@ def dingtalk_app_health(db: Session = Depends(get_db), _: User = Depends(admin_o
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     sent_7d = db.query(func.count(ClassReminderLog.id)).filter(
         ClassReminderLog.sent_at >= week_ago).scalar() or 0
+    # 考务通知(KW-61):同一张 exam_notification_logs 表聚合,失败可到
+    # /api/exam/exams/{id}/notifications 查明细并重发。
+    exam_7d = db.query(func.count(ExamNotificationLog.id)).filter(
+        ExamNotificationLog.created_at >= week_ago).scalar() or 0
+    exam_failed = db.query(func.count(ExamNotificationLog.id)).filter(
+        ExamNotificationLog.created_at >= week_ago,
+        ExamNotificationLog.status == "失败").scalar() or 0
+    exam_last_sent = db.query(func.max(ExamNotificationLog.sent_at)).scalar()
     teachers = db.query(Teacher).all()
     with_phone = [t for t in teachers if (t.phone or "").strip()]
     opted_out = [
@@ -211,7 +224,9 @@ def dingtalk_app_health(db: Session = Depends(get_db), _: User = Depends(admin_o
         job_scheduled=job_scheduled, last_sent_at=last_sent, sent_7d=sent_7d,
         teachers_with_phone=len(with_phone),
         teachers_missing_phone=len(teachers) - len(with_phone),
-        opted_out=opted_out, unresolved=unresolved)
+        opted_out=opted_out, unresolved=unresolved,
+        exam_notifications_7d=exam_7d, exam_notifications_failed=exam_failed,
+        exam_notifications_last_sent_at=exam_last_sent)
 
 
 @router.put("/settings/dingtalk-app", response_model=DingTalkAppSettingsOut)

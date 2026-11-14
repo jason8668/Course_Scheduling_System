@@ -31,7 +31,7 @@ DEFAULT_PATROL_LEGEND = (
     "三、注记事项部分请记录巡视时临时状况"
 )
 
-# 钉钉群机器人 Webhook(调代课通知同步推送到教师群)
+# 钉钉群机器人 Webhook(2026-11-06 起停用:群里不再发任何消息,配置保留未删)
 DINGTALK_WEBHOOK = "dingtalk_webhook"
 DINGTALK_SECRET = "dingtalk_secret"
 
@@ -100,7 +100,7 @@ def save_dingtalk_app(
     db: Session, app_key: str, app_secret: str, agent_id: str, lead_minutes: int
 ) -> None:
     set_value(db, DINGTALK_APP_KEY, app_key.strip())
-    # 空密钥视为「不变更」(同群机器人加签密钥语义)
+    # 空密钥视为「不变更」(同钉钉 Webhook 密钥语义)
     if app_secret:
         set_value(db, DINGTALK_APP_SECRET, app_secret.strip())
     set_value(db, DINGTALK_AGENT_ID, agent_id.strip())

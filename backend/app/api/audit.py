@@ -31,6 +31,8 @@ class AuditLogOut(BaseModel):
 @router.get("/audit-logs", response_model=list[AuditLogOut])
 def list_audit_logs(
     action: str | None = None,
+    target_type: str | None = None,
+    target_id: int | None = None,
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     _: object = Depends(admin_only),
@@ -38,4 +40,8 @@ def list_audit_logs(
     stmt = select(AuditLog).order_by(AuditLog.id.desc()).limit(limit)
     if action:
         stmt = stmt.where(AuditLog.action == action)
+    if target_type:
+        stmt = stmt.where(AuditLog.target_type == target_type)
+    if target_id is not None:
+        stmt = stmt.where(AuditLog.target_id == target_id)
     return db.scalars(stmt).all()

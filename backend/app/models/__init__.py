@@ -25,7 +25,63 @@ from app.models.basedata import (
 )
 from app.models.calendar import SchoolCalendarEvent
 from app.models.constraint import ConstraintConfig
-from app.models.duty import DutyOverride, DutyPattern, DutyReminderLog, DutySwapRequest
+from app.models.exam import (
+    Exam,
+    ExamGrade,
+    ExamPaperInfo,
+    ExamParticipant,
+    ExamSpecialArrangement,
+    ExamStatusChange,
+    ExamSubject,
+)
+from app.models.exam_arrangement import (
+    ExamArrangementLock,
+    ExamArrangementRule,
+    ExamRoom,
+    ExamRoomAssignment,
+)
+from app.models.exam_analysis import (
+    ExamAnalysisSetting,
+    ExamGradeBand,
+    ExamSubjectThreshold,
+    ExamTargetStudent,
+)
+from app.models.exam_archive import ExamArchive
+from app.models.exam_foundation import (
+    ExamNumberRule,
+    ParentContact,
+    Student,
+    StudentStatusChange,
+    SubjectScoreSetting,
+)
+from app.models.exam_invigilation import (
+    ExamDiscipline,
+    ExamInvigilation,
+    ExamInvigilationRule,
+    ExamInvigilatorPool,
+    ExamPatrol,
+)
+from app.models.exam_notifications import ExamNotificationLog, ExamNotificationSetting
+from app.models.exam_publish import (
+    ExamObjection,
+    ExamProofreading,
+    ExamPublishBatch,
+    ExamPublishSetting,
+    ExamScoreChangeApproval,
+    ExamScoreChangeRequest,
+    ExamScoreLock,
+)
+from app.models.exam_reports import ExamAccountLink, ExamReportSetting
+from app.models.exam_scores import (
+    ExamMakeup,
+    ExamMakeupScore,
+    ExamMarkingAssignment,
+    ExamScore,
+    ExamScoreItem,
+    ExamScoreItemScore,
+    ExamScoreSetting,
+)
+from app.models.exam_scopes import SubjectLeader
 from app.models.leave import (
     LEAVE_TYPE_CN,
     AffectedPeriod,
@@ -97,6 +153,51 @@ __all__ = [
     "DutyOverride",
     "DutySwapRequest",
     "DutyReminderLog",
+    "Exam",
+    "ExamAccountLink",
+    "ExamAnalysisSetting",
+    "ExamArchive",
+    "ExamArrangementLock",
+    "ExamArrangementRule",
+    "ExamDiscipline",
+    "ExamGrade",
+    "ExamGradeBand",
+    "ExamInvigilation",
+    "ExamInvigilationRule",
+    "ExamInvigilatorPool",
+    "ExamMakeup",
+    "ExamMakeupScore",
+    "ExamMarkingAssignment",
+    "ExamNumberRule",
+    "ExamNotificationLog",
+    "ExamNotificationSetting",
+    "ExamObjection",
+    "ExamPaperInfo",
+    "ExamParticipant",
+    "ExamPatrol",
+    "ExamProofreading",
+    "ExamPublishBatch",
+    "ExamPublishSetting",
+    "ExamReportSetting",
+    "ExamRoom",
+    "ExamRoomAssignment",
+    "ExamScore",
+    "ExamScoreChangeApproval",
+    "ExamScoreChangeRequest",
+    "ExamScoreItem",
+    "ExamScoreItemScore",
+    "ExamScoreLock",
+    "ExamScoreSetting",
+    "ExamSpecialArrangement",
+    "ExamStatusChange",
+    "ExamSubject",
+    "ExamSubjectThreshold",
+    "ExamTargetStudent",
+    "ParentContact",
+    "Student",
+    "StudentStatusChange",
+    "SubjectLeader",
+    "SubjectScoreSetting",
     "TeacherSwap",
     "TeacherSwapReminderLog",
 ]

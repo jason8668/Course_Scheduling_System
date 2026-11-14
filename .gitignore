@@ -34,3 +34,6 @@ frontend/playwright-report/
 frontend/test-results/
 frontend/blob-report/
 frontend/.cache/
+
+# Python build output
+backend/build/
