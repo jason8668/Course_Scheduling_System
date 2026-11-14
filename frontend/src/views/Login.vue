@@ -39,7 +39,7 @@ async function onSubmit() {
       <div class="login-visual">
         <img :src="loginHero" alt="" />
         <div class="visual-text">
-          <div class="visual-slogan">让每一节课，都落在合适的位置</div>
+          <div class="visual-slogan">让教务的每件事，都有条不紊</div>
           <div class="visual-sub">排课 · 考务 · 成绩，一个账号管好教务</div>
         </div>
       </div>
