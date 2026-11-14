@@ -15,6 +15,7 @@ import {
 } from '@/api/exam'
 import type { Exam, ExamDetail, ScoreProgress } from '@/api/exam'
 import { mondayOf, toISODate, weekdayOf } from '@/utils/calendar'
+import PortalCalendarCard from '@/components/PortalCalendarCard.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -40,6 +41,8 @@ const todayISO = toISODate(today)
 const todayLabel = `${today.getMonth() + 1}月${today.getDate()}日 ${WEEKDAYS[today.getDay()]}`
 
 // 今日概览:学期 + 第几周 + 今日值日 + 今日调代课
+// 迷你校历卡共用这个学期 id(总入口主页右上角);今日概览隐藏时它也照常显示。
+const portalSemesterId = ref<number | null>(null)
 const pubSemester = ref<PublicSemester | null>(null)
 const board = ref<DailyBoard | null>(null)
 const dutyName = ref<string | null>(null)
@@ -125,6 +128,7 @@ async function load() {
     listSemesters().catch(() => []),
   ])
   const semesterId = sems[0]?.id ?? pubs[0]?.id ?? null
+  portalSemesterId.value = semesterId
   pubSemester.value = pubs.find((p) => p.id === semesterId) ?? pubs[0] ?? null
   if (semesterId == null) {
     examsLoaded.value = true
@@ -229,6 +233,7 @@ onMounted(() => { void load() })
       </div>
     </section>
 
+    <div class="portal-top-row" data-testid="portal-top-row">
     <section v-if="todayReady" class="ios-section" data-testid="portal-today">
       <div class="ios-section-title">今日概览</div>
       <div class="ios-card">
@@ -261,6 +266,8 @@ onMounted(() => { void load() })
         </div>
       </div>
     </section>
+    <PortalCalendarCard :semester-id="portalSemesterId" class="portal-calendar-col" />
+    </div>
 
     <section v-if="hoursReady" class="ios-section" data-testid="portal-hours">
       <div class="ios-section-title">我的课时</div>
@@ -379,6 +386,11 @@ onMounted(() => { void load() })
 }
 .portal-page .ios-card-body { padding: 16px 20px; }
 .portal-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+/* 今日概览 + 迷你校历卡横排:概览 flex:1 在左,校历卡固定约 320px 在右;
+   窄屏自动换行上下叠。行本身顶替原来各 section 的 28px 上边距。 */
+.portal-top-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-top: 28px; }
+.portal-page .portal-top-row .ios-section { flex: 1 1 300px; min-width: 0; margin-top: 0; }
+.portal-calendar-col { flex: 0 1 320px; max-width: 100%; }
 .entry-card { flex: 1; min-width: 240px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .entry-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 122, 255, 0.2); }
 .entry-body { display: flex; align-items: center; gap: 12px; }

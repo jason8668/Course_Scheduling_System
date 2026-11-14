@@ -13,6 +13,9 @@ const WEEKDAY = TODAY.getDay() === 0 ? 7 : TODAY.getDay()
 const IN_4_DAYS = new Date(TODAY.getTime() + 4 * 86400000)
 const IN_4_DAYS_ISO = `${IN_4_DAYS.getFullYear()}-${String(IN_4_DAYS.getMonth() + 1).padStart(2, '0')}-${String(IN_4_DAYS.getDate()).padStart(2, '0')}`
 const IN_4_DAYS_LABEL = `${IN_4_DAYS.getMonth() + 1}月${IN_4_DAYS.getDate()}日`
+// 迷你校历卡夹具:本月 15 日放假(红点)、20 日活动(蓝点)
+const CAL_15 = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, '0')}-15`
+const CAL_20 = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, '0')}-20`
 
 function json(data: unknown) {
   return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(data) })
@@ -48,6 +51,22 @@ function defaultFetch(url: unknown) {
       date: TODAY_ISO, weekday: WEEKDAY, school_name: '', semester_label: '',
       entries: [{ disposed: false }, { disposed: false }, { disposed: true }],
     })
+  }
+  if (u.includes('/calendar-events')) {
+    return json([
+      {
+        id: 1, semester_id: 1, title: '国庆节', event_type: 'holiday', scope_type: 'school',
+        scope_id: null, start_date: CAL_15, end_date: CAL_15,
+        period_start: null, period_end: null, weekly_recurring: false,
+        note: '系统自动同步：公共假日', created_by: null, created_at: '', updated_at: '',
+      },
+      {
+        id: 2, semester_id: 1, title: '运动会', event_type: 'activity', scope_type: 'school',
+        scope_id: null, start_date: CAL_20, end_date: CAL_20,
+        period_start: null, period_end: null, weekly_recurring: false,
+        note: null, created_by: null, created_at: '', updated_at: '',
+      },
+    ])
   }
   if (u.includes('/duty-roster')) {
     return json({
@@ -134,6 +153,7 @@ function setup(roles: string[] = ['admin']) {
       { path: '/exam/exams/:id/scores', name: 'exam-exam-scores', component: { template: '<div />' } },
       { path: '/exam/exams/:id/publish', name: 'exam-exam-publish', component: { template: '<div />' } },
       { path: '/substitution-center', name: 'substitution-center', component: { template: '<div />' } },
+      { path: '/school-calendar', name: 'school-calendar', component: { template: '<div />' } },
       { path: '/login', name: 'login', component: { template: '<div />' } },
       { path: '/change-password', name: 'change-password', component: { template: '<div />' } },
     ],
@@ -247,6 +267,27 @@ describe('Portal', () => {
     expect(exam.text()).not.toContain('录分进度')
     expect(exam.text()).not.toContain('待校对')
     expect(exam.text()).not.toContain('待审批改分')
+  })
+
+  it('迷你校历卡:在今日概览行右侧,月份标题是本月,放假日打红点', async () => {
+    const { wrapper } = await mountPortal()
+    expect(wrapper.find('[data-testid="portal-top-row"]').exists()).toBe(true)
+    const card = wrapper.find('[data-testid="portal-calendar"]')
+    expect(card.exists()).toBe(true)
+    expect(card.text()).toContain(`${TODAY.getFullYear()}年${TODAY.getMonth() + 1}月`)
+    const holidayDot = wrapper.find(`[data-iso="${CAL_15}"] .cal-dot`)
+    expect(holidayDot.exists()).toBe(true)
+    expect(holidayDot.classes()).toContain('dot-holiday')
+    const activityDot = wrapper.find(`[data-iso="${CAL_20}"] .cal-dot`)
+    expect(activityDot.exists()).toBe(true)
+    expect(activityDot.classes()).not.toContain('dot-holiday')
+  })
+
+  it('迷你校历卡:完整校历链接跳 school-calendar', async () => {
+    const { wrapper, router } = await mountPortal()
+    await wrapper.find('[data-testid="portal-calendar-full"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('school-calendar')
   })
 
   it('本学期无考试时显示空态,不画假考试', async () => {

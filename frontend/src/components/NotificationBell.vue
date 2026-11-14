@@ -119,7 +119,7 @@ const TYPE_TAG: Record<string, string> = {
 </template>
 
 <style scoped>
-/* 顶栏玻璃圆钮:与「校历」玻璃药丸同一种材质,无未读时是中性玻璃,
+/* 顶栏玻璃圆钮:与顶栏「主入口」玻璃药丸同一种材质,无未读时是中性玻璃,
    有未读时透出苹果蓝,铃铛用描边线条图标,不用 emoji,与整站风格统一。 */
 .bell-btn {
   width: 32px; height: 32px; border-radius: 50%;

@@ -76,7 +76,8 @@ const menuOptions = computed<MenuOption[]>(() => {
   const dashboard = menuItem('dashboard', '仪表板')
   const query = menuItem('timetable-query', '课表查询')
   const leaves = menuItem('leaves', '调课管理')
-  // 校历(Jason 2026-10-29 定):不再单列菜单模块,改走顶栏右上角「校历」按钮,路由保留。
+  // 校历(Jason 2026-11-14 定):已从排课系统拎出,入口在总入口主页的迷你校历卡,
+  // 路由保留为顶层独立路由,不在菜单里单列。
   // 仪表板与课表查询(Jason 2026-10-29 23:59 定):两个都要在菜单里,缺一不可——
   // 之前把课表查询移出菜单、把仪表板改名首页,他找不到,作废,全部调回来。
   // 纯教师帐号:只列已重排的三页(仪表板已含原「我的」全部功能)。
@@ -158,7 +159,7 @@ const menuThemeOverrides = {
 // 故统计中心单列顶层(与排课中心同例)。
 // 仪表板不再挂「查看完整课表」入口卡:课表查询已回菜单,挂着就是多余一处
 // (Jason 2026-10-30 定:内容不冗余,能简单尽量简单)。
-// 校历已重排,但 Jason 定为顶栏按钮(不在菜单里单列模块)。
+// 校历已重排,但入口在总入口主页(迷你校历卡),不在菜单里单列模块。
 // 排课旧页(配课管理 / 排课工作台 / 自动排课 / 版本与发布)功能已由排课中心
 // 覆盖,不再放回菜单,路由保留(直接输地址仍能进)。
 
@@ -305,7 +306,7 @@ async function onLogout() {
             ☰ 菜单
           </n-button>
           <span v-else />
-          <!-- H5 小屏:顶栏按钮多(校历/铃铛/姓名/改密/退出),不换行会被挤出屏,允许折到第二行 -->
+          <!-- H5 小屏:顶栏按钮多(铃铛/姓名/改密/退出),不换行会被挤出屏,允许折到第二行 -->
           <n-space align="center" :wrap="true">
           <router-link
             v-if="newVersion" :to="{ name: 'system' }" class="update-link"
@@ -319,12 +320,6 @@ async function onLogout() {
             @click="goPortal"
           >
             主入口
-          </n-button>
-          <n-button
-            class="glass-btn" size="small" data-testid="header-calendar"
-            @click="router.push({ name: 'school-calendar' })"
-          >
-            校历
           </n-button>
           <notification-bell />
           <n-text v-if="auth.user">{{ auth.user.display_name }}</n-text>
@@ -396,7 +391,7 @@ async function onLogout() {
   background: rgba(0, 122, 255, 0.12); color: #007aff;
   font-size: 15px; font-weight: 600;
 }
-/* 顶栏校历毛玻璃药丸按钮:光看两个字没人知道能按,做成圆角玻璃片才像按钮。
+/* 顶栏主入口毛玻璃药丸按钮:光看两个字没人知道能按,做成圆角玻璃片才像按钮。
    上亮下暗渐变 + 模糊 + 白边 + 顶部内高光 + 柔和阴影,跟边栏同一块玻璃。 */
 .n-button.glass-btn {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.55));

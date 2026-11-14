@@ -324,6 +324,9 @@ async function onDelete(ev: CalendarEvent) {
 
 <template>
   <div class="ios-page">
+    <div class="cal-back">
+      <router-link data-testid="calendar-back-portal" :to="{ name: 'portal' }">← 返回主入口</router-link>
+    </div>
     <n-space align="center" :wrap="true">
       <h1 class="ios-title">学校校历</h1>
       <n-select
@@ -543,6 +546,8 @@ async function onDelete(ev: CalendarEvent) {
 </template>
 
 <style scoped>
+.cal-back { margin-bottom: 8px; font-size: 14px; }
+.cal-back a { color: #007aff; text-decoration: none; }
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
 .month-frames { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
 @media (max-width: 900px) { .month-frames { grid-template-columns: 1fr; } }

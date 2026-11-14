@@ -63,6 +63,13 @@ const routes = [
     component: () => import('@/views/CalendarPrint.vue'),
   },
   {
+    // 学校校历:已从排课系统拎出,顶层独立路由(不套 MainLayout 边栏),
+    // 入口在总入口主页的迷你校历卡;路由名不变,守卫不用改。
+    path: '/school-calendar',
+    name: 'school-calendar',
+    component: () => import('@/views/SchoolCalendar.vue'),
+  },
+  {
     // 总主入口:独立页,不套系统边栏(登录页同款干净版面),登录后落点。
     // 所有系统排一张网格上,以后新系统往里加卡。
     path: '/',
@@ -117,11 +124,6 @@ const routes = [
         path: 'timetable-query',
         name: 'timetable-query',
         component: () => import('@/views/TimetableQuery.vue'),
-      },
-      {
-        path: 'school-calendar',
-        name: 'school-calendar',
-        component: () => import('@/views/SchoolCalendar.vue'),
       },
       {
         path: 'scheduling/workbench',
