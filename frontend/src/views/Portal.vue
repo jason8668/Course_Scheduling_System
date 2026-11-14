@@ -354,11 +354,13 @@ onMounted(() => { void load() })
 
 <style scoped>
 /* 总入口首页视觉(Jason 2026-11-14 定:封面要像苹果系统,每格浅蓝底、整页居中)。
+   蓝色全页统一(Jason 2026-11-14:页面底与卡片深浅必须一致):页面底 #EAF3FE、
+   所有卡片 #DCE9FD、里层小数据格 #EAF3FE,全部 flat、不渐变。
    只改本页:容器定宽居中 + 浅蓝卡片;其它页仍走全局左对齐版式,不动。 */
 .portal-page {
   min-height: 100vh;
   padding-bottom: 0;
-  background: linear-gradient(180deg, #c7d9f6 0%, #dde7f8 30%, #e9ebf2 65%, #f5f5f7 100%);
+  background: #eaf3fe;
 }
 .portal-wrap { max-width: 1024px; margin: 0 auto; padding: 20px 24px 72px; }
 .portal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -370,7 +372,7 @@ onMounted(() => { void load() })
 .portal-page .ios-section { margin-top: 28px; }
 .portal-page .ios-section-title { padding: 0 4px 8px; font-size: 14px; color: #5b7ba6; }
 .portal-page .ios-card {
-  background: linear-gradient(180deg, #e9f2fe 0%, #deebfd 100%);
+  background: #dce9fd;
   border: 1px solid rgba(0, 122, 255, 0.16);
   border-radius: 20px;
   box-shadow: 0 6px 20px rgba(0, 122, 255, 0.1);
