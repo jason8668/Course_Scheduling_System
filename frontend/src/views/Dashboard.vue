@@ -322,31 +322,6 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- 双入口(考务成绩与排课分开、两个入口):登录后先看到两张大卡片,点哪个进哪个。 -->
-    <section class="ios-section" data-testid="dash-entries">
-      <div class="ios-section-title">系统入口</div>
-      <div style="display: flex; gap: 16px; flex-wrap: wrap">
-        <div
-          class="ios-card entry-card" data-testid="entry-scheduling"
-          @click="router.push({ name: 'scheduling-center' })"
-        >
-          <div class="ios-card-body">
-            <div class="ios-row-title">排课系统</div>
-            <div class="ios-row-sub">开学建置、配课与排课、课表查询、调课/代课、课时统计</div>
-          </div>
-        </div>
-        <div
-          class="ios-card entry-card" data-testid="entry-exam"
-          @click="router.push({ name: 'exam-students' })"
-        >
-          <div class="ios-card-body">
-            <div class="ios-row-title">考务成绩系统</div>
-            <div class="ios-row-sub">学生档案、学科分值、考号规则、考试与成绩</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="ios-section" data-testid="dash-week">
       <div class="ios-section-title"><span>{{ weekTitle }}</span><span style="font-size: 13px; font-weight: 400">{{ weekRangeLabel }}</span></div>
       <div class="ios-card">
@@ -506,8 +481,6 @@ onMounted(() => {
 
 <style scoped>
 .stat-blocks { display: flex; flex-wrap: wrap; gap: 16px; }
-.entry-card { flex: 1; min-width: 240px; cursor: pointer; }
-.entry-card:hover { box-shadow: 0 8px 24px rgba(0, 122, 255, 0.18); }
 .stat-block {
   min-width: 128px; flex: 1; max-width: 200px;
   background: var(--stat-bg); border-radius: 12px; padding: 16px 18px;

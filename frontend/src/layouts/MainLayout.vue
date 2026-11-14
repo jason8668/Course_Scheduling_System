@@ -229,11 +229,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
 })
 
-// 双入口切换:在任一端顶部都能一键切到另一端。
+// 总主入口:顶栏只留一个“主入口”按钮点回总入口页,不再排课↔考务直接互切。
+// 系统名按当前所在系统显示:总入口显示智慧教务系统,/exam/* 显示考务成绩系统,其余显示排课系统。
 const isExamRoute = computed(() => route.path.startsWith('/exam/'))
-function switchEntry() {
-  if (isExamRoute.value) router.push({ name: 'scheduling-center' })
-  else router.push({ name: 'exam-students' })
+const isPortalRoute = computed(() => route.name === 'portal')
+const systemTitle = computed(() =>
+  isPortalRoute.value ? '智慧教务系统' : isExamRoute.value ? '考务成绩系统' : '排课系统')
+function goPortal() {
+  router.push({ name: 'portal' })
 }
 
 function onChangePassword() {
@@ -266,7 +269,7 @@ async function onLogout() {
         面板透过模糊把这层淡蓝晕进来,而不是对著一块平色底发呆。
         收合后同样是一块窄玻璃板。 -->
       <div style="padding: 18px 16px; font-weight: 700; font-size: 19px; letter-spacing: -0.5px; color: #000; white-space: nowrap; overflow: hidden">
-        {{ collapsed ? '排课' : isExamRoute ? '考务成绩系统' : '排课与调代课系统' }}
+        {{ collapsed ? systemTitle.slice(0, 2) : systemTitle }}
       </div>
       <div ref="menuWrapRef" class="sider-menu-wrap">
         <div class="menu-indicator" :style="indicatorStyle" />
@@ -312,10 +315,10 @@ async function onLogout() {
           </router-link>
           <n-button
             class="glass-btn" size="small"
-            :data-testid="isExamRoute ? 'header-switch-to-scheduling' : 'header-switch-to-exam'"
-            @click="switchEntry"
+            data-testid="header-portal"
+            @click="goPortal"
           >
-            {{ isExamRoute ? '排课系统' : '考务成绩系统' }}
+            主入口
           </n-button>
           <n-button
             class="glass-btn" size="small" data-testid="header-calendar"
@@ -342,7 +345,7 @@ async function onLogout() {
 
   <!-- 手机抽屉菜单:窄屏才出现,点选后自动收回 -->
   <n-drawer v-model:show="drawerOpen" placement="left" :width="260" data-testid="mobile-menu-drawer">
-    <n-drawer-content :title="isExamRoute ? '考务成绩系统' : '排课与调代课系统'">
+    <n-drawer-content :title="systemTitle">
       <n-menu
         :value="activeKey"
         :indent="0"

@@ -16,10 +16,18 @@ describe('decideRoute', () => {
     expect(decideRoute(auth([], { authed: false }), 'login', true, null)).toBe(true)
   })
 
-  it('已登录进登录页:须改密去改密页,否则去仪表板', () => {
-    expect(decideRoute(auth(['teacher']), 'login', true, null)).toBe('dashboard')
+  it('已登录进登录页:须改密去改密页,否则去总主入口', () => {
+    expect(decideRoute(auth(['teacher']), 'login', true, null)).toBe('portal')
     expect(decideRoute(auth(['teacher'], { mustChange: true }), 'login', true, null))
       .toBe('change-password')
+  })
+
+  it('总主入口对所有登录角色放行,学生/家长除外', () => {
+    expect(decideRoute(auth(['admin']), 'portal', false, null)).toBe(true)
+    expect(decideRoute(auth(['director']), 'portal', false, null)).toBe(true)
+    expect(decideRoute(auth(['teacher']), 'portal', false, null)).toBe(true)
+    expect(decideRoute(auth(['student']), 'portal', false, null)).toBe('exam-my-scores')
+    expect(decideRoute(auth(['parent']), 'portal', false, null)).toBe('exam-my-scores')
   })
 
   it('须改密时除改密页外一律去改密页', () => {

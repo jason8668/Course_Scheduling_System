@@ -9,8 +9,9 @@ export const AUTH_PAGES = new Set(['login', 'change-password'])
 export const STUDENT_PARENT_PAGES = new Set(['exam-my-scores'])
 
 // 纯教师帐号可进入的页面(请假是教师自己要做的事;课表打印页是查课表后打印用)
-// 考务入口三页也在内:班主任要看本班学生档案、改本班家长信息,写权限仍由后端接口拦截
+// 总主入口对所有登录角色放行(含纯教师);考务入口三页也在内:班主任要看本班学生档案、改本班家长信息,写权限仍由后端接口拦截
 export const TEACHER_PAGES = new Set([
+  'portal',
   'dashboard', 'my', 'school-calendar', 'calendar-print',
   'timetable-query', 'timetable-print', 'leaves', 'substitution-stats',
   'exam-students', 'exam-subject-settings', 'exam-number-rule',
@@ -47,7 +48,7 @@ export function decideRoute(
   if (isPublic) {
     if (auth.isAuthenticated && name === 'login') {
       if (auth.mustChangePassword) return 'change-password'
-      return isStudentParent ? 'exam-my-scores' : 'dashboard'
+      return isStudentParent ? 'exam-my-scores' : 'portal'
     }
     return true
   }

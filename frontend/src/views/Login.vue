@@ -23,8 +23,8 @@ async function onSubmit() {
   loading.value = true
   try {
     await auth.login(username.value, password.value)
-    // 首次登录需改密码者导向改密码页,否则进仪表板
-    router.push(auth.mustChangePassword ? { name: 'change-password' } : { name: 'dashboard' })
+    // 首次登录需改密码者导向改密码页,否则进总主入口
+    router.push(auth.mustChangePassword ? { name: 'change-password' } : { name: 'portal' })
   } catch (e) {
     message.error((e as ApiError).detail || '登录失败')
   } finally {
@@ -40,11 +40,11 @@ async function onSubmit() {
         <img :src="loginHero" alt="" />
         <div class="visual-text">
           <div class="visual-slogan">让每一节课，都落在合适的位置</div>
-          <div class="visual-sub">自动排课 · 三视角课表 · 调代课管理</div>
+          <div class="visual-sub">排课 · 考务 · 成绩，一个账号管好教务</div>
         </div>
       </div>
       <div class="login-form-side">
-        <h1 class="form-title">排课与调代课系统</h1>
+        <h1 class="form-title">智慧教务系统</h1>
         <p class="form-sub">请输入帐号与密码登录</p>
         <n-form @submit.prevent="onSubmit">
           <n-form-item label="帐号">

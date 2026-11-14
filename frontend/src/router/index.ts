@@ -67,7 +67,13 @@ const routes = [
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
       {
+        // 总主入口:登录后落点,所有系统排一张网格上,以后新系统往里加卡。
         path: '',
+        name: 'portal',
+        component: () => import('@/views/Portal.vue'),
+      },
+      {
+        path: 'dashboard',
         name: 'dashboard',
         component: () => import('@/views/Dashboard.vue'),
       },

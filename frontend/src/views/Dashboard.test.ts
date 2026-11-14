@@ -38,5 +38,9 @@ describe('Dashboard', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('仪表板')
     expect(wrapper.text()).toContain('尚未建立任何学期资料')
+    // 系统入口已搬到总主入口页(portal):仪表板里不再有入口卡
+    expect(wrapper.find('[data-testid="dash-entries"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="entry-scheduling"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="entry-exam"]').exists()).toBe(false)
   })
 })
