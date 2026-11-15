@@ -143,11 +143,13 @@ def upgrade() -> None:
 
 def _seed_repair_flow() -> None:
     conn = op.get_bind()
+    # is_active 是布尔列:Postgres 里写 1 会报 operator does not exist:
+    # boolean = integer,必须写 true(SQLite 把布尔当整数,本地测不出来)。
     conn.execute(sa.text(
         "INSERT INTO asset_approval_flows (doc_type, name, nodes, is_active) "
-        "SELECT '维修单', '维修审批流', :nodes, 1 "
+        "SELECT '维修单', '维修审批流', :nodes, true "
         "WHERE NOT EXISTS (SELECT 1 FROM asset_approval_flows "
-        "WHERE doc_type = '维修单' AND is_active = 1)"
+        "WHERE doc_type = '维修单' AND is_active = true)"
     ), {"nodes": '[{"step": 1, "role": "asset_dept_admin", "mode": "any", "required_approvals": 1},'
                  ' {"step": 2, "role": "asset_admin", "mode": "any", "required_approvals": 1},'
                  ' {"step": 3, "role": "director", "mode": "any", "required_approvals": 1, "min_amount": 5000}]'})

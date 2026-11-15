@@ -187,17 +187,29 @@ def upgrade() -> None:
     op.create_index("ix_asset_sync_logs_asset_id", "asset_sync_logs", ["asset_id"])
     op.create_index("ix_asset_sync_logs_action", "asset_sync_logs", ["action"])
 
+    # asset_params.value 原先是 varchar(256),但 disposal.materials 的 JSON
+    # 有 284 字,Postgres 会报 StringDataRightTruncation(value too long
+    # for type character varying(256)),迁移直接失败(SQLite 不限长,本地
+    # 测不出来)。先把 value 放宽成 Text 再种参数;模型里同步改。
+    op.alter_column(
+        "asset_params", "value", type_=sa.Text(),
+        existing_type=sa.String(256), existing_nullable=False,
+        existing_server_default="",
+    )
+
     _seed_disposal_flow()
     _seed_params()
 
 
 def _seed_disposal_flow() -> None:
     conn = op.get_bind()
+    # is_active 是布尔列:Postgres 里写 1 会报 operator does not exist:
+    # boolean = integer,必须写 true(SQLite 把布尔当整数,本地测不出来)。
     conn.execute(sa.text(
         "INSERT INTO asset_approval_flows (doc_type, name, nodes, is_active) "
-        "SELECT '处置单', '处置审批流', :nodes, 1 "
+        "SELECT '处置单', '处置审批流', :nodes, true "
         "WHERE NOT EXISTS (SELECT 1 FROM asset_approval_flows "
-        "WHERE doc_type = '处置单' AND is_active = 1)"
+        "WHERE doc_type = '处置单' AND is_active = true)"
     ), {"nodes": '[{"step": 1, "role": "asset_dept_admin", "mode": "any", "required_approvals": 1},'
                  ' {"step": 2, "role": "asset_admin", "mode": "any", "required_approvals": 1},'
                  ' {"step": 3, "role": "director", "mode": "any", "required_approvals": 1, "min_amount": 5000}]'})
@@ -214,7 +226,10 @@ def _seed_params() -> None:
     conn.execute(sa.text(
         "INSERT INTO asset_params (key, value, value_type, description) "
         "SELECT 'sync.backlog_days', '14', 'number', "
-        "'待同步积压提醒阈值(天):待同步池超过该天数未执行时提醒资产管理员,只提醒不自动执行' "
+        # 注意:描述里不能写 ") :" 这种 ASCII 冒号——sa.text() 会把冒号后
+        # 的中文当成绑定参数名,报 A value is required for bind parameter。
+        # 这里用逗号断开(SQLite 不解析绑定参数,本地测不出来)。
+        "'待同步积压提醒阈值(天),待同步池超过该天数未执行时提醒资产管理员,只提醒不自动执行' "
         "WHERE NOT EXISTS (SELECT 1 FROM asset_params WHERE key = 'sync.backlog_days')"
     ))
 
@@ -225,6 +240,12 @@ def downgrade() -> None:
         "DELETE FROM asset_approval_flows WHERE doc_type = '处置单'"))
     conn.execute(sa.text(
         "DELETE FROM asset_params WHERE key IN ('disposal.materials', 'sync.backlog_days')"))
+    # 回滚时把 value 列收回 varchar(256)(长值已删,安全)。
+    op.alter_column(
+        "asset_params", "value", type_=sa.String(256),
+        existing_type=sa.Text(), existing_nullable=False,
+        existing_server_default="",
+    )
     op.drop_table("asset_sync_logs")
     op.drop_table("asset_sync_batch_items")
     op.drop_table("asset_sync_batches")

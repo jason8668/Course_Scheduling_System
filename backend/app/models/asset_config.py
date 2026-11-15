@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -46,7 +46,10 @@ class AssetParam(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     key: Mapped[str] = mapped_column(String(64), index=True)
-    value: Mapped[str] = mapped_column(String(256), default="")
+    # value 用 Text:JSON 类参数(如 disposal.materials 284 字)超过 256,
+    # varchar(256) 会在 Postgres 上报 StringDataRightTruncation;
+    # 迁移 0043 已把列放宽成 Text。
+    value: Mapped[str] = mapped_column(Text, default="")
     value_type: Mapped[str] = mapped_column(String(16), default="string")
     description: Mapped[str] = mapped_column(String(256), default="")
     updated_by: Mapped[int | None] = mapped_column(Integer, nullable=True)

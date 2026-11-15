@@ -254,7 +254,8 @@ class AssetParamOut(BaseModel):
 
 
 class AssetParamIn(BaseModel):
-    value: str = Field(max_length=256)
+    # 上限与 Text 列一致:JSON 类参数(如 disposal.materials 284 字)超过 256。
+    value: str = Field(max_length=10000)
 
 
 # ── 审批流 #5/#79/#80 ──

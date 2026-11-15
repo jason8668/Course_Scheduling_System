@@ -276,9 +276,17 @@ def _seed_params_and_flows() -> None:
          "保修到期提醒:到期前多少天提醒(天),默认 30 天,可配置(#3)"),
     ]
     for key, value, vtype, desc in params:
+        # Postgres 要求同一参数在 SELECT 列表和 WHERE 里推断出的类型一致:
+        # :key 不加 CAST 时 SELECT 侧推成 text、WHERE 侧按 key 列推成
+        # varchar,报 AmbiguousParameter(inconsistent types deduced for
+        # parameter $1, text versus character varying),迁移直接失败、
+        # api 容器起不来(SQLite 不校验类型,所以本地测试没暴露)。
+        # 各参数按目标列显式 CAST,与列定义一致(key 64/value 256/
+        # value_type 16/description 256);CAST 在 SQLite 里也是合法的。
         conn.execute(sa.text(
             "INSERT INTO asset_params (key, value, value_type, description) "
-            "SELECT :key, :value, :vtype, :desc "
+            "SELECT CAST(:key AS varchar(64)), CAST(:value AS varchar(256)), "
+            "CAST(:vtype AS varchar(16)), CAST(:desc AS varchar(256)) "
             "WHERE NOT EXISTS (SELECT 1 FROM asset_params WHERE key = :key)"
         ), {"key": key, "value": value, "vtype": vtype, "desc": desc})
     flows = [
@@ -292,11 +300,15 @@ def _seed_params_and_flows() -> None:
          ' {"step": 3, "role": "director", "mode": "any", "required_approvals": 1, "min_amount": 5000}]'),
     ]
     for doc_type, name, nodes in flows:
+        # 与上面同理: :doc_type 在 SELECT 侧和 WHERE 侧各出现一次,
+        # 不 CAST 会在 Postgres 上报同样的 AmbiguousParameter。
+        # doc_type 列是 varchar(32), name 列是 varchar(64);
+        # :nodes 只在 SELECT 出现一次,由目标 JSON 列推断,不用 CAST。
         conn.execute(sa.text(
             "INSERT INTO asset_approval_flows (doc_type, name, nodes, is_active) "
-            "SELECT :doc_type, :name, :nodes, 1 "
+            "SELECT CAST(:doc_type AS varchar(32)), CAST(:name AS varchar(64)), :nodes, true "
             "WHERE NOT EXISTS (SELECT 1 FROM asset_approval_flows "
-            "WHERE doc_type = :doc_type AND is_active = 1)"
+            "WHERE doc_type = :doc_type AND is_active = true)"
         ), {"doc_type": doc_type, "name": name, "nodes": nodes})
 
 
