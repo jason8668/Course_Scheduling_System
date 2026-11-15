@@ -28,6 +28,38 @@ class Role(enum.StrEnum):
     director = "director"    # 教务主任
     scheduler = "scheduler"  # 停用:三种角色只剩管理员/主任/教师,不再分配;枚举保留只为兼容旧数据
     teacher = "teacher"      # 教师
+    # ── 学校资产管理系统八类角色(#78)。admin 为超级用户,通过所有检查。
+    asset_admin = "asset_admin"            # 资产管理员(总务)
+    asset_finance = "asset_finance"        # 财务审核岗
+    asset_dept_admin = "asset_dept_admin"  # 部门资产管理员
+    asset_custodian = "asset_custodian"    # 保管人/使用人
+    asset_inspector = "asset_inspector"    # 鉴定验收人员
+    asset_auditor = "asset_auditor"        # 审计监督(只读)
+
+
+#: 资产模块八类角色(#78):校领导用既有 director,系统管理员用既有 admin。
+ASSET_ROLES: tuple[Role, ...] = (
+    Role.director,
+    Role.asset_admin,
+    Role.asset_finance,
+    Role.asset_dept_admin,
+    Role.asset_custodian,
+    Role.asset_inspector,
+    Role.admin,
+    Role.asset_auditor,
+)
+
+#: 资产角色中文名(前端展示用)。
+ASSET_ROLE_LABELS: dict[str, str] = {
+    "director": "校领导",
+    "asset_admin": "资产管理员",
+    "asset_finance": "财务审核岗",
+    "asset_dept_admin": "部门资产管理员",
+    "asset_custodian": "保管人/使用人",
+    "asset_inspector": "鉴定验收人员",
+    "admin": "系统管理员",
+    "asset_auditor": "审计监督(只读)",
+}
 
 
 class User(Base):

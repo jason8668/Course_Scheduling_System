@@ -24,7 +24,7 @@ const EXAM = {
 const TICKETS: AdmissionTicket[] = [
   {
     student_id: 9, student_no: '202601', exam_no: '2026001', student_name: '张三',
-    class_name: '七年一班',
+    class_name: '七年一班', grade: 7,
     subjects: [{
       subject_id: 2, subject_name: '数学', exam_date: '2026-11-20',
       start_time: '08:00', end_time: '10:00', room_name: '201', seat_no: 1,
@@ -32,7 +32,7 @@ const TICKETS: AdmissionTicket[] = [
   },
   {
     student_id: 10, student_no: '202602', exam_no: '2026002', student_name: '李四',
-    class_name: '七年二班',
+    class_name: '七年二班', grade: 7,
     subjects: [{
       subject_id: 2, subject_name: '数学', exam_date: '2026-11-20',
       start_time: '08:00', end_time: '10:00', room_name: '202', seat_no: 2,

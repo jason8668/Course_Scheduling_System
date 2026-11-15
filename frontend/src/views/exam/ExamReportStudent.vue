@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import { formatScore, getExam, getStudentReportCard, listParticipants } from '@/api/exam'
 import type { ExamDetail, StudentReportCard } from '@/api/exam'
+import { classLabel } from '@/utils/labels'
 
 // 学生个人成绩单页(KW-53,教师/教务完整版):各科成绩、总分、含排名,
 // 可打印发放。版面照抄准考证打印页:白底黑框表 +
@@ -58,7 +59,7 @@ onMounted(async () => {
     exam.value = await getExam(examId)
     const res = await listParticipants(examId)
     studentOptions.value = res.items.map((p) => ({
-      label: `${p.student_name}(${p.student_no}) ${p.class_name ?? ''}`,
+      label: `${p.student_name}(${p.student_no}) ${classLabel({ grade: p.grade, name: p.class_name ?? '' })}`,
       value: p.student_id,
     }))
     if (studentId.value) await reloadCard()
@@ -96,7 +97,7 @@ onMounted(async () => {
       <div class="card-grid">
         <div><span class="k">姓名</span>{{ card.student_name }}</div>
         <div><span class="k">学号</span>{{ card.student_no }}</div>
-        <div><span class="k">班级</span>{{ card.class_name }}</div>
+        <div><span class="k">班级</span>{{ classLabel({ grade: card.grade, name: card.class_name }) }}</div>
         <div><span class="k">总分</span>{{ formatScore(card.total) }}</div>
         <div><span class="k">班级排名</span>{{ card.class_rank ?? '—' }}</div>
         <div><span class="k">年级排名</span>{{ card.grade_rank ?? '—' }}</div>

@@ -77,6 +77,7 @@ class RankingItemOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     total: float | None = None
     rank: int
 
@@ -107,6 +108,7 @@ class CriticalItemOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     total: float | None = None
     gap_to_line: float | None = None
     subject_gaps: list[SubjectGapOut] = []
@@ -130,6 +132,7 @@ class TargetStudentOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     target_total: float | None = None
     note: str | None = None
 
@@ -143,6 +146,7 @@ class TargetTrackingItemOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     target_total: float | None = None
     total: float | None = None
     reached: bool = False
@@ -158,6 +162,7 @@ class ProgressItemOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     prev_total: float | None = None
     total: float | None = None
     prev_rank: int | None = None
@@ -175,6 +180,7 @@ class ProgressListOut(BaseModel):
 class QualityClassSubjectOut(BaseModel):
     class_unit_id: int
     class_name: str = ""
+    grade: int | None = None
     avg: float | None = None
     pass_rate: float = 0
     excellent_rate: float = 0
@@ -196,6 +202,7 @@ class QualityClassSubjectRateOut(BaseModel):
 class QualityClassOut(BaseModel):
     class_unit_id: int
     class_name: str = ""
+    grade: int | None = None
     subjects: list[QualityClassSubjectRateOut]
 
 

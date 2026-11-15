@@ -267,6 +267,7 @@ def test_rankings_dense_default_and_competition(client_db, seed):
     # 总分 dense:170/160/140/140/100/50 -> 1/2/3/3/4/5
     body = client.get(f"/api/exam/exams/{eid}/analysis/rankings?scope=grade").json()
     assert body["total"] == 6
+    assert {i["grade"] for i in body["items"]} == {7}
     ranks = {i["student_no"]: i["rank"] for i in body["items"]}
     assert ranks == {
         "20260101": 1, "20260102": 2, "20260103": 3,
@@ -435,6 +436,7 @@ def test_target_students_tracking(client_db, seed):
     assert r.status_code == 201, r.text
     assert r.json()["student_no"] == "20260101"
     assert r.json()["class_name"] == "701"
+    assert r.json()["grade"] == 7
     # 重复加同一学生 409;不在参试名单的学生 404
     assert client.post(f"/api/exam/exams/{eid}/target-students", json={
         "student_id": seed["s1"].id, "target_total": 170,
@@ -509,9 +511,11 @@ def test_quality_compare_roles(client_db, seed):
     math = next(s for s in body["subjects"] if s["subject_name"] == "数学")
     by_class = {c["class_name"]: c for c in math["classes"]}
     assert by_class["701"]["avg"] == 77.5  # 701 数学 90/80/80/60
+    assert by_class["701"]["grade"] == 7
     assert by_class["702"]["avg"] == 70  # 702 数学 70,缺考不计入
     assert by_class["701"]["pass_rate"] == 100
     classes = {c["class_name"]: c for c in body["classes"]}
+    assert classes["701"]["grade"] == 7
     assert classes["701"]["subjects"][0]["subject_name"] == "数学"
     # 任课教师 403;年级组长本年级可看,跨年级 403
     login(client, "t1")

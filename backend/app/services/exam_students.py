@@ -363,6 +363,8 @@ def list_status_changes(db: Session, student: Student) -> list[StudentStatusChan
             to_class_unit_id=r.to_class_unit_id,
             from_class_name=from_cls.name if from_cls else None,
             to_class_name=to_cls.name if to_cls else None,
+            from_grade=from_cls.grade if from_cls else None,
+            to_grade=to_cls.grade if to_cls else None,
             from_status=r.from_status,
             to_status=r.to_status,
             note=r.note,

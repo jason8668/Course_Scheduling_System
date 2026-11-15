@@ -669,6 +669,7 @@ def test_discipline_teacher_create_and_forbidden(client_db, seed):
     did = r.json()["id"]
     assert r.json()["student_name"] == "张三"
     assert r.json()["class_name"] == "701"
+    assert r.json()["grade"] == 7
     assert r.json()["recorded_by_name"] == "t1"
     # 赵六在 102 考场,不在王老师监考考场 -> 403
     r = client.post(f"/api/exam/exams/{eid}/discipline", json={

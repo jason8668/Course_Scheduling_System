@@ -1012,9 +1012,11 @@ def _discipline_out(db: Session, row: ExamDiscipline) -> dict:
     subject_names = _subject_name_map(db, {row.subject_id})
     student = db.get(Student, row.student_id)
     class_name = ""
+    grade = None
     if student is not None:
         cls = db.get(ClassUnit, student.class_unit_id)
         class_name = cls.name if cls else ""
+        grade = cls.grade if cls else None
     recorded_name = ""
     if row.recorded_by is not None:
         recorder = db.get(User, row.recorded_by)
@@ -1028,6 +1030,7 @@ def _discipline_out(db: Session, row: ExamDiscipline) -> dict:
         "student_no": student.student_no if student else "",
         "student_name": student.name if student else "",
         "class_name": class_name,
+        "grade": grade,
         "type": row.type,
         "description": row.description,
         "handling": row.handling,

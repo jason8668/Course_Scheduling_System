@@ -13,6 +13,7 @@ import {
 import type { ExamDetail, TeacherScoreItem } from '@/api/exam'
 import { listClassUnits } from '@/api/basedata'
 import type { ClassUnit } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 // 教师端成绩查询页(KW-54):任课教师查所教班级本科成绩,班主任查本班全部科目成绩,
@@ -41,12 +42,16 @@ const subjectOptions = computed(() =>
   (exam.value?.subjects ?? []).map((s) => ({ label: s.subject_name, value: s.subject_id })),
 )
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 
 const columns: DataTableColumns<TeacherScoreItem> = [
   { title: '学号', key: 'student_no', width: 110 },
   { title: '姓名', key: 'student_name', width: 90 },
+  {
+    title: '年级', key: 'grade', width: 70,
+    render: (row) => (row.grade != null ? `${row.grade}年级` : '—'),
+  },
   { title: '班级', key: 'class_name', width: 110 },
   { title: '科目', key: 'subject_name', width: 90 },
   {

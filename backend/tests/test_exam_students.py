@@ -241,13 +241,16 @@ def test_status_change_transfer_keeps_old_records(client_db, seed):
     })
     assert r.status_code == 200, r.text
     assert r.json()["class_name"] == "801"
+    assert r.json()["grade"] == 8
     assert r.json()["status"] == "休学"
     recs = client.get(f"/api/exam/students/{s1}/status-changes").json()["items"]
     assert len(recs) == 2
     assert recs[0].get("from_class_name") == "701"
     assert recs[1]["change_type"] == "转班"
     assert recs[1]["from_class_name"] == "701"
+    assert recs[1]["from_grade"] == 7
     assert recs[1]["to_class_name"] == "801"
+    assert recs[1]["to_grade"] == 8
 
 
 def test_status_change_validation_errors(client_db, seed):

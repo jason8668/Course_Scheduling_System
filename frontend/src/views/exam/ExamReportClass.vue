@@ -7,6 +7,7 @@ import { formatScore, getClassReportCard, getExam } from '@/api/exam'
 import type { ClassReportCard, ExamDetail } from '@/api/exam'
 import { listClassUnits } from '@/api/basedata'
 import type { ClassUnit } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 
 // 班级成绩单打印页(KW-52):按班级出全科成绩单(班主任版,含总分与排名),
 // 供班主任核对和存档。版面照抄准考证打印页:白底黑框表 + @media print + window.print。
@@ -25,7 +26,7 @@ const loading = ref(false)
 const forbidden = ref('')
 
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 const subjects = computed(() => card.value?.students[0]?.subjects ?? [])
 
@@ -90,7 +91,7 @@ onMounted(async () => {
     </n-text>
 
     <h1 v-if="exam" class="head">{{ exam.name }} · 班级成绩单</h1>
-    <h2 v-if="card" class="subhead">{{ card.class_name }} · 共 {{ card.students.length }} 人</h2>
+    <h2 v-if="card" class="subhead">{{ classLabel({ grade: card.grade, name: card.class_name }) }} · 共 {{ card.students.length }} 人</h2>
     <p v-if="loading" class="empty">载入中…</p>
     <n-text v-else-if="forbidden" type="error" data-testid="report-class-forbidden" style="display: block; text-align: center">{{ forbidden }}</n-text>
     <n-empty v-else-if="!card" description="请先选择班级" />

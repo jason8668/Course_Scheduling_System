@@ -22,7 +22,7 @@ const EXAM = {
 function item(partial: Partial<ArrangementItem> & { id: number }): ArrangementItem {
   return {
     exam_id: 3, subject_id: 2, subject_name: '数学', room_id: 12, room_name: '201',
-    student_id: 9, student_no: '202601', student_name: '张三', class_name: '七年一班',
+    student_id: 9, student_no: '202601', student_name: '张三', class_name: '七年一班', grade: 7,
     seat_no: 1, special_note: null, exam_no: '2026001', ...partial,
   }
 }

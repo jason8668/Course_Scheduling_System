@@ -180,6 +180,7 @@ class DisciplineOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     type: str = ""
     description: str | None = None
     handling: str | None = None

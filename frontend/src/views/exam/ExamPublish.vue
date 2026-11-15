@@ -23,6 +23,7 @@ import type {
 } from '@/api/exam'
 import { listClassUnits } from '@/api/basedata'
 import type { ClassUnit } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -45,7 +46,7 @@ const subjectOptions = computed(() =>
 )
 const classes = ref<ClassUnit[]>([])
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 function classNameFor(id: number | null | undefined): string | null {
   if (id == null) return null
@@ -447,10 +448,11 @@ function goBack() {
           </n-space>
           <n-empty v-if="shownProofreading.length === 0" description="暂无校对记录" style="margin-top: 12px" />
           <table v-else class="ios-table" style="margin-top: 12px">
-            <thead><tr><th>科目</th><th>班级</th><th>提交人</th><th>校对人</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+            <thead><tr><th>科目</th><th>年级</th><th>班级</th><th>提交人</th><th>校对人</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="it in shownProofreading" :key="it.id">
                 <td>{{ it.subject_name }}</td>
+                <td>{{ it.grade != null ? `${it.grade}年级` : (it.class_name ? '—' : '全科') }}</td>
                 <td>{{ it.class_name ?? '全科' }}</td>
                 <td>{{ it.submitted_by_name || '—' }}</td>
                 <td>{{ it.proofreader_name || '—' }}</td>
@@ -505,10 +507,11 @@ function goBack() {
           </n-space>
           <n-empty v-if="locks.length === 0" description="暂无锁定记录" style="margin-top: 12px" />
           <table v-else class="ios-table" style="margin-top: 12px">
-            <thead><tr><th>科目</th><th>班级</th><th>锁定人</th><th>锁定时间</th><th>操作</th></tr></thead>
+            <thead><tr><th>科目</th><th>年级</th><th>班级</th><th>锁定人</th><th>锁定时间</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="l in locks" :key="l.id">
                 <td>{{ l.subject_name }}</td>
+                <td>{{ l.grade != null ? `${l.grade}年级` : (l.class_name ? '—' : '全科') }}</td>
                 <td>{{ l.class_name ?? '全科' }}</td>
                 <td>{{ l.locked_by_name || '—' }}</td>
                 <td>{{ l.locked_at ? l.locked_at.slice(0, 19).replace('T', ' ') : '—' }}</td>
@@ -517,7 +520,7 @@ function goBack() {
                     <template #trigger>
                       <n-button size="small" text type="error" :data-testid="`lock-delete-${l.id}`">解锁</n-button>
                     </template>
-                    确定解锁「{{ l.subject_name }}{{ l.class_name ? ` · ${l.class_name}` : ' · 全科' }}」?解锁后可直接修改成绩。
+                    确定解锁「{{ l.subject_name }}{{ l.class_name ? ` · ${l.grade != null ? `${l.grade}年级` : ''}${l.class_name}` : ' · 全科' }}」?解锁后可直接修改成绩。
                   </n-popconfirm>
                   <span v-else>—</span>
                 </td>

@@ -21,6 +21,7 @@ import type {
 } from '@/api/exam'
 import { listClassUnits, listSubjects, listTeachers } from '@/api/basedata'
 import type { ClassUnit, Subject, Teacher } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -48,7 +49,7 @@ const teachers = ref<Teacher[]>([])
 const classes = ref<ClassUnit[]>([])
 const students = ref<Student[]>([])
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 const teacherOptions = computed(() =>
   teachers.value.map((t) => ({ label: t.name, value: t.id })),
@@ -62,7 +63,7 @@ const gradeOptions = computed(() => {
     .map((g) => ({ label: `${g} 年级`, value: g }))
 })
 const studentOptions = computed(() =>
-  students.value.map((s) => ({ label: `${s.name}(${s.student_no}) ${s.class_name}`, value: s.id })),
+  students.value.map((s) => ({ label: `${s.name}(${s.student_no}) ${classLabel({ grade: s.grade, name: s.class_name })}`, value: s.id })),
 )
 
 async function reload() {
@@ -336,6 +337,7 @@ async function removeParticipant(p: ExamParticipant) {
 const participantColumns: DataTableColumns<ExamParticipant> = [
   { title: '学号', key: 'student_no', width: 110 },
   { title: '姓名', key: 'student_name', width: 90 },
+  { title: '年级', key: 'grade', width: 80, render: (row) => row.grade != null ? `${row.grade}年级` : '—' },
   { title: '班级', key: 'class_name', render: (row) => row.class_name ?? '—' },
   { title: '状态', key: 'status', width: 80 },
   { title: '备注', key: 'note', render: (row) => row.note ?? '—' },

@@ -161,6 +161,13 @@ def _class_name_map(db: Session, class_ids: set[int]) -> dict[int, str]:
     return {c.id: c.name for c in rows}
 
 
+def _class_grade_map(db: Session, class_ids: set[int]) -> dict[int, int]:
+    if not class_ids:
+        return {}
+    rows = db.scalars(select(ClassUnit).where(ClassUnit.id.in_(class_ids))).all()
+    return {c.id: c.grade for c in rows}
+
+
 def _participants_by_id(db: Session, exam: Exam) -> dict[int, ExamParticipant]:
     rows = db.scalars(
         select(ExamParticipant).where(ExamParticipant.exam_id == exam.id)
@@ -441,12 +448,14 @@ def list_proofreading(
         ]
     subjects = _subject_name_map(db, {r.subject_id for r in rows})
     classes = _class_name_map(db, {r.class_unit_id for r in rows if r.class_unit_id})
+    grades = _class_grade_map(db, {r.class_unit_id for r in rows if r.class_unit_id})
     items = [
         {
             "id": r.id, "exam_id": r.exam_id, "subject_id": r.subject_id,
             "subject_name": subjects.get(r.subject_id, ""),
             "class_unit_id": r.class_unit_id,
             "class_name": classes.get(r.class_unit_id) if r.class_unit_id else None,
+            "grade": grades.get(r.class_unit_id) if r.class_unit_id else None,
             "submitted_by": r.submitted_by,
             "submitted_by_name": _display_name(db, r.submitted_by),
             "proofreader_id": r.proofreader_id,
@@ -461,11 +470,13 @@ def list_proofreading(
 def proofreading_out(db: Session, row: ExamProofreading) -> dict:
     subjects = _subject_name_map(db, {row.subject_id})
     classes = _class_name_map(db, {row.class_unit_id} if row.class_unit_id else set())
+    grades = _class_grade_map(db, {row.class_unit_id} if row.class_unit_id else set())
     return {
         "id": row.id, "exam_id": row.exam_id, "subject_id": row.subject_id,
         "subject_name": subjects.get(row.subject_id, ""),
         "class_unit_id": row.class_unit_id,
         "class_name": classes.get(row.class_unit_id) if row.class_unit_id else None,
+        "grade": grades.get(row.class_unit_id) if row.class_unit_id else None,
         "submitted_by": row.submitted_by,
         "submitted_by_name": _display_name(db, row.submitted_by),
         "proofreader_id": row.proofreader_id,
@@ -545,12 +556,14 @@ def list_locks(
         ]
     subjects = _subject_name_map(db, {r.subject_id for r in rows})
     classes = _class_name_map(db, {r.class_unit_id for r in rows if r.class_unit_id})
+    grades = _class_grade_map(db, {r.class_unit_id for r in rows if r.class_unit_id})
     items = [
         {
             "id": r.id, "exam_id": r.exam_id, "subject_id": r.subject_id,
             "subject_name": subjects.get(r.subject_id, ""),
             "class_unit_id": r.class_unit_id,
             "class_name": classes.get(r.class_unit_id) if r.class_unit_id else None,
+            "grade": grades.get(r.class_unit_id) if r.class_unit_id else None,
             "locked_by": r.locked_by,
             "locked_by_name": _display_name(db, r.locked_by),
             "locked_at": r.locked_at,
@@ -563,11 +576,13 @@ def list_locks(
 def lock_out(db: Session, row: ExamScoreLock) -> dict:
     subjects = _subject_name_map(db, {row.subject_id})
     classes = _class_name_map(db, {row.class_unit_id} if row.class_unit_id else set())
+    grades = _class_grade_map(db, {row.class_unit_id} if row.class_unit_id else set())
     return {
         "id": row.id, "exam_id": row.exam_id, "subject_id": row.subject_id,
         "subject_name": subjects.get(row.subject_id, ""),
         "class_unit_id": row.class_unit_id,
         "class_name": classes.get(row.class_unit_id) if row.class_unit_id else None,
+        "grade": grades.get(row.class_unit_id) if row.class_unit_id else None,
         "locked_by": row.locked_by,
         "locked_by_name": _display_name(db, row.locked_by),
         "locked_at": row.locked_at,

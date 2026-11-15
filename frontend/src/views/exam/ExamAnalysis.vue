@@ -24,6 +24,7 @@ import type {
 } from '@/api/exam'
 import { listClassUnits } from '@/api/basedata'
 import type { ClassUnit } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -45,7 +46,7 @@ const subjectOptions = computed(() =>
 )
 const classes = ref<ClassUnit[]>([])
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 const gradeOptions = computed(() => {
   const grades = [...new Set(classes.value.map((c) => c.grade))].sort((a, b) => a - b)
@@ -55,7 +56,7 @@ const gradeOptions = computed(() => {
 const participants = ref<ExamParticipant[]>([])
 const studentOptions = computed(() =>
   participants.value.map((p) => ({
-    label: `${p.student_name}(${p.student_no}) ${p.class_name ?? ''}`, value: p.student_id,
+    label: `${p.student_name}(${p.student_no}) ${classLabel({ grade: p.grade, name: p.class_name ?? '' })}`, value: p.student_id,
   })),
 )
 
@@ -614,12 +615,13 @@ onMounted(() => { void reloadAll() })
           </n-text>
           <n-alert v-if="rankHint" type="info" style="margin-top: 12px">{{ rankHint }}</n-alert>
           <table class="ios-table" style="margin-top: 8px">
-            <thead><tr><th>名次</th><th>学号</th><th>姓名</th><th>班级</th><th>总分</th><th /></tr></thead>
+            <thead><tr><th>名次</th><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>总分</th><th /></tr></thead>
             <tbody>
               <tr v-for="r in rankings" :key="r.student_id">
                 <td>{{ r.rank }}</td>
                 <td>{{ r.student_no }}</td>
                 <td>{{ r.student_name }}</td>
+                <td>{{ r.grade != null ? `${r.grade}年级` : '—' }}</td>
                 <td>{{ r.class_name }}</td>
                 <td>{{ formatScore(r.total) }}</td>
                 <td>
@@ -680,11 +682,12 @@ onMounted(() => { void reloadAll() })
             单科及格线上下 {{ settingsForm.subject_critical_margin }} 分范围内的学生;临界线由学校提供,无官方线时用校内自定线。
           </n-text>
           <table class="ios-table">
-            <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>总分</th><th>距临界线</th><th>单科临界</th></tr></thead>
+            <thead><tr><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>总分</th><th>距临界线</th><th>单科临界</th></tr></thead>
             <tbody>
               <tr v-for="c in criticalItems" :key="c.student_id">
                 <td>{{ c.student_no }}</td>
                 <td>{{ c.student_name }}</td>
+                <td>{{ c.grade != null ? `${c.grade}年级` : '—' }}</td>
                 <td>{{ c.class_name }}</td>
                 <td>{{ formatScore(c.total) }}</td>
                 <td>{{ formatScore(c.gap_to_line) }}</td>
@@ -718,11 +721,12 @@ onMounted(() => { void reloadAll() })
             <n-button type="primary" @click="addTarget">加入目标生</n-button>
           </n-space>
           <table class="ios-table">
-            <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>目标总分</th><th>本次总分</th><th>是否达标</th><th>短板科目</th><th>备注</th><th /></tr></thead>
+            <thead><tr><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>目标总分</th><th>本次总分</th><th>是否达标</th><th>短板科目</th><th>备注</th><th /></tr></thead>
             <tbody>
               <tr v-for="t in targetTracking" :key="t.student_id">
                 <td>{{ t.student_no }}</td>
                 <td>{{ t.student_name }}</td>
+                <td>{{ t.grade != null ? `${t.grade}年级` : '—' }}</td>
                 <td>{{ t.class_name }}</td>
                 <td>{{ formatScore(t.target_total) }}</td>
                 <td>{{ formatScore(t.total) }}</td>
@@ -762,11 +766,12 @@ onMounted(() => { void reloadAll() })
               ;退步最大: {{ progress.top_declined.map((p) => `${p.student_name}(退 ${p.delta ? -p.delta : '—'} 名)`).join('、') || '—' }}
             </n-text>
             <table class="ios-table">
-              <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>上次总分</th><th>本次总分</th><th>上次名次</th><th>本次名次</th><th>进退步(名)</th></tr></thead>
+              <thead><tr><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>上次总分</th><th>本次总分</th><th>上次名次</th><th>本次名次</th><th>进退步(名)</th></tr></thead>
               <tbody>
                 <tr v-for="p in progress.items" :key="p.student_id">
                   <td>{{ p.student_no }}</td>
                   <td>{{ p.student_name }}</td>
+                  <td>{{ p.grade != null ? `${p.grade}年级` : '—' }}</td>
                   <td>{{ p.class_name }}</td>
                   <td>{{ formatScore(p.prev_total) }}</td>
                   <td>{{ formatScore(p.total) }}</td>
@@ -801,9 +806,10 @@ onMounted(() => { void reloadAll() })
             <div v-for="s in quality.subjects" :key="s.subject_id" style="margin-bottom: 12px">
               <n-text strong style="font-size: 13px">{{ s.subject_name }}</n-text>
               <table class="ios-table">
-                <thead><tr><th>班级</th><th>均分</th><th>及格率</th><th>优秀率</th></tr></thead>
+                <thead><tr><th>年级</th><th>班级</th><th>均分</th><th>及格率</th><th>优秀率</th></tr></thead>
                 <tbody>
                   <tr v-for="c in s.classes" :key="c.class_unit_id">
+                    <td>{{ c.grade != null ? `${c.grade}年级` : '—' }}</td>
                     <td>{{ c.class_name }}</td>
                     <td>{{ formatScore(c.avg) }}</td>
                     <td>{{ formatPct(c.pass_rate) }}</td>
@@ -814,7 +820,7 @@ onMounted(() => { void reloadAll() })
             </div>
             <n-text style="font-size: 13px; display: block; margin-bottom: 6px">按班级对比各科</n-text>
             <div v-for="c in quality.classes" :key="c.class_unit_id" style="margin-bottom: 12px">
-              <n-text strong style="font-size: 13px">{{ c.class_name }}</n-text>
+              <n-text strong style="font-size: 13px">{{ classLabel({ grade: c.grade, name: c.class_name }) }}</n-text>
               <table class="ios-table">
                 <thead><tr><th>科目</th><th>均分</th><th>及格率</th></tr></thead>
                 <tbody>

@@ -40,6 +40,7 @@ class ProofreadingOut(BaseModel):
     subject_name: str = ""
     class_unit_id: int | None = None
     class_name: str | None = None
+    grade: int | None = None
     submitted_by: int | None = None
     submitted_by_name: str = ""
     proofreader_id: int | None = None
@@ -67,6 +68,7 @@ class LockOut(BaseModel):
     subject_name: str = ""
     class_unit_id: int | None = None
     class_name: str | None = None
+    grade: int | None = None
     locked_by: int | None = None
     locked_by_name: str = ""
     locked_at: datetime | None = None

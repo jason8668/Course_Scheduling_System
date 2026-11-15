@@ -78,6 +78,7 @@ class AssignmentOut(BaseModel):
     exam_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     seat_no: int
     special_note: str = ""
 
@@ -104,6 +105,7 @@ class SeatEntryOut(BaseModel):
     exam_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     special_note: str = ""
 
 
@@ -139,6 +141,7 @@ class AdmissionTicketOut(BaseModel):
     exam_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     subjects: list[AdmissionTicketSubjectOut] = []
 
 

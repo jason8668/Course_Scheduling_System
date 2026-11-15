@@ -233,6 +233,7 @@ class _Context:
             "student_no": student.student_no if student else "",
             "student_name": student.name if student else "",
             "class_name": cls.name if cls else "",
+            "grade": cls.grade if cls else None,
         }
 
 
@@ -608,6 +609,7 @@ def list_target_students(db: Session, user: User, exam: Exam) -> list[dict]:
             "student_no": info["student_no"],
             "student_name": info["student_name"],
             "class_name": info["class_name"],
+            "grade": info["grade"],
             "target_total": r.target_total,
             "note": r.note,
         })
@@ -802,6 +804,7 @@ def quality_compare(
             classes_out.append({
                 "class_unit_id": cid,
                 "class_name": ctx.classes[cid].name if cid in ctx.classes else "",
+                "grade": ctx.classes[cid].grade if cid in ctx.classes else None,
                 "avg": _stats(values)["avg"],
                 "pass_rate": rates["pass_rate"],
                 "excellent_rate": rates["excellent_rate"],
@@ -828,6 +831,7 @@ def quality_compare(
         classes_out.append({
             "class_unit_id": cid,
             "class_name": ctx.classes[cid].name if cid in ctx.classes else "",
+            "grade": ctx.classes[cid].grade if cid in ctx.classes else None,
             "subjects": subjects_of_class,
         })
     return {"subjects": subjects_out, "classes": classes_out}

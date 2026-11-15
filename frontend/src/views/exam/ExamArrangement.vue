@@ -489,12 +489,13 @@ async function onUnlock() {
           <div v-for="room in seatMap?.rooms ?? []" :key="room.room_id" style="margin-top: 16px">
             <div class="ios-row-title" style="margin-bottom: 6px">{{ room.room_name }}(共 {{ room.seats.length }} 人)</div>
             <table class="ios-table">
-              <thead><tr><th>座位号</th><th>学号</th><th>姓名</th><th>班级</th><th>备注</th><th /></tr></thead>
+              <thead><tr><th>座位号</th><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>备注</th><th /></tr></thead>
               <tbody>
                 <tr v-for="s in room.seats" :key="`${room.room_id}-${s.seat_no}-${s.student_no}`">
                   <td>{{ s.seat_no ?? '—' }}</td>
                   <td>{{ s.student_no }}</td>
                   <td>{{ s.student_name }}</td>
+                  <td>{{ s.grade != null ? `${s.grade}年级` : '—' }}</td>
                   <td>{{ s.class_name ?? '—' }}</td>
                   <td>{{ s.special_note ?? '—' }}</td>
                   <td>

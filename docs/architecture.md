@@ -198,6 +198,16 @@ erDiagram
 | `audit_log` | 操作轨迹 | 谁在何时改了什么(排课异动、调代课指派必记) |
 | `constraint_config` | 软约束权重 | 每学期一组 key/value(`uq(semester_id, key)`);S1–S8 的权重与 H10 上限等可调参数。开新学期复制时可勾选一并带走 |
 | `wizard_state` | 设置精灵进度 | 单笔(id=1):目前步骤、是否已完成。未完成时路由守卫会把组长/管理员导回精灵 |
+| `asset_category` | 资产分类字典(#16,迁移 0039) | GB/T 14885-2022 六大类(A01–A06)四级字典;`is_reportable=True` 的上报分类代码与名称锁定,学校不得自行改动,只能在分类下加校内标签(`is_reportable=False`);二级及以下种子代码待学校当期官方模板核定后冻结 |
+| `asset_category_finance_map` | 分类—财务科目对照(#16) | 可配置映射表,不写死;建卡选一次分类即自动对应财务口径 |
+| `asset_card` | 资产卡(#10/#11/#15/#85/#86) | 四区(基本/财务/使用/特性 JSON)+校内扩展区(`ext` JSON,never_sync,导出上报时排除);`asset_code` 终身不变,`label_code` = 编号+校验位;`official_code` 初始为空,官方导入后回填双号索引;状态(在库/在用/借出/维修中/待处置/已核销)只由业务单据驱动;`sync_status` 默认 未同步,系统不得自动同步;核销后 `is_retired` + `retired_at`,编号封存不复用 |
+| `asset_room_extension` | 房间扩展(#76) | 复用 `rooms` 表,不另建组织表;补楼栋与房间资产包归属(一间教室一行) |
+| `asset_dictionary` / `asset_param` / `asset_code_rule` | 字典、参数、编码规则(#17/#79/#81) | 取得方式/资金来源/处置类型等字典后台可维护;固定资产确认标准(1000 元/1 年)与审批分级阈值(调拨维修超 5000 元到总务)做成参数,数字本身待学校确认;编码规则可配前缀/年份/流水位 |
+| `asset_approval_flow` / `asset_approval_instance` / `asset_approval_node` | 通用审批流(#5/#79/#80) | 所有单据共用:节点 JSON(角色、或签/会签、金额门槛)、实例、节点实例;申请人不得自审(岗位分离拦截);超时只打 `is_overdue` 待办标记,不自动流转 |
+| `asset_field_mapping` | 字段映射配置(#104) | 校内字段→官方字段映射表,后台可维护;模板版本种子为「当期模板」,学校提供模板后冻结 |
+| `user_role` 扩展 | 资产八类角色(#78) | 在既有角色外新增 `asset_admin`(资产管理员)/`asset_finance`(财务审核岗)/`asset_dept_admin`(部门资产管理员)/`asset_custodian`(保管人/使用人)/`asset_inspector`(鉴定验收人员)/`asset_auditor`(审计监督,只读);校领导用既有 `director`,系统管理员用既有 `admin`;登录复用现有入口,不新建账号体系 |
+
+**资产对接边界(迁移 0039,M13 #106):**浙江省资产云未向单个学校开放实时 API,本批只留适配层占位(`app/services/asset_sync_adapter.py`:接口 + 模板导出空壳,`push()` 明确拒绝);一期同步执行 = 模板导出 + 学校在官方系统导入 + 编号回填,绝不写假的官方 API 调用。
 
 ### 2.3 关键设计决策
 

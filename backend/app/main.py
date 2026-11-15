@@ -9,6 +9,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
     assignments,
+    asset_foundation,
+    asset_intake,
+    asset_ledger,
+    asset_sync_select,
+    asset_disposal,
+    asset_sync,
+    asset_circulation,
+    asset_inventory,
+    asset_repair,
+    asset_transfer,
+    asset_workspace,
     audit,
     auth,
     backups,
@@ -145,3 +156,14 @@ app.include_router(exam_reports.router, prefix="/api/exam")
 app.include_router(exam_notifications.router, prefix="/api/exam")
 app.include_router(exam_archive.router, prefix="/api/exam")
 app.include_router(teacher_swaps.router, prefix="/api")
+app.include_router(asset_foundation.router, prefix="/api/asset")
+app.include_router(asset_ledger.router, prefix="/api/asset")
+app.include_router(asset_intake.router, prefix="/api/asset")
+app.include_router(asset_sync_select.router, prefix="/api/asset")
+app.include_router(asset_circulation.router, prefix="/api/asset")
+app.include_router(asset_transfer.router, prefix="/api/asset")
+app.include_router(asset_workspace.router, prefix="/api/asset")
+app.include_router(asset_repair.router, prefix="/api/asset")
+app.include_router(asset_inventory.router, prefix="/api/asset")
+app.include_router(asset_disposal.router, prefix="/api/asset")
+app.include_router(asset_sync.router, prefix="/api/asset")

@@ -171,9 +171,9 @@ describe('发送结果与重发的展示逻辑(KW-57~61)', () => {
       subjects: [{
         subject_id: 2, subject_name: '数学',
         classes: [
-          { class_unit_id: 5, class_name: '七年二班', total: 40, entered: 40, submitted: 40, status: '已提交' },
-          { class_unit_id: 6, class_name: '七年三班', total: 38, entered: 30, submitted: 0, status: '录入中' },
-          { class_unit_id: 7, class_name: '七年四班', total: 36, entered: 36, submitted: 20, status: '录入中' },
+          { class_unit_id: 5, class_name: '七年二班', grade: 7, total: 40, entered: 40, submitted: 40, status: '已提交' },
+          { class_unit_id: 6, class_name: '七年三班', grade: 7, total: 38, entered: 30, submitted: 0, status: '录入中' },
+          { class_unit_id: 7, class_name: '七年四班', grade: 7, total: 36, entered: 36, submitted: 20, status: '录入中' },
         ],
       }],
     }

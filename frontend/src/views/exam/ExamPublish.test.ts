@@ -80,7 +80,7 @@ vi.stubGlobal('fetch', vi.fn((url: string, init: { method?: string; body?: strin
 function proofItem(over: Partial<Proofreading>): Proofreading {
   return {
     id: 1, exam_id: 3, subject_id: 2, subject_name: '数学', class_unit_id: null,
-    class_name: null, submitted_by: 7, submitted_by_name: '张老师',
+    class_name: null, grade: null, submitted_by: 7, submitted_by_name: '张老师',
     proofreader_id: 8, proofreader_name: '李组长', status: '待校对', note: null,
     ...over,
   }

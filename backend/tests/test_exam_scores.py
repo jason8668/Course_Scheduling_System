@@ -338,6 +338,7 @@ def test_list_scores_teacher_scope(client_db, seed):
     assert {i["student_no"] for i in body["items"]} == {
         "20260101", "20260102", "20260103", "20260104",
     }
+    assert {i["grade"] for i in body["items"]} == {7}
     # 显式筛 702 班直接 403
     assert get_scores(
         client, eid, seed["math"].id, class_unit_id=seed["cls702"].id
@@ -515,7 +516,7 @@ def test_score_progress_three_states(client_db, seed):
     assert body["subjects"][0]["subject_name"] == "数学"
     by_class = {c["class_name"]: c for c in body["subjects"][0]["classes"]}
     assert by_class["701"] == {
-        "class_unit_id": seed["cls701"].id, "class_name": "701",
+        "class_unit_id": seed["cls701"].id, "class_name": "701", "grade": 7,
         "total": 4, "entered": 0, "submitted": 0, "status": "未开始",
     }
     assert by_class["702"]["status"] == "未开始"
@@ -570,6 +571,7 @@ def test_makeup_scores_separate_from_regular(client_db, seed):
     assert body["total"] == 6
     row = next(i for i in body["items"] if i["student_no"] == "20260101")
     assert row["score"] == 75
+    assert row["grade"] == 7
     # 正考成绩仍为 40,不被补考覆盖(separate 口径)
     rows = {i["student_no"]: i for i in get_scores(client, eid, seed["math"].id).json()["items"]}
     assert rows["20260101"]["score"] == 40

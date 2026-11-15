@@ -15,7 +15,9 @@ import type {
   PreflightIssue, PreflightReport, RelaxableOption, SolveJob,
 } from '@/api/solver'
 import { listClassUnits } from '@/api/basedata'
+import type { ClassUnit } from '@/api/basedata'
 import { gradeLabel } from '@/api/substitutionLog'
+import { classLabel } from '@/utils/labels'
 import { listTimetables } from '@/api/timetables'
 import type { TimetableBrief } from '@/api/timetables'
 import { myGradeScopes } from '@/api/userGrades'
@@ -47,16 +49,27 @@ const relax = ref<string[]>([])
 const gradeOptions = ref<{ label: string, value: number }[]>([])
 const scopeGrades = ref<number[]>([])
 const myScopes = ref<number[] | null>(null)
+const classes = ref<ClassUnit[]>([])
+
+// 班名按名映射回年级+班名全称(同学期班名唯一,按名找得到);找不到时原样显示。
+function classNamesLabel(names: string[]): string {
+  return names.map((n) => {
+    const c = classes.value.find((x) => x.name === n)
+    return c ? classLabel(c) : n
+  }).join('、')
+}
 
 async function loadGradeOptions(semesterId: number) {
   try {
-    const classes = await listClassUnits(semesterId)
-    const grades = [...new Set(classes.map((c) => c.grade))].sort((a, b) => a - b)
+    const loaded = await listClassUnits(semesterId)
+    classes.value = loaded
+    const grades = [...new Set(loaded.map((c) => c.grade))].sort((a, b) => a - b)
     gradeOptions.value = grades.map((g) => ({ label: gradeLabel(g), value: g }))
     scopeGrades.value = myScopes.value === null
       ? grades
       : grades.filter((g) => myScopes.value!.includes(g))
   } catch {
+    classes.value = []
     gradeOptions.value = []
     scopeGrades.value = []
   }
@@ -450,7 +463,7 @@ function openResult() {
               <tbody>
                 <tr v-for="u in unscheduled" :key="u.assignment_ids.join('-')">
                   <td>{{ u.subject_name }}</td>
-                  <td>{{ u.class_names.join('、') }}</td>
+                  <td>{{ classNamesLabel(u.class_names) }}</td>
                   <td>{{ u.periods }} 节</td>
                   <!-- 完全排不下的课会说明原因;其余是 solver 权衡后的取舍 -->
                   <td>{{ u.reason || '排课时权衡取舍' }}</td>

@@ -320,9 +320,9 @@ describe('成绩分析 API 客户端(KW-41~51)', () => {
 
 describe('排名并列两种规则的展示逻辑(KW-42)', () => {
   const tied: RankingItem[] = [
-    { student_id: 11, student_no: '202601', student_name: '张三', class_name: '七年二班', total: 480, rank: 1 },
-    { student_id: 12, student_no: '202602', student_name: '李四', class_name: '七年二班', total: 480, rank: 1 },
-    { student_id: 13, student_no: '202603', student_name: '王五', class_name: '七年二班', total: 470, rank: 2 },
+    { student_id: 11, student_no: '202601', student_name: '张三', class_name: '七年二班', grade: 7, total: 480, rank: 1 },
+    { student_id: 12, student_no: '202602', student_name: '李四', class_name: '七年二班', grade: 7, total: 480, rank: 1 },
+    { student_id: 13, student_no: '202603', student_name: '王五', class_name: '七年二班', grade: 7, total: 470, rank: 2 },
   ]
 
   it('dense:同分同名次,下一名次连续', () => {
@@ -362,7 +362,7 @@ describe('进退步无上次考试提示的原样展示逻辑(KW-47)', () => {
     expect(progressEmptyMessage(noMessage)).toBe(PROGRESS_NO_PREV_MESSAGE)
     const withData: AnalysisProgress = {
       items: [{
-        student_id: 11, student_no: '202601', student_name: '张三', class_name: '七年二班',
+        student_id: 11, student_no: '202601', student_name: '张三', class_name: '七年二班', grade: 7,
         prev_total: 460, total: 480, prev_rank: 5, rank: 1, delta: 4,
       }],
       top_improved: [], top_declined: [], message: '暂无上次同类考试，无法对比',

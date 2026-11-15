@@ -35,6 +35,8 @@ export interface StatusChange {
   to_class_unit_id: number | null
   from_class_name: string | null
   to_class_name: string | null
+  from_grade: number | null
+  to_grade: number | null
   from_status: string | null
   to_status: string | null
   note: string | null
@@ -654,6 +656,7 @@ export interface ArrangementItem {
   student_no: string
   student_name: string
   class_name: string | null
+  grade: number | null
   seat_no: number | null
   special_note: string | null
   /** 考号:后端补遗在加,没加上时可能为空,前端按空处理,不崩。 */
@@ -670,6 +673,7 @@ export interface SeatMapSeat {
   student_no: string
   student_name: string
   class_name: string | null
+  grade: number | null
   special_note: string | null
   /** 考号:后端补遗在加,没加上时可能为空,前端按空处理,不崩。 */
   exam_no?: string | null
@@ -815,6 +819,7 @@ export interface AdmissionTicket {
   exam_no: string | null
   student_name: string
   class_name: string | null
+  grade: number | null
   subjects: AdmissionTicketSubject[]
 }
 
@@ -1073,6 +1078,7 @@ export interface Discipline {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   type: string
   description: string | null
   handling: string | null
@@ -1344,6 +1350,7 @@ export interface ScoreRecord {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   score: number | null
   status: string
   submitted: boolean
@@ -1369,6 +1376,7 @@ export interface ScoreImportResult {
 export interface ScoreProgressClass {
   class_unit_id: number
   class_name: string
+  grade: number | null
   total: number
   entered: number
   submitted: number
@@ -1405,6 +1413,7 @@ export interface MakeupScore {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   subject_id: number
   score: number | null
   status: string
@@ -1683,6 +1692,7 @@ export interface Proofreading {
   subject_name: string
   class_unit_id: number | null
   class_name: string | null
+  grade: number | null
   submitted_by: number | null
   submitted_by_name: string
   proofreader_id: number | null
@@ -1703,6 +1713,7 @@ export interface ScoreLock {
   subject_name: string
   class_unit_id: number | null
   class_name: string | null
+  grade: number | null
   locked_by: number | null
   locked_by_name: string
   locked_at: string | null
@@ -2100,6 +2111,7 @@ export interface RankingItem {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   total: number | null
   rank: number
 }
@@ -2126,6 +2138,7 @@ export interface CriticalItem {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   total: number | null
   gap_to_line: number | null
   subject_gaps: SubjectGap[]
@@ -2138,6 +2151,7 @@ export interface TargetStudent {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   target_total: number | null
   note: string | null
 }
@@ -2147,6 +2161,7 @@ export interface TargetTrackingItem {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   target_total: number | null
   total: number | null
   reached: boolean
@@ -2158,6 +2173,7 @@ export interface ProgressItem {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   prev_total: number | null
   total: number | null
   prev_rank: number | null
@@ -2175,6 +2191,7 @@ export interface AnalysisProgress {
 export interface QualityClassSubject {
   class_unit_id: number
   class_name: string
+  grade: number | null
   avg: number | null
   pass_rate: number
   excellent_rate: number
@@ -2196,6 +2213,7 @@ export interface QualityClassSubjectRate {
 export interface QualityClass {
   class_unit_id: number
   class_name: string
+  grade: number | null
   subjects: QualityClassSubjectRate[]
 }
 
@@ -2474,11 +2492,13 @@ export interface ReportCardStudent {
 export interface ClassReportCard {
   class_unit_id: number
   class_name: string
+  grade: number | null
   students: ReportCardStudent[]
 }
 
 export interface StudentReportCard extends ReportCardStudent {
   class_name: string
+  grade: number | null
 }
 
 export interface TeacherScoreItem {
@@ -2486,6 +2506,7 @@ export interface TeacherScoreItem {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   subject_id: number
   subject_name: string
   score: number | null

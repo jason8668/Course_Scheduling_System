@@ -4,6 +4,66 @@
 """
 
 from app.models.app_setting import AppSetting
+from app.models.asset_approval import (
+    ApprovalFlow,
+    ApprovalInstance,
+    ApprovalNode,
+)
+from app.models.asset_card import (
+    AssetCard,
+    AssetRoomExtension,
+    AssetStatus,
+    BorrowStatus,
+    SyncStatus,
+)
+from app.models.asset_category import (
+    TOP_LEVEL_CATEGORIES,
+    AssetCategory,
+    AssetCategoryFinanceMap,
+)
+from app.models.asset_config import (
+    AssetCodeRule,
+    AssetDictionary,
+    AssetParam,
+)
+from app.models.asset_circulation import (
+    AssetBorrowOrder,
+    AssetGroupCustody,
+    AssetHandoverItem,
+    AssetHandoverOrder,
+    AssetIssueOrder,
+    AssetReminder,
+    AssetRepairOrder,
+    AssetReservation,
+    AssetReturnOrder,
+    AssetTransferOrder,
+)
+from app.models.asset_inventory import (
+    AssetInventoryDifference,
+    AssetInventoryPlan,
+    AssetInventoryRecord,
+    AssetInventoryTask,
+)
+from app.models.asset_ledger import (
+    AcceptanceStatus,
+    AssetAcceptance,
+    AssetAttachment,
+    AssetBatch,
+    AssetSyncSelection,
+    IntakeType,
+)
+from app.models.asset_disposal import (
+    AssetDisposalAppraisal,
+    AssetDisposalOrder,
+    AssetDisposalPackage,
+    AssetDisposalRecovery,
+)
+from app.models.asset_sync import AssetFieldMapping
+from app.models.asset_sync_exec import (
+    AssetSyncBatch,
+    AssetSyncBatchItem,
+    AssetSyncLog,
+)
 from app.models.assignment import (
     AssignmentTeacher,
     BlockRule,
@@ -195,4 +255,32 @@ __all__ = [
     "SubjectScoreSetting",
     "TeacherSwap",
     "TeacherSwapReminderLog",
+    # ── 学校资产管理系统一期地基批(#5/#10/#11/#15/#16/#17/#76/#78/#79/#80/#81/#82/#85/#86/#104)
+    "AssetCard",
+    "AssetStatus",
+    "BorrowStatus",
+    "SyncStatus",
+    "AssetRoomExtension",
+    "AssetCategory",
+    "AssetCategoryFinanceMap",
+    "TOP_LEVEL_CATEGORIES",
+    "AssetDictionary",
+    "AssetParam",
+    "AssetCodeRule",
+    "ApprovalFlow",
+    "ApprovalInstance",
+    "ApprovalNode",
+    "AssetFieldMapping",
+    # ── 学校资产管理系统一期第 4 批(#42-#44/#48/#49/#51/#52)
+    "AssetInventoryPlan",
+    "AssetInventoryTask",
+    "AssetInventoryRecord",
+    "AssetInventoryDifference",
+    # ── 学校资产管理系统一期第 2 批(#12/#14/#19-#28/#87-#90)
+    "AssetAcceptance",
+    "AcceptanceStatus",
+    "AssetAttachment",
+    "AssetBatch",
+    "AssetSyncSelection",
+    "IntakeType",
 ]

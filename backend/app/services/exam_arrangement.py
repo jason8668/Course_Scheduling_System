@@ -128,6 +128,7 @@ def _assignment_out(
     room_names: dict[int, str],
     students: dict[int, Student],
     class_names: dict[int, str],
+    class_grades: dict[int, int],
     participant_classes: dict[int, int],
     special_notes: dict[int, str],
 ) -> dict:
@@ -145,6 +146,7 @@ def _assignment_out(
         "exam_no": student.exam_no if student and student.exam_no else "",
         "student_name": student.name if student else "",
         "class_name": class_names.get(class_id, "") if class_id else "",
+        "grade": class_grades.get(class_id) if class_id else None,
         "seat_no": row.seat_no,
         "special_note": special_notes.get(row.student_id, ""),
     }
@@ -615,12 +617,12 @@ def assignment_to_out(db: Session, row: ExamRoomAssignment) -> dict:
             select(Student).where(Student.id == row.student_id)
         ).all()
     }
-    class_names = {
-        c.id: c.name
-        for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     return _assignment_out(
         db, row, subject_names, room_names, students, class_names,
+        class_grades,
         _participant_class_ids(db, row.exam_id),
         _special_notes(db, row.exam_id),
     )
@@ -660,15 +662,15 @@ def list_assignments(
             )
         ).all()
     } if rows else {}
-    class_names = {
-        c.id: c.name
-        for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     participant_classes = _participant_class_ids(db, exam.id)
     special_notes = _special_notes(db, exam.id)
     items = [
         _assignment_out(
             db, r, subject_names, room_names, students, class_names,
+            class_grades,
             participant_classes, special_notes,
         )
         for r in rows
@@ -695,10 +697,9 @@ def seat_map(
             )
         ).all()
     } if rows else {}
-    class_names = {
-        c.id: c.name
-        for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     participant_classes = _participant_class_ids(db, exam.id)
     special_notes = _special_notes(db, exam.id)
     subject_names = {
@@ -728,6 +729,7 @@ def seat_map(
                 "exam_no": student.exam_no if student and student.exam_no else "",
                 "student_name": student.name if student else "",
                 "class_name": class_names.get(class_id, "") if class_id else "",
+                "grade": class_grades.get(class_id) if class_id else None,
                 "special_note": special_notes.get(r.student_id, ""),
             })
         rooms_out.append({
@@ -793,10 +795,9 @@ def list_admission_tickets(
             )
         ).all()
     } if participants else {}
-    class_names = {
-        c.id: c.name
-        for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     items = []
     ordered = sorted(
         participants,
@@ -827,6 +828,7 @@ def list_admission_tickets(
             "exam_no": student.exam_no if student and student.exam_no else "",
             "student_name": student.name if student else "",
             "class_name": class_names.get(p.class_unit_id, ""),
+            "grade": class_grades.get(p.class_unit_id),
             "subjects": sub_items,
         })
     return items, len(items)

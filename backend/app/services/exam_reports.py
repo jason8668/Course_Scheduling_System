@@ -117,6 +117,7 @@ def _student_card(
         "student_no": student.student_no if student else "",
         "student_name": student.name if student else "",
         "class_name": cls.name if cls else "",
+        "grade": cls.grade if cls else None,
         "subjects": subjects,
         "total": totals.get(sid),
         "class_rank": class_ranks.get(sid),
@@ -161,6 +162,7 @@ def class_report_card(
     return {
         "class_unit_id": cls.id,
         "class_name": cls.name,
+        "grade": cls.grade,
         "students": students,
     }
 
@@ -275,6 +277,7 @@ def teacher_scores(
                 "student_no": student.student_no,
                 "student_name": student.name,
                 "class_name": cls.name if cls else "",
+                "grade": cls.grade if cls else None,
                 "subject_id": sid,
                 "subject_name": ctx.subject_names.get(sid, ""),
                 "score": row.score if row is not None else None,

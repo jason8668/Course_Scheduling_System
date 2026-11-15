@@ -454,9 +454,9 @@ def list_scores(
             select(Student).where(Student.id.in_(student_ids))
         ).all()
     } if student_ids else {}
-    class_names = {
-        c.id: c.name for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     score_rows = _score_rows_by_student(db, exam, subject_id)
     item_names = {
         it.id: it.name
@@ -503,6 +503,7 @@ def list_scores(
             "student_no": student.student_no if student else "",
             "student_name": student.name if student else "",
             "class_name": class_names.get(p.class_unit_id, ""),
+            "grade": class_grades.get(p.class_unit_id),
             "score": row.score if row else None,
             "status": entry_status,
             "submitted": row.submitted if row else False,
@@ -896,6 +897,7 @@ def score_progress(db: Session, user: User, exam: Exam) -> dict:
             classes_out.append({
                 "class_unit_id": cid,
                 "class_name": classes[cid].name if cid in classes else "",
+                "grade": classes[cid].grade if cid in classes else None,
                 "total": total,
                 "entered": entered,
                 "submitted": submitted,
@@ -965,9 +967,9 @@ def list_makeup_scores(
             select(Student).where(Student.id.in_(student_ids))
         ).all()
     } if student_ids else {}
-    class_names = {
-        c.id: c.name for c in db.scalars(select(ClassUnit)).all()
-    }
+    _all_classes = db.scalars(select(ClassUnit)).all()
+    class_names = {c.id: c.name for c in _all_classes}
+    class_grades = {c.id: c.grade for c in _all_classes}
     rows = {
         r.student_id: r
         for r in db.scalars(
@@ -993,6 +995,7 @@ def list_makeup_scores(
             "student_no": student.student_no if student else "",
             "student_name": student.name if student else "",
             "class_name": class_names.get(p.class_unit_id, ""),
+            "grade": class_grades.get(p.class_unit_id),
             "subject_id": subject_id,
             "score": row.score if row else None,
             "status": row.status if row else "正常",

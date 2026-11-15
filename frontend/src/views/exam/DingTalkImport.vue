@@ -13,6 +13,7 @@ import type {
   DingTalkDept, DingTalkPreview, DingTalkPreviewMember, ImportResult,
 } from '@/api/exam'
 import type { ClassUnit } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 
 const props = defineProps<{
   semesterId: number
@@ -27,7 +28,7 @@ const message = useMessage()
 const visible = ref(true)
 
 const classOptions = computed(() =>
-  props.classes.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  props.classes.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 
 // ── 部门树 ──

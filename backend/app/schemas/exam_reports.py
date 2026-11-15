@@ -25,6 +25,7 @@ class StudentCardOut(BaseModel):
 class ClassReportCardOut(BaseModel):
     class_unit_id: int
     class_name: str = ""
+    grade: int | None = None
     students: list[StudentCardOut] = []
 
 
@@ -35,6 +36,7 @@ class StudentReportCardOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     subjects: list[SubjectScoreOut] = []
     total: float | None = None
     class_rank: int | None = None
@@ -46,6 +48,7 @@ class TeacherScoreOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     subject_id: int
     subject_name: str = ""
     score: float | None = None

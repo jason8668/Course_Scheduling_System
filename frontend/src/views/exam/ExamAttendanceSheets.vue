@@ -89,13 +89,14 @@ onMounted(async () => {
       </div>
       <table class="grid">
         <thead>
-          <tr><th class="ncol">序号</th><th>考号</th><th>姓名</th><th>班级</th><th class="ncol">座位号</th><th class="signcol">签到</th></tr>
+          <tr><th class="ncol">序号</th><th>考号</th><th>姓名</th><th>年级</th><th>班级</th><th class="ncol">座位号</th><th class="signcol">签到</th></tr>
         </thead>
         <tbody>
           <tr v-for="(a, i) in g.items" :key="a.id">
             <td>{{ i + 1 }}</td>
             <td>{{ a.exam_no ?? '—' }}</td>
             <td>{{ a.student_name }}</td>
+            <td>{{ a.grade != null ? `${a.grade}年级` : '—' }}</td>
             <td>{{ a.class_name ?? '—' }}</td>
             <td>{{ a.seat_no ?? '—' }}</td>
             <td class="sign" />

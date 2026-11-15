@@ -24,6 +24,7 @@ import type {
 } from '@/api/exam'
 import { listClassUnits, listTeachers } from '@/api/basedata'
 import type { ClassUnit, Teacher } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -56,7 +57,7 @@ const teacherOptions = computed(() =>
 )
 const classes = ref<ClassUnit[]>([])
 const classOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 
 // ── 成绩设置(KW-30) ──
@@ -216,6 +217,7 @@ interface DraftRow {
   student_no: string
   student_name: string
   class_name: string
+  grade: number | null
   submitted: boolean
   score: number | null
   status: string
@@ -280,7 +282,7 @@ async function reloadScores() {
       for (const iv of r.items ?? []) items[iv.item_id] = iv.value
       return {
         student_id: r.student_id, student_no: r.student_no, student_name: r.student_name,
-        class_name: r.class_name, submitted: r.submitted,
+        class_name: r.class_name, grade: r.grade, submitted: r.submitted,
         score: r.score, status: r.status || '正常', items,
       }
     })
@@ -396,7 +398,7 @@ const makeups = ref<Makeup[]>([])
 const makeupForm = ref({ name: '', exam_date: '', note: '' })
 const selectedMakeupId = ref<number | null>(null)
 const makeupSubjectId = ref<number | null>(null)
-const makeupRows = ref<{ student_id: number; student_no: string; student_name: string; class_name: string; score: number | null; status: string }[]>([])
+const makeupRows = ref<{ student_id: number; student_no: string; student_name: string; class_name: string; grade: number | null; score: number | null; status: string }[]>([])
 const makeupLoading = ref(false)
 const makeupStatusOptions = MAKEUP_SCORE_STATUSES.map((s) => ({ label: s, value: s }))
 async function reloadMakeups() {
@@ -439,7 +441,7 @@ async function reloadMakeupScores() {
     const res = await listMakeupScores(examId, selectedMakeupId.value, makeupSubjectId.value)
     makeupRows.value = res.items.map((r: MakeupScore) => ({
       student_id: r.student_id, student_no: r.student_no, student_name: r.student_name,
-      class_name: r.class_name, score: r.score, status: r.status || '正常',
+      class_name: r.class_name, grade: r.grade, score: r.score, status: r.status || '正常',
     }))
   } catch (e) {
     message.error((e as ApiError).detail || '补考成绩加载失败')
@@ -658,7 +660,7 @@ async function onEntrySubjectChange() {
           <table v-else class="ios-table" style="margin-top: 12px">
             <thead>
               <tr>
-                <th>学号</th><th>姓名</th><th>班级</th>
+                <th>学号</th><th>姓名</th><th>年级</th><th>班级</th>
                 <th v-if="settingsForm.entry_mode === 'itemized' && entryItemsFor(entrySubjectId).length">
                   <span v-for="it in entryItemsFor(entrySubjectId)" :key="it.id" style="margin-right: 8px">
                     {{ it.name }}({{ it.max_score }})
@@ -671,6 +673,7 @@ async function onEntrySubjectChange() {
               <tr v-for="(row, i) in rows" :key="row.student_id">
                 <td>{{ row.student_no }}</td>
                 <td>{{ row.student_name }}</td>
+                <td>{{ row.grade != null ? `${row.grade}年级` : '—' }}</td>
                 <td>{{ row.class_name }}</td>
                 <td v-if="settingsForm.entry_mode === 'itemized' && entryItemsFor(entrySubjectId).length">
                   <span v-for="it in entryItemsFor(entrySubjectId)" :key="it.id" style="margin-right: 6px">
@@ -780,9 +783,10 @@ async function onEntrySubjectChange() {
           <template v-for="s in progress?.subjects ?? []" :key="s.subject_id">
             <div class="ios-row-title" style="margin: 8px 0">{{ s.subject_name }}</div>
             <table class="ios-table">
-              <thead><tr><th>班级</th><th>应录</th><th>已录</th><th>已提交</th><th>状态</th></tr></thead>
+              <thead><tr><th>年级</th><th>班级</th><th>应录</th><th>已录</th><th>已提交</th><th>状态</th></tr></thead>
               <tbody>
                 <tr v-for="c in s.classes" :key="c.class_unit_id">
+                  <td>{{ c.grade != null ? `${c.grade}年级` : '—' }}</td>
                   <td>{{ c.class_name }}</td>
                   <td>{{ c.total }}</td>
                   <td>{{ c.entered }}</td>
@@ -841,11 +845,12 @@ async function onEntrySubjectChange() {
             </n-space>
             <n-empty v-if="!makeupLoading && makeupRows.length === 0" description="暂无补考学生,请先选择科目" style="margin-top: 12px" />
             <table v-else class="ios-table" style="margin-top: 12px">
-              <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>补考成绩</th><th>状态</th><th>提示</th></tr></thead>
+              <thead><tr><th>学号</th><th>姓名</th><th>年级</th><th>班级</th><th>补考成绩</th><th>状态</th><th>提示</th></tr></thead>
               <tbody>
                 <tr v-for="row in makeupRows" :key="row.student_id">
                   <td>{{ row.student_no }}</td>
                   <td>{{ row.student_name }}</td>
+                  <td>{{ row.grade != null ? `${row.grade}年级` : '—' }}</td>
                   <td>{{ row.class_name }}</td>
                   <td>
                     <input

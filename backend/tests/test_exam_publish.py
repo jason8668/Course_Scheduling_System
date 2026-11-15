@@ -261,6 +261,8 @@ def test_proofreading_requires_submitted_scores(client_db, seed):
     })
     assert r.status_code == 201, r.text
     assert r.json()["status"] == "待校对"
+    assert r.json()["class_name"] == "701"
+    assert r.json()["grade"] == 7
     assert r.json()["proofreader_name"] == "李老师"  # 数学教研组长 t2
     assert r.json()["submitted_by_name"] == "王老师"
     r = client.post(f"/api/exam/exams/{exam_id}/proofreading", json={
@@ -386,6 +388,8 @@ def test_lock_requires_proofreading_passed(client_db, seed):
     assert r.status_code == 200, r.text
     assert r.json()["total"] == 1
     assert r.json()["items"][0]["locked_by_name"] == "adm"
+    assert r.json()["items"][0]["class_name"] == "701"
+    assert r.json()["items"][0]["grade"] == 7
 
 
 def test_locked_scores_reject_put(client_db, seed):

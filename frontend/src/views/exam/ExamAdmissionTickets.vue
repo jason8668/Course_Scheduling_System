@@ -4,9 +4,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
-  filterTicketsByClass, getExam, listAdmissionTickets, sortTicketSubjects, ticketClassNames,
+  filterTicketsByClass, getExam, listAdmissionTickets, sortTicketSubjects,
 } from '@/api/exam'
 import type { AdmissionTicket, AdmissionTicketSubject, ExamDetail } from '@/api/exam'
+import { classLabel } from '@/utils/labels'
 
 // 准考证打印页(KW-19):一名学生一张证,含姓名、考号、考场、座位号、
 // 各科考试日程表;支持按班级分发打印。不带照片(无照片数据源)。
@@ -22,12 +23,17 @@ const tickets = ref<AdmissionTicket[]>([])
 const loading = ref(false)
 const filterClass = ref<string | null>(null)
 
-const classOptions = computed(() =>
-  ticketClassNames(tickets.value).map((c) => ({ label: c, value: c })),
-)
+const classOptions = computed(() => {
+  const seen = new Map<string, number | null>()
+  for (const t of tickets.value) {
+    if (t.class_name && !seen.has(t.class_name)) seen.set(t.class_name, t.grade ?? null)
+  }
+  return [...seen.entries()].map(([name, grade]) => ({ label: classLabel({ grade, name }), value: name }))
+})
 const shownTickets = computed(() => {
   const list = filterTicketsByClass(tickets.value, filterClass.value)
   return [...list].sort((a, b) => {
+    if ((a.grade ?? 99) !== (b.grade ?? 99)) return (a.grade ?? 99) - (b.grade ?? 99)
     if ((a.class_name ?? '') !== (b.class_name ?? '')) {
       return (a.class_name ?? '').localeCompare(b.class_name ?? '', 'zh-CN')
     }
@@ -94,7 +100,7 @@ onMounted(async () => {
       <div class="ticket-grid">
         <div><span class="k">姓名</span>{{ t.student_name }}</div>
         <div><span class="k">考号</span>{{ t.exam_no ?? '—' }}</div>
-        <div><span class="k">班级</span>{{ t.class_name ?? '—' }}</div>
+        <div><span class="k">班级</span>{{ classLabel({ grade: t.grade, name: t.class_name }) }}</div>
         <div><span class="k">学号</span>{{ t.student_no }}</div>
         <div><span class="k">考场</span>{{ mainSubject(t)?.room_name ?? '—' }}</div>
         <div><span class="k">座位号</span>{{ mainSubject(t)?.seat_no ?? '—' }}</div>

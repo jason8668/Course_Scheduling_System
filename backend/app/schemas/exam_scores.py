@@ -105,6 +105,7 @@ class ScoreOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     score: float | None = None
     status: str = "正常"
     submitted: bool = False
@@ -139,6 +140,7 @@ class ImportResultOut(BaseModel):
 class ProgressClassOut(BaseModel):
     class_unit_id: int
     class_name: str
+    grade: int | None = None
     total: int
     entered: int
     submitted: int
@@ -193,6 +195,7 @@ class MakeupScoreOut(BaseModel):
     student_no: str = ""
     student_name: str = ""
     class_name: str = ""
+    grade: int | None = None
     subject_id: int
     score: float | None = None
     status: str = "正常"

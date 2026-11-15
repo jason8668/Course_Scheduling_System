@@ -55,6 +55,8 @@ class StudentStatusChangeOut(BaseModel):
     to_class_unit_id: int | None = None
     from_class_name: str | None = None
     to_class_name: str | None = None
+    from_grade: int | None = None
+    to_grade: int | None = None
     from_status: str | None = None
     to_status: str | None = None
     note: str | None = None

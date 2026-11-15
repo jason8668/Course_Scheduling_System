@@ -20,6 +20,7 @@ import type {
 } from '@/api/exam'
 import { listTeachers } from '@/api/basedata'
 import type { Teacher } from '@/api/basedata'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -48,7 +49,7 @@ const roomOptions = computed(() =>
   rooms.value.map((r) => ({ label: r.room_name, value: r.room_id })),
 )
 const studentOptions = computed(() =>
-  students.value.map((s) => ({ label: `${s.name}(${s.student_no}) ${s.class_name}`, value: s.id })),
+  students.value.map((s) => ({ label: `${s.name}(${s.student_no}) ${classLabel({ grade: s.grade, name: s.class_name })}`, value: s.id })),
 )
 
 function goBack() {
@@ -654,7 +655,7 @@ onMounted(() => { void reload() })
           <n-empty v-if="disciplines.length === 0" description="暂无考风考纪记录" />
           <div v-for="d in disciplines" :key="d.id" class="ios-row">
             <div class="ios-row-main">
-              <div class="ios-row-title">{{ d.student_name }}({{ d.student_no }}) {{ d.class_name }} · {{ d.type }}</div>
+              <div class="ios-row-title">{{ d.student_name }}({{ d.student_no }}) {{ classLabel({ grade: d.grade, name: d.class_name }) }} · {{ d.type }}</div>
               <div class="ios-row-sub">
                 {{ d.subject_name }}{{ d.description ? ` · ${d.description}` : '' }}{{ d.handling ? ` · 处理:${d.handling}` : '' }}
                 {{ d.recorded_by_name ? ` · 登记人:${d.recorded_by_name}` : '' }}

@@ -225,6 +225,7 @@ def test_class_report_card_with_ranks(client_db, seed):
         f"?class_unit_id={seed['cls701'].id}"
     ).json()
     assert body["class_name"] == "701"
+    assert body["grade"] == 7
     assert len(body["students"]) == 4
     by_no = {s["student_no"]: s for s in body["students"]}
     assert by_no["20260101"]["total"] == 170
@@ -292,6 +293,7 @@ def test_student_report_card_full_for_teacher(client_db, seed):
     ).json()
     assert body["student_name"] == "张三"
     assert body["class_name"] == "701"
+    assert body["grade"] == 7
     assert body["total"] == 170
     assert body["class_rank"] == 1 and body["grade_rank"] == 1
     # t2 教 702 班数学,看不到 701 班学生。
@@ -331,6 +333,7 @@ def test_teacher_scores_scope(client_db, seed):
     assert body["total"] == 2
     assert all(i["subject_name"] == "数学" for i in body["items"])
     assert all(i["class_name"] == "702" for i in body["items"])
+    assert all(i["grade"] == 7 for i in body["items"])
     r = client.get(
         f"/api/exam/exams/{eid}/teacher-scores?subject_id={seed['chinese'].id}"
     )

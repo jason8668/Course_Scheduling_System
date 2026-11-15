@@ -285,6 +285,7 @@ def test_arrange_whole_class(client_db, seed):
     assert by_room["101 教室"][0]["seat_no"] == 1
     assert by_room["101 教室"][0]["student_name"] == "张三"
     assert by_room["101 教室"][0]["class_name"] == "701"
+    assert by_room["101 教室"][0]["grade"] == 7
     assert by_room["101 教室"][0]["subject_name"] == "数学"
     assert by_room["101 教室"][0]["exam_no"] == "202607001"
     # 座位表里也有考号(KW-21 桌贴用)
@@ -393,6 +394,7 @@ def test_admission_tickets(client_db, seed):
     assert first["exam_no"] == "202607001"
     assert first["student_name"] == "张三"
     assert first["class_name"] == "701"
+    assert first["grade"] == 7
     assert len(first["subjects"]) == 2
     math_sub = next(s for s in first["subjects"] if s["subject_name"] == "数学")
     assert math_sub["subject_id"] == seed["math"].id
@@ -618,6 +620,7 @@ def test_teacher_forbidden_writes_and_scoped_read(client_db, seed):
     ).json()
     assert body["total"] == 3
     assert {i["class_name"] for i in body["items"]} == {"701"}
+    assert {i["grade"] for i in body["items"]} == {7}
     seatmap = client.get(
         f"/api/exam/exams/{eid}/seat-map?subject_id={seed['math'].id}"
     ).json()

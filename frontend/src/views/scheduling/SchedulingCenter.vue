@@ -70,6 +70,13 @@ const draftOnlyOptions = computed(() =>
   drafts.value.filter((d) => d.status === 'draft').map((d) => ({ label: d.name, value: d.id })))
 const classOptions = computed(() =>
   classes.value.map((c) => ({ label: classLabel(c), value: c.id })))
+// 班名按名映射回年级+班名全称(同学期班名唯一,按名找得到);找不到时原样显示。
+function classNamesLabel(names: string[]): string {
+  return names.map((n) => {
+    const c = classes.value.find((x) => x.name === n)
+    return c ? classLabel(c) : n
+  }).join('、')
+}
 const teacherOptions = computed(() =>
   teachers.value.filter((t) => t.is_active).map((t) => ({ label: t.name, value: t.id })))
 const subjectOptions = computed(() =>
@@ -1270,7 +1277,7 @@ onUnmounted(() => {
             </div>
             <n-space vertical size="small">
               <n-text v-for="u in unscheduled" :key="u.subject_name + u.class_names.join()" depth="2" style="font-size: 13px">
-                {{ u.class_names.join('、') }}《{{ u.subject_name }}》：{{ u.periods }} 节
+                {{ classNamesLabel(u.class_names) }}《{{ u.subject_name }}》：{{ u.periods }} 节
                 {{ u.reason ? `（${u.reason}）` : '' }}
               </n-text>
             </n-space>
@@ -1531,7 +1538,7 @@ onUnmounted(() => {
           </thead>
           <tbody>
             <tr v-for="u in report?.unplaced ?? []" :key="u.course_assignment_id">
-              <td>{{ u.classes.join('、') }}</td>
+              <td>{{ classNamesLabel(u.classes) }}</td>
               <td>{{ u.subject }}</td>
               <td>{{ u.teachers.join('、') }}</td>
               <td>{{ u.remaining }} / {{ u.required }}</td>

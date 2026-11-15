@@ -17,6 +17,7 @@ import { listClassUnits } from '@/api/basedata'
 import { listSemesters } from '@/api/semesters'
 import type { ClassUnit } from '@/api/basedata'
 import type { SemesterListItem } from '@/api/semesters'
+import { classLabel } from '@/utils/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
@@ -38,10 +39,10 @@ const gradeOptions = computed(() => {
 const classOptions = computed(() =>
   classes.value
     .filter((c) => filterGrade.value == null || c.grade === filterGrade.value)
-    .map((c) => ({ label: c.name, value: c.id })),
+    .map((c) => ({ label: classLabel(c), value: c.id })),
 )
 const formClassOptions = computed(() =>
-  classes.value.map((c) => ({ label: `${c.grade} 年级 ${c.name}`, value: c.id })),
+  classes.value.map((c) => ({ label: classLabel(c), value: c.id })),
 )
 
 const filterGrade = ref<number | null>(null)
@@ -269,6 +270,7 @@ const columns: DataTableColumns<Student> = [
     ),
   },
   { title: '性别', key: 'gender', width: 60, render: (row) => row.gender ?? '—' },
+  { title: '年级', key: 'grade', width: 80, render: (row) => row.grade != null ? `${row.grade}年级` : '—' },
   { title: '班级', key: 'class_name', render: (row) => row.class_name || '—' },
   {
     title: '状态',
@@ -390,7 +392,7 @@ const columns: DataTableColumns<Student> = [
                   {{ c.change_type }}: {{ c.from_status ?? '—' }} → {{ c.to_status ?? '—' }}
                 </div>
                 <div class="ios-row-sub">
-                  {{ c.from_class_name ?? '' }} → {{ c.to_class_name ?? '' }}
+                  {{ classLabel({ grade: c.from_grade, name: c.from_class_name }) }} → {{ classLabel({ grade: c.to_grade, name: c.to_class_name }) }}
                   {{ c.note ? ` · ${c.note}` : '' }}
                   {{ c.created_at ? ` · ${c.created_at}` : '' }}
                 </div>
