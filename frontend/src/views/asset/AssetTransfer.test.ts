@@ -15,6 +15,15 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
       }]),
     })
   }
+  if (url.includes('/api/users')) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: () => Promise.resolve([
+        { id: 7, username: 'zhangsan', display_name: '张三', roles: ['teacher'] },
+        { id: 8, username: 'lisi', display_name: '李四', roles: ['teacher'] },
+      ]),
+    })
+  }
   if (url.includes('/handovers')) {
     return Promise.resolve({
       ok: true, status: 200,
@@ -39,6 +48,8 @@ describe('调拨与移交页', () => {
     expect(wrapper.text()).toContain('离职/调岗/退休移交')
     expect(wrapper.text()).toContain('YJ-20261115-0001')
     expect(wrapper.text()).toContain('逐件扫码确认')
-    expect(wrapper.text()).toContain('未接人事系统')
+    expect(wrapper.text()).toContain('人员变动请先在人事处确认')
+    expect(wrapper.text()).toContain('选中确认')
+    expect(wrapper.text()).toContain('输入资产编号或名称搜索')
   })
 })

@@ -16,6 +16,7 @@ import {
 import type { Exam, ExamDetail, ScoreProgress } from '@/api/exam'
 import { mondayOf, toISODate, weekdayOf } from '@/utils/calendar'
 import PortalCalendarCard from '@/components/PortalCalendarCard.vue'
+import PortalAssetHints from '@/components/PortalAssetHints.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -302,6 +303,8 @@ onMounted(() => { void load() })
         </div>
       </div>
     </section>
+
+    <PortalAssetHints />
 
     <section v-if="focusExam" class="ios-section" data-testid="portal-exam">
       <div class="ios-section-title">考试进行时</div>

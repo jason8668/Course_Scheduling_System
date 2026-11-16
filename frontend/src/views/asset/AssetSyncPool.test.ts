@@ -1,6 +1,21 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import AssetSyncPool from './AssetSyncPool.vue'
+
+async function mountPool() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/asset/sync-pool', name: 'asset-sync-pool', component: AssetSyncPool },
+      { path: '/asset/sync', name: 'asset-sync', component: { template: '<div />' } },
+      { path: '/asset/ledger', name: 'asset-ledger', component: { template: '<div />' } },
+    ],
+  })
+  await router.push({ name: 'asset-sync-pool' })
+  await router.isReady()
+  return mount(AssetSyncPool, { global: { plugins: [router] } })
+}
 
 vi.stubGlobal('fetch', vi.fn((url: string) => {
   if (url.includes('/sync/pool')) {
@@ -23,7 +38,7 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
 
 describe('待同步池页', () => {
   it('展示清单、件数、总价值与按批次分组', async () => {
-    const wrapper = mount(AssetSyncPool)
+    const wrapper = await mountPool()
     await flushPromises()
     expect(wrapper.text()).toContain('待同步池')
     expect(wrapper.text()).toContain('共 1 件,总价值 3000 元')

@@ -239,6 +239,15 @@ export const searchAssets = (params: AssetSearchParams = {}): Promise<{
   total: number
 }> => apiGet<{ items: AssetCard[]; total: number }>(`/asset/ledger/search${searchQuery(params)}`)
 
+/** 管理员:全帐号一览(用户名/姓名/角色),供移交选人用;非管理员调此接口会 403,调用方须兜底回手填 id。 */
+export interface AssetUser {
+  id: number
+  username: string
+  display_name: string
+  roles: string[]
+}
+export const listAssetUsers = (): Promise<AssetUser[]> => apiGet<AssetUser[]>('/users')
+
 /** 单张资产卡(#10):四区 + 扩展区 + 入账/闲置/批次。 */
 export const getAssetCard = (assetId: number): Promise<AssetCard> =>
   apiGet<AssetCard>(`/asset/assets/${assetId}`)

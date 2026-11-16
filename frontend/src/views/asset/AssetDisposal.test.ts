@@ -35,7 +35,7 @@ describe('处置与报废页', () => {
     expect(wrapper.text()).toContain('处置与报废')
     expect(wrapper.text()).toContain('CZ-20261115-0001')
     expect(wrapper.text()).toContain('技术鉴定单')
-    expect(wrapper.text()).toContain('官方批复回填后才可手动确认核销')
+    expect(wrapper.text()).toContain('第 5 步回填官方批复文号')
     expect(wrapper.text()).toContain('技术鉴定')
     expect(wrapper.text()).toContain('提交审批')
     expect(wrapper.text()).toContain('生成申报材料包')

@@ -1,6 +1,25 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import AssetWorkspace from './AssetWorkspace.vue'
+
+async function mountWorkspace() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/asset/workspace', name: 'asset-workspace', component: AssetWorkspace },
+      { path: '/asset/intake', name: 'asset-intake', component: { template: '<div />' } },
+      { path: '/asset/ledger', name: 'asset-ledger', component: { template: '<div />' } },
+      { path: '/asset/circulation', name: 'asset-circulation', component: { template: '<div />' } },
+      { path: '/asset/transfer', name: 'asset-transfer', component: { template: '<div />' } },
+      { path: '/asset/sync-pool', name: 'asset-sync-pool', component: { template: '<div />' } },
+    ],
+  })
+  await router.push({ name: 'asset-workspace' })
+  await router.isReady()
+  const wrapper = mount(AssetWorkspace, { global: { plugins: [router] } })
+  return { wrapper, router }
+}
 
 vi.stubGlobal('fetch', vi.fn((url: string) => {
   if (url.includes('/workspace/todos')) {
@@ -48,7 +67,7 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
 
 describe('我的工作台页', () => {
   it('展示待办(逾期在前)、我的资产与报修归还入口、提醒中心', async () => {
-    const wrapper = mount(AssetWorkspace)
+    const { wrapper } = await mountWorkspace()
     await flushPromises()
     expect(wrapper.text()).toContain('我的工作台')
     expect(wrapper.text()).toContain('我的待办')

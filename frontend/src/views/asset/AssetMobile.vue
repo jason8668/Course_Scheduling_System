@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NInput, NSpace,
+  NAlert, NButton, NInput, NSelect, NSpace,
 } from 'naive-ui'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
-  confirmIssueScan, scanInventory, scanRepair, searchAssets,
+  confirmIssueScan, listInventoryTasks, listIssues, scanInventory, scanRepair, searchAssets,
 } from '@/api/asset'
-import type { AssetCard, RepairScanResult } from '@/api/asset'
+import type {
+  AssetCard, InventoryTask, IssueOrder, RepairScanResult,
+} from '@/api/asset'
 
 // 学校资产管理系统一期第 6 批:移动端四件事(#113)。
 // 手机端只做扫码查卡、扫码报修、借用/领用确认、盘点作业,界面极简;
@@ -15,7 +17,7 @@ import type { AssetCard, RepairScanResult } from '@/api/asset'
 // 扫码入口集中在每项顶部的大输入框(扫码枪/手机扫码键盘回填后点大按钮)。
 // 查卡用台账组合查询(#8)的 q 关键词;报修用扫码报修(#42);
 // 确认用领用扫码确认(#31);盘点用手机扫码盘点(#49)。
-// 未接路由(由收尾批统一接线,见 portal-wiring-patch.md)。
+// 移动端四件事只复用已有接口。
 
 type Tab = 'lookup' | 'repair' | 'confirm' | 'inventory'
 const tab = ref<Tab>('lookup')
@@ -85,16 +87,24 @@ async function doRepairScan() {
   }
 }
 
-// ── 借用/领用确认 ──
-const confirmOrderId = ref('')
+// ── 借用/领用确认:领用单按单号下拉选,不手填 id ──
+const issues = ref<IssueOrder[]>([])
+const selectedIssueId = ref<number | null>(null)
+const issueOptions = computed(() => issues.value.map((o) => ({
+  label: `${o.doc_no}（${o.applicant_name}·${o.status}）`,
+  value: o.id,
+})))
 const confirmCode = ref('')
 
 async function doConfirm() {
-  if (!confirmOrderId.value || !confirmCode.value) return
+  if (!selectedIssueId.value || !confirmCode.value) {
+    errorMsg.value = '请先选领用单,再扫标签码'
+    return
+  }
   reset()
   loading.value = true
   try {
-    const order = await confirmIssueScan(Number(confirmOrderId.value), confirmCode.value)
+    const order = await confirmIssueScan(selectedIssueId.value, confirmCode.value)
     resultMsg.value = `领用单 ${order.doc_no} 已确认接收,资产转为在用`
   } catch (e) {
     fail(e)
@@ -103,8 +113,13 @@ async function doConfirm() {
   }
 }
 
-// ── 盘点作业:离线暂存、弱网续传(#49,复核补) ──
-const inventoryTaskId = ref('')
+// ── 盘点作业:任务按单下拉选,不手填 id;离线暂存、弱网续传(#49,复核补) ──
+const tasks = ref<InventoryTask[]>([])
+const selectedTaskId = ref<number | null>(null)
+const taskOptions = computed(() => tasks.value.map((t) => ({
+  label: `任务#${t.id} ${t.assignee_name}（${t.scope_dept ?? ''}${t.scope_room_name ?? ''}·${t.status}）`,
+  value: t.id,
+})))
 const inventoryCode = ref('')
 // 此前只把 is_offline 标志传给同一在线接口,断网时根本调不通接口,
 // 谈不上离线暂存。现补本地发件箱:网络异常(无 HTTP 状态的抛错,
@@ -155,12 +170,28 @@ async function resyncOffline() {
   loading.value = false
 }
 
+onMounted(async () => {
+  try {
+    issues.value = await listIssues()
+  } catch {
+    issues.value = []
+  }
+  try {
+    tasks.value = await listInventoryTasks()
+  } catch {
+    tasks.value = []
+  }
+})
+
 async function doInventoryScan() {
-  if (!inventoryTaskId.value || !inventoryCode.value) return
+  if (!selectedTaskId.value || !inventoryCode.value) {
+    errorMsg.value = '请先选盘点任务,再扫标签码'
+    return
+  }
   reset()
   loading.value = true
   try {
-    const res = await scanInventory(Number(inventoryTaskId.value), {
+    const res = await scanInventory(selectedTaskId.value, {
       label_code: inventoryCode.value,
     })
     resultMsg.value = res.message
@@ -170,7 +201,7 @@ async function doInventoryScan() {
       // 无 HTTP 响应:断网/弱网,离线暂存而非丢弃。
       const list = loadOfflineScans()
       list.push({
-        task_id: Number(inventoryTaskId.value),
+        task_id: selectedTaskId.value,
         label_code: inventoryCode.value,
         saved_at: new Date().toISOString(),
       })
@@ -239,10 +270,11 @@ async function doInventoryScan() {
     </div>
 
     <div v-if="tab === 'confirm'" style="margin-top: 16px">
-      <NInput
-        v-model:value="confirmOrderId" placeholder="领用单 id" inputmode="numeric"
-        size="large" style="margin-bottom: 12px"
+      <NSelect
+        v-model:value="selectedIssueId" :options="issueOptions" filterable clearable
+        placeholder="选择领用单(按单号)" size="large" style="margin-bottom: 12px"
       />
+      <p v-if="issueOptions.length === 0">暂无领用单:先在电脑端“领用借用”页提交领用申请。</p>
       <NInput
         v-model:value="confirmCode" placeholder="扫码或输入标签码"
         size="large" style="margin-bottom: 12px"
@@ -251,10 +283,11 @@ async function doInventoryScan() {
     </div>
 
     <div v-if="tab === 'inventory'" style="margin-top: 16px">
-      <NInput
-        v-model:value="inventoryTaskId" placeholder="盘点任务 id" inputmode="numeric"
-        size="large" style="margin-bottom: 12px"
+      <NSelect
+        v-model:value="selectedTaskId" :options="taskOptions" filterable clearable
+        placeholder="选择盘点任务" size="large" style="margin-bottom: 12px"
       />
+      <p v-if="taskOptions.length === 0">暂无盘点任务:先在电脑端“盘点清查”页创建方案并拆任务。</p>
       <NInput
         v-model:value="inventoryCode" placeholder="扫码或输入标签码"
         size="large" style="margin-bottom: 12px"

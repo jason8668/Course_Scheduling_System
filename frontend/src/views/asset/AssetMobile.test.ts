@@ -1,6 +1,16 @@
+import { NSelect } from 'naive-ui'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import AssetMobile from './AssetMobile.vue'
+
+// 按 placeholder 找下拉(仓库里已有用 $emit('update:value') 驱动 n-select 的模式)。
+async function selectOption(wrapper: ReturnType<typeof mount>, placeholder: string, value: number) {
+  const sels = wrapper.findAllComponents(NSelect)
+  const sel = sels.find((s) => s.props('placeholder') === placeholder)
+  expect(sel?.exists()).toBe(true)
+  await sel!.vm.$emit('update:value', value)
+  await flushPromises()
+}
 
 // 移动端四件事(#113)只复用已有接口:查卡=台账查询 q、报修=扫码报修、
 // 确认=领用扫码确认、盘点=手机扫码盘点;按 URL 分流 stub fetch。
@@ -53,6 +63,27 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
         in_scope: true, message: '盘点记录成功', record_id: 9,
         asset_id: 1, asset_code: 'ZC2026A02030001',
       }),
+    })
+  }
+  if (u.includes('/asset/issues') && !u.includes('/confirm-scan')) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: () => Promise.resolve([{
+        id: 3, doc_no: 'LY-示例', asset_id: 1, applicant_id: 2,
+        applicant_name: '示例申请人', use_dept: null, reason: '教学使用',
+        status: '待确认', approval_instance_id: null, issued_by: null,
+        issued_at: null, confirmed_at: null, created_at: null,
+      }]),
+    })
+  }
+  if (u.includes('/asset/inventory/tasks') && !u.includes('/scan')) {
+    return Promise.resolve({
+      ok: true, status: 200,
+      json: () => Promise.resolve([{
+        id: 5, plan_id: 1, assignee_id: 2, assignee_name: '示例盘点人',
+        scope_dept: '教务处', scope_room_name: null, scope_category_code: null,
+        due_at: null, status: '待盘点', created_at: null,
+      }]),
     })
   }
   return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({ detail: '未找到' }) })
@@ -108,8 +139,8 @@ describe('移动端四件事页', () => {
   it('借用/领用确认:确认后显示领用单号与在用提示', async () => {
     const wrapper = mount(AssetMobile)
     await clickTab(wrapper, 2)
+    await selectOption(wrapper, '选择领用单(按单号)', 3)
     const inputs = wrapper.findAll('input')
-    await inputs[0].setValue('3')
     await inputs[1].setValue('ZC2026A02030001X')
     const buttons = wrapper.findAll('button')
     await buttons.find((b) => b.text() === '确认接收')!.trigger('click')
@@ -121,8 +152,8 @@ describe('移动端四件事页', () => {
   it('盘点作业:扫码后显示盘点结果', async () => {
     const wrapper = mount(AssetMobile)
     await clickTab(wrapper, 3)
+    await selectOption(wrapper, '选择盘点任务', 5)
     const inputs = wrapper.findAll('input')
-    await inputs[0].setValue('5')
     await inputs[1].setValue('ZC2026A02030001X')
     const buttons = wrapper.findAll('button')
     await buttons.find((b) => b.text() === '扫码盘点')!.trigger('click')
@@ -132,11 +163,12 @@ describe('移动端四件事页', () => {
 
   it('#49 复核补:断网扫码离线暂存,重挂载后显示待补传', async () => {
     localStorage.clear()
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
     const wrapper = mount(AssetMobile)
     await clickTab(wrapper, 3)
+    await selectOption(wrapper, '选择盘点任务', 5)
+    // 断网只影响本次扫码提交:挂载时的列表请求已完成,此时再让下一次 fetch 失败。
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
     const inputs = wrapper.findAll('input')
-    await inputs[0].setValue('5')
     await inputs[1].setValue('ZC2026A02030001X')
     const buttons = wrapper.findAll('button')
     await buttons.find((b) => b.text() === '扫码盘点')!.trigger('click')

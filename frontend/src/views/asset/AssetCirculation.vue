@@ -2,8 +2,9 @@
 import {
   NAlert, NButton, NDataTable, NInput, NSelect, NSpace,
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
+import AssetPicker from '@/components/AssetPicker.vue'
 import {
   checkoutReservation, confirmIssueScan, createBorrow, createIssue,
   createReservation, createReturn, issueAsset, listBorrows, listIssues,
@@ -14,7 +15,7 @@ import type {
 } from '@/api/asset'
 
 // 学校资产管理系统一期第 3 批:领用/借用/归还/预约统一入口(#30~#34)。
-// 未接路由(由收尾批统一接线);资产以 id 选择(演示页,实际使用时由扫码/台账带入)。
+// 资产按编号/名称搜索选择;单号点行内按钮填入扫码框。
 
 const tab = ref('issue')
 const tabOptions = [
@@ -26,7 +27,7 @@ const tabOptions = [
 const resultMsg = ref('')
 const errorMsg = ref('')
 
-const assetId = ref('')
+const assetId = ref<number | null>(null)
 const reason = ref('')
 const useDept = ref('')
 const dueAt = ref('')
@@ -59,10 +60,21 @@ function showError(e: unknown) {
   resultMsg.value = ''
 }
 
+function needAsset(): number | null {
+  if (!assetId.value) {
+    errorMsg.value = '请先在上方搜索并选择资产'
+    resultMsg.value = ''
+    return null
+  }
+  return assetId.value
+}
+
 async function doCreateIssue() {
+  const id = needAsset()
+  if (!id) return
   try {
     const row = await createIssue({
-      asset_id: Number(assetId.value), use_dept: useDept.value || undefined, reason: reason.value,
+      asset_id: id, use_dept: useDept.value || undefined, reason: reason.value,
     })
     resultMsg.value = `领用申请已提交,单号 ${row.doc_no},待审批`
     errorMsg.value = ''
@@ -89,9 +101,11 @@ async function doConfirmScan() {
 }
 
 async function doCreateBorrow() {
+  const id = needAsset()
+  if (!id) return
   try {
     const row = await createBorrow({
-      asset_id: Number(assetId.value), reason: reason.value, due_at: dueAt.value,
+      asset_id: id, reason: reason.value, due_at: dueAt.value,
     })
     resultMsg.value = `借用单 ${row.doc_no} 已创建,资产转为借出`
     errorMsg.value = ''
@@ -100,9 +114,11 @@ async function doCreateBorrow() {
 }
 
 async function doCreateReservation() {
+  const id = needAsset()
+  if (!id) return
   try {
     const row = await createReservation({
-      asset_id: Number(assetId.value),
+      asset_id: id,
       start_at: startAt.value, end_at: endAt.value, purpose: purpose.value,
     })
     resultMsg.value = `预约单 ${row.doc_no} 已创建`
@@ -120,9 +136,23 @@ async function doCheckout(id: number) {
   } catch (e) { showError(e) }
 }
 
+function pickIssueScan(row: IssueOrder) {
+  scanOrderId.value = String(row.id)
+  resultMsg.value = `已选中领用单 ${row.doc_no},请在下方扫标签码确认接收`
+  errorMsg.value = ''
+}
+
+function pickReturnScan(row: ReturnOrder) {
+  scanOrderId.value = String(row.id)
+  resultMsg.value = `已选中归还单 ${row.doc_no},请在下方扫标签码验收`
+  errorMsg.value = ''
+}
+
 async function doCreateReturn() {
+  const id = needAsset()
+  if (!id) return
   try {
-    const row = await createReturn({ asset_id: Number(assetId.value) })
+    const row = await createReturn({ asset_id: id })
     resultMsg.value = `归还单 ${row.doc_no} 已创建,请扫码验收`
     errorMsg.value = ''
     await load()
@@ -136,7 +166,7 @@ async function doScanReturn() {
     })
     resultMsg.value = returnResult.value === '完好'
       ? `归还单 ${row.doc_no} 验收完好,资产已回在库`
-      : `归还单 ${row.doc_no} 验收损坏,已转维修(维修占位单待 B4 接入)`
+      : `归还单 ${row.doc_no} 验收损坏,已转维修,可在维修保养页查看`
     errorMsg.value = ''
     await load()
   } catch (e) { showError(e) }
@@ -148,11 +178,17 @@ onMounted(load)
 <template>
   <div class="ios-page">
     <h1 class="ios-title">领用借用归还</h1>
+    <NAlert type="info" style="margin-bottom: 12px">
+      <span v-if="tab === 'issue'">长期领用三步:先在上方搜到资产、填使用部门和事由提交申请 → 管理员点“发放” → 领用人到场扫标签码确认接收,资产转为在用。</span>
+      <span v-else-if="tab === 'borrow'">短期借用:搜到资产、填事由和归还时间提交;到期前记得归还,逾期会出现在工作台待办里。</span>
+      <span v-else-if="tab === 'reservation'">公用资产预约:搜到资产、填起止时间和用途提交;到了时间点“领用”,预约转为借用单。</span>
+      <span v-else>归还验收两步:先点“新建归还单” → 再扫标签码验收,完好回在库,损坏转维修。</span>
+    </NAlert>
     <NAlert v-if="errorMsg" type="error" style="margin-bottom: 12px">{{ errorMsg }}</NAlert>
     <NAlert v-if="resultMsg" type="success" style="margin-bottom: 12px">{{ resultMsg }}</NAlert>
     <NSpace style="margin-bottom: 12px">
       <NSelect v-model:value="tab" :options="tabOptions" style="width: 140px" />
-      <NInput v-model:value="assetId" placeholder="资产 id" style="width: 120px" />
+      <AssetPicker v-model="assetId" style="width: 320px" />
     </NSpace>
     <div class="ios-card" style="margin-top: 16px">
       <div class="ios-card-body">
@@ -164,7 +200,7 @@ onMounted(load)
         <NInput v-model:value="reason" placeholder="领用事由" style="width: 220px" />
         <NButton type="primary" @click="doCreateIssue">提交领用申请</NButton>
       </NSpace>
-      <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">领用确认(扫码)</div>
+      <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">领用确认(扫码)</div>
       <NSpace style="margin-bottom: 12px">
         <NInput v-model:value="scanOrderId" placeholder="领用单 id" style="width: 120px" />
         <NInput v-model:value="labelCode" placeholder="标签码(扫码)" style="width: 200px" />
@@ -176,6 +212,14 @@ onMounted(load)
           { title: '申请人', key: 'applicant_name' },
           { title: '状态', key: 'status' },
           { title: '操作', key: 'actions', render: (r: IssueOrder) => r.status === '待发放' ? '可发放' : '' },
+          {
+            title: '扫码', key: 'scan', width: 110,
+            render: (r: IssueOrder) => h(
+              NButton,
+              { size: 'small', onClick: () => pickIssueScan(r) },
+              () => '选中扫码',
+            ),
+          },
         ]"
         :data="issues" :row-key="(r: IssueOrder) => r.id"
       />
@@ -230,7 +274,7 @@ onMounted(load)
       <NSpace style="margin-bottom: 12px">
         <NButton type="primary" @click="doCreateReturn">新建归还单</NButton>
       </NSpace>
-      <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">扫码归还</div>
+      <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">扫码归还</div>
       <NSpace style="margin-bottom: 12px">
         <NInput v-model:value="scanOrderId" placeholder="归还单 id" style="width: 120px" />
         <NInput v-model:value="labelCode" placeholder="标签码(扫码)" style="width: 200px" />
@@ -244,6 +288,14 @@ onMounted(load)
           { title: '归还人', key: 'returner_name' },
           { title: '结果', key: 'result' },
           { title: '状态', key: 'status' },
+          {
+            title: '扫码', key: 'scan', width: 110,
+            render: (r: ReturnOrder) => h(
+              NButton,
+              { size: 'small', onClick: () => pickReturnScan(r) },
+              () => '选中验收',
+            ),
+          },
         ]"
         :data="returns" :row-key="(r: ReturnOrder) => r.id"
       />

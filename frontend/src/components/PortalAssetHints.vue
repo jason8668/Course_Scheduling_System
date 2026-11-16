@@ -6,8 +6,8 @@ import type { PortalHints } from '@/api/asset'
 // Portal 首页资产提示卡(资产一期复核):只读汇总,接口失败整卡隐藏,绝不编数据。
 // 角色口径以后端为准:我的(所有人)、管理(admin/asset_admin)、
 // 领导(director/admin);后端对不可见字段回 null,前端只渲染非 null 项。
-// 资产页尚无路由(2026-11-15),本卡 v1 只显示数字,不挂入口链接;
-// 路由接线后按 portal-home-hints.md 的补丁再补链接。
+// 本卡 v1 只显示数字,不挂入口链接;资产总入口在上方第三张卡。
+// 后续如需每格直达对应页,再按 portal-home-hints.md 补链接。
 const hints = ref<PortalHints | null>(null)
 
 interface HintCell { label: string; value: string; sub?: string }

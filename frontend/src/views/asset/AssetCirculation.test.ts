@@ -43,5 +43,8 @@ describe('领用借用归还页', () => {
     expect(wrapper.text()).toContain('LY-20261115-0001')
     expect(wrapper.text()).toContain('发放 LY-20261115-0001')
     expect(wrapper.text()).toContain('领用确认(扫码)')
+    expect(wrapper.text()).toContain('长期领用三步')
+    expect(wrapper.text()).toContain('选中扫码')
+    expect(wrapper.text()).toContain('输入资产编号或名称搜索')
   })
 })

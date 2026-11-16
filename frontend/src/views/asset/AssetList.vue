@@ -3,7 +3,8 @@ import {
   NAlert, NButton, NDataTable, NInput, NPopconfirm, NSelect, NSpace,
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   assetExportUrl, bulkUpdateAssets, listIdleAssets, refreshIdleAssets,
@@ -13,7 +14,9 @@ import type { AssetCard, AssetIdle } from '@/api/asset'
 
 // 学校资产管理系统一期第 2 批:资产台账(#8/#9/#13/#14/#87/#88)。
 // 多维组合查询 + 导出 + 批量维护 + 闲置清单 + 勾选同步。
-// 未接路由(由收尾批统一接线);导出用浏览器直接打开下载地址。
+// 导出用浏览器直接打开下载地址。
+
+const router = useRouter()
 
 const loading = ref(false)
 const forbidden = ref(false)
@@ -54,7 +57,14 @@ const syncOptions = [
 
 const columns: DataTableColumns<AssetCard> = [
   { type: 'selection', width: 40 },
-  { title: '资产编号', key: 'asset_code', width: 150 },
+  {
+    title: '资产编号', key: 'asset_code', width: 150,
+    render: (r: AssetCard) => h(
+      NButton,
+      { text: true, type: 'primary', onClick: () => openCard(r) },
+      () => r.asset_code,
+    ),
+  },
   { title: '名称', key: 'name' },
   { title: '分类', key: 'category_code', width: 100 },
   { title: '原值(元)', key: 'original_value', width: 100 },
@@ -68,6 +78,14 @@ const columns: DataTableColumns<AssetCard> = [
 
 function onChecked(keys: Array<string | number>) {
   checkedKeys.value = keys.map((k) => Number(k))
+}
+
+function openCard(row: AssetCard) {
+  router.push({ name: 'asset-card', query: { id: String(row.id) } })
+}
+
+function goIntake() {
+  router.push({ name: 'asset-intake' })
 }
 
 function filters() {
@@ -141,6 +159,10 @@ onMounted(() => { load(); loadIdle() })
       导出默认只含校内台账字段,扩展区字段须勾选才导出。
     </NAlert>
     <NAlert v-if="forbidden" type="error" style="margin-bottom: 12px">权限不足</NAlert>
+    <NAlert v-if="!loading && !forbidden && rows.length === 0" type="info" style="margin-bottom: 12px">
+      台账还是空的:先去“入库验收”新建验收单、验收通过后建卡,卡建好就会出现在这里。
+      <NButton size="small" type="primary" style="margin-left: 8px" @click="goIntake">去入库验收</NButton>
+    </NAlert>
     <div class="ios-card" style="margin-top: 16px">
       <div class="ios-card-body">
     <NSpace style="margin-bottom: 12px" vertical>
@@ -175,11 +197,12 @@ onMounted(() => { load(); loadIdle() })
       </NSpace>
     </NSpace>
     <NAlert v-if="resultMsg" type="success" style="margin-bottom: 12px">{{ resultMsg }}</NAlert>
+    <p>点资产编号可打开该资产的资产卡;勾选多行可批量改保管人或勾选同步。</p>
     <NDataTable :bordered="false" :single-line="false"
       :columns="columns" :data="rows" :loading="loading" :row-key="(r: AssetCard) => r.id"
       :checked-row-keys="checkedKeys" @update:checked-row-keys="onChecked"
     />
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 0px">闲置清单</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">闲置清单</div>
     <p v-if="idleRows.length === 0">暂无闲置资产(闲置标记由刷新任务计算,不手工打标记)。</p>
     <NDataTable :bordered="false" :single-line="false"
       v-else

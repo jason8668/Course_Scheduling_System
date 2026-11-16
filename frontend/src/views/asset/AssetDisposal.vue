@@ -2,7 +2,7 @@
 import {
   NAlert, NButton, NDataTable, NInput, NPopconfirm, NSelect, NSpace,
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
   DISPOSAL_TYPES, appraiseDisposal, confirmDisposalRetire, createDisposal,
@@ -10,16 +10,17 @@ import {
   selectDisposalOfficial, submitDisposalApproval,
 } from '@/api/asset'
 import type { DisposalOrder } from '@/api/asset'
+import AssetPicker from '@/components/AssetPicker.vue'
 
 // 学校资产管理系统一期第 5 批:处置与报废(M8 #54~#58)。
-// 处置申请 + 鉴定 + 审批 + 申报材料包 + 核销回收;未接路由(由收尾批统一接线)。
+// 处置申请 + 鉴定 + 审批 + 申报材料包 + 核销回收。
 // 处置单本身不改资产状态:资产须先转入待处置;核销须官方批复回填后手动确认。
 
 const loading = ref(false)
 const orders = ref<DisposalOrder[]>([])
 const resultMsg = ref('')
 const errorMsg = ref('')
-const assetId = ref('')
+const assetId = ref<number | null>(null)
 const disposalType = ref<string>('scrap')
 const reason = ref('')
 const materialsRequired = ref<string[]>([])
@@ -59,14 +60,20 @@ async function loadMaterials() {
   }
 }
 
+function pickOrder(row: DisposalOrder) {
+  selectedId.value = String(row.id)
+  resultMsg.value = `已选中处置单 ${row.doc_no}(当前状态:${row.status}),下方按钮针对该单操作`
+  errorMsg.value = ''
+}
+
 async function doCreate() {
   if (!assetId.value) {
-    errorMsg.value = '请填写资产 ID(须先将资产转入待处置)'
+    errorMsg.value = '请先在上方搜索并选择资产(须先将资产转入待处置)'
     return
   }
   try {
     const order = await createDisposal({
-      asset_id: Number(assetId.value), disposal_type: disposalType.value,
+      asset_id: assetId.value, disposal_type: disposalType.value,
       reason: reason.value, materials: materialsChecked.value,
     })
     resultMsg.value = `处置申请已创建:${order.doc_no}`
@@ -159,8 +166,10 @@ onMounted(async () => {
   <div class="ios-page">
     <h1 class="ios-title">处置与报废</h1>
     <NAlert type="info" style="margin-bottom: 12px">
-      处置申请只接受已转入待处置的资产,处置单本身不改状态;鉴定结论“可继续使用”时
-      处置单关闭、资产回在库/在用;官方批复回填后才可手动确认核销。
+      处置六步:第 1 步先把资产转入待处置,再新建处置申请 → 第 2 步技术鉴定 →
+      第 3 步提交分级审批 → 第 4 步生成官方申报材料包 → 第 5 步回填官方批复文号 →
+      第 6 步确认核销(编号封存,不可恢复)。处置单本身不改资产状态;鉴定结论“可继续使用”时处置单关闭、资产回在库/在用。
+      每一步先点下方处置单的“选中处理”,再点对应按钮。
     </NAlert>
     <NAlert v-if="errorMsg" type="error" style="margin-bottom: 12px">{{ errorMsg }}</NAlert>
     <NAlert v-if="resultMsg" type="success" style="margin-bottom: 12px">{{ resultMsg }}</NAlert>
@@ -170,7 +179,7 @@ onMounted(async () => {
     <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 0px">新建处置申请</div>
     <NSpace vertical>
       <NSpace>
-        <NInput v-model:value="assetId" placeholder="资产 ID" style="width: 140px" />
+        <AssetPicker v-model="assetId" style="width: 320px" />
         <NSelect
           v-model:value="disposalType" :options="typeOptions" style="width: 160px"
           @update:value="loadMaterials"
@@ -181,7 +190,7 @@ onMounted(async () => {
       <p>应交材料:{{ materialsRequired.join('、') || '—' }}(缺材料不得提交)</p>
     </NSpace>
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">处置单</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">处置单</div>
     <NDataTable :bordered="false" :single-line="false"
       :columns="[
         { title: '处置单号', key: 'doc_no', width: 160 },
@@ -189,6 +198,12 @@ onMounted(async () => {
         { title: '类型', key: 'disposal_type', width: 100 },
         { title: '状态', key: 'status', width: 110 },
         { title: '官方批复', key: 'official_reply_no', width: 160 },
+        {
+          title: '选中', key: 'pick', width: 110,
+          render: (r: DisposalOrder) => h(
+            NButton, { size: 'small', onClick: () => pickOrder(r) }, () => '选中处理',
+          ),
+        },
       ]"
       :data="orders" :loading="loading" :row-key="(r: DisposalOrder) => r.id"
     />

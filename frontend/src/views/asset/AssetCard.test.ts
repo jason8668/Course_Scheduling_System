@@ -1,6 +1,20 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import AssetCard from './AssetCard.vue'
+
+async function mountCard(query: Record<string, string> = { id: '1' }) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/asset/cards', name: 'asset-card', component: AssetCard },
+      { path: '/asset/ledger', name: 'asset-ledger', component: { template: '<div />' } },
+    ],
+  })
+  await router.push({ name: 'asset-card', query })
+  await router.isReady()
+  return mount(AssetCard, { global: { plugins: [router] } })
+}
 
 const CARD = {
   id: 1, asset_code: 'ZC2026A02030001', official_code: null,
@@ -42,7 +56,7 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
 
 describe('资产卡页', () => {
   it('展示四区 + 扩展区 + 附件 + 勾选同步按钮', async () => {
-    const wrapper = mount(AssetCard, { props: { assetId: 1 } })
+    const wrapper = await mountCard()
     await flushPromises()
     expect(wrapper.text()).toContain('资产卡')
     expect(wrapper.text()).toContain('基本信息区')
@@ -57,5 +71,13 @@ describe('资产卡页', () => {
     expect(wrapper.text()).toContain('履历时间轴')
     expect(wrapper.text()).toContain('建卡 ZC2026A02030001')
     expect(wrapper.text()).toContain('asset_card_create')
+  })
+
+  it('不带 id 进来不再空白:给搜索提示,不调不存在的资产', async () => {
+    const wrapper = await mountCard({})
+    await flushPromises()
+    expect(wrapper.text()).toContain('资产卡')
+    expect(wrapper.text()).toContain('还没有打开任何资产卡')
+    expect(wrapper.text()).toContain('打开资产卡')
   })
 })

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NDataTable, NInput, NSpace,
+  NAlert, NButton, NDataTable, NInput, NSelect, NSpace,
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
   backfillOfficialCodes, createSyncBatch, getReconciliation,
@@ -14,10 +14,11 @@ import type {
   PendingChange, Reconciliation, SyncBatch, SyncBoundary, SyncLog, SyncPool,
   UnsyncedStat,
 } from '@/api/asset'
+import AssetPicker from '@/components/AssetPicker.vue'
 
 // 学校资产管理系统一期第 5 批:对接与同步(M13 #91~#104/#106)与财务衔接(M15 #116)。
 // 待同步池 → 校验 → 批次 → 二次确认 → 导出 → 回填 → 结果确认 + 同步日志 +
-// 未同步统计;未接路由(由收尾批统一接线)。
+// 未同步统计。
 // 一期为模板交换,实时接口未开放。
 
 const loading = ref(false)
@@ -33,9 +34,31 @@ const reconciliation = ref<Reconciliation | null>(null)
 const resultMsg = ref('')
 const errorMsg = ref('')
 const backfillBatchId = ref('')
-const backfillAssetId = ref('')
+const backfillAssetId = ref<number | null>(null)
 const backfillCode = ref('')
+const exportBatchId = ref<number | null>(null)
 const month = ref('2026-11')
+
+const batchOptions = computed(() => batches.value.map((b) => ({
+  label: `${b.batch_no}(${b.total_count} 件)`,
+  value: b.id,
+})))
+
+function pickBatch(row: SyncBatch) {
+  backfillBatchId.value = String(row.id)
+  exportBatchId.value = row.id
+  resultMsg.value = `已选中同步批次 ${row.batch_no},回填与导出都针对该批次`
+  errorMsg.value = ''
+}
+
+function doExportBatch() {
+  if (!exportBatchId.value) {
+    errorMsg.value = '请先在上方选择要导出的同步批次'
+    resultMsg.value = ''
+    return
+  }
+  window.open(syncBatchExportUrl(exportBatchId.value), '_blank')
+}
 
 async function load() {
   loading.value = true
@@ -83,7 +106,7 @@ async function doCreateBatch() {
 
 async function doBackfill() {
   if (!backfillBatchId.value || !backfillAssetId.value || !backfillCode.value) {
-    errorMsg.value = '请填写批次 ID、资产 ID 与官方编号'
+    errorMsg.value = '请先选中同步批次和资产,并填写官方编号'
     return
   }
   try {
@@ -128,6 +151,11 @@ onMounted(load)
     <NAlert v-if="boundary" type="warning" style="margin-bottom: 12px">
       {{ boundary.execution_note }}(模板版本:{{ boundary.template_version }})
     </NAlert>
+    <NAlert type="info" style="margin-bottom: 12px">
+      同步四步:第 1 步点“同步前校验”,拦截的不合格资产会留在池里 → 第 2 步勾选确认本次件数与总价值,点“生成同步批次” →
+      第 3 步选批次导出官方模板,按模板报送 → 第 4 步官方编号下来后,在下方按批次回填,资产变“已同步”。
+      只有待同步池里勾选的资产才会同步,入库默认未同步,不会自动上报。
+    </NAlert>
     <NAlert v-if="errorMsg" type="error" style="margin-bottom: 12px">{{ errorMsg }}</NAlert>
     <NAlert v-if="resultMsg" type="success" style="margin-bottom: 12px">{{ resultMsg }}</NAlert>
     <div class="ios-card" style="margin-top: 16px">
@@ -143,6 +171,7 @@ onMounted(load)
     <p v-if="validateResult">{{ validateResult }}</p>
 
     <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 0px">同步批次</div>
+    <p>点“选中回填”可把批次号填入下方回填框;导出模板请在下方选批次再点导出。</p>
     <NDataTable :bordered="false" :single-line="false"
       :columns="[
         { title: '同步批次号', key: 'batch_no', width: 180 },
@@ -151,18 +180,30 @@ onMounted(load)
         { title: '件数', key: 'total_count', width: 80 },
         { title: '总价值(元)', key: 'total_value', width: 120 },
         { title: '拦截件数', key: 'blocked_count', width: 100 },
+        {
+          title: '回填', key: 'pick', width: 110,
+          render: (r: SyncBatch) => h(
+            NButton, { size: 'small', onClick: () => pickBatch(r) }, () => '选中回填',
+          ),
+        },
       ]"
       :data="batches" :loading="loading" :row-key="(r: SyncBatch) => r.id"
     />
     <NSpace style="margin-top: 8px">
       <NInput v-model:value="backfillBatchId" placeholder="批次 ID" style="width: 120px" />
-      <NInput v-model:value="backfillAssetId" placeholder="资产 ID" style="width: 120px" />
+      <AssetPicker v-model="backfillAssetId" style="width: 280px" />
       <NInput v-model:value="backfillCode" placeholder="官方编号" style="width: 160px" />
       <NButton @click="doBackfill">编号回填</NButton>
-      <a v-if="batches[0]" :href="syncBatchExportUrl(batches[0].id)">导出最新批次模板</a>
+    </NSpace>
+    <NSpace style="margin-top: 8px">
+      <NSelect
+        v-model:value="exportBatchId" :options="batchOptions" filterable clearable
+        placeholder="选择要导出的同步批次" style="width: 280px"
+      />
+      <NButton :disabled="!exportBatchId" @click="doExportBatch">导出选中批次模板</NButton>
     </NSpace>
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">待同步变更</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">待同步变更</div>
     <p v-if="pendingChanges.length === 0">暂无待同步变更</p>
     <NDataTable :bordered="false" :single-line="false"
       v-else
@@ -174,7 +215,7 @@ onMounted(load)
       :data="pendingChanges" :row-key="(r: PendingChange) => r.asset_id"
     />
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">未同步资产统计(校内口径)</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">未同步资产统计(校内口径)</div>
     <NDataTable :bordered="false" :single-line="false"
       :columns="[
         { title: '分类代码', key: 'category_code', width: 120 },
@@ -184,7 +225,7 @@ onMounted(load)
       :data="unsyncedStats" :row-key="(r: UnsyncedStat) => r.category_code"
     />
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">同步日志</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">同步日志</div>
     <NDataTable :bordered="false" :single-line="false"
       :columns="[
         { title: '动作', key: 'action', width: 140 },
@@ -197,7 +238,7 @@ onMounted(load)
       :data="logs" :row-key="(r: SyncLog) => r.id"
     />
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">月度对账清单</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">月度对账清单</div>
     <NSpace>
       <NInput v-model:value="month" placeholder="YYYY-MM" style="width: 120px" />
       <NButton @click="doReconciliation">生成对账清单</NButton>

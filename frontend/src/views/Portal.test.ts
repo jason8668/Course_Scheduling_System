@@ -125,6 +125,18 @@ function defaultFetch(url: unknown) {
       total: 2,
     })
   }
+  if (u.includes('/workspace/portal-hints')) {
+    return json({
+      my_assets_total: 1, my_borrow_overdue: 0, my_borrow_due_soon: 1,
+      my_repair_open: 0, my_repair_pending_confirm: 0,
+      admin_pending_approval: null, admin_borrow_overdue: null,
+      admin_repair_pending_confirm: null, admin_inventory_open_plans: null,
+      admin_inventory_open_tasks: null, admin_disposal_open: null,
+      admin_sync_pending: null, leader_idle_count: null,
+      leader_idle_value: null, leader_disposal_open: null,
+      leader_disposal_by_status: null,
+    })
+  }
   if (u.includes('/auth/logout')) return json({})
   return json({})
 }
@@ -187,6 +199,10 @@ describe('Portal', () => {
     expect(wrapper.find('[data-testid="entry-exam"]').text()).toContain('考务成绩系统')
     expect(wrapper.find('[data-testid="entry-asset"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="entry-asset"]').text()).toContain('资产管理系统')
+    // 资产提醒卡已接线:首页信息区显示“资产提醒”,有数才画格子
+    expect(wrapper.find('[data-testid="portal-asset-hints"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('资产提醒')
+    expect(wrapper.text()).toContain('我的资产')
     // 没建成的系统不画占位卡片:入口卡正好三张
     expect(wrapper.findAll('.entry-card').length).toBe(3)
   })

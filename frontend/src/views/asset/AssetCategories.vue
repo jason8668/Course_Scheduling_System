@@ -76,6 +76,7 @@ onMounted(load)
     <NAlert type="info" style="margin-bottom: 12px">
       执行 GB/T 14885-2022 六大类;上报分类代码与名称已锁定,学校不得自行改动。
       二级及以下分类为示例种子,须以学校当期官方模板核定后冻结为 V1 版。
+      本页只读查看:建卡时填的分类代码以这里为准;财务科目对照、分类维护请联系财务,由财务在后台核定,不要自行改代码。
     </NAlert>
     <div class="ios-card" style="margin-top: 16px">
       <div class="ios-card-body">

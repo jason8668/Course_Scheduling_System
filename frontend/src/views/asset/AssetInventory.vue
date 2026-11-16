@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import {
-  NAlert, NButton, NDataTable, NInput, NSpace,
+  NAlert, NButton, NDataTable, NInput, NSelect, NSpace,
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import type { ApiError } from '@/api/client'
 import {
   closeInventoryPlan, computeInventoryDiffs, createInventoryPlan,
-  createInventoryTask, getInventoryPlan, getInventoryReport, listInventoryDifferences,
-  listInventoryPlans, resolveInventoryDifference, scanInventory,
-  unlabelledInventory,
+  createInventoryTask, getInventoryPlan, getInventoryReport, listAssetUsers,
+  listInventoryDifferences, listInventoryPlans, listInventoryTasks,
+  resolveInventoryDifference, scanInventory, unlabelledInventory,
 } from '@/api/asset'
 import type {
-  InventoryDifference, InventoryPlan, InventoryReport,
+  AssetUser, InventoryDifference, InventoryPlan, InventoryReport, InventoryTask,
 } from '@/api/asset'
 
 // 学校资产管理系统一期第 4 批:盘点清查(#48/#49/#51/#52)。
-// 未接路由(由收尾批统一接线)。范围外扫码明确提示、不静默计入;
+// 范围外扫码明确提示、不静默计入;
 // 盘点结果不自动同步到官方,报告只标注涉及已同步资产的差异。
 
 const resultMsg = ref('')
@@ -25,7 +25,8 @@ const planName = ref('')
 const planType = ref('全校盘点')
 const plans = ref<InventoryPlan[]>([])
 const planId = ref('')
-const assigneeId = ref('')
+const assigneeId = ref<number | null>(null)
+const assigneeIdText = ref('')
 const scopeDept = ref('')
 const scopeRoom = ref('')
 const dueAt = ref('')
@@ -35,12 +36,61 @@ const scanRoom = ref('')
 const unlabelledName = ref('')
 const unlabelledPhoto = ref('')
 const diffs = ref<InventoryDifference[]>([])
+const tasks = ref<InventoryTask[]>([])
 const resolveId = ref('')
 const resolveAction = ref('shortage')
 const resolveNote = ref('')
 const resolveName = ref('')
 const resolveCategory = ref('')
 const report = ref<InventoryReport | null>(null)
+
+const users = ref<AssetUser[]>([])
+const usersFailed = ref(false)
+const userOptions = computed(() => users.value.map((u) => ({
+  label: `${u.display_name}（${u.username}·${u.roles.join('/')}）`,
+  value: u.id,
+})))
+
+const resolveActionOptions = [
+  { label: '盘亏查责任', value: 'shortage' },
+  { label: '盘盈补建卡', value: 'surplus_create' },
+  { label: '更正位置', value: 'correct_location' },
+  { label: '更正保管人', value: 'correct_custodian' },
+  { label: '仅备注', value: 'note' },
+]
+
+async function loadUsers() {
+  try {
+    const data = await listAssetUsers()
+    users.value = Array.isArray(data) ? data : []
+  } catch {
+    usersFailed.value = true
+  }
+}
+
+function pickPlan(row: InventoryPlan) {
+  planId.value = String(row.id)
+  resultMsg.value = `已选中方案 ${row.plan_no},下方可拆任务、看差异、看报告`
+  errorMsg.value = ''
+  loadTasks()
+  loadDiffs()
+}
+
+async function loadTasks() {
+  if (!planId.value) {
+    tasks.value = []
+    return
+  }
+  try {
+    tasks.value = await listInventoryTasks({ plan_id: Number(planId.value) })
+  } catch (e) { showError(e) }
+}
+
+function pickTask(row: InventoryTask) {
+  taskId.value = String(row.id)
+  resultMsg.value = `已选中任务,负责人 ${row.assignee_name},请在下方扫标签码盘点`
+  errorMsg.value = ''
+}
 
 async function load() {
   try {
@@ -65,9 +115,15 @@ async function doCreatePlan() {
 }
 
 async function doCreateTask() {
+  const assignee = usersFailed.value ? Number(assigneeIdText.value) : assigneeId.value
+  if (!planId.value || !assignee) {
+    errorMsg.value = '请先点上方方案的“选中方案”,再选择盘点人'
+    resultMsg.value = ''
+    return
+  }
   try {
     const row = await createInventoryTask(Number(planId.value), {
-      assignee_id: Number(assigneeId.value),
+      assignee_id: assignee,
       scope_dept: scopeDept.value || undefined,
       scope_room_name: scopeRoom.value || undefined, due_at: dueAt.value,
     })
@@ -151,12 +207,17 @@ async function doShowPlan() {
   } catch (e) { showError(e) }
 }
 
-onMounted(load)
+onMounted(() => { load(); loadUsers() })
 </script>
 
 <template>
   <div class="ios-page">
     <h1 class="ios-title">盘点清查</h1>
+    <NAlert type="info" style="margin-bottom: 12px">
+      盘点五步:第 1 步创建盘点方案 → 第 2 步点方案的“选中方案”,拆任务分派到人 →
+      第 3 步盘点人点任务的“选中任务”,手机扫标签码盘点 → 第 4 步差异比对后逐条处理 →
+      第 5 步看报告、领导确认关闭。盘点结果不自动同步到官方,只标注涉及已同步资产的差异。
+    </NAlert>
     <NAlert v-if="errorMsg" type="error" style="margin-bottom: 12px">{{ errorMsg }}</NAlert>
     <NAlert v-if="resultMsg" type="success" style="margin-bottom: 12px">{{ resultMsg }}</NAlert>
     <div class="ios-card" style="margin-top: 16px">
@@ -174,20 +235,48 @@ onMounted(load)
         { title: '名称', key: 'name' },
         { title: '类型', key: 'plan_type' },
         { title: '状态', key: 'status' },
+        {
+          title: '操作', key: 'pick', width: 110,
+          render: (r: InventoryPlan) => h(
+            NButton, { size: 'small', onClick: () => pickPlan(r) }, () => '选中方案',
+          ),
+        },
       ]"
       :data="plans" :row-key="(r: InventoryPlan) => r.id"
     />
     <NSpace style="margin-top: 8px; margin-bottom: 12px">
       <NInput v-model:value="planId" placeholder="方案 id" style="width: 100px" />
-      <NInput v-model:value="assigneeId" placeholder="盘点人 id" style="width: 100px" />
+      <NSelect
+        v-if="!usersFailed" v-model:value="assigneeId" :options="userOptions"
+        filterable clearable placeholder="盘点人(按姓名选)" style="width: 200px"
+      />
+      <NInput v-else v-model:value="assigneeIdText" placeholder="盘点人 id" style="width: 100px" />
       <NInput v-model:value="scopeDept" placeholder="范围部门" style="width: 130px" />
       <NInput v-model:value="scopeRoom" placeholder="范围房间" style="width: 130px" />
       <NInput v-model:value="dueAt" placeholder="截止时间" style="width: 180px" />
       <NButton @click="doCreateTask">拆分任务分派到人</NButton>
       <NButton @click="doShowPlan">查看方案与差异</NButton>
     </NSpace>
+    <div v-if="planId" class="ios-section-title" style="padding: 0 0 6px; margin-top: 0px">该方案的任务</div>
+    <NDataTable v-if="planId" :bordered="false" :single-line="false"
+      :columns="[
+        { title: '任务', key: 'id', width: 80 },
+        { title: '负责人', key: 'assignee_name', width: 110 },
+        { title: '范围部门', key: 'scope_dept', width: 120 },
+        { title: '范围房间', key: 'scope_room_name', width: 120 },
+        { title: '截止', key: 'due_at', width: 160 },
+        { title: '状态', key: 'status', width: 90 },
+        {
+          title: '盘点', key: 'pick', width: 110,
+          render: (r: InventoryTask) => h(
+            NButton, { size: 'small', onClick: () => pickTask(r) }, () => '选中任务',
+          ),
+        },
+      ]"
+      :data="tasks" :row-key="(r: InventoryTask) => r.id"
+    />
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">手机扫码盘点</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">手机扫码盘点</div>
     <NSpace style="margin-bottom: 12px">
       <NInput v-model:value="taskId" placeholder="任务 id" style="width: 100px" />
       <NInput v-model:value="labelCode" placeholder="标签码(扫码)" style="width: 200px" />
@@ -195,14 +284,14 @@ onMounted(load)
       <NButton type="primary" @click="doScan">扫码盘点</NButton>
       <NButton @click="doComputeDiffs">五类差异自动比对</NButton>
     </NSpace>
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">未贴标资产现场补录拍照</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">未贴标资产现场补录拍照</div>
     <NSpace style="margin-bottom: 12px">
       <NInput v-model:value="unlabelledName" placeholder="补录资产名称" style="width: 180px" />
       <NInput v-model:value="unlabelledPhoto" placeholder="现场照片地址" style="width: 200px" />
       <NButton @click="doUnlabelled">补录进待核实清单</NButton>
     </NSpace>
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">五类差异清单与处理</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">五类差异清单与处理</div>
     <NDataTable :bordered="false" :single-line="false"
       :columns="[
         { title: '差异', key: 'diff_type' },
@@ -215,7 +304,7 @@ onMounted(load)
     />
     <NSpace style="margin-top: 8px; margin-bottom: 12px">
       <NInput v-model:value="resolveId" placeholder="差异 id" style="width: 100px" />
-      <NInput v-model:value="resolveAction" placeholder="shortage/surplus_create/correct_location/correct_custodian/note" style="width: 320px" />
+      <NSelect v-model:value="resolveAction" :options="resolveActionOptions" style="width: 160px" />
       <NInput v-model:value="resolveNote" placeholder="处理说明/责任说明" style="width: 180px" />
       <NInput v-model:value="resolveName" placeholder="盘盈补建卡名称" style="width: 140px" />
       <NInput v-model:value="resolveCategory" placeholder="盘盈分类代码" style="width: 120px" />
@@ -223,7 +312,7 @@ onMounted(load)
     </NSpace>
     <p>盘亏查责任、盘盈补建卡(走盘盈补记入库)、位置/保管人不符直接更正并留痕;差异未处理完不得关闭盘点。</p>
 
-    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20pxpx">盘点报告与关闭</div>
+    <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">盘点报告与关闭</div>
     <NSpace style="margin-bottom: 12px">
       <NButton @click="doReport">查看盘点报告</NButton>
       <NButton type="primary" @click="doClose">领导确认关闭盘点</NButton>

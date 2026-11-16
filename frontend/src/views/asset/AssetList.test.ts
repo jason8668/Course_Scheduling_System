@@ -1,6 +1,22 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import AssetList from './AssetList.vue'
+
+async function mountList() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/asset/ledger', name: 'asset-ledger', component: AssetList },
+      { path: '/asset/cards', name: 'asset-card', component: { template: '<div />' } },
+      { path: '/asset/intake', name: 'asset-intake', component: { template: '<div />' } },
+    ],
+  })
+  await router.push({ name: 'asset-ledger' })
+  await router.isReady()
+  const wrapper = mount(AssetList, { global: { plugins: [router] } })
+  return { wrapper, router }
+}
 
 const CARD = {
   id: 1, asset_code: 'ZC2026A02030001', official_code: null,
@@ -27,7 +43,7 @@ vi.stubGlobal('fetch', vi.fn((url: string) => {
 
 describe('资产台账页', () => {
   it('展示组合查询结果与闲置清单入口', async () => {
-    const wrapper = mount(AssetList)
+    const { wrapper } = await mountList()
     await flushPromises()
     expect(wrapper.text()).toContain('资产台账')
     expect(wrapper.text()).toContain('示例资产')
@@ -36,5 +52,16 @@ describe('资产台账页', () => {
     expect(wrapper.text()).toContain('勾选同步')
     expect(wrapper.text()).toContain('闲置清单')
     expect(wrapper.text()).toContain('共 1 件')
+  })
+
+  it('点资产编号进资产卡页', async () => {
+    const { wrapper, router } = await mountList()
+    await flushPromises()
+    const codeBtn = wrapper.findAll('button').find((b) => b.text() === 'ZC2026A02030001')
+    expect(codeBtn?.exists()).toBe(true)
+    await codeBtn!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('asset-card')
+    expect(router.currentRoute.value.query.id).toBe('1')
   })
 })
