@@ -81,6 +81,78 @@ const routes = [
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
       {
+        // 学校资产管理系统一期:14 页全部挂 MainLayout 边栏下。
+        // 权限在后端按动作校验 + 页内 403 提示,路由层只要求登录(与 exam 路由同口径)。
+        path: 'asset/workspace',
+        name: 'asset-workspace',
+        component: () => import('@/views/asset/AssetWorkspace.vue'),
+      },
+      {
+        path: 'asset/ledger',
+        name: 'asset-ledger',
+        component: () => import('@/views/asset/AssetList.vue'),
+      },
+      {
+        path: 'asset/cards',
+        name: 'asset-card',
+        component: () => import('@/views/asset/AssetCard.vue'),
+      },
+      {
+        path: 'asset/intake',
+        name: 'asset-intake',
+        component: () => import('@/views/asset/AssetIntake.vue'),
+      },
+      {
+        path: 'asset/labels',
+        name: 'asset-labels',
+        component: () => import('@/views/asset/AssetLabels.vue'),
+      },
+      {
+        path: 'asset/sync-pool',
+        name: 'asset-sync-pool',
+        component: () => import('@/views/asset/AssetSyncPool.vue'),
+      },
+      {
+        path: 'asset/circulation',
+        name: 'asset-circulation',
+        component: () => import('@/views/asset/AssetCirculation.vue'),
+      },
+      {
+        path: 'asset/transfer',
+        name: 'asset-transfer',
+        component: () => import('@/views/asset/AssetTransfer.vue'),
+      },
+      {
+        path: 'asset/repair',
+        name: 'asset-repair',
+        component: () => import('@/views/asset/AssetRepair.vue'),
+      },
+      {
+        path: 'asset/inventory',
+        name: 'asset-inventory',
+        component: () => import('@/views/asset/AssetInventory.vue'),
+      },
+      {
+        path: 'asset/disposal',
+        name: 'asset-disposal',
+        component: () => import('@/views/asset/AssetDisposal.vue'),
+      },
+      {
+        path: 'asset/sync',
+        name: 'asset-sync',
+        component: () => import('@/views/asset/AssetSync.vue'),
+      },
+      {
+        path: 'asset/categories',
+        name: 'asset-categories',
+        component: () => import('@/views/asset/AssetCategories.vue'),
+      },
+      {
+        path: 'asset/mobile',
+        name: 'asset-mobile',
+        component: () => import('@/views/asset/AssetMobile.vue'),
+      },
+      {
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('@/views/Dashboard.vue'),

@@ -71,6 +71,25 @@ const menuOptions = computed<MenuOption[]>(() => {
       menuItem('exam-exams', '考试管理'),
     ]
   }
+  // 资产系统:在 /asset/* 路由下只显示资产菜单,绝不把资产菜单项塞进排课菜单里。
+  if (route.path.startsWith('/asset/')) {
+    return [
+      menuItem('asset-workspace', '我的工作台'),
+      menuItem('asset-ledger', '资产台账'),
+      menuItem('asset-card', '资产卡'),
+      menuItem('asset-intake', '入库验收'),
+      menuItem('asset-labels', '标签打印'),
+      menuItem('asset-circulation', '领用借用'),
+      menuItem('asset-transfer', '调拨移交'),
+      menuItem('asset-repair', '维修保养'),
+      menuItem('asset-inventory', '盘点清查'),
+      menuItem('asset-disposal', '处置报废'),
+      menuItem('asset-sync-pool', '待同步池'),
+      menuItem('asset-sync', '同步执行'),
+      menuItem('asset-categories', '分类字典'),
+      menuItem('asset-mobile', '移动端'),
+    ]
+  }
   // 「我的」已并进仪表板(2026-10-30 Jason 定):教师菜单不再单列「我的」,
   // 路由 /my 改重定向到仪表板,旧通知里的 /my 链接落点仍在仪表板,不会断。
   const dashboard = menuItem('dashboard', '仪表板')
@@ -231,11 +250,12 @@ onBeforeUnmount(() => {
 })
 
 // 总主入口:顶栏只留一个“主入口”按钮点回总入口页,不再排课↔考务直接互切。
-// 系统名按当前所在系统显示:/exam/* 显示考务成绩系统,其余显示排课系统。
+// 系统名按当前所在系统显示:/exam/* 显示考务成绩系统,/asset/* 显示资产管理系统,其余显示排课系统。
 // 总入口页本身是独立页,不进 MainLayout,所以这里不再有 portal 分支。
 const isExamRoute = computed(() => route.path.startsWith('/exam/'))
+const isAssetRoute = computed(() => route.path.startsWith('/asset/'))
 const systemTitle = computed(() =>
-  isExamRoute.value ? '考务成绩系统' : '排课系统')
+  isExamRoute.value ? '考务成绩系统' : isAssetRoute.value ? '资产管理系统' : '排课系统')
 function goPortal() {
   router.push({ name: 'portal' })
 }

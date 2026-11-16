@@ -230,6 +230,18 @@ onMounted(() => { void load() })
             <span class="entry-arrow" aria-hidden="true">›</span>
           </div>
         </div>
+        <div
+          class="ios-card entry-card" data-testid="entry-asset"
+          @click="router.push({ name: 'asset-workspace' })"
+        >
+          <div class="ios-card-body entry-body">
+            <div class="entry-text">
+              <div class="ios-row-title">资产管理系统</div>
+              <div class="ios-row-sub">资产台账、入库验收、领用借用、盘点处置、手动同步</div>
+            </div>
+            <span class="entry-arrow" aria-hidden="true">›</span>
+          </div>
+        </div>
       </div>
     </section>
 

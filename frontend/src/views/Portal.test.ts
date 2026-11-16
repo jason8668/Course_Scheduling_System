@@ -148,6 +148,7 @@ function setup(roles: string[] = ['admin']) {
       { path: '/', name: 'portal', component: Portal },
       { path: '/scheduling-center', name: 'scheduling-center', component: { template: '<div />' } },
       { path: '/exam/students', name: 'exam-students', component: { template: '<div />' } },
+      { path: '/asset/workspace', name: 'asset-workspace', component: { template: '<div />' } },
       { path: '/exam/exams', name: 'exam-exams', component: { template: '<div />' } },
       { path: '/exam/exams/:id', name: 'exam-exam-detail', component: { template: '<div />' } },
       { path: '/exam/exams/:id/scores', name: 'exam-exam-scores', component: { template: '<div />' } },
@@ -176,7 +177,7 @@ async function mountPortal(roles: string[] = ['admin']) {
 }
 
 describe('Portal', () => {
-  it('只排两个已建成系统的入口卡,标题与副标题正确', async () => {
+  it('只排三个已建成系统的入口卡,标题与副标题正确', async () => {
     const { wrapper } = await mountPortal()
     expect(wrapper.text()).toContain('智慧教务系统')
     expect(wrapper.text()).toContain('一个账号，进各个系统')
@@ -184,11 +185,13 @@ describe('Portal', () => {
     expect(wrapper.find('[data-testid="entry-scheduling"]').text()).toContain('排课系统')
     expect(wrapper.find('[data-testid="entry-exam"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="entry-exam"]').text()).toContain('考务成绩系统')
-    // 没建成的系统不画占位卡片:入口卡正好两张
-    expect(wrapper.findAll('.entry-card').length).toBe(2)
+    expect(wrapper.find('[data-testid="entry-asset"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="entry-asset"]').text()).toContain('资产管理系统')
+    // 没建成的系统不画占位卡片:入口卡正好三张
+    expect(wrapper.findAll('.entry-card').length).toBe(3)
   })
 
-  it('点排课卡进排课中心,点考务卡进学生档案', async () => {
+  it('点排课卡进排课中心,点考务卡进学生档案,点资产卡进我的工作台', async () => {
     const { wrapper, router } = await mountPortal()
     await wrapper.find('[data-testid="entry-scheduling"]').trigger('click')
     await flushPromises()
@@ -197,6 +200,10 @@ describe('Portal', () => {
     await wrapper.find('[data-testid="entry-exam"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('exam-students')
+    await router.push('/')
+    await wrapper.find('[data-testid="entry-asset"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('asset-workspace')
   })
 
   it('独立页:不带系统边栏,只留账号操作(改密、退出)', async () => {
