@@ -70,10 +70,9 @@ def build_asset_query(db: Session, params: AssetSearchParams):
         end = datetime(params.acquired_year + 1, 1, 1, tzinfo=UTC)
         q = q.filter(AssetCard.acquired_date >= start,
                      AssetCard.acquired_date < end)
-    if params.min_value is not None:
-        q = q.filter(AssetCard.original_value >= params.min_value)
-    if params.max_value is not None:
-        q = q.filter(AssetCard.original_value <= params.max_value)
+    # 原值区间不在 SQL 里筛:original_value 是 Fernet 密文列(#84),
+    # SQL 比较(>=/<=)比的是密文字符串,结果无意义;调用方在取回后
+    # 用 apply_value_range 在 Python 侧解密后筛(见 query_assets)。
     if params.batch_no:
         q = q.filter_by(batch_no=params.batch_no)
     if params.is_booked is not None:
@@ -89,10 +88,64 @@ def build_asset_query(db: Session, params: AssetSearchParams):
     return q
 
 
-def apply_sort(q, sort_by: str, sort_dir: str):
-    """排序:非法字段抛 ValueError(调用方转 400)。"""
+def apply_value_range(cards: list[AssetCard], params: AssetSearchParams):
+    """原值区间筛选(Python 侧):original_value 是 Fernet 密文列(#84),
+    SQL 比较比的是密文字符串,结果无意义;解密后按数值筛。
+    None 原值按 SQL 语义排除(NULL 比较结果为 NULL,不过滤条件)。"""
+    out = list(cards)
+    if params.min_value is not None:
+        out = [c for c in out
+               if c.original_value is not None
+               and float(c.original_value) >= params.min_value]
+    if params.max_value is not None:
+        out = [c for c in out
+               if c.original_value is not None
+               and float(c.original_value) <= params.max_value]
+    return out
+
+
+def sort_cards(cards: list[AssetCard], sort_by: str, sort_dir: str):
+    """Python 侧排序:供加密字段(original_value)用,解密后的数值排。
+    None 的位置与 Postgres 默认一致:升序 NULLS LAST,降序 NULLS FIRST。
+    其它字段也可走这里(取回后按属性值排),但一般仍走 SQL 的 apply_sort。"""
     if sort_by not in SORTABLE_FIELDS:
         raise ValueError(f"非法排序字段 {sort_by}")
+    reverse = sort_dir == "desc"
+    if sort_by == "original_value":
+        key = lambda c: (c.original_value is None, float(c.original_value or 0))
+    else:
+        key = lambda c: (getattr(c, sort_by) is None, getattr(c, sort_by))
+    return sorted(cards, key=key, reverse=reverse)
+
+
+def query_assets(db: Session, params: AssetSearchParams) -> list[AssetCard]:
+    """组合查询 + 排序后的全部卡片(未分页)。
+
+    加密字段的筛选/排序在 Python 侧做:先由 build_asset_query 做其余
+    SQL 过滤(校级台账千级,全量取回可接受),再 apply_value_range 筛
+    原值区间,最后排序——original_value 用 sort_cards 按解密后的数值
+    排,其它字段的 SQL 排序在取回前已生效、顺序保留。调用方按
+    total=len(全部) 再切片分页,total 与分页语义不变。"""
+    q = build_asset_query(db, params)
+    if params.sort_by != "original_value":
+        q = apply_sort(q, params.sort_by, params.sort_dir)
+    cards = q.all()
+    cards = apply_value_range(cards, params)
+    if params.sort_by == "original_value":
+        cards = sort_cards(cards, params.sort_by, params.sort_dir)
+    return cards
+
+
+def apply_sort(q, sort_by: str, sort_dir: str):
+    """排序:非法字段抛 ValueError(调用方转 400)。
+
+    原值(original_value)是 Fernet 密文列(#84),SQL ORDER BY 排的是
+    密文字符串,顺序无意义:这里不加 SQL 排序,调用方须用 query_assets
+    (取回后 sort_cards 按解密后的数值排)。"""
+    if sort_by not in SORTABLE_FIELDS:
+        raise ValueError(f"非法排序字段 {sort_by}")
+    if sort_by == "original_value":
+        return q
     col = SORTABLE_FIELDS[sort_by]
     return q.order_by(col.asc() if sort_dir == "asc" else col.desc())
 

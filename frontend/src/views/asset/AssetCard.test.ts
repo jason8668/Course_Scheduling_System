@@ -80,4 +80,72 @@ describe('资产卡页', () => {
     expect(wrapper.text()).toContain('还没有打开任何资产卡')
     expect(wrapper.text()).toContain('打开资产卡')
   })
+
+  // ── 附件直传 #12 ──
+  it('有“上传附件”按钮:选文件后调 multipart 上传端点,成功显示已上传件数', async () => {
+    const uploaded = [{
+      id: 99, asset_id: 1, file_type: '设备照片', file_name: 'photo.jpg',
+      file_path: '1/photo.jpg', file_size: 4, acceptance_id: null,
+      uploaded_by: 1, created_at: null,
+    }]
+    const fetchMock = vi.fn((url: string, _init?: RequestInit) => {
+      if (url.includes('/attachments/upload')) {
+        return Promise.resolve({
+          ok: true, status: 201, json: () => Promise.resolve(uploaded),
+        })
+      }
+      if (url.includes('/attachments')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      if (url.includes('/timeline')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(CARD) })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = await mountCard()
+    await flushPromises()
+    expect(wrapper.text()).toContain('上传附件')
+    const input = wrapper.find('input[type="file"]')
+    expect(input.exists()).toBe(true)
+    Object.defineProperty(input.element, 'files', {
+      value: [new File(['fake'], 'photo.jpg', { type: 'image/jpeg' })],
+    })
+    await input.trigger('change')
+    await flushPromises()
+    const uploadCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/attachments/upload'))
+    expect(uploadCall).toBeDefined()
+    expect((uploadCall![1] as RequestInit).body).toBeInstanceOf(FormData)
+    expect(wrapper.text()).toContain('已上传 1 个附件')
+  })
+
+  it('上传失败显示后端返回的原因', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/attachments/upload')) {
+        return Promise.resolve({
+          ok: false, status: 400,
+          json: () => Promise.resolve({ detail: '不支持的文件类型: bad.exe' }),
+        })
+      }
+      if (url.includes('/attachments')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      if (url.includes('/timeline')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(CARD) })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = await mountCard()
+    await flushPromises()
+    const input = wrapper.find('input[type="file"]')
+    Object.defineProperty(input.element, 'files', {
+      value: [new File(['fake'], 'bad.exe', { type: 'application/octet-stream' })],
+    })
+    await input.trigger('change')
+    await flushPromises()
+    expect(wrapper.text()).toContain('不支持的文件类型: bad.exe')
+    expect(wrapper.text()).not.toContain('已上传')
+  })
 })

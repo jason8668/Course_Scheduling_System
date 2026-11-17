@@ -20,9 +20,10 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
+from app.services.asset_crypto import EncryptedField
 
 
 class AssetStatus(enum.StrEnum):
@@ -88,19 +89,40 @@ class AssetCard(Base):
     supplier: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     # ── 财务信息区 ──
-    original_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    #: 原值(#84):落库为 Fernet 密文(Text),Python 侧仍是 float。
+    original_value: Mapped[float | None] = mapped_column(
+        EncryptedField("number"), nullable=True
+    )
     #: 资金来源,值域见 asset_dictionaries(funding_source)。
     funding_source: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    voucher_no: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: 入账凭证号(#84):落库为 Fernet 密文(Text),Python 侧仍是 str。
+    voucher_no: Mapped[str | None] = mapped_column(EncryptedField("text"), nullable=True)
     depreciation_method: Mapped[str | None] = mapped_column(String(32), nullable=True)
     depreciation_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
     accumulated_depreciation: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
-    net_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    #: 净值(#84):落库为 Fernet 密文(Text),Python 侧仍是 float。
+    net_value: Mapped[float | None] = mapped_column(EncryptedField("number"), nullable=True)
 
     # ── 使用信息区 ──
     status: Mapped[str] = mapped_column(String(16), default=AssetStatus.in_stock.value, index=True)
+    #: 管理部门自由字符串(兼容保留);口径以 manage_dept_id 指向的字典行为准。
     manage_dept: Mapped[str | None] = mapped_column(String(64), nullable=True)
     use_dept: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: 部门字典外键(#76):按名字从原字符串回填;删字典行时 SET NULL。
+    manage_dept_id: Mapped[int | None] = mapped_column(
+        ForeignKey("asset_departments.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    use_dept_id: Mapped[int | None] = mapped_column(
+        ForeignKey("asset_departments.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    manage_department: Mapped["AssetDepartment | None"] = relationship(
+        "AssetDepartment", foreign_keys=[manage_dept_id],
+    )
+    use_department: Mapped["AssetDepartment | None"] = relationship(
+        "AssetDepartment", foreign_keys=[use_dept_id],
+    )
     custodian_user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )

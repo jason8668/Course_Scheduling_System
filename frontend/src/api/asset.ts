@@ -3,6 +3,7 @@
 // 注意:client.request 会在 path 前补 /api,故此处 path 以 /asset 开头。
 
 import { apiDelete, apiGet, apiPost } from '@/api/client'
+import type { ApiError } from '@/api/client'
 
 export interface AssetCategory {
   id: number
@@ -269,6 +270,35 @@ export const uploadAssetAttachment = (assetId: number, body: {
   file_type: string; file_name: string; file_path: string; file_size?: number
 }): Promise<AssetAttachment> =>
   apiPost<AssetAttachment>(`/asset/assets/${assetId}/attachments`, body)
+/** 附件直传(#12):multipart 多文件上传。client.request 只发 JSON,故此处直接用
+ * fetch 发 FormData;失败时抛后端返回的 detail,调用方直接展示。 */
+export const uploadAssetAttachmentFiles = async (
+  assetId: number,
+  files: File[],
+  fileType = '其他',
+): Promise<AssetAttachment[]> => {
+  const form = new FormData()
+  for (const f of files) form.append('files', f)
+  form.append('file_type', fileType)
+  const resp = await fetch(`/api/asset/assets/${assetId}/attachments/upload`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  })
+  if (!resp.ok) {
+    let detail: string | undefined
+    try {
+      detail = (await resp.json())?.detail
+    } catch {
+      detail = undefined
+    }
+    const err = new Error(detail || `API 错误 ${resp.status}`) as ApiError
+    err.status = resp.status
+    err.detail = detail
+    throw err
+  }
+  return resp.json() as Promise<AssetAttachment[]>
+}
 export const deleteAssetAttachment = (attachmentId: number): Promise<{ deleted: boolean }> =>
   apiDelete<{ deleted: boolean }>(`/asset/attachments/${attachmentId}`)
 

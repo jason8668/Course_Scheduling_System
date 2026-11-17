@@ -52,6 +52,7 @@ from app.models.asset_ledger import (
     AssetSyncSelection,
     IntakeType,
 )
+from app.models.asset_department import AssetDepartment
 from app.models.asset_disposal import (
     AssetDisposalAppraisal,
     AssetDisposalOrder,
@@ -257,6 +258,7 @@ __all__ = [
     "TeacherSwapReminderLog",
     # ── 学校资产管理系统一期地基批(#5/#10/#11/#15/#16/#17/#76/#78/#79/#80/#81/#82/#85/#86/#104)
     "AssetCard",
+    "AssetDepartment",
     "AssetStatus",
     "BorrowStatus",
     "SyncStatus",

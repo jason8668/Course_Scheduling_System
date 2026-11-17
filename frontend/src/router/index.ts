@@ -148,6 +148,12 @@ const routes = [
         component: () => import('@/views/asset/AssetCategories.vue'),
       },
       {
+        // 部门字典(#76):资产卡管理部门/使用部门的口径来源。
+        path: 'asset/departments',
+        name: 'asset-departments',
+        component: () => import('@/views/asset/AssetDepartments.vue'),
+      },
+      {
         path: 'asset/mobile',
         name: 'asset-mobile',
         component: () => import('@/views/asset/AssetMobile.vue'),

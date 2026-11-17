@@ -20,6 +20,7 @@ dependencies = [
     "bcrypt>=4.2,<6",
     "itsdangerous>=2.2,<3",
     "openpyxl>=3.1,<4",
+    "cryptography>=42,<47",
     # 二维码标签图(#28):segno 纯 Python、无依赖,编标签码为 QR(SVG)。
     "segno>=1.6,<2",
     # 排课引擎(M3-2)。wheel 约 29MB,amd64/arm64 皆有 manylinux wheel。

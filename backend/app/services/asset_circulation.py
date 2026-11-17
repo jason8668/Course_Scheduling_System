@@ -9,8 +9,8 @@
 - 提醒写入 create_reminder:同(kind, target_type, target_id, user_id)
   未读提醒已存在时不重复建,只在 level 升级时更新 level。
 - 扫描端点均为手动触发(POST /workspace/scan-*,见 asset_workspace),
-  未接入定时 worker:系统现有 worker 模式在 app/workers/scheduler.py,
-  后续批次把这三个扫描函数挂成定时任务即可,函数签名已按 job 形式写好。
+  同时由定时 worker 每日 08:00 全量跑一遍(见 workers/asset_scan_job.py
+  与 workers/scheduler.py 的 ASSET_SCAN_JOB_ID)。
 """
 
 import logging
@@ -289,9 +289,14 @@ def scan_warranty(db: Session, user: User | None = None) -> dict:
 
 
 def scan_reservation_release(db: Session, user: User | None = None) -> dict:
-    """预约自动释放(#33):到期未领用的预约标 已释放并记日志。"""
+    """预约自动释放(#33):到期未领用的预约标 已释放并记日志,
+    同时钉钉推送预约人(此前只写站内提醒,预约人收不到钉钉)。
+    返回 {released, pushed}。"""
+    from app.services import asset_notify as notify_svc
+
     now = datetime.now(UTC)
     released = []
+    pushed = {"sent": 0, "skipped": 0, "failed": 0}
     rows = db.query(AssetReservation).filter_by(
         status=ReservationStatus.PENDING).all()
     for row in rows:
@@ -310,13 +315,20 @@ def scan_reservation_release(db: Session, user: User | None = None) -> dict:
             content=f"预约单 {row.doc_no} 到期未领用,已自动释放。",
             level="一般",
         )
+        result = notify_svc.push_to_user(
+            db, row.reserver_id, f"预约已自动释放:{row.doc_no}",
+            f"预约单 {row.doc_no} 到期未领用,已自动释放。",
+        )
+        pushed["sent"] += int(result["sent"])
+        pushed["skipped"] += int(result["skipped"])
+        pushed["failed"] += int(result["failed"])
         log_asset_action(
             db, user, "asset_reservation_release",
             target_type="reservation", target_id=row.id,
             detail=f"预约到期未领用自动释放 {row.doc_no}",
         )
     db.flush()
-    return {"released": released}
+    return {"released": released, "pushed": pushed}
 
 
 def scan_approval_overdue_reminders(db: Session, user: User | None = None) -> dict:

@@ -38,7 +38,10 @@ class Settings(BaseSettings):
     # 备份(M5-2):存放目录(api 与 worker 共挂的 volume)、保留份数、每日自动备份时刻
     backup_dir: str = "/backups"
     backup_keep: int = 30
+    asset_field_key: str = ""  # 资产字段级加密(#84) Fernet key,只从环境变数 ASSET_FIELD_KEY 读
     backup_hour: int = 2  # 每日自动备份的小时(学校时区)
+    # 附件直传(#12):附件本体落盘目录(api 与 worker 共挂的 volume)
+    asset_attachment_dir: str = "/data/asset-attachments"
 
     # 资料库与伫列
     database_url: str = "postgresql+psycopg://scheduler:scheduler@postgres:5432/scheduler"

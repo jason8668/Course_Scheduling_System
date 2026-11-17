@@ -5,12 +5,15 @@
 状态转移仍只走 B1 的 transition 端点,本批不设直接改状态端点。
 """
 
+import re
+from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_active_user
+from app.core.config import settings
 from app.core.db import get_db
 from app.models.asset_card import AssetCard
 from app.models.asset_ledger import ATTACHMENT_TYPES, AssetAttachment
@@ -85,13 +88,13 @@ def _search_params(
     )
 
 
-def _apply_search(db: Session, params: AssetSearchParams):
+def _search_cards(db: Session, params: AssetSearchParams):
+    """组合查询 + 排序后的全部卡片(未分页):加密字段的筛选/排序在
+    服务层 Python 侧做(query_assets),调用方再按 total 切片分页。"""
     try:
-        q = ledger_svc.build_asset_query(db, params)
-        q = ledger_svc.apply_sort(q, params.sort_by, params.sort_dir)
+        return ledger_svc.query_assets(db, params)
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
-    return q
 
 
 # ── 多维组合查询 #8 ──────────────────────────────
@@ -131,9 +134,9 @@ def search_assets(
         max_value, batch_no, is_booked, is_idle, q,
         sort_by, sort_dir, limit, offset,
     )
-    query = _apply_search(db, params)
-    total = query.count()
-    rows = query.offset(offset).limit(limit).all()
+    query = _search_cards(db, params)
+    total = len(query)
+    rows = query[params.offset:params.offset + params.limit]
     return {"items": [AssetCardOut.model_validate(r) for r in rows], "total": total}
 
 
@@ -173,8 +176,8 @@ def export_assets(
         max_value, batch_no, is_booked, is_idle, q,
         sort_by, sort_dir, 5000, 0,
     )
-    query = _apply_search(db, params)
-    rows = query.all()
+    query = _search_cards(db, params)
+    rows = query
     data = ledger_svc.ledger_to_xlsx(rows, include_ext=include_ext)
     log_asset_action(
         db, user, "asset_ledger_export",
@@ -231,6 +234,118 @@ def upload_attachment(
     )
     db.commit()
     return row
+
+
+# ── 附件直传 #12 ──────────────────────────────
+#: 单个附件上限 20MB。
+MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024
+#: 允许上传的扩展名(小写,含点)。
+ALLOWED_ATTACHMENT_EXTS = frozenset({
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+})
+
+_UNSAFE_NAME_CHARS = re.compile(r"[^A-Za-z0-9_.\-\u4e00-\u9fff]+")
+
+
+def _safe_attachment_name(filename: str) -> str:
+    """文件名安全处理:只取 basename 防路径穿越,非法字符改下划线,
+    扩展名小写,主名截断到 100 字,空主名用 file 兜底。"""
+    name = Path(filename or "").name
+    stem, ext = Path(name).stem, Path(name).suffix.lower()
+    stem = _UNSAFE_NAME_CHARS.sub("_", stem).strip("._")[:100] or "file"
+    return f"{stem}{ext}"
+
+
+def _unique_attachment_path(asset_dir: Path, filename: str) -> Path:
+    """重名加数字后缀:photo.jpg 已存在 → photo_1.jpg、photo_2.jpg……"""
+    candidate = asset_dir / filename
+    if not candidate.exists():
+        return candidate
+    stem, ext = Path(filename).stem, Path(filename).suffix
+    n = 1
+    while True:
+        candidate = asset_dir / f"{stem}_{n}{ext}"
+        if not candidate.exists():
+            return candidate
+        n += 1
+
+
+@router.post("/assets/{asset_id}/attachments/upload",
+             response_model=list[AssetAttachmentOut],
+             status_code=status.HTTP_201_CREATED)
+async def upload_attachment_files(
+    asset_id: int,
+    files: list[UploadFile] = File(...),
+    file_type: str = Form("其他"),
+    db: Session = Depends(get_db),
+    user: User = Depends(asset_writer),
+):
+    """附件直传(#12):multipart 多文件上传,与 JSON 归档端点共存。
+
+    每个文件校验扩展名与大小(≤20MB),落盘到
+    {asset_attachment_dir}/{asset_id}/,数据库只存相对路径
+    {asset_id}/{文件名};每件记一条 asset_attachment_upload 审计。
+    不做病毒扫描:本机无杀毒引擎,不假装已做。
+    """
+    card = db.get(AssetCard, asset_id)
+    if card is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "资产卡不存在")
+    if file_type not in ATTACHMENT_TYPES:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"附件类型须为 {'/'.join(sorted(ATTACHMENT_TYPES))}",
+        )
+    if not files:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "未选择文件")
+    # 先全部校验(扩展名 + 大小),任一不合格整批 400,不落盘、不建行。
+    payloads: list[tuple[str, bytes]] = []
+    for upload in files:
+        safe_name = _safe_attachment_name(upload.filename or "")
+        ext = Path(safe_name).suffix.lower()
+        if ext not in ALLOWED_ATTACHMENT_EXTS:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"不支持的文件类型:{upload.filename or safe_name}"
+                f"(仅支持 {', '.join(sorted(ALLOWED_ATTACHMENT_EXTS))})",
+            )
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = await upload.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_ATTACHMENT_SIZE:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    f"文件过大:{upload.filename or safe_name}"
+                    f"(单文件上限 {MAX_ATTACHMENT_SIZE // (1024 * 1024)}MB)",
+                )
+            chunks.append(chunk)
+        payloads.append((safe_name, b"".join(chunks)))
+    asset_dir = Path(settings.asset_attachment_dir) / str(asset_id)
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[AssetAttachment] = []
+    for safe_name, content in payloads:
+        target = _unique_attachment_path(asset_dir, safe_name)
+        target.write_bytes(content)
+        row = AssetAttachment(
+            asset_id=asset_id, file_type=file_type,
+            file_name=target.name,
+            file_path=f"{asset_id}/{target.name}",
+            file_size=len(content), uploaded_by=user.id,
+        )
+        db.add(row)
+        db.flush()
+        log_asset_action(
+            db, user, "asset_attachment_upload",
+            target_type="asset_attachment", target_id=row.id,
+            detail=f"直传附件 {file_type}:{target.name} 到 {card.asset_code}",
+        )
+        rows.append(row)
+    db.commit()
+    return rows
 
 
 @router.delete("/attachments/{attachment_id}", response_model=dict)

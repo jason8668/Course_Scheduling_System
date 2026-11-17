@@ -6,6 +6,7 @@ import type { DataTableColumns } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
+import { apiGet } from '@/api/client'
 import {
   assetExportUrl, bulkUpdateAssets, listIdleAssets, refreshIdleAssets,
   searchAssets, selectForSync,
@@ -54,6 +55,20 @@ const syncOptions = [
   { label: '同步失败', value: '同步失败' },
   { label: '已取消同步', value: '已取消同步' },
 ]
+// 部门筛选改下拉(#76):口径走部门字典,不再手填自由文本。
+const deptOptions = ref([{ label: '全部部门', value: '' }])
+
+async function loadDepts() {
+  try {
+    const depts = await apiGet<Array<{ name: string }>>('/asset/departments?is_active=true')
+    deptOptions.value = [
+      { label: '全部部门', value: '' },
+      ...depts.map((d) => ({ label: d.name, value: d.name })),
+    ]
+  } catch {
+    deptOptions.value = [{ label: '全部部门', value: '' }]
+  }
+}
 
 const columns: DataTableColumns<AssetCard> = [
   { type: 'selection', width: 40 },
@@ -148,7 +163,7 @@ async function doRefreshIdle() {
   await load()
 }
 
-onMounted(() => { load(); loadIdle() })
+onMounted(() => { load(); loadIdle(); loadDepts() })
 </script>
 
 <template>
@@ -168,7 +183,7 @@ onMounted(() => { load(); loadIdle() })
     <NSpace style="margin-bottom: 12px" vertical>
       <NSpace>
         <NInput v-model:value="categoryFilter" placeholder="分类代码(如 A0203)" style="width: 180px" />
-        <NInput v-model:value="deptFilter" placeholder="管理部门" style="width: 140px" />
+        <NSelect v-model:value="deptFilter" :options="deptOptions" placeholder="管理部门" style="width: 140px" />
         <NInput v-model:value="custodianFilter" placeholder="保管人" style="width: 120px" />
         <NInput v-model:value="keyword" placeholder="名称/编号关键词" style="width: 180px" />
         <NInput v-model:value="minValue" placeholder="原值下限" style="width: 110px" />

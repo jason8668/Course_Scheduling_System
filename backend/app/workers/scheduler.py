@@ -28,6 +28,8 @@ HOLIDAY_SYNC_JOB_ID = "holiday-sync"
 HOLIDAY_SYNC_INTERVAL = timedelta(days=1)
 MONTHLY_HOURS_JOB_ID = "monthly-hours"
 MONTHLY_HOURS_HOUR = 17  # 每月最后一天 17:00(下班时)发月度课时确认
+ASSET_SCAN_JOB_ID = "asset-daily-scan"
+ASSET_SCAN_HOUR = 8  # 每日资产扫描时刻(学校时区);与备份 02:00 错开
 
 
 def _interval() -> timedelta:
@@ -51,6 +53,7 @@ def heartbeat() -> None:
         _ensure_class_reminder_scheduled()
         _ensure_holiday_sync_scheduled()
         _ensure_monthly_hours_scheduled()
+        _ensure_asset_scan_scheduled()
     finally:
         _schedule_next()  # 无论本次是否出错,下一次心跳一定排入
 
@@ -164,6 +167,32 @@ def _ensure_monthly_hours_scheduled() -> None:
         logger.warning("检查/补排月度课时确认失败(Redis 不可用?)")
 
 
+def _next_asset_scan_time() -> datetime:
+    """学校时区的下一个 08:00(unaware,供 enqueue_at)。"""
+    now = clock.school_now().replace(tzinfo=None)
+    target = now.replace(hour=ASSET_SCAN_HOUR, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return target
+
+
+def schedule_asset_scan() -> None:
+    """把下一次资产扫描排入(下一个 08:00);固定 job_id,重复排入会覆盖而非堆叠。"""
+    from app.workers.asset_scan_job import asset_scan_job
+    ops_queue.enqueue_at(_next_asset_scan_time(), asset_scan_job, job_id=ASSET_SCAN_JOB_ID)
+
+
+def _ensure_asset_scan_scheduled() -> None:
+    """心跳兜底:资产扫描链若断了,在这里补排回去(断链会漏一整天的逾期/到期提醒)。"""
+    try:
+        registry = ScheduledJobRegistry(queue=ops_queue)
+        if ASSET_SCAN_JOB_ID not in set(registry.get_job_ids()):
+            schedule_asset_scan()
+            logger.warning("侦测到资产扫描未排入,已补排,下次 %s", _next_asset_scan_time())
+    except Exception:  # noqa: BLE001 - 自愈失败不该让心跳挂掉
+        logger.warning("检查/补排资产扫描失败(Redis 不可用?)")
+
+
 def ensure_scheduled() -> None:
     """ops worker 启动时呼叫:确保心跳、备份、提醒与假日同步已排入(已存在则略过)。"""
     _drop_legacy_default_schedules()
@@ -191,5 +220,12 @@ def ensure_scheduled() -> None:
             # 月底时刻;跑完任务自己续期到下个月底,心跳兜底防断链。
             schedule_monthly_hours()
             logger.info("已排入月度课时确认,下次 %s", _next_monthly_hours_time())
+        if ASSET_SCAN_JOB_ID not in pending:
+            # 首次排入立即跑一次(验证 7 类扫描链路与钉钉推送),跑完任务自己续期
+            # 到下一个 08:00;心跳兜底仍用下一个 08:00(断链补排不急于一时,扫描是日级任务)。
+            from app.workers.asset_scan_job import asset_scan_job
+
+            ops_queue.enqueue(asset_scan_job, job_id=ASSET_SCAN_JOB_ID)
+            logger.info("已排入资产每日扫描(首次立即跑,之后每日 %s:00)", ASSET_SCAN_HOUR)
     except Exception:  # noqa: BLE001 - Redis 不可用不该让 worker 起不来
         logger.warning("排入定时任务失败(Redis 不可用?);背景任务仍可运作")

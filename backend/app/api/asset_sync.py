@@ -429,18 +429,22 @@ def unsynced_stats(
     user: User = Depends(get_active_user),
 ):
     """未同步资产隔离管理(#100):未同步资产仅校内管理,不进入上报文件、
-    不计入月报/年报上报口径;本端点按分类汇总件数/总价值供校内统计。"""
-    from sqlalchemy import func as _func
+    不计入月报/年报上报口径;本端点按分类汇总件数/总价值供校内统计。
 
-    rows = db.query(
-        AssetCard.category_code,
-        _func.count(AssetCard.id),
-        _func.coalesce(_func.sum(AssetCard.original_value), 0),
-    ).filter(AssetCard.sync_status == SyncStatus.unsynced.value).group_by(
-        AssetCard.category_code).order_by(AssetCard.category_code).all()
+    原值是 Fernet 密文列(#84):Postgres 上 func.sum(text) 直接报
+    sum(text) 不存在而 500,故改为 Python 侧解密后按分类汇总
+    (校级数据量,全量取回可接受);返回结构与 UnsyncedStatOut 不变。"""
+    cards = db.query(AssetCard).filter(
+        AssetCard.sync_status == SyncStatus.unsynced.value).all()
+    totals: dict[str, dict] = {}
+    for card in cards:
+        entry = totals.setdefault(
+            card.category_code, {"count": 0, "total_value": 0.0})
+        entry["count"] += 1
+        entry["total_value"] += float(card.original_value or 0)
     return [UnsyncedStatOut(
-        category_code=r[0], count=r[1], total_value=float(r[2] or 0),
-    ) for r in rows]
+        category_code=code, count=v["count"], total_value=v["total_value"],
+    ) for code, v in sorted(totals.items())]
 
 
 # ── #102 同步日志查询(只读,无删除) ──────────────────────────────

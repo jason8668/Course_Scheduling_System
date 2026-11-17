@@ -324,6 +324,7 @@ async function onDelete(ev: CalendarEvent) {
 
 <template>
   <div class="ios-page">
+    <div class="cal-wrap">
     <div class="cal-back">
       <router-link data-testid="calendar-back-portal" :to="{ name: 'portal' }">← 返回主入口</router-link>
     </div>
@@ -542,10 +543,17 @@ async function onDelete(ev: CalendarEvent) {
         </n-space>
       </template>
     </n-modal>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* 居中定宽容器:本页是顶层独立路由,不套 MainLayout 边栏,.ios-page 本身
+   不留左右边距(左右留白本来靠 MainLayout 内容区的 24px 内边距)。
+   参考 Portal.vue 的 .portal-wrap(1024px);本页是两列月框,定宽放宽到
+   1280px,1440 宽桌面左右各留 80px;底部 40px 加上 .ios-page 自带的
+   padding-bottom:32px,合计 72px,与 Portal 底部留白一致。 */
+.cal-wrap { max-width: 1280px; margin: 0 auto; padding: 20px 24px 40px; }
 .cal-back { margin-bottom: 8px; font-size: 14px; }
 .cal-back a { color: #007aff; text-decoration: none; }
 .cal-legend { font-size: 12px; padding: 2px 10px; border-radius: 999px; }

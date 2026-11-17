@@ -40,12 +40,13 @@ from app.services.users import create_user
 
 PW = "pw-123456"
 
-#: 迁移 0039~0043 建的资产表(ORM 元数据里的全部 asset_* 表)。
+#: 迁移 0039~0044 建的资产表(ORM 元数据里的全部 asset_* 表)。
 EXPECTED_ASSET_TABLES = [
     "asset_acceptances", "asset_approval_flows", "asset_approval_instances",
     "asset_approval_nodes", "asset_attachments", "asset_batches",
     "asset_borrow_orders", "asset_cards", "asset_categories",
-    "asset_category_finance_map", "asset_code_rules", "asset_dictionaries",
+    "asset_category_finance_map", "asset_code_rules", "asset_departments",
+    "asset_dictionaries",
     "asset_disposal_appraisals", "asset_disposal_orders",
     "asset_disposal_packages", "asset_disposal_recoveries",
     "asset_field_mappings", "asset_group_custodies", "asset_handover_items",
@@ -119,7 +120,7 @@ def users(env):
 
 # ── #83 备份覆盖核查 ──────────────────────────────
 def test_backup_covers_all_asset_tables():
-    """整库 pg_dump 按构造覆盖全部资产表:ORM 元数据里的 36 张 asset_*
+    """整库 pg_dump 按构造覆盖全部资产表:ORM 元数据里的 37 张 asset_*
     表一个不少;create_backup 是无表过滤的全库 dump。"""
     tables = {t for t in Base.metadata.tables if t.startswith("asset_")}
     assert tables == set(EXPECTED_ASSET_TABLES)
@@ -269,11 +270,14 @@ def test_approval_overdue_scan_pushes_dingtalk(env, users, monkeypatch):
 
 # ── #115 共用底座复用点 ──────────────────────────────
 def test_shared_base_reuse():
-    """资产卡复用智慧教务 rooms/users,无自建组织/部门表。"""
+    """资产卡复用智慧教务 rooms/users,无自建组织/教师表;部门字典例外
+    (#76):部门一级有自建字典表 asset_departments,资产卡以
+    manage_dept_id / use_dept_id 外键指向它。"""
     fks = {str(fk.column) for fk in AssetCard.__table__.foreign_keys}
     assert "rooms.id" in fks
     assert "users.id" in fks
-    assert "asset_departments" not in Base.metadata.tables
+    assert "asset_departments.id" in fks
+    assert "asset_departments" in Base.metadata.tables
     assert "asset_rooms" not in Base.metadata.tables
     assert "asset_teachers" not in Base.metadata.tables
     asset_roles = {r for r in Role if r.value.startswith("asset_")}

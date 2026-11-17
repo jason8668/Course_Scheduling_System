@@ -134,7 +134,7 @@ onMounted(async () => {
 
       <p class="summary">共 {{ events.length }} 条活动</p>
 
-      <div v-if="semesterMonths.length" class="cal-frames">
+      <div v-if="semesterMonths.length" class="cal-frames" data-testid="cal-frames">
         <div v-for="frame in monthFrames" :key="`${frame.year}-${frame.month}`" class="month-frame">
           <h3 class="month-frame-title">{{ frame.label }}</h3>
           <table class="frame-grid">
@@ -197,13 +197,15 @@ onMounted(async () => {
 .summary { font-size: 13px; margin: 0 0 14px; padding: 0 4px; }
 .weekno-col { width: 52px; text-align: center; }
 .frame-grid td.weekno-col { background: #f4f4f4; font-size: 12px; vertical-align: middle; }
+/* 月框竖向排列：一个月一行、依次往下排(Jason 2026-11-17 定，
+   之前两月一行的横排版式已改掉)。 */
 .cal-frames { margin-bottom: 18px; }
-.month-frame { margin-bottom: 16px; }
+.month-frame { margin-bottom: 14px; }
 .month-frame-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; padding-left: 8px; border-left: 4px solid #000; }
 .frame-grid { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
 .frame-grid th, .frame-grid td { border: 1px solid #000; padding: 4px 5px; text-align: left; vertical-align: top; }
 .frame-grid th { background: #eee; text-align: center; font-size: 13px; }
-.frame-grid td { height: 52px; }
+.frame-grid td { height: 40px; }
 .frame-grid td.is-out { color: #999; }
 .f-day { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
 .f-ev { font-size: 11px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -213,11 +215,34 @@ onMounted(async () => {
 .empty { text-align: center; padding: 40px 0; font-size: 15px; }
 
 @media print {
-  @page { size: A4 portrait; margin: 12mm; }
-  /* 打印时保留活动格底色（浏览器默认会去掉背景色）。 */
-  .frame-grid td { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* 一张 A4 竖向放下整学期(Jason 2026-11-17 定)：月框一个月一行竖向往下排，
+     字比上一版再小一点；特殊日期只在日期格里着色写标题，
+     下面不另列一行一行的明细（明细表 2026-11-04 已拿掉，本版保持没有）。 */
+  @page { size: A4 portrait; margin: 6mm 10mm; }
+  /* 打印时保留活动格底色（浏览器默认会去掉背景色）。
+     注意：本 style 是 scoped，body 得用 :global 才能命中全局 body，
+     否则页底会透出全局的浅蓝底色。 */
+  :global(body) { background: #fff !important; }
+  .frame-grid td { print-color-adjust: exact; -webkit-print-color-adjust: exact; overflow: hidden; }
   .no-print { display: none !important; }
   .sheet { max-width: none; padding: 0; }
-  .month-frame { page-break-inside: avoid; }
+  .head { margin-bottom: 6px; }
+  .school { font-size: 15px; margin-bottom: 0; }
+  .title { font-size: 13px; margin-bottom: 2px; }
+  .meta { font-size: 9px; }
+  .summary { font-size: 9px; margin-bottom: 6px; }
+  .cal-frames { margin-bottom: 8px; }
+  .month-frame { break-inside: avoid; page-break-inside: avoid; margin-bottom: 8px; }
+  .month-frame-title { font-size: 10px; margin-bottom: 1px; }
+  .frame-grid { font-size: 9px; }
+  .frame-grid th { font-size: 9px; }
+  .frame-grid th, .frame-grid td { padding: 1px 3px; }
+  .frame-grid td { height: 23px; }
+  .weekno-col { width: 44px; }
+  .frame-grid td.weekno-col { font-size: 9px; }
+  .f-day { font-size: 9px; line-height: 1.2; margin-bottom: 0; }
+  .f-ev { font-size: 8px; line-height: 1.2; }
+  .f-mark { font-size: 8px; line-height: 1.2; }
+  .foot { font-size: 9px; margin-top: 6px; }
 }
 </style>

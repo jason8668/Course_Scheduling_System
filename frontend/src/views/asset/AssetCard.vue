@@ -7,7 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
 import {
   deleteAssetAttachment, getAssetCard, getAssetTimeline, listAssetAttachments, reprintAssetLabel,
-  selectForSync, uploadAssetAttachment,
+  selectForSync, uploadAssetAttachment, uploadAssetAttachmentFiles,
 } from '@/api/asset'
 import type { AssetAttachment, AssetCard, TimelineEntry } from '@/api/asset'
 import AssetPicker from '@/components/AssetPicker.vue'
@@ -33,6 +33,9 @@ const card = ref<AssetCard | null>(null)
 const attachments = ref<AssetAttachment[]>([])
 const timeline = ref<TimelineEntry[]>([])
 const resultMsg = ref('')
+const uploadError = ref('')
+const uploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 const fileType = ref('发票')
 const fileName = ref('')
 const filePath = ref('')
@@ -85,6 +88,25 @@ async function doUpload() {
   fileName.value = ''
   filePath.value = ''
   await load()
+}
+
+/** 附件直传(#12):选多个文件直接传服务器,失败显示后端返回的原因。 */
+async function onFilesPicked() {
+  const input = fileInput.value
+  if (!input?.files?.length || !card.value) return
+  const files = Array.from(input.files)
+  input.value = ''
+  uploadError.value = ''
+  uploading.value = true
+  try {
+    const rows = await uploadAssetAttachmentFiles(card.value.id, files, fileType.value)
+    resultMsg.value = `已上传 ${rows.length} 个附件`
+    await load()
+  } catch (e) {
+    uploadError.value = (e as ApiError).detail || (e as Error).message || '上传失败'
+  } finally {
+    uploading.value = false
+  }
 }
 
 async function doDelete(id: number) {
@@ -148,9 +170,16 @@ onMounted(load)
       <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">校内扩展区(不同步)</div>
       <p>{{ card.ext ? JSON.stringify(card.ext) : '无扩展字段' }}</p>
       <div class="ios-section-title" style="padding: 0 0 6px; margin-top: 20px">附件与影像归档</div>
-      <p>附件请先把文件放到服务器指定目录,再把存放路径填在这里;页面上直接传文件尚未接通。</p>
+      <p>点“上传附件”可直接传文件(单个 ≤20MB,支持图片/PDF/Word/Excel);也可以把已在服务器目录的文件按路径归档。</p>
+      <NAlert v-if="uploadError" type="error" style="margin-bottom: 12px">{{ uploadError }}</NAlert>
       <NSpace style="margin-bottom: 12px">
         <NSelect v-model:value="fileType" :options="fileTypeOptions" style="width: 120px" />
+        <input
+          ref="fileInput" type="file" multiple style="display: none"
+          accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx"
+          @change="onFilesPicked"
+        >
+        <NButton type="primary" :loading="uploading" @click="fileInput?.click()">上传附件</NButton>
         <NInput v-model:value="fileName" placeholder="文件名(如 示例发票.pdf)" style="width: 200px" />
         <NInput v-model:value="filePath" placeholder="存储路径/对象键" style="width: 260px" />
         <NButton @click="doUpload">归档附件</NButton>

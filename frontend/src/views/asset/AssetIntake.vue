@@ -5,6 +5,7 @@ import {
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ApiError } from '@/api/client'
+import { apiGet } from '@/api/client'
 import {
   bookingPendingExportUrl, bulkCreateFromAcceptance, confirmAcceptance,
   confirmBooking, createAcceptance, createCardsFromAcceptance, INTAKE_TYPES,
@@ -35,6 +36,9 @@ const cardCategory = ref('A0203')
 const cardValue = ref('')
 const bulkQty = ref('3')
 const voucherNo = ref('')
+// 建卡管理部门改下拉(#76):口径走部门字典,不再手填自由文本。
+const cardDept = ref('')
+const deptOptions = ref([{ label: '管理部门(不填)', value: '' }])
 
 const intakeOptions = INTAKE_TYPES.map((t) => ({ label: t.label, value: t.value }))
 
@@ -47,6 +51,11 @@ async function load() {
     pending.value = data.items
     pendingTotal.value = data.total
     pendingValue.value = data.total_value
+    const depts = await apiGet<Array<{ name: string }>>('/asset/departments?is_active=true')
+    deptOptions.value = [
+      { label: '管理部门(不填)', value: '' },
+      ...depts.map((d) => ({ label: d.name, value: d.name })),
+    ]
   } catch (e) {
     if ((e as ApiError).status === 403) forbidden.value = true
   } finally {
@@ -87,6 +96,7 @@ async function doCreateCards(id: number) {
     items: [{
       name: cardName.value, category_code: cardCategory.value,
       original_value: cardValue.value ? Number(cardValue.value) : undefined,
+      manage_dept: cardDept.value || undefined,
     }],
   })
   resultMsg.value = `建卡:成功 ${res.succeeded.length} 件,失败 ${res.failed.length} 件`
@@ -100,6 +110,7 @@ async function doBulkCreate(id: number) {
     template: {
       name: cardName.value, category_code: cardCategory.value,
       original_value: cardValue.value ? Number(cardValue.value) : undefined,
+      manage_dept: cardDept.value || undefined,
     },
     quantity: Number(bulkQty.value) || 1,
   })
@@ -154,6 +165,7 @@ onMounted(load)
         <NInput v-model:value="cardName" placeholder="建卡名称(必填)" style="width: 180px" />
         <NInput v-model:value="cardCategory" placeholder="分类代码(如 A0203)" style="width: 140px" />
         <NInput v-model:value="cardValue" placeholder="原值(元)" style="width: 120px" />
+        <NSelect v-model:value="cardDept" :options="deptOptions" placeholder="管理部门" style="width: 140px" />
         <NInput v-model:value="bulkQty" placeholder="批量件数" style="width: 100px" />
       </NSpace>
     </NSpace>

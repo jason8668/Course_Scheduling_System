@@ -148,7 +148,9 @@ def select_by_filter(
         q = ledger_svc.build_asset_query(db, params)
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
-    return _select_many(db, user, q.all())
+    # 原值区间不在 SQL 里筛(密文列,见 asset_ledger.apply_value_range),
+    # 取回后在 Python 侧解密后筛。
+    return _select_many(db, user, ledger_svc.apply_value_range(q.all(), params))
 
 
 # ── 取消/撤回勾选 #89 ──────────────────────────────
